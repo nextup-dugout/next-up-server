@@ -411,6 +411,39 @@ docs/[이슈번호]-[문서명]      # 문서화
 * **Immutability**: `val`과 `data class` 우선 사용.
 * **SRP**: 서비스가 거대해지면 기능별 소규모 컴포넌트로 분리.
 
+### 4. JPA Convention
+
+> ⚠️ **@OneToMany 사용 금지**: 성능 및 설계 문제로 `@OneToMany` 양방향 매핑을 사용하지 않습니다.
+
+| 규칙 | 설명 |
+|------|------|
+| **ManyToOne만 사용** | 자식 엔티티에서 부모로의 단방향 참조만 허용 |
+| **컬렉션 조회는 Repository** | 부모→자식 조회가 필요하면 Repository 메서드 사용 |
+| **Lazy Loading 기본** | `@ManyToOne(fetch = FetchType.LAZY)` 필수 |
+| **N+1 방지** | 필요 시 `@EntityGraph` 또는 `fetch join` 사용 |
+
+```kotlin
+// ❌ 잘못됨: OneToMany 양방향 매핑
+@Entity
+class Association {
+    @OneToMany(mappedBy = "association")
+    val leagues: MutableList<League> = mutableListOf()
+}
+
+// ✅ 올바름: ManyToOne 단방향만 사용
+@Entity
+class League(
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "association_id")
+    val association: Association
+)
+
+// ✅ 올바름: 컬렉션 조회는 Repository에서
+interface LeagueRepository {
+    fun findByAssociationId(associationId: Long): List<League>
+}
+```
+
 ---
 
 ## 📂 Output Folder Structure
@@ -447,6 +480,7 @@ outputs/
 
 | 날짜 | 변경 내용 | 담당 |
 |------|-----------|------|
+| 2026-01-21 | JPA Convention 추가 (@OneToMany 금지, ManyToOne 단방향만 사용) | knowledge-manager |
 | 2026-01-21 | MCP GitHub 연동 추가, Tech Stack 버전 안정화 (Kotlin 2.1.10, Spring Boot 3.4.1, Gradle 8.12) | knowledge-manager |
 | 2025-01-21 | `security-auditor` Agent 추가 (OWASP Top 10 기반) | knowledge-manager |
 | 2025-01-21 | `code-quality` Skill 추가 (ktlint, detekt) | knowledge-manager |

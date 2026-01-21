@@ -1,10 +1,15 @@
 package com.nextup.core.domain.player
 
 import com.nextup.core.common.BaseTimeEntity
-import com.nextup.core.domain.team.Team
 import jakarta.persistence.*
 import java.time.LocalDate
 
+/**
+ * 선수 엔티티
+ *
+ * 야구 선수의 기본 정보를 관리합니다.
+ * 팀 소속 이력은 PlayerTeamHistory를 통해 관리됩니다.
+ */
 @Entity
 @Table(
     name = "players",
@@ -33,24 +38,24 @@ class Player(
     var weight: Int? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
+    @Column(name = "throwing_hand", length = 10)
     var throwingHand: ThrowingHand? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
+    @Column(name = "batting_hand", length = 10)
     var battingHand: BattingHand? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(name = "primary_position", nullable = false, length = 30)
     var primaryPosition: Position,
 
-    @Column
+    @Column(name = "debut_year")
     var debutYear: Int? = null,
 
-    @Column
+    @Column(name = "retirement_year")
     var retirementYear: Int? = null,
 
-    @Column(length = 255)
+    @Column(name = "profile_image_url", length = 255)
     var profileImageUrl: String? = null,
 
     @Id
@@ -58,46 +63,37 @@ class Player(
     val id: Long = 0L
 ) : BaseTimeEntity() {
 
-    @OneToMany(mappedBy = "player", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-    private val _teamHistories: MutableList<PlayerTeamHistory> = mutableListOf()
-    val teamHistories: List<PlayerTeamHistory> get() = _teamHistories.toList()
-
     val isActive: Boolean
         get() = retirementYear == null
 
-    val currentTeamHistory: PlayerTeamHistory?
-        get() = _teamHistories.find { it.endDate == null }
-
-    val currentTeam: Team?
-        get() = currentTeamHistory?.team
-
-    fun joinTeam(
-        team: Team,
-        startDate: LocalDate,
-        uniformNumber: Int? = null,
-        position: Position = primaryPosition,
-        contractType: ContractType = ContractType.REGULAR
-    ): PlayerTeamHistory {
-        currentTeamHistory?.endAffiliation(startDate.minusDays(1))
-
-        val history = PlayerTeamHistory(
-            player = this,
-            team = team,
-            startDate = startDate,
-            uniformNumber = uniformNumber,
-            position = position,
-            contractType = contractType
-        )
-        _teamHistories.add(history)
-        return history
-    }
-
-    fun leaveCurrentTeam(endDate: LocalDate) {
-        currentTeamHistory?.endAffiliation(endDate)
-    }
-
     fun retire(year: Int) {
-        retirementYear = year
-        currentTeamHistory?.endAffiliation(LocalDate.of(year, 12, 31))
+        require(retirementYear == null) { "이미 은퇴한 선수입니다." }
+        require(year >= (debutYear ?: 0)) { "은퇴 연도는 데뷔 연도 이후여야 합니다." }
+        this.retirementYear = year
+    }
+
+    fun updatePhysicalInfo(
+        height: Int? = this.height,
+        weight: Int? = this.weight
+    ) {
+        this.height = height
+        this.weight = weight
+    }
+
+    fun updateProfile(profileImageUrl: String?) {
+        this.profileImageUrl = profileImageUrl
+    }
+
+    /**
+     * 선수의 나이를 계산합니다.
+     */
+    fun calculateAge(baseDate: LocalDate = LocalDate.now()): Int? {
+        return birthDate?.let {
+            var age = baseDate.year - it.year
+            if (baseDate.dayOfYear < it.dayOfYear) {
+                age--
+            }
+            age
+        }
     }
 }

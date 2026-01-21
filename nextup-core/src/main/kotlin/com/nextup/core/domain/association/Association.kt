@@ -1,45 +1,40 @@
-package com.nextup.core.domain.league
+package com.nextup.core.domain.association
 
 import com.nextup.core.common.BaseTimeEntity
-import com.nextup.core.domain.association.Association
 import jakarta.persistence.*
 
 /**
- * 리그 엔티티
+ * 사회인 야구 협회 엔티티
  *
- * 협회(Association) 소속의 리그를 나타냅니다.
- * 예: 서울시야구협회 1부 리그, 2부 리그 등
+ * 사회인 야구는 여러 협회(예: 서울시 야구협회, 경기도 야구협회)가 존재하며,
+ * 각 협회는 독립적인 리그 체계를 운영합니다.
  */
 @Entity
 @Table(
-    name = "leagues",
+    name = "associations",
     indexes = [
-        Index(name = "idx_leagues_association", columnList = "association_id"),
-        Index(name = "idx_leagues_is_active", columnList = "is_active")
+        Index(name = "idx_associations_region", columnList = "region"),
+        Index(name = "idx_associations_is_active", columnList = "is_active")
     ]
 )
-class League(
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "association_id", nullable = false)
-    val association: Association,
-
+class Association(
     @Column(nullable = false, length = 100)
     val name: String,
 
     @Column(length = 20)
     val abbreviation: String? = null,
 
-    @Column(nullable = false)
-    val foundedYear: Int,
-
-    @Column(name = "division_level")
-    val divisionLevel: Int? = null,
+    @Column(length = 50)
+    val region: String? = null,
 
     @Column(length = 500)
     var description: String? = null,
 
     @Column(length = 255)
     var logoUrl: String? = null,
+
+    @Column(length = 255)
+    var websiteUrl: String? = null,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
@@ -59,9 +54,11 @@ class League(
 
     fun updateInfo(
         description: String? = this.description,
-        logoUrl: String? = this.logoUrl
+        logoUrl: String? = this.logoUrl,
+        websiteUrl: String? = this.websiteUrl
     ) {
         this.description = description
         this.logoUrl = logoUrl
+        this.websiteUrl = websiteUrl
     }
 }
