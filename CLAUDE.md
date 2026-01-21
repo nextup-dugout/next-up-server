@@ -397,7 +397,38 @@ refactor/[이슈번호]-[대상]    # 리팩토링
 docs/[이슈번호]-[문서명]      # 문서화
 ```
 
-### 3. Development Principles
+### 3. Pull Request Convention
+
+> ⚠️ **PR 생성 시 반드시 `.github/PULL_REQUEST_TEMPLATE.md` 템플릿을 준수해야 합니다.**
+
+```markdown
+## Summary
+
+>- 관련 이슈 태그 (예: Close #1)
+
+**PR 요약 작성**
+
+## Tasks
+
+- 포함된 작업 목록
+- 포함된 작업 목록
+
+## To Reviewer
+
+_(선택) 리뷰어에게 전달할 내용_
+
+## Screenshot
+
+_(선택) 스크린샷 첨부_
+```
+
+| 규칙 | 설명 |
+|------|------|
+| **Issue 연결 필수** | Summary에 `>- Close #이슈번호` 형식으로 관련 이슈 태그 |
+| **Tasks 명시** | PR에 포함된 모든 작업을 bullet point로 나열 |
+| **템플릿 준수** | 템플릿 구조를 임의로 변경하지 않음 |
+
+### 4. Development Principles
 
 * **Rich Domain**: 비즈니스 로직은 Service가 아닌 **Entity 내부**에 캡슐화.
   ```kotlin
@@ -411,7 +442,7 @@ docs/[이슈번호]-[문서명]      # 문서화
 * **Immutability**: `val`과 `data class` 우선 사용.
 * **SRP**: 서비스가 거대해지면 기능별 소규모 컴포넌트로 분리.
 
-### 4. JPA Convention
+### 5. JPA Convention
 
 > ⚠️ **@OneToMany 사용 금지**: 성능 및 설계 문제로 `@OneToMany` 양방향 매핑을 사용하지 않습니다.
 
@@ -480,6 +511,7 @@ outputs/
 
 | 날짜 | 변경 내용 | 담당 |
 |------|-----------|------|
+| 2026-01-22 | Pull Request Convention 추가 (템플릿 준수 규칙) | knowledge-manager |
 | 2026-01-21 | JPA Convention 추가 (@OneToMany 금지, ManyToOne 단방향만 사용) | knowledge-manager |
 | 2026-01-21 | MCP GitHub 연동 추가, Tech Stack 버전 안정화 (Kotlin 2.1.10, Spring Boot 3.4.1, Gradle 8.12) | knowledge-manager |
 | 2025-01-21 | `security-auditor` Agent 추가 (OWASP Top 10 기반) | knowledge-manager |
