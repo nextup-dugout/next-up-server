@@ -1,6 +1,6 @@
 ## Summary
 
->- 관련 있는 Issue를 태그해주세요. (example : Close #1)
+>- 관련 있는 Issue를 태그해주세요. (example : close #1)
 
 **해당 PR에 대한 요약을 작성해주세요.**
 

@@ -42,6 +42,29 @@ model: sonnet
 4. **도메인 규칙 위반**
    - `baseball-expert`가 REJECT 판정 시 해당 판정 존중
 
+5. **API 규칙 위반 (Zero Entity Leak)**
+   - Entity를 Controller 반환 타입으로 사용 시 즉시 REJECT
+   - `ApiResponse`로 감싸지 않은 응답 발견 시 REJECT
+   - `RuntimeException` 직접 throw 시 REJECT (CustomException 사용 필수)
+   - ErrorCode 없이 하드코딩된 에러 메시지 발견 시 REJECT
+
+6. **JPA Convention 위반**
+   - `@OneToMany` 양방향 매핑 사용 시 즉시 REJECT
+   - `@ManyToOne`에 `FetchType.LAZY` 미적용 시 REJECT
+   - `BaseTimeEntity` 미상속 Entity 발견 시 REJECT
+
+7. **Git/PR Convention 위반**
+   - PR 템플릿 미준수 시 REJECT
+   - Summary에 `>-` 형식 이슈 태그 누락 시 REJECT
+   - 커밋 메시지 Udacity 스타일 미준수 시 REJECT
+
+8. **보안 취약점**
+   - `security-auditor` Critical/High 취약점 발견 시 즉시 REJECT
+
+9. **코드 품질**
+   - `code-quality` detekt potential-bugs 발견 시 REJECT
+   - ktlint 에러 또는 경고 10개 이상 시 REJECT
+
 **거부권 행사 시 모든 작업은 즉시 중단되며, 해당 이슈는 `risk-manager`에게 전달된다.**
 
 ## 핵심 원칙

@@ -178,6 +178,155 @@ class [Entity]Controller(
 ```
 ```
 
+## 📢 Communication & Error Standards
+
+> ⚠️ 이 섹션의 규칙 위반 시 `reviewer`에 의해 즉시 REJECT 됩니다.
+
+### 1. DTO 변환 원칙 (Zero Entity Leak)
+
+| 규칙 | 설명 |
+|------|------|
+| **Zero Entity Leak** | Entity는 **절대** `nextup-api` 밖으로 노출되지 않습니다 |
+| **Mapping Responsibility** | Controller 또는 `data-transformer`에서 반드시 DTO로 변환 |
+
+```kotlin
+// ❌ 잘못됨: Entity 직접 반환 → VETO 대상!
+@GetMapping("/{id}")
+fun getPlayer(@PathVariable id: Long): Player
+
+// ✅ 올바름: DTO로 변환하여 반환
+@GetMapping("/{id}")
+fun getPlayer(@PathVariable id: Long): ApiResponse<PlayerResponse>
+```
+
+### 2. 표준 응답 객체 (ApiResponse)
+
+**모든 API 응답은 일관된 구조**를 가져야 합니다.
+
+```kotlin
+// nextup-api/src/.../common/ApiResponse.kt
+data class ApiResponse<T>(
+    val status: Int,
+    val message: String,
+    val data: T? = null,
+    val timestamp: LocalDateTime = LocalDateTime.now()
+) {
+    companion object {
+        fun <T> success(data: T, message: String = "Success"): ApiResponse<T> =
+            ApiResponse(status = 200, message = message, data = data)
+
+        fun <T> created(data: T, message: String = "Created"): ApiResponse<T> =
+            ApiResponse(status = 201, message = message, data = data)
+
+        fun error(status: Int, message: String): ApiResponse<Nothing> =
+            ApiResponse(status = status, message = message, data = null)
+    }
+}
+```
+
+**응답 예시:**
+```json
+{
+  "status": 200,
+  "message": "Success",
+  "data": {
+    "id": 1,
+    "name": "김선수",
+    "position": "투수"
+  },
+  "timestamp": "2025-01-20T15:30:00"
+}
+```
+
+### 3. 에러 핸들링 전략
+
+#### ErrorCode 열거형
+
+```kotlin
+// nextup-common/src/.../exception/ErrorCode.kt
+enum class ErrorCode(
+    val status: Int,
+    val message: String
+) {
+    // 400 Bad Request
+    INVALID_INPUT(400, "잘못된 입력입니다"),
+    INVALID_PLAYER_STATUS(400, "유효하지 않은 선수 상태입니다"),
+
+    // 404 Not Found
+    PLAYER_NOT_FOUND(404, "선수를 찾을 수 없습니다"),
+    TEAM_NOT_FOUND(404, "팀을 찾을 수 없습니다"),
+    GAME_NOT_FOUND(404, "경기를 찾을 수 없습니다"),
+
+    // 409 Conflict
+    PLAYER_ALREADY_IN_TEAM(409, "이미 팀에 소속된 선수입니다"),
+    DUPLICATE_BACK_NUMBER(409, "이미 사용 중인 등번호입니다"),
+
+    // 500 Internal Server Error
+    INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다")
+}
+```
+
+#### CustomException 정의
+
+```kotlin
+// nextup-common/src/.../exception/CustomException.kt
+open class CustomException(
+    val errorCode: ErrorCode,
+    override val message: String = errorCode.message,
+    override val cause: Throwable? = null
+) : RuntimeException(message, cause)
+
+// 도메인별 예외 (예시)
+class PlayerNotFoundException(playerId: Long) : CustomException(
+    errorCode = ErrorCode.PLAYER_NOT_FOUND,
+    message = "Player not found: $playerId"
+)
+```
+
+#### Global Exception Handler
+
+```kotlin
+// nextup-api/src/.../exception/GlobalExceptionHandler.kt
+@RestControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(CustomException::class)
+    fun handleCustomException(e: CustomException): ResponseEntity<ApiResponse<Nothing>> {
+        return ResponseEntity
+            .status(e.errorCode.status)
+            .body(ApiResponse.error(e.errorCode.status, e.message))
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Nothing>> {
+        val message = e.bindingResult.fieldErrors
+            .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+        return ResponseEntity
+            .badRequest()
+            .body(ApiResponse.error(400, message))
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleException(e: Exception): ResponseEntity<ApiResponse<Nothing>> {
+        // 로깅 필수
+        return ResponseEntity
+            .internalServerError()
+            .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다"))
+    }
+}
+```
+
+### 4. Reviewer 검증 항목 (VETO 대상)
+
+| 위반 사항 | VETO 여부 |
+|-----------|-----------|
+| Entity를 Controller 반환 타입으로 사용 | **즉시 REJECT** |
+| `ApiResponse`로 감싸지 않은 응답 | **REJECT** |
+| `RuntimeException` 직접 throw | **REJECT** (CustomException 사용) |
+| ErrorCode 없이 하드코딩된 에러 메시지 | **REJECT** |
+
+---
+
 ## 협업 규칙
 
 - `planner`: 작업 지시(brief.md) 수신
