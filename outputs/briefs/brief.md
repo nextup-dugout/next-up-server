@@ -646,7 +646,7 @@ class DefaultEligibilityValidator : EligibilityValidator {
 
 // 4. 정책 기반 검증기 (향후 확장)
 class PolicyBasedEligibilityValidator(
-    private val policyEngine: PolicyEngine1
+    private val policyEngine: PolicyEngine
 ) : EligibilityValidator {
     override fun validate(player: Player, competition: Competition): ValidationResult {
         val policies = policyEngine.getPoliciesForCompetition(competition)
