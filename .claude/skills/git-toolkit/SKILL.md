@@ -94,10 +94,12 @@ description: |
 
 ### PR Template (`.github/PULL_REQUEST_TEMPLATE.md`)
 
+> ⚠️ **PR 생성 시 반드시 이 템플릿을 준수해야 합니다.** 위반 시 `reviewer`에 의해 REJECT 됩니다.
+
 ```markdown
 ## Summary
 
-> 관련 있는 Issue를 태그해주세요. (example : Close #1)
+>- 관련 있는 Issue를 태그해주세요. (example : Close #1)
 
 **해당 PR에 대한 요약을 작성해주세요.**
 

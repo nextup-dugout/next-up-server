@@ -131,6 +131,86 @@ class [EntityName](
 | 경기 | Game, Inning, AtBat | 경기 진행 상태 |
 | 기록 | BattingRecord, PitchingRecord | 통계 집계 |
 
+## 📋 JPA Convention
+
+> ⚠️ 이 섹션의 규칙 위반 시 `reviewer`에 의해 즉시 REJECT 됩니다.
+
+### @OneToMany 사용 금지
+
+성능 및 설계 문제로 `@OneToMany` 양방향 매핑을 사용하지 않습니다.
+
+| 규칙 | 설명 |
+|------|------|
+| **ManyToOne만 사용** | 자식 엔티티에서 부모로의 단방향 참조만 허용 |
+| **컬렉션 조회는 Repository** | 부모→자식 조회가 필요하면 Repository 메서드 사용 |
+| **Lazy Loading 기본** | `@ManyToOne(fetch = FetchType.LAZY)` 필수 |
+| **N+1 방지** | 필요 시 `@EntityGraph` 또는 `fetch join` 사용 |
+
+```kotlin
+// ❌ 잘못됨: OneToMany 양방향 매핑 → VETO 대상!
+@Entity
+class Association {
+    @OneToMany(mappedBy = "association")
+    val leagues: MutableList<League> = mutableListOf()
+}
+
+// ✅ 올바름: ManyToOne 단방향만 사용
+@Entity
+class League(
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "association_id")
+    val association: Association
+)
+
+// ✅ 올바름: 컬렉션 조회는 Repository에서
+interface LeagueRepository {
+    fun findByAssociationId(associationId: Long): List<League>
+}
+```
+
+### Entity 필수 규칙
+
+| 규칙 | 설명 |
+|------|------|
+| **BaseTimeEntity 상속** | 모든 Entity는 `BaseTimeEntity` 상속 필수 |
+| **val 우선** | 불변 필드는 `val` 사용, 변경 가능한 필드만 `var` |
+| **protected set** | 외부에서 직접 수정 불가하게 하려면 `protected set` 사용 |
+| **Index 정의** | 자주 조회되는 필드에 `@Table(indexes = [...])` 추가 |
+
+```kotlin
+@Entity
+@Table(
+    name = "players",
+    indexes = [
+        Index(name = "idx_players_name", columnList = "name"),
+        Index(name = "idx_players_team", columnList = "team_id")
+    ]
+)
+class Player(
+    @Column(nullable = false, length = 50)
+    val name: String,  // val: 변경 불가
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    var team: Team? = null,  // var: 팀 변경 가능
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+) : BaseTimeEntity() {
+
+    @Column(nullable = false)
+    var status: PlayerStatus = PlayerStatus.ACTIVE
+        protected set  // 외부에서 직접 수정 불가
+
+    fun deactivate() {
+        this.status = PlayerStatus.INACTIVE
+    }
+}
+```
+
+---
+
 ## 협업 규칙
 
 - `planner`: 작업 지시(brief.md) 수신
