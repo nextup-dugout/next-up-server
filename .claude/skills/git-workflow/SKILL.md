@@ -63,13 +63,15 @@ mcp__github__create_branch(
 
 ## 📝 이슈 생성
 
-### 이슈 템플릿 (.github/ISSUE_TEMPLATE/)
+### 이슈 템플릿
 
-| 템플릿 | 용도 | 레이블 |
-|--------|------|--------|
-| Feature | 새 기능 요청 | `enhancement` |
-| Bug | 버그 리포트 | `bug` |
-| Refactor | 리팩토링 | `refactoring` |
+**반드시 `.github/ISSUE_TEMPLATE/`에 정의된 템플릿을 사용하세요.**
+
+사용 가능한 템플릿:
+- `feature.yml` - 새 기능 요청
+- `bug.yml` - 버그 리포트
+- `refactor.yml` - 리팩토링
+- `suggestion.yml` - 제안
 
 ### 이슈 생성 (MCP)
 ```kotlin
@@ -110,27 +112,11 @@ mcp__github__issue_write(
 [#12] Player API 엔드포인트 추가
 ```
 
-### PR 템플릿 (.github/PULL_REQUEST_TEMPLATE.md)
+### PR 템플릿
 
-```markdown
-## 관련 이슈
-Closes #이슈번호
+**반드시 `.github/PULL_REQUEST_TEMPLATE.md`에 정의된 템플릿을 사용하세요.**
 
-## 변경 사항
-- 변경 사항 1
-- 변경 사항 2
-
-## 테스트 체크리스트
-- [ ] 단위 테스트 작성 및 통과
-- [ ] 통합 테스트 작성 및 통과
-- [ ] 커버리지 80% 이상 달성
-
-## 스크린샷 (필요 시)
-...
-
-## 추가 사항
-...
-```
+PR 생성 시 GitHub가 자동으로 해당 템플릿을 로드합니다.
 
 ### PR 생성 (MCP)
 ```kotlin
