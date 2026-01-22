@@ -1,0 +1,74 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecovyml-reference
+
+codecov:
+  require_ci_to_pass: yes  # CI 통과 필수
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    # 프로젝트 전체 커버리지
+    project:
+      default:
+        target: 80%           # 전체 프로젝트 80% 이상
+        threshold: 1%         # 1% 감소까지 허용
+        if_ci_failed: error   # CI 실패 시 에러
+
+    # 새로 추가된 코드 커버리지 (패치)
+    patch:
+      default:
+        target: 80%           # 새 코드는 무조건 80% 이상
+        threshold: 0%         # 감소 불허
+        if_ci_failed: error
+
+# 모듈별 커버리지 플래그
+flags:
+  core:
+    paths:
+      - nextup-core/src/main/
+    target: 80%
+    carryforward: false
+
+  api:
+    paths:
+      - nextup-api/src/main/
+    target: 70%
+    carryforward: false
+
+  infrastructure:
+    paths:
+      - nextup-infrastructure/src/main/
+    target: 60%
+    carryforward: false
+
+  common:
+    paths:
+      - nextup-common/src/main/
+    target: 60%
+    carryforward: false
+
+# 커버리지 제외 파일
+ignore:
+  - "**/*Test.kt"
+  - "**/*Tests.kt"
+  - "**/*Config.kt"
+  - "**/*Configuration.kt"
+  - "**/Application.kt"
+  - "**/ApplicationKt.kt"
+  - "**/build/**"
+  - "**/generated/**"
+
+# PR 코멘트 설정
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: no
+  require_base: no
+  require_head: yes
+
+# GitHub Checks 설정
+github_checks:
+  annotations: true
