@@ -25,20 +25,28 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run tests with coverage
-        run: ./gradlew test jacocoTestReport
+        run: ./gradlew clean test
+
+      - name: Debug - List generated files
+        run: |
+          echo "=== Checking generated Jacoco reports ==="
+          find . -name "*.xml" -path "*/jacoco/*" -type f || echo "No XML files found"
+          echo "=== Directory structure ==="
+          ls -R **/build/reports/jacoco/ 2>/dev/null || echo "No jacoco reports directory found"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: |
-            ./nextup-core/build/reports/jacoco/test/jacocoTestReport.xml
-            ./nextup-api/build/reports/jacoco/test/jacocoTestReport.xml
-            ./nextup-infrastructure/build/reports/jacoco/test/jacocoTestReport.xml
-            ./nextup-common/build/reports/jacoco/test/jacocoTestReport.xml
+          files: >-
+            nextup-core/build/reports/jacoco/test/jacocoTestReport.xml,
+            nextup-api/build/reports/jacoco/test/jacocoTestReport.xml,
+            nextup-infrastructure/build/reports/jacoco/test/jacocoTestReport.xml,
+            nextup-common/build/reports/jacoco/test/jacocoTestReport.xml
           flags: unittests
           name: codecov-nextup
           fail_ci_if_error: true
+          verbose: true
           # Codecov가 codecov.yml 기준(80%)을 자동으로 체크
 
       - name: Upload test results
