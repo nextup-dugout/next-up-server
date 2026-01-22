@@ -30,19 +30,19 @@
 ### 브랜치 네이밍 컨벤션
 
 ```
-feature/#<이슈번호>-<간단한-설명>
-hotfix/#<이슈번호>-<간단한-설명>
+feature/#이슈번호 간단한 설명
+hotfix/#이슈번호 간단한 설명
 release/v<버전>
 ```
 
 #### 예시
 ```bash
 # Feature 브랜치
-feature/#5-agent-skill-refactoring
-feature/#12-player-api
+feature/#5 Agent/Skill 구조 개선
+feature/#12 Player API 구현
 
 # Hotfix 브랜치
-hotfix/#23-fix-batting-average
+hotfix/#23 타율 계산 버그 수정
 
 # Release 브랜치
 release/v1.0.0
@@ -54,7 +54,7 @@ release/v1.0.0
 mcp__github__create_branch(
     owner = "nextup-dugout",
     repo = "next-up-server",
-    branch = "feature/#5-agent-skill-refactoring",
+    branch = "feature/#5 Agent/Skill 구조 개선",
     from_branch = "develop"
 )
 ```
@@ -124,7 +124,7 @@ mcp__github__create_pull_request(
     owner = "nextup-dugout",
     repo = "next-up-server",
     title = "[#5] Agent/Skill 구조 개선 및 Codecov 설정",
-    head = "feature/#5-agent-skill-refactoring",
+    head = "feature/#5 Agent/Skill 구조 개선",
     base = "develop",
     body = """
 ## 관련 이슈
@@ -304,7 +304,7 @@ Agent:
 3. PR 생성 중...
    - Title: [#5] Agent/Skill 구조 개선 및 Codecov 설정
    - Base: develop
-   - Head: feature/#5-agent-skill-refactoring
+   - Head: feature/#5 Agent/Skill 구조 개선
 
 ✅ PR 생성 완료!
 🔗 https://github.com/nextup-dugout/next-up-server/pull/6
@@ -321,7 +321,7 @@ Agent:
 - [ ] 적절한 레이블 추가
 
 ### 브랜치 생성 시
-- [ ] 컨벤션 준수 (`feature/#<번호>-<설명>`)
+- [ ] 컨벤션 준수 (`feature/#번호 간단한 설명`)
 - [ ] develop 브랜치에서 분기
 
 ### PR 생성 시
