@@ -27,14 +27,19 @@ jobs:
       - name: Run tests with coverage
         run: ./gradlew clean test
 
-      - name: Debug - List generated files
+      - name: Check if coverage reports exist
+        id: check_coverage
         run: |
-          echo "=== Checking generated Jacoco reports ==="
-          find . -name "*.xml" -path "*/jacoco/*" -type f || echo "No XML files found"
-          echo "=== Directory structure ==="
-          ls -R **/build/reports/jacoco/ 2>/dev/null || echo "No jacoco reports directory found"
+          if find . -name "jacocoTestReport.xml" -path "*/jacoco/test/*" -type f | grep -q .; then
+            echo "has_coverage=true" >> $GITHUB_OUTPUT
+            echo "✅ Coverage reports found"
+          else
+            echo "has_coverage=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No coverage reports found (no tests executed)"
+          fi
 
       - name: Upload coverage reports to Codecov
+        if: steps.check_coverage.outputs.has_coverage == 'true'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -48,6 +53,12 @@ jobs:
           fail_ci_if_error: true
           verbose: true
           # Codecov가 codecov.yml 기준(80%)을 자동으로 체크
+
+      - name: No tests warning
+        if: steps.check_coverage.outputs.has_coverage == 'false'
+        run: |
+          echo "::warning::No test files found. Skipping coverage upload."
+          echo "💡 Add tests to enable coverage tracking (target: 80%)"
 
       - name: Upload test results
         if: always()
