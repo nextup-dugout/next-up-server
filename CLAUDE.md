@@ -63,20 +63,45 @@ nextup-api → nextup-infrastructure → nextup-core → nextup-common
 
 ---
 
-## 🤖 Agent & Skill 분리 원칙
+## 🤖 Agent & Skill & Command 구조
 
-> **판단(Agent)과 실행(Skill)의 분리**를 엄격히 준수합니다.
+> **판단(Agent), 지식(Skill), 실행(Command)**를 명확히 분리합니다.
 
-### Council Team (전략/거버넌스)
-`planner`, `tech-lead`, `reviewer`, `risk-manager`, `baseball-expert`, `security-auditor`
+### Agents (5개) - 의사결정자
+| Agent | 역할 | 통합 |
+|-------|------|------|
+| `planner` | 작업 분해 & 우선순위 | 유지 |
+| `architect` | 멀티모듈 설계 & DB 스키마 | tech-lead + modeler + logic-broker |
+| `implementer` | Entity→API 전체 코드 작성 | api-specialist + data-transformer |
+| `reviewer` | VETO 권한 & 최종 검수 | risk-manager + scenario-tester 통합 |
+| `devops` | GitHub PR/Issue & 문서 관리 | knowledge-manager + github-manager |
 
-### Execution Team (개발 실행)
-`modeler`, `logic-broker`, `api-specialist`, `data-transformer`, `scenario-tester`, `github-manager`, `knowledge-manager`
+### Skills (6개) - 재사용 가능한 지식 자산
+| Skill | 역할 | 출처 |
+|-------|------|------|
+| `domain-baseball` | 야구 규칙 검증 로직 | baseball-expert 흡수 |
+| `backend-patterns` | Kotlin/Spring Boot 컨벤션 | 신규 |
+| `git-workflow` | GitHub MCP + Codecov 연동 | github-manager 흡수 |
+| `quality-metrics` | Jacoco + Codecov + ktlint + detekt | build-validator + code-quality 통합 |
+| `security-audit` | OWASP 보안 체크리스트 | security-auditor 흡수 |
+| `db-manager` | PostgreSQL/PostGIS | 유지 |
 
-### Skills (재사용 가능 도구)
-`build-validator`, `git-toolkit`, `db-manager`, `code-quality`
+### Commands (4개) - 빠른 실행 워크플로우
+| Command | 역할 | Skills 사용 |
+|---------|------|------------|
+| `/tdd` | TDD 워크플로우 활성화 | tdd, domain-baseball |
+| `/build` | Gradle 빌드 & 테스트 | quality-metrics |
+| `/review` | 품질 & 보안 검증 | quality-metrics, security-audit, domain-baseball |
+| `/pr` | GitHub PR 자동 생성 | git-workflow |
 
-> 상세 역할 및 가이드는 `.claude/agents/`, `.claude/skills/` 참조
+### Rules (3개) - 절대 규칙
+| Rule | 내용 | VETO |
+|------|------|------|
+| `dependency` | 멀티모듈 의존성 (Outside → Inside) | ✅ |
+| `security` | Zero Entity Leak, OWASP Top 10 | ✅ |
+| `tdd` | Core/Service TDD 필수, 80% 커버리지 | ✅ |
+
+> 상세 역할 및 가이드는 `.claude/agents/`, `.claude/skills/`, `.claude/commands/`, `.claude/rules/` 참조
 
 ---
 
@@ -126,6 +151,14 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-01-22 | **Agent/Skill 대규모 리팩토링 + Codecov 설정** |
+|  | - Agents 13개 → 5개 통합 (planner, architect, implementer, reviewer, devops) |
+|  | - Skills 4개 → 6개 확장 (domain-baseball, backend-patterns, git-workflow 등) |
+|  | - Rules 3개 추가 (dependency, security, tdd) |
+|  | - Commands 4개 추가 (/tdd, /build, /review, /pr) |
+|  | - Jacoco 멀티모듈 커버리지 설정 (80% 기준) |
+|  | - Codecov PR 머지 조건 강제 (codecov.yml) |
+|  | - GitHub Actions 워크플로우 추가 (test.yml) |
 | 2026-01-22 | 헌법 리팩토링 - 상세 가이드 Agent/Skill로 분리 |
 | 2026-01-22 | PR Convention 추가 |
 | 2026-01-21 | JPA Convention, MCP 연동 추가 |
@@ -138,9 +171,25 @@ outputs/
 
 | 주제 | 참조 문서 |
 |------|-----------|
-| API/DTO/에러 처리 | `.claude/agents/api-specialist.md` |
-| JPA/Entity 규칙 | `.claude/agents/modeler.md` |
-| Git/PR 컨벤션 | `.claude/skills/git-toolkit/SKILL.md` |
-| Reviewer 검증 상세 | `.claude/agents/reviewer.md` |
-| 보안 감사 | `.claude/agents/security-auditor.md` |
-| 야구 규칙 | `.claude/agents/baseball-expert.md` |
+| **Agents** | |
+| 작업 기획 & 우선순위 | `.claude/agents/planner.md` |
+| 아키텍처 & DB 설계 | `.claude/agents/architect.md` |
+| 전체 코드 작성 | `.claude/agents/implementer.md` |
+| 최종 검수 & VETO | `.claude/agents/reviewer.md` |
+| GitHub & 문서 관리 | `.claude/agents/devops.md` |
+| **Skills** | |
+| 야구 규칙 검증 | `.claude/skills/domain-baseball/SKILL.md` |
+| Kotlin/Spring 컨벤션 | `.claude/skills/backend-patterns/SKILL.md` |
+| GitHub + Codecov | `.claude/skills/git-workflow/SKILL.md` |
+| 빌드/테스트/커버리지 | `.claude/skills/quality-metrics/SKILL.md` |
+| OWASP 보안 체크 | `.claude/skills/security-audit/SKILL.md` |
+| PostgreSQL/PostGIS | `.claude/skills/db-manager/SKILL.md` |
+| **Rules** | |
+| 멀티모듈 의존성 | `.claude/rules/dependency.md` |
+| 보안 규칙 | `.claude/rules/security.md` |
+| TDD 규칙 | `.claude/rules/tdd.md` |
+| **Commands** | |
+| TDD 워크플로우 | `.claude/commands/tdd.md` |
+| 빌드 & 테스트 | `.claude/commands/build.md` |
+| 품질 & 보안 검증 | `.claude/commands/review.md` |
+| PR 자동 생성 | `.claude/commands/pr.md` |
