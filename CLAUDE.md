@@ -1,7 +1,7 @@
 # ⚾️ CLAUDE.md (NEXT-UP)
 
 > **이 문서는 NEXT-UP 프로젝트의 최상위 헌법입니다.** 모든 에이전트는 이 문서를 최우선으로 준수합니다.
-> 상세 구현 가이드는 각 Agent/Skill 문서를 참조하세요.
+> 상세 구현 가이드는 각 Agent/Skill/Rules 문서를 참조하세요.
 
 ---
 
@@ -59,24 +59,52 @@ nextup-api → nextup-infrastructure → nextup-core → nextup-common
 | **Framework** | Spring Boot 3.4.1 |
 | **Database** | PostgreSQL + PostGIS |
 | **Build Tool** | Gradle 8.12 (Kotlin DSL) |
+| **Coverage** | Jacoco 0.8.12 + Codecov |
 | **GitHub** | MCP (Model Context Protocol) |
 
 ---
 
-## 🤖 Agent & Skill 분리 원칙
+## 🤖 Agent & Skill 구조
 
 > **판단(Agent)과 실행(Skill)의 분리**를 엄격히 준수합니다.
 
-### Council Team (전략/거버넌스)
-`planner`, `tech-lead`, `reviewer`, `risk-manager`, `baseball-expert`, `security-auditor`
+### Agents (5개)
 
-### Execution Team (개발 실행)
-`modeler`, `logic-broker`, `api-specialist`, `data-transformer`, `scenario-tester`, `github-manager`, `knowledge-manager`
+| Agent | 역할 |
+|-------|------|
+| `planner` | 기능 구현 계획 수립, 모듈별 수정 사항 도출 |
+| `architect` | 멀티모듈 설계, Entity/Repository 구현 |
+| `implementer` | Controller/Service/DTO 전체 코드 작성 |
+| `reviewer` | VETO 권한, 빌드/테스트/보안 검증 |
+| `devops` | GitHub PR/Issue 관리, 문서 유지보수 |
 
-### Skills (재사용 가능 도구)
-`build-validator`, `git-toolkit`, `db-manager`, `code-quality`
+### Skills (6개)
 
-> 상세 역할 및 가이드는 `.claude/agents/`, `.claude/skills/` 참조
+| Skill | 역할 |
+|-------|------|
+| `domain-baseball` | 야구 규칙 검증 체크리스트 |
+| `backend-patterns` | Kotlin/Spring Boot 컨벤션 |
+| `git-workflow` | GitHub 자동화, CI/CD 연동 |
+| `quality-metrics` | 빌드/테스트/커버리지/정적분석 |
+| `security-audit` | OWASP Top 10 보안 체크리스트 |
+| `db-manager` | PostgreSQL/PostGIS 쿼리 |
+
+### Rules (절대 규칙)
+
+| Rule | 내용 |
+|------|------|
+| `dependency` | 멀티모듈 의존성 방향 규칙 |
+| `security` | Zero Entity Leak, OWASP 보안 규칙 |
+| `tdd` | Core/Service 계층 TDD 필수, 80% 커버리지 |
+
+### Commands (슬래시 명령어)
+
+| Command | 기능 |
+|---------|------|
+| `/tdd` | TDD 워크플로우 활성화 |
+| `/build` | Gradle 빌드 & 테스트 실행 |
+| `/review` | 코드 품질 & 보안 검증 |
+| `/pr` | GitHub PR 생성 |
 
 ---
 
@@ -89,30 +117,42 @@ nextup-api → nextup-infrastructure → nextup-core → nextup-common
 | 1 | CLAUDE.md 의존성 규칙 위반 | 🔴 즉시 REJECT |
 | 2 | `./gradlew build` 실패 | 🔴 즉시 REJECT |
 | 3 | 테스트 실패 | 🔴 즉시 REJECT |
-| 4 | `security-auditor` Critical/High 취약점 | 🔴 즉시 REJECT |
+| 4 | 보안 취약점 (CRITICAL/HIGH) | 🔴 즉시 REJECT |
 | 5 | Entity 직접 노출 (Zero Entity Leak 위반) | 🔴 즉시 REJECT |
-| 6 | `baseball-expert` REJECT 판정 | 🟠 해당 판정 존중 |
+| 6 | 야구 규칙 위반 | 🟠 REJECT |
 | 7 | ApiResponse 미사용 | 🟠 REJECT |
 | 8 | CustomException 미사용 | 🟠 REJECT |
 | 9 | 커밋/PR 컨벤션 위반 | 🟠 REJECT |
-| 10 | `code-quality` detekt bugs 발견 | 🟠 REJECT |
+| 10 | detekt bugs 발견 | 🟠 REJECT |
+| 11 | 커버리지 80% 미달 | 🟠 REJECT |
 
 **거부권은 절대적이며, 다른 에이전트가 무효화할 수 없습니다.**
 
-> 상세 검증 항목은 `.claude/agents/reviewer.md` 참조
-
 ---
 
-## 📂 Output Structure
+## 📂 Output Structure & Transparency Rules
+
+### 디렉토리 구조
 
 ```
 outputs/
-├── briefs/          # 구현 설계도
-├── reports/         # 검수/감사 보고서
-├── quality/         # 정적 분석 결과
-├── docs/            # API 명세, ADR
-└── build/           # 테스트 결과
+├── summary.md           # 복잡한 작업 협업 요약 (자동 갱신)
+├── briefs/              # 구현 설계도 (planner)
+├── reports/             # 검수/감사 보고서 (reviewer)
+├── quality/             # 정적 분석 결과
+├── docs/                # API 명세, ADR (architect)
+├── build/               # 빌드/테스트 결과
+└── agents-trace/        # 상세 추적 로그 (명시 요청 시)
 ```
+
+### 자동 생성 조건
+
+| 상황 | 생성 위치 | 내용 |
+|------|-----------|------|
+| 에이전트 3개 이상 협업 | `outputs/summary.md` | 협업 과정 요약 |
+| reviewer REJECT | `outputs/reports/review-reject-{date}.md` | 거부 사유 및 판정 |
+| 빌드/테스트 실패 | `outputs/build/failure-{date}.log` | 실패 원인 분석 |
+| 사용자 명시 요청 | `outputs/agents-trace/` | 상세 추적 로그 |
 
 ---
 
@@ -126,11 +166,13 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-01-23 | Agent/Skill 구조 개선 (13개→5개 Agent, 4개→6개 Skill) |
+| 2026-01-23 | Rules, Commands 추가 |
+| 2026-01-23 | Jacoco + Codecov 설정 추가 |
+| 2026-01-23 | Output Structure 투명성 규칙 추가 |
 | 2026-01-22 | 헌법 리팩토링 - 상세 가이드 Agent/Skill로 분리 |
 | 2026-01-22 | PR Convention 추가 |
 | 2026-01-21 | JPA Convention, MCP 연동 추가 |
-| 2025-01-21 | Architecture Philosophy, Error Standards 추가 |
-| 2025-01-20 | Agent/Skill 아키텍처, 초기 문서 생성 |
 
 ---
 
@@ -138,9 +180,16 @@ outputs/
 
 | 주제 | 참조 문서 |
 |------|-----------|
-| API/DTO/에러 처리 | `.claude/agents/api-specialist.md` |
-| JPA/Entity 규칙 | `.claude/agents/modeler.md` |
-| Git/PR 컨벤션 | `.claude/skills/git-toolkit/SKILL.md` |
-| Reviewer 검증 상세 | `.claude/agents/reviewer.md` |
-| 보안 감사 | `.claude/agents/security-auditor.md` |
-| 야구 규칙 | `.claude/agents/baseball-expert.md` |
+| 구현 계획 수립 | `.claude/agents/planner.md` |
+| Entity/Repository 설계 | `.claude/agents/architect.md` |
+| Controller/DTO 구현 | `.claude/agents/implementer.md` |
+| 코드 검수 | `.claude/agents/reviewer.md` |
+| GitHub 관리 | `.claude/agents/devops.md` |
+| 야구 규칙 | `.claude/skills/domain-baseball/SKILL.md` |
+| Kotlin/Spring 패턴 | `.claude/skills/backend-patterns/SKILL.md` |
+| Git/CI/CD | `.claude/skills/git-workflow/SKILL.md` |
+| 품질/커버리지 | `.claude/skills/quality-metrics/SKILL.md` |
+| 보안 체크 | `.claude/skills/security-audit/SKILL.md` |
+| 의존성 규칙 | `.claude/rules/dependency.md` |
+| 보안 규칙 | `.claude/rules/security.md` |
+| TDD 규칙 | `.claude/rules/tdd.md` |
