@@ -103,16 +103,30 @@ nextup-api → nextup-infrastructure → nextup-core → nextup-common
 
 ---
 
-## 📂 Output Structure
+## 📂 Output Structure & Transparency Rules
+
+### 디렉토리 구조
 
 ```
 outputs/
-├── briefs/          # 구현 설계도
-├── reports/         # 검수/감사 보고서
-├── quality/         # 정적 분석 결과
-├── docs/            # API 명세, ADR
-└── build/           # 테스트 결과
+├── summary.md           # 복잡한 작업 협업 요약 (자동 갱신)
+├── briefs/              # 구현 설계도 (planner)
+├── reports/             # 검수/감사 보고서 (reviewer, baseball-expert)
+├── quality/             # 정적 분석 결과 (code-quality)
+├── docs/                # API 명세, ADR (tech-lead)
+├── build/               # 빌드/테스트 결과
+└── agents-trace/        # 상세 추적 로그 (명시 요청 시)
 ```
+
+### 자동 생성 조건
+
+| 상황 | 생성 위치 | 내용 |
+|------|-----------|------|
+| 에이전트 3개 이상 협업 | `outputs/summary.md` | 협업 과정 요약 |
+| reviewer REJECT | `outputs/reports/review-reject-{date}.md` | 거부 사유 및 판정 |
+| baseball-expert 판정 | `outputs/reports/baseball-review-{date}.md` | 규칙 검증 결과 |
+| 빌드/테스트 실패 | `outputs/build/failure-{date}.log` | 실패 원인 분석 |
+| 사용자 명시 요청 | `outputs/agents-trace/` | 상세 추적 로그 |
 
 ---
 
@@ -126,6 +140,7 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-01-23 | Output Structure 투명성 규칙 추가 (에이전트 협업 추적) |
 | 2026-01-22 | 헌법 리팩토링 - 상세 가이드 Agent/Skill로 분리 |
 | 2026-01-22 | PR Convention 추가 |
 | 2026-01-21 | JPA Convention, MCP 연동 추가 |
