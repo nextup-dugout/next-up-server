@@ -1,0 +1,49 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecovyml-reference
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        informational: false
+    patch:
+      default:
+        target: 80%
+        threshold: 2%
+        informational: false
+
+# PR에 커버리지 코멘트 추가
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+
+# 파일/디렉토리 무시
+ignore:
+  - "**/test/**"
+  - "**/generated/**"
+  - "**/*Config.kt"
+  - "**/*Application.kt"
+
+# 플래그 설정 (모듈별 커버리지)
+flags:
+  core:
+    paths:
+      - nextup-core/
+    carryforward: true
+  infrastructure:
+    paths:
+      - nextup-infrastructure/
+    carryforward: true
+  api:
+    paths:
+      - nextup-api/
+    carryforward: true
+
+# GitHub 체크 설정
+github_checks:
+  annotations: true
