@@ -252,6 +252,18 @@ EOF
 
 ---
 
+## PR 제목 규칙
+
+PR 제목은 **브랜치명을 그대로 사용**합니다.
+
+| 브랜치명 | PR 제목 |
+|---------|---------|
+| `feat/#1-agent-skill-architecture` | `feat/#1-agent-skill-architecture` |
+| `fix/#2-build-failure` | `fix/#2-build-failure` |
+| `refactor/#3-player-service` | `refactor/#3-player-service` |
+
+---
+
 ## 커밋 메시지 컨벤션 (Udacity Style)
 
 ```
