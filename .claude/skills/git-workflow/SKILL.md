@@ -1,3 +1,4 @@
+
 # Git Workflow - GitHub Automation & CI/CD
 
 > GitHub 자동화 및 CI/CD 연동을 위한 워크플로우 정의
@@ -24,12 +25,12 @@
 
 ## PR 제목 규칙
 
-**PR 제목은 브랜치명을 그대로 사용합니다.**
+**`type: 설명 (#이슈번호)` 형식을 사용합니다.**
 
 | 브랜치명 | PR 제목 |
 |---------|---------|
-| `feat/#1-agent-skill-architecture` | `feat/#1-agent-skill-architecture` |
-| `fix/#2-build-failure` | `fix/#2-build-failure` |
+| `feat/#1-agent-skill-architecture` | `feat: Agent Skill 아키텍처 구축 (#1)` |
+| `fix/#2-build-failure` | `fix: 빌드 실패 수정 (#2)` |
 
 ## 커밋 메시지 컨벤션 (Udacity Style)
 
