@@ -28,6 +28,7 @@ ignore:
   - "**/generated/**"
   - "**/*Config.kt"
   - "**/*Application.kt"
+  - "**/dto/**"  # DTO 클래스 제외 (테스트 불필요)
 
 # 플래그 설정 (모듈별 커버리지)
 flags:
