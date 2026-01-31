@@ -28,6 +28,15 @@ subprojects {
             xml.required = true
             html.required = true
         }
+        classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/*\$default*" // Kotlin default parameter methods
+                    )
+                }
+            })
+        )
     }
 
     tasks.withType<JacocoCoverageVerification> {
@@ -38,6 +47,15 @@ subprojects {
                 }
             }
         }
+        classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/*\$default*" // Kotlin default parameter methods
+                    )
+                }
+            })
+        )
     }
 
     // test 태스크에 jacoco 연동
