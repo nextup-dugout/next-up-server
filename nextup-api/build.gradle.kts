@@ -36,3 +36,21 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    "**/dto/**",  // DTO 클래스 제외
+                    "**/NextUpApplication*"  // Spring Boot main 클래스 제외
+                )
+            }
+        })
+    )
+}
