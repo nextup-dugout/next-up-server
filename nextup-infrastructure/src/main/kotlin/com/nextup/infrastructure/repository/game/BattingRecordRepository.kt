@@ -118,4 +118,19 @@ interface BattingRecordRepository : JpaRepository<BattingRecord, Long> {
         LIMIT :limit
     """)
     fun findTopByRunsBattedIn(@Param("limit") limit: Int): List<BattingRecord>
+
+    /**
+     * 선수의 특정 연도 타격 기록을 조회합니다.
+     */
+    @Query("""
+        SELECT br FROM BattingRecord br
+        JOIN br.gamePlayer gp
+        WHERE gp.player.id = :playerId
+        AND FUNCTION('YEAR', gp.game.scheduledAt) = :year
+        ORDER BY gp.game.scheduledAt DESC
+    """)
+    fun findAllByPlayerIdAndYear(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int
+    ): List<BattingRecord>
 }
