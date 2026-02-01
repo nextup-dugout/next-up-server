@@ -180,4 +180,19 @@ interface PitchingRecordRepository : JpaRepository<PitchingRecord, Long> {
         LIMIT :limit
     """)
     fun findTopBySaves(@Param("limit") limit: Int): List<PitchingRecord>
+
+    /**
+     * 선수의 특정 연도 투수 기록을 조회합니다.
+     */
+    @Query("""
+        SELECT pr FROM PitchingRecord pr
+        JOIN pr.gamePlayer gp
+        WHERE gp.player.id = :playerId
+        AND FUNCTION('YEAR', gp.game.scheduledAt) = :year
+        ORDER BY gp.game.scheduledAt DESC
+    """)
+    fun findAllByPlayerIdAndYear(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int
+    ): List<PitchingRecord>
 }
