@@ -4,5 +4,6 @@ include(
     "nextup-common",
     "nextup-core",
     "nextup-infrastructure",
-    "nextup-api"
+    "nextup-api",
+    "nextup-backoffice"
 )
