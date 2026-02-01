@@ -1,4 +1,4 @@
-package com.nextup.backoffice.dto.league
+package com.nextup.scorer.dto.league
 
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank

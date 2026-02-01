@@ -1,12 +1,12 @@
-package com.nextup.backoffice.dto.league
+package com.nextup.scorer.dto.league
 
 import com.nextup.core.domain.league.League
 import java.time.Instant
 
 /**
- * 리그 관리자 응답 DTO
+ * 리그 응답 DTO (기록원용)
  */
-data class LeagueAdminResponse(
+data class LeagueResponse(
     val id: Long,
     val associationId: Long,
     val associationName: String,
@@ -21,8 +21,8 @@ data class LeagueAdminResponse(
     val updatedAt: Instant
 ) {
     companion object {
-        fun from(league: League): LeagueAdminResponse {
-            return LeagueAdminResponse(
+        fun from(league: League): LeagueResponse {
+            return LeagueResponse(
                 id = league.id,
                 associationId = league.association.id,
                 associationName = league.association.name,
