@@ -37,17 +37,35 @@ Core가 Infra를 알면 절대 안 됨
 ## 🏗️ Multi-Module Dependency Rules (불변)
 
 ```
-nextup-api → nextup-infrastructure → nextup-core → nextup-common
+nextup-api        ─┐
+nextup-backoffice ─┼→ nextup-infrastructure → nextup-core → nextup-common
+nextup-scorer     ─┘
 ```
+
+### 모듈별 역할
+
+| 모듈 | 역할 | 포트 |
+|------|------|------|
+| `nextup-api` | 일반 사용자용 공개 API (조회 위주) | 8080 |
+| `nextup-backoffice` | 관리자 CRUD (협회/리그/팀/시스템 관리) | 8081 |
+| `nextup-scorer` | 실시간 경기 기록 (기록원 전용, WebSocket) | 8082 |
+| `nextup-infrastructure` | Repository, 외부 연동, 공통 Security | - |
+| `nextup-core` | 도메인 엔티티, 비즈니스 로직 | - |
+| `nextup-common` | 공통 유틸리티, Exception | - |
+
+### 의존성 매트릭스
 
 | 모듈 | 허용된 의존성 | 금지 |
 |------|---------------|------|
-| `nextup-api` | `infra`, `core`, `common` | - |
-| `nextup-core` | `common` **ONLY** | infra, api 절대 금지 |
-| `nextup-infrastructure` | `core`, `common` | api 금지 |
+| `nextup-api` | `infra`, `core`, `common` | backoffice, scorer |
+| `nextup-backoffice` | `infra`, `core`, `common` | api, scorer |
+| `nextup-scorer` | `infra`, `core`, `common` | api, backoffice |
+| `nextup-infrastructure` | `core`, `common` | api, backoffice, scorer |
+| `nextup-core` | `common` **ONLY** | infra, api, backoffice, scorer 절대 금지 |
 | `nextup-common` | **NONE** (리프 모듈) | 모든 의존성 금지 |
 
 > ⚠️ **순환 참조 절대 금지** / **Common에 비즈니스 로직 금지**
+> ⚠️ **API 계층 모듈(api, backoffice, scorer)간 상호 의존 금지**
 
 ---
 
@@ -166,6 +184,7 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-02-01 | 모듈 구조 확장 (4개→6개): backoffice, scorer 모듈 추가 |
 | 2026-01-23 | Agent/Skill 구조 개선 (13개→5개 Agent, 4개→6개 Skill) |
 | 2026-01-23 | Rules, Commands 추가 |
 | 2026-01-23 | Jacoco + Codecov 설정 추가 |
