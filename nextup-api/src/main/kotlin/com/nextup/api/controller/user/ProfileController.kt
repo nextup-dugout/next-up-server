@@ -4,14 +4,13 @@ import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.user.*
 import com.nextup.infrastructure.service.user.UserService
 import jakarta.validation.Valid
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
  * 사용자 프로필 API Controller
  *
  * 로그인한 사용자가 본인 정보를 조회/수정하는 API를 제공합니다.
- *
- * TODO: Spring Security 구현 후 @AuthenticationPrincipal로 현재 사용자 주입
  */
 @RestController
 @RequestMapping("/api/v1/me")
@@ -21,12 +20,10 @@ class ProfileController(
 
     /**
      * 내 프로필을 조회합니다.
-     *
-     * TODO: 인증 구현 후 userId를 @AuthenticationPrincipal에서 추출
      */
     @GetMapping
     fun getMyProfile(
-        @RequestHeader("X-User-Id") userId: Long // 임시: 인증 구현 전까지 헤더로 전달
+        @AuthenticationPrincipal userId: Long
     ): ApiResponse<ProfileResponse> {
         val user = userService.getActiveById(userId)
         return ApiResponse.success(ProfileResponse.from(user))
@@ -37,7 +34,7 @@ class ProfileController(
      */
     @PutMapping
     fun updateMyProfile(
-        @RequestHeader("X-User-Id") userId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: UpdateProfileRequest
     ): ApiResponse<ProfileResponse> {
         val user = userService.updateProfile(
@@ -53,7 +50,7 @@ class ProfileController(
      */
     @GetMapping("/oauth-accounts")
     fun getLinkedOAuthAccounts(
-        @RequestHeader("X-User-Id") userId: Long
+        @AuthenticationPrincipal userId: Long
     ): ApiResponse<List<LinkedOAuthProvider>> {
         val user = userService.getActiveById(userId)
         val providers = user.oauthAccounts.map {
@@ -71,7 +68,7 @@ class ProfileController(
      */
     @DeleteMapping
     fun deactivateMyAccount(
-        @RequestHeader("X-User-Id") userId: Long
+        @AuthenticationPrincipal userId: Long
     ): ApiResponse<Unit> {
         userService.deactivate(userId)
         return ApiResponse.success(Unit)
