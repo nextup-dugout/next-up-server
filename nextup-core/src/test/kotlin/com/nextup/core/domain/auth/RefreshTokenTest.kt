@@ -115,6 +115,37 @@ class RefreshTokenTest {
             // when & then
             assertThat(refreshToken.isExpired).isFalse()
         }
+
+        @Test
+        fun `should return true when token is expired`() {
+            // given - use reflection to create expired token
+            val expiredToken = createExpiredRefreshToken(1L, "expired-token")
+
+            // when & then
+            assertThat(expiredToken.isExpired).isTrue()
+        }
+    }
+
+    private fun createExpiredRefreshToken(userId: Long, token: String): RefreshToken {
+        val constructor = RefreshToken::class.java.getDeclaredConstructor(
+            Long::class.java,
+            String::class.java,
+            Instant::class.java,
+            Boolean::class.java,
+            String::class.java,
+            String::class.java,
+            Long::class.java
+        )
+        constructor.isAccessible = true
+        return constructor.newInstance(
+            userId,
+            token,
+            Instant.now().minus(1, ChronoUnit.HOURS),
+            false,
+            null,
+            null,
+            0L
+        )
     }
 
     @Nested
@@ -146,6 +177,15 @@ class RefreshTokenTest {
 
             // when & then
             assertThat(refreshToken.isValid).isFalse()
+        }
+
+        @Test
+        fun `should return false when token is expired`() {
+            // given - use reflection to create expired token
+            val expiredToken = createExpiredRefreshToken(1L, "expired-token")
+
+            // when & then
+            assertThat(expiredToken.isValid).isFalse()
         }
     }
 
@@ -218,6 +258,17 @@ class RefreshTokenTest {
             assertThatThrownBy { refreshToken.validate() }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("revoked")
+        }
+
+        @Test
+        fun `should throw when token is expired`() {
+            // given - use reflection to create expired token
+            val expiredToken = createExpiredRefreshToken(1L, "expired-token")
+
+            // when & then
+            assertThatThrownBy { expiredToken.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("expired")
         }
     }
 
