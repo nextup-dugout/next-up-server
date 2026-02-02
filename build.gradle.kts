@@ -23,6 +23,21 @@ subprojects {
         toolVersion = "0.8.12"
     }
 
+    // Jacoco 커버리지 제외 대상 (codecov.yml과 동일하게 설정)
+    val jacocoExcludes = listOf(
+        "**/*\$default*",                    // Kotlin default parameter methods
+        "**/config/*",                        // Config 클래스
+        "**/config/**",                       // Config 하위 클래스
+        "**/*Config.class",                   // Config로 끝나는 클래스
+        "**/*Config\$*.class",                // Config 내부 클래스
+        "**/*Application.class",              // Application 클래스
+        "**/*Application\$*.class",           // Application 내부 클래스
+        "**/dto/*",                           // DTO 클래스
+        "**/dto/**",                          // DTO 하위 클래스
+        "**/exception/*",                     // Exception 클래스
+        "**/exception/**"                     // Exception 하위 클래스
+    )
+
     tasks.withType<JacocoReport> {
         reports {
             xml.required = true
@@ -31,9 +46,7 @@ subprojects {
         classDirectories.setFrom(
             files(classDirectories.files.map {
                 fileTree(it) {
-                    exclude(
-                        "**/*\$default*" // Kotlin default parameter methods
-                    )
+                    exclude(jacocoExcludes)
                 }
             })
         )
@@ -50,9 +63,7 @@ subprojects {
         classDirectories.setFrom(
             files(classDirectories.files.map {
                 fileTree(it) {
-                    exclude(
-                        "**/*\$default*" // Kotlin default parameter methods
-                    )
+                    exclude(jacocoExcludes)
                 }
             })
         )
