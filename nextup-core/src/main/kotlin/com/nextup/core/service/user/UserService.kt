@@ -1,11 +1,11 @@
-package com.nextup.infrastructure.service.user
+package com.nextup.core.service.user
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
-import com.nextup.infrastructure.repository.user.OAuthAccountRepository
-import com.nextup.infrastructure.repository.user.UserRepository
+import com.nextup.core.port.repository.OAuthAccountRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class UserService(
-    private val userRepository: UserRepository,
-    private val oauthAccountRepository: OAuthAccountRepository
+    private val userRepository: UserRepositoryPort,
+    private val oauthAccountRepository: OAuthAccountRepositoryPort
 ) {
 
     // ========== CREATE ==========
@@ -93,8 +93,8 @@ class UserService(
      * ID로 사용자를 조회합니다.
      */
     fun getById(id: Long): User {
-        return userRepository.findById(id)
-            .orElseThrow { UserNotFoundException(id) }
+        return userRepository.findByIdOrNull(id)
+            ?: throw UserNotFoundException(id)
     }
 
     /**
@@ -141,7 +141,7 @@ class UserService(
      * 모든 사용자를 페이징으로 조회합니다 (관리자용).
      */
     fun getAll(pageable: Pageable): Page<User> {
-        return userRepository.findAll(pageable)
+        return userRepository.findAllByIsActive(true, pageable)
     }
 
     /**

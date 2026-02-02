@@ -2,7 +2,7 @@ package com.nextup.api.controller.association
 
 import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.core.domain.association.Association
-import com.nextup.infrastructure.service.association.AssociationService
+import com.nextup.core.service.association.AssociationService
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

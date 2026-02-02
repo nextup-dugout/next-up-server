@@ -7,6 +7,7 @@ import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
+import org.springframework.data.repository.findByIdOrNull
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

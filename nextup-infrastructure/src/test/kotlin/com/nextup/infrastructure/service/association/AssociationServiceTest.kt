@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.association
+package com.nextup.core.service.association
 
 import com.nextup.common.exception.AssociationNameDuplicateException
 import com.nextup.common.exception.AssociationNotFoundException
@@ -76,7 +76,7 @@ class AssociationServiceTest {
             // given
             val id = 1L
             val association = createAssociation(id, "서울시야구협회")
-            every { associationRepository.findById(id) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(id) } returns association
 
             // when
             val result = associationService.getById(id)
@@ -90,7 +90,7 @@ class AssociationServiceTest {
         fun `should throw exception when not found`() {
             // given
             val id = 999L
-            every { associationRepository.findById(id) } returns Optional.empty()
+            every { associationRepository.findByIdOrNull(id) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -129,7 +129,7 @@ class AssociationServiceTest {
             // given
             val id = 1L
             val association = createAssociation(id, "서울시야구협회")
-            every { associationRepository.findById(id) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(id) } returns association
 
             // when
             val result = associationService.update(
@@ -153,7 +153,7 @@ class AssociationServiceTest {
             // given
             val id = 1L
             val association = createAssociation(id, "서울시야구협회")
-            every { associationRepository.findById(id) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(id) } returns association
 
             // when
             val result = associationService.deactivate(id)
@@ -167,7 +167,7 @@ class AssociationServiceTest {
             // given
             val id = 1L
             val association = createAssociation(id, "서울시야구협회").apply { deactivate() }
-            every { associationRepository.findById(id) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(id) } returns association
 
             // when
             val result = associationService.activate(id)

@@ -2,7 +2,7 @@ package com.nextup.api.controller.league
 
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.service.league.LeagueService
+import com.nextup.core.service.league.LeagueService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.game
+package com.nextup.core.service.game
 
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.PitchingRecordNotFoundException
@@ -42,7 +42,7 @@ class PitchingRecordServiceTest {
         // given
         val gamePlayerId = 1L
         val isStartingPitcher = false
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.of(mockGamePlayer)
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns mockGamePlayer
         every { pitchingRecordRepository.findByGamePlayer(mockGamePlayer) } returns null
         every { pitchingRecordRepository.save(any()) } returns mockPitchingRecord
         every { mockPitchingRecord.id } returns 100L
@@ -61,7 +61,7 @@ class PitchingRecordServiceTest {
         // given
         val gamePlayerId = 1L
         val isStartingPitcher = true
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.of(mockGamePlayer)
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns mockGamePlayer
         every { pitchingRecordRepository.findByGamePlayer(mockGamePlayer) } returns null
         every { pitchingRecordRepository.save(any()) } returns mockPitchingRecord
         every { mockPitchingRecord.id } returns 100L
@@ -79,7 +79,7 @@ class PitchingRecordServiceTest {
     fun `should throw GamePlayerNotFoundException when GamePlayer not found on create`() {
         // given
         val gamePlayerId = 1L
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.empty()
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns null
 
         // when & then
         assertThrows<GamePlayerNotFoundException> {
@@ -91,7 +91,7 @@ class PitchingRecordServiceTest {
     fun `should throw RecordAlreadyExistsException when pitching record already exists`() {
         // given
         val gamePlayerId = 1L
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.of(mockGamePlayer)
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns mockGamePlayer
         every { pitchingRecordRepository.findByGamePlayer(mockGamePlayer) } returns mockPitchingRecord
 
         // when & then

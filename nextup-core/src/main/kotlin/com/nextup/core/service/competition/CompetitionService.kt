@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.competition
+package com.nextup.core.service.competition
 
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidCompetitionStateException
@@ -6,8 +6,8 @@ import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
-import com.nextup.infrastructure.repository.competition.CompetitionRepository
-import com.nextup.infrastructure.repository.league.LeagueRepository
+import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.LeagueRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -20,8 +20,8 @@ import java.time.LocalDate
 @Service
 @Transactional(readOnly = true)
 class CompetitionService(
-    private val competitionRepository: CompetitionRepository,
-    private val leagueRepository: LeagueRepository
+    private val competitionRepository: CompetitionRepositoryPort,
+    private val leagueRepository: LeagueRepositoryPort
 ) {
 
     /**
@@ -40,8 +40,8 @@ class CompetitionService(
         maxTeams: Int? = null
     ): Competition {
         // 리그 존재 확인
-        val league = leagueRepository.findById(leagueId)
-            .orElseThrow { LeagueNotFoundException(leagueId) }
+        val league = leagueRepository.findByIdOrNull(leagueId)
+            ?: throw LeagueNotFoundException(leagueId)
 
         // 동일한 리그, 연도, 시즌의 대회가 이미 존재하는지 확인
         competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season)?.let {
@@ -69,8 +69,8 @@ class CompetitionService(
      * ID로 대회를 조회합니다.
      */
     fun getById(id: Long): Competition {
-        return competitionRepository.findById(id)
-            .orElseThrow { CompetitionNotFoundException(id) }
+        return competitionRepository.findByIdOrNull(id)
+            ?: throw CompetitionNotFoundException(id)
     }
 
     /**

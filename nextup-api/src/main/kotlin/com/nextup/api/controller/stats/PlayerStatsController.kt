@@ -8,7 +8,7 @@ import com.nextup.api.dto.stats.SeasonPitchingStatsResponse
 import com.nextup.api.mapper.stats.toResponse
 import com.nextup.api.mapper.stats.toSeasonBattingResponse
 import com.nextup.api.mapper.stats.toSeasonPitchingResponse
-import com.nextup.infrastructure.service.stats.PlayerStatsService
+import com.nextup.core.service.stats.PlayerStatsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping

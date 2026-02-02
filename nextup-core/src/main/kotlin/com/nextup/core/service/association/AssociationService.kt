@@ -1,9 +1,9 @@
-package com.nextup.infrastructure.service.association
+package com.nextup.core.service.association
 
 import com.nextup.common.exception.AssociationNameDuplicateException
 import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.core.domain.association.Association
-import com.nextup.infrastructure.repository.association.AssociationRepository
+import com.nextup.core.port.repository.AssociationRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AssociationService(
-    private val associationRepository: AssociationRepository
+    private val associationRepository: AssociationRepositoryPort
 ) {
 
     /**
@@ -51,8 +51,8 @@ class AssociationService(
      * ID로 협회를 조회합니다.
      */
     fun getById(id: Long): Association {
-        return associationRepository.findById(id)
-            .orElseThrow { AssociationNotFoundException(id) }
+        return associationRepository.findByIdOrNull(id)
+            ?: throw AssociationNotFoundException(id)
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.user
+package com.nextup.core.service.user
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.user.OAuthAccount
@@ -192,7 +192,7 @@ class UserServiceTest {
         fun `should return user when found`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.getById(1L)
@@ -205,7 +205,7 @@ class UserServiceTest {
         @Test
         fun `should throw exception when not found`() {
             // given
-            every { userRepository.findById(999L) } returns Optional.empty()
+            every { userRepository.findByIdOrNull(999L) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -222,7 +222,7 @@ class UserServiceTest {
         fun `should return active user`() {
             // given
             val user = createTestUser(1L, "active@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.getActiveById(1L)
@@ -235,7 +235,7 @@ class UserServiceTest {
         fun `should throw exception when user is deactivated`() {
             // given
             val user = createTestUser(1L, "inactive@example.com").apply { deactivate() }
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when & then
             assertThatThrownBy {
@@ -372,7 +372,7 @@ class UserServiceTest {
                 createTestUser(3L, "user3@example.com")
             )
             val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAll(pageable) } returns PageImpl(users)
+            every { userRepository.findAllByIsActive(true, pageable) } returns PageImpl(users)
 
             // when
             val result = userService.getAll(pageable)
@@ -465,7 +465,7 @@ class UserServiceTest {
         fun `should update profile successfully`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.updateProfile(
@@ -483,7 +483,7 @@ class UserServiceTest {
         fun `should keep existing nickname when null provided`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.updateProfile(
@@ -506,7 +506,7 @@ class UserServiceTest {
         fun `should change password successfully`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.changePassword(1L, "new_encoded_password")
@@ -524,7 +524,7 @@ class UserServiceTest {
         fun `should add role to user`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.addRole(1L, Role.ADMIN)
@@ -537,7 +537,7 @@ class UserServiceTest {
         fun `should remove role from user`() {
             // given
             val user = createTestUser(1L, "test@example.com").apply { addRole(Role.SCORER) }
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.removeRole(1L, Role.SCORER)
@@ -555,7 +555,7 @@ class UserServiceTest {
         fun `should link oauth account successfully`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
             every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_new") } returns null
 
             // when
@@ -573,7 +573,7 @@ class UserServiceTest {
             val existingOAuth = mockk<OAuthAccount>()
             every { existingOAuth.user } returns anotherUser
 
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
             every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_used") } returns existingOAuth
 
             // when & then
@@ -589,7 +589,7 @@ class UserServiceTest {
             val existingOAuth = mockk<OAuthAccount>()
             every { existingOAuth.user } returns user
 
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
             every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns existingOAuth
 
             // when - no exception should be thrown
@@ -609,7 +609,7 @@ class UserServiceTest {
             // given
             val user = createTestUser(1L, "test@example.com") // local user with password
             user.addOAuthAccount(OAuthProvider.KAKAO, "kakao_123")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.unlinkOAuthAccount(1L, OAuthProvider.KAKAO)
@@ -628,7 +628,7 @@ class UserServiceTest {
                 oauthId = "kakao_only"
             )
             setUserId(user, 1L)
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when & then
             assertThatThrownBy {
@@ -676,7 +676,7 @@ class UserServiceTest {
         fun `should deactivate user`() {
             // given
             val user = createTestUser(1L, "test@example.com")
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.deactivate(1L)
@@ -689,7 +689,7 @@ class UserServiceTest {
         fun `should activate user`() {
             // given
             val user = createTestUser(1L, "test@example.com").apply { deactivate() }
-            every { userRepository.findById(1L) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
             val result = userService.activate(1L)

@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.stats
+package com.nextup.core.service.stats
 
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
@@ -251,7 +251,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should create and return new season batting stats when not exists`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns null
             every { battingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns emptyList()
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -274,7 +274,7 @@ class PlayerStatsServiceTest {
                 setStats(pa = 4, ab = 4, h = 2)
             }
 
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
             every { battingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(record)
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -292,7 +292,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should throw exception when player not found`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.empty()
+            every { playerRepository.findByIdOrNull(playerId) } returns null
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -308,7 +308,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should create and return new season pitching stats when not exists`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns null
             every { pitchingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns emptyList()
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
@@ -337,7 +337,7 @@ class PlayerStatsServiceTest {
                 )
             }
 
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
             every { pitchingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(record)
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
@@ -356,7 +356,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should throw exception when player not found`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.empty()
+            every { playerRepository.findByIdOrNull(playerId) } returns null
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -372,7 +372,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should create and return new career batting stats when not exists`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerBattingStatsRepository.findByPlayerId(playerId) } returns null
             every { battingRecordRepository.findAllByPlayerId(playerId) } returns emptyList()
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -397,7 +397,7 @@ class PlayerStatsServiceTest {
             val record1 = createMockBattingRecord(game2023, 4, 4, 2)
             val record2 = createMockBattingRecord(game2024, 4, 3, 1)
 
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerBattingStatsRepository.findByPlayerId(playerId) } returns existingStats
             every { battingRecordRepository.findAllByPlayerId(playerId) } returns listOf(record1, record2)
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -421,7 +421,7 @@ class PlayerStatsServiceTest {
         @Test
         fun `should create and return new career pitching stats when not exists`() {
             // given
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerPitchingStatsRepository.findByPlayerId(playerId) } returns null
             every { pitchingRecordRepository.findAllByPlayerId(playerId) } returns emptyList()
             every { careerPitchingStatsRepository.save(any()) } answers { firstArg() }
@@ -446,7 +446,7 @@ class PlayerStatsServiceTest {
             val record1 = createMockPitchingRecord(game2023, 18, 2, 2, 6, true, PitchingDecision.WIN)
             val record2 = createMockPitchingRecord(game2024, 21, 3, 3, 5, true, PitchingDecision.LOSS)
 
-            every { playerRepository.findById(playerId) } returns Optional.of(testPlayer)
+            every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerPitchingStatsRepository.findByPlayerId(playerId) } returns existingStats
             every { pitchingRecordRepository.findAllByPlayerId(playerId) } returns listOf(record1, record2)
             every { careerPitchingStatsRepository.save(any()) } answers { firstArg() }

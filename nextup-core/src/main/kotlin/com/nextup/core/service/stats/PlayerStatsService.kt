@@ -1,17 +1,17 @@
-package com.nextup.infrastructure.service.stats
+package com.nextup.core.service.stats
 
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
-import com.nextup.infrastructure.repository.PlayerRepository
-import com.nextup.infrastructure.repository.game.BattingRecordRepository
-import com.nextup.infrastructure.repository.game.PitchingRecordRepository
-import com.nextup.infrastructure.repository.stats.CareerBattingStatsRepository
-import com.nextup.infrastructure.repository.stats.CareerPitchingStatsRepository
-import com.nextup.infrastructure.repository.stats.SeasonBattingStatsRepository
-import com.nextup.infrastructure.repository.stats.SeasonPitchingStatsRepository
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -23,13 +23,13 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class PlayerStatsService(
-    private val playerRepository: PlayerRepository,
-    private val seasonBattingStatsRepository: SeasonBattingStatsRepository,
-    private val seasonPitchingStatsRepository: SeasonPitchingStatsRepository,
-    private val careerBattingStatsRepository: CareerBattingStatsRepository,
-    private val careerPitchingStatsRepository: CareerPitchingStatsRepository,
-    private val battingRecordRepository: BattingRecordRepository,
-    private val pitchingRecordRepository: PitchingRecordRepository
+    private val playerRepository: PlayerRepositoryPort,
+    private val seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort,
+    private val seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort,
+    private val careerBattingStatsRepository: CareerBattingStatsRepositoryPort,
+    private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
+    private val battingRecordRepository: BattingRecordRepositoryPort,
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort
 ) {
 
     // ========== 조회 메서드 ==========
@@ -288,9 +288,8 @@ class PlayerStatsService(
     // ========== 헬퍼 메서드 ==========
 
     private fun findPlayer(playerId: Long): Player {
-        return playerRepository.findById(playerId).orElseThrow {
-            IllegalArgumentException("선수 ID $playerId 를 찾을 수 없습니다.")
-        }
+        return playerRepository.findByIdOrNull(playerId)
+            ?: throw IllegalArgumentException("선수 ID $playerId 를 찾을 수 없습니다.")
     }
 
     /**

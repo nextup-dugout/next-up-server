@@ -4,7 +4,7 @@ import com.nextup.backoffice.dto.association.AssociationAdminResponse
 import com.nextup.backoffice.dto.association.CreateAssociationRequest
 import com.nextup.backoffice.dto.association.UpdateAssociationRequest
 import com.nextup.backoffice.dto.common.ApiResponse
-import com.nextup.infrastructure.service.association.AssociationService
+import com.nextup.core.service.association.AssociationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

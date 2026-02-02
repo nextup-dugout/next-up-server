@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.competition
+package com.nextup.core.service.competition
 
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidCompetitionStateException
@@ -51,7 +51,7 @@ class CompetitionServiceTest {
             val season = 1
             val startDate = LocalDate.of(2025, 3, 1)
 
-            every { leagueRepository.findById(leagueId) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(leagueId) } returns league
             every { competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season) } returns null
             every { competitionRepository.save(any()) } answers { firstArg() }
 
@@ -79,7 +79,7 @@ class CompetitionServiceTest {
         fun `should throw exception when league not found`() {
             // given
             val leagueId = 999L
-            every { leagueRepository.findById(leagueId) } returns Optional.empty()
+            every { leagueRepository.findByIdOrNull(leagueId) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -102,7 +102,7 @@ class CompetitionServiceTest {
             val season = 1
             val existingCompetition = createCompetition(1L, league, "2025 춘계대회", year, season)
 
-            every { leagueRepository.findById(leagueId) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(leagueId) } returns league
             every { competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season) } returns existingCompetition
 
             // when & then
@@ -129,7 +129,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when
             val result = competitionService.getById(id)
@@ -143,7 +143,7 @@ class CompetitionServiceTest {
         fun `should throw exception when not found`() {
             // given
             val id = 999L
-            every { competitionRepository.findById(id) } returns Optional.empty()
+            every { competitionRepository.findByIdOrNull(id) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -212,7 +212,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when
             val result = competitionService.start(id)
@@ -228,7 +228,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply { start() }
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when & then
             assertThatThrownBy {
@@ -249,7 +249,7 @@ class CompetitionServiceTest {
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply { start() }
             val endDate = LocalDate.of(2025, 5, 31)
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when
             val result = competitionService.complete(id, endDate)
@@ -266,7 +266,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when & then
             assertThatThrownBy {
@@ -286,7 +286,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when
             val result = competitionService.cancel(id)
@@ -302,7 +302,7 @@ class CompetitionServiceTest {
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply { start() }
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when
             val result = competitionService.cancel(id)
@@ -321,7 +321,7 @@ class CompetitionServiceTest {
                 start()
                 complete()
             }
-            every { competitionRepository.findById(id) } returns Optional.of(competition)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when & then
             assertThatThrownBy {

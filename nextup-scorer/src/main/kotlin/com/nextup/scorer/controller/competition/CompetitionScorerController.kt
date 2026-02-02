@@ -1,6 +1,6 @@
 package com.nextup.scorer.controller.competition
 
-import com.nextup.infrastructure.service.competition.CompetitionService
+import com.nextup.core.service.competition.CompetitionService
 import com.nextup.scorer.dto.common.ApiResponse
 import com.nextup.scorer.dto.competition.CompetitionScorerResponse
 import com.nextup.scorer.dto.competition.CreateCompetitionRequest

@@ -2,7 +2,7 @@ package com.nextup.api.controller.user
 
 import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.user.*
-import com.nextup.infrastructure.service.user.UserService
+import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 

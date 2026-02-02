@@ -9,7 +9,7 @@ import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.infrastructure.repository.game.GamePlayerRepository
-import com.nextup.infrastructure.service.game.BattingRecordService
+import com.nextup.core.service.game.BattingRecordService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

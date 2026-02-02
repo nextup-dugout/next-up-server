@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.league
+package com.nextup.core.service.league
 
 import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.common.exception.LeagueNameDuplicateException
@@ -44,7 +44,7 @@ class LeagueServiceTest {
             val name = "1부 리그"
             val foundedYear = 2020
 
-            every { associationRepository.findById(associationId) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(associationId) } returns association
             every { leagueRepository.existsByAssociationIdAndName(associationId, name) } returns false
             every { leagueRepository.save(any()) } answers { firstArg() }
 
@@ -70,7 +70,7 @@ class LeagueServiceTest {
         fun `should throw exception when association not found`() {
             // given
             val associationId = 999L
-            every { associationRepository.findById(associationId) } returns Optional.empty()
+            every { associationRepository.findByIdOrNull(associationId) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -89,7 +89,7 @@ class LeagueServiceTest {
             val association = createAssociation(associationId, "서울시야구협회")
             val name = "1부 리그"
 
-            every { associationRepository.findById(associationId) } returns Optional.of(association)
+            every { associationRepository.findByIdOrNull(associationId) } returns association
             every { leagueRepository.existsByAssociationIdAndName(associationId, name) } returns true
 
             // when & then
@@ -113,7 +113,7 @@ class LeagueServiceTest {
             val id = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(id, "1부 리그", association)
-            every { leagueRepository.findById(id) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(id) } returns league
 
             // when
             val result = leagueService.getById(id)
@@ -127,7 +127,7 @@ class LeagueServiceTest {
         fun `should throw exception when not found`() {
             // given
             val id = 999L
-            every { leagueRepository.findById(id) } returns Optional.empty()
+            every { leagueRepository.findByIdOrNull(id) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -192,7 +192,7 @@ class LeagueServiceTest {
             val id = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(id, "1부 리그", association)
-            every { leagueRepository.findById(id) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(id) } returns league
 
             // when
             val result = leagueService.update(
@@ -217,7 +217,7 @@ class LeagueServiceTest {
             val id = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(id, "1부 리그", association)
-            every { leagueRepository.findById(id) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(id) } returns league
 
             // when
             val result = leagueService.deactivate(id)
@@ -232,7 +232,7 @@ class LeagueServiceTest {
             val id = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(id, "1부 리그", association).apply { deactivate() }
-            every { leagueRepository.findById(id) } returns Optional.of(league)
+            every { leagueRepository.findByIdOrNull(id) } returns league
 
             // when
             val result = leagueService.activate(id)

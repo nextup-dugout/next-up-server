@@ -1,12 +1,12 @@
-package com.nextup.infrastructure.service.game
+package com.nextup.core.service.game
 
 import com.nextup.common.exception.BattingRecordNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
-import com.nextup.infrastructure.repository.game.BattingRecordRepository
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class BattingRecordService(
-    private val battingRecordRepository: BattingRecordRepository,
-    private val gamePlayerRepository: GamePlayerRepository
+    private val battingRecordRepository: BattingRecordRepositoryPort,
+    private val gamePlayerRepository: GamePlayerRepositoryPort
 ) {
 
     /**
@@ -27,8 +27,8 @@ class BattingRecordService(
      */
     @Transactional
     fun createRecord(gamePlayerId: Long): BattingRecord {
-        val gamePlayer = gamePlayerRepository.findById(gamePlayerId)
-            .orElseThrow { GamePlayerNotFoundException(gamePlayerId) }
+        val gamePlayer = gamePlayerRepository.findByIdOrNull(gamePlayerId)
+            ?: throw GamePlayerNotFoundException(gamePlayerId)
 
         // 중복 체크
         battingRecordRepository.findByGamePlayer(gamePlayer)?.let {

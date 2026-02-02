@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.admin
+package com.nextup.core.service.admin
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.admin.OrganizationAdmin
@@ -55,7 +55,7 @@ class OrganizationAdminServiceTest {
             val organizationId = 1L
             val role = OrganizationRole.ADMIN
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, organizationType, organizationId
@@ -84,7 +84,7 @@ class OrganizationAdminServiceTest {
         fun `존재하지 않는 사용자에게는 관리자를 할당할 수 없다`() {
             // given
             val userId = 99999L
-            every { userRepository.findById(userId) } returns Optional.empty()
+            every { userRepository.findByIdOrNull(userId) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -106,7 +106,7 @@ class OrganizationAdminServiceTest {
             val organizationId = 1L
             val existingAdmin = createOrganizationAdmin(1L, user, organizationType, organizationId)
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, organizationType, organizationId
@@ -140,7 +140,7 @@ class OrganizationAdminServiceTest {
 
             val existingAdmin = createOrganizationAdmin(1L, user, OrganizationType.TEAM, team1Id)
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, OrganizationType.TEAM, team2Id
@@ -186,7 +186,7 @@ class OrganizationAdminServiceTest {
 
             val existingAdmin = createOrganizationAdmin(1L, user, OrganizationType.TEAM, team1Id)
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, OrganizationType.TEAM, team2Id
@@ -414,7 +414,7 @@ class OrganizationAdminServiceTest {
             val user = createUser(1L, "test@example.com")
             val admin = createOrganizationAdmin(adminId, user, OrganizationType.ASSOCIATION, 1L)
 
-            every { organizationAdminRepository.findById(adminId) } returns Optional.of(admin)
+            every { organizationAdminRepository.findByIdOrNull(adminId) } returns admin
 
             // when
             val result = organizationAdminService.getById(adminId)
@@ -428,7 +428,7 @@ class OrganizationAdminServiceTest {
         fun `존재하지 않는 ID로 조회하면 예외가 발생한다`() {
             // given
             val adminId = 99999L
-            every { organizationAdminRepository.findById(adminId) } returns Optional.empty()
+            every { organizationAdminRepository.findByIdOrNull(adminId) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -448,7 +448,7 @@ class OrganizationAdminServiceTest {
             val user = createUser(userId, "test@example.com")
             val newTeamId = 99L
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, OrganizationType.TEAM, newTeamId
@@ -481,7 +481,7 @@ class OrganizationAdminServiceTest {
 
             val existingAdmin = createOrganizationAdmin(1L, user, OrganizationType.TEAM, existingTeamId)
 
-            every { userRepository.findById(userId) } returns Optional.of(user)
+            every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
                     userId, OrganizationType.TEAM, newTeamId

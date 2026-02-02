@@ -1,11 +1,11 @@
-package com.nextup.infrastructure.service.league
+package com.nextup.core.service.league
 
 import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.common.exception.LeagueNameDuplicateException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.repository.association.AssociationRepository
-import com.nextup.infrastructure.repository.league.LeagueRepository
+import com.nextup.core.port.repository.AssociationRepositoryPort
+import com.nextup.core.port.repository.LeagueRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -17,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class LeagueService(
-    private val leagueRepository: LeagueRepository,
-    private val associationRepository: AssociationRepository
+    private val leagueRepository: LeagueRepositoryPort,
+    private val associationRepository: AssociationRepositoryPort
 ) {
 
     /**
@@ -34,8 +34,8 @@ class LeagueService(
         description: String? = null,
         logoUrl: String? = null
     ): League {
-        val association = associationRepository.findById(associationId)
-            .orElseThrow { AssociationNotFoundException(associationId) }
+        val association = associationRepository.findByIdOrNull(associationId)
+            ?: throw AssociationNotFoundException(associationId)
 
         // 협회 내 이름 중복 체크
         if (leagueRepository.existsByAssociationIdAndName(associationId, name)) {
@@ -59,8 +59,8 @@ class LeagueService(
      * ID로 리그를 조회합니다.
      */
     fun getById(id: Long): League {
-        return leagueRepository.findById(id)
-            .orElseThrow { LeagueNotFoundException(id) }
+        return leagueRepository.findByIdOrNull(id)
+            ?: throw LeagueNotFoundException(id)
     }
 
     /**

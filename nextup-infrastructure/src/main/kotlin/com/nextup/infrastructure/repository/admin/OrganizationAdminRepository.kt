@@ -4,32 +4,33 @@ import com.nextup.core.domain.admin.OrganizationAdmin
 import com.nextup.core.domain.admin.OrganizationRole
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.domain.user.User
+import com.nextup.core.port.repository.OrganizationAdminRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
+interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long>, OrganizationAdminRepositoryPort {
 
     /**
      * 특정 사용자의 모든 조직 관리자 권한을 조회합니다.
      */
-    fun findByUser(user: User): List<OrganizationAdmin>
+    override fun findByUser(user: User): List<OrganizationAdmin>
 
     /**
      * 특정 사용자 ID의 모든 조직 관리자 권한을 조회합니다.
      */
     @Query("SELECT oa FROM OrganizationAdmin oa WHERE oa.user.id = :userId")
-    fun findByUserId(userId: Long): List<OrganizationAdmin>
+    override fun findByUserId(userId: Long): List<OrganizationAdmin>
 
     /**
      * 특정 사용자의 활성화된 조직 관리자 권한만 조회합니다.
      */
     @Query("SELECT oa FROM OrganizationAdmin oa WHERE oa.user.id = :userId AND oa.isActive = true")
-    fun findActiveByUserId(userId: Long): List<OrganizationAdmin>
+    override fun findActiveByUserId(userId: Long): List<OrganizationAdmin>
 
     /**
      * 특정 조직의 모든 관리자를 조회합니다.
      */
-    fun findByOrganizationTypeAndOrganizationId(
+    override fun findByOrganizationTypeAndOrganizationId(
         organizationType: OrganizationType,
         organizationId: Long
     ): List<OrganizationAdmin>
@@ -43,7 +44,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationId = :organizationId
         AND oa.isActive = true
     """)
-    fun findActiveByOrganizationTypeAndOrganizationId(
+    override fun findActiveByOrganizationTypeAndOrganizationId(
         organizationType: OrganizationType,
         organizationId: Long
     ): List<OrganizationAdmin>
@@ -51,7 +52,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
     /**
      * 특정 사용자가 특정 조직의 관리자인지 조회합니다.
      */
-    fun findByUserAndOrganizationTypeAndOrganizationId(
+    override fun findByUserAndOrganizationTypeAndOrganizationId(
         user: User,
         organizationType: OrganizationType,
         organizationId: Long
@@ -66,7 +67,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = :organizationType
         AND oa.organizationId = :organizationId
     """)
-    fun findByUserIdAndOrganizationTypeAndOrganizationId(
+    override fun findByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
         organizationId: Long
@@ -75,7 +76,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
     /**
      * 특정 사용자가 특정 조직의 관리자인지 확인합니다.
      */
-    fun existsByUserAndOrganizationTypeAndOrganizationId(
+    override fun existsByUserAndOrganizationTypeAndOrganizationId(
         user: User,
         organizationType: OrganizationType,
         organizationId: Long
@@ -91,7 +92,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = :organizationType
         AND oa.organizationId = :organizationId
     """)
-    fun existsByUserIdAndOrganizationTypeAndOrganizationId(
+    override fun existsByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
         organizationId: Long
@@ -108,7 +109,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationId = :organizationId
         AND oa.isActive = true
     """)
-    fun existsActiveByUserIdAndOrganizationTypeAndOrganizationId(
+    override fun existsActiveByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
         organizationId: Long
@@ -122,7 +123,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         WHERE oa.user.id = :userId
         AND oa.organizationType = :organizationType
     """)
-    fun findByUserIdAndOrganizationType(
+    override fun findByUserIdAndOrganizationType(
         userId: Long,
         organizationType: OrganizationType
     ): List<OrganizationAdmin>
@@ -136,7 +137,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = :organizationType
         AND oa.isActive = true
     """)
-    fun findActiveByUserIdAndOrganizationType(
+    override fun findActiveByUserIdAndOrganizationType(
         userId: Long,
         organizationType: OrganizationType
     ): List<OrganizationAdmin>
@@ -151,7 +152,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.role = :role
         AND oa.isActive = true
     """)
-    fun findByOrganizationAndRole(
+    override fun findByOrganizationAndRole(
         organizationType: OrganizationType,
         organizationId: Long,
         role: OrganizationRole
@@ -166,7 +167,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = 'TEAM'
         AND oa.isActive = true
     """)
-    fun findTeamIdsByUserId(userId: Long): List<Long>
+    override fun findTeamIdsByUserId(userId: Long): List<Long>
 
     /**
      * 특정 사용자가 관리하는 리그 ID 목록을 조회합니다.
@@ -177,7 +178,7 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = 'LEAGUE'
         AND oa.isActive = true
     """)
-    fun findLeagueIdsByUserId(userId: Long): List<Long>
+    override fun findLeagueIdsByUserId(userId: Long): List<Long>
 
     /**
      * 특정 사용자가 관리하는 협회 ID 목록을 조회합니다.
@@ -188,5 +189,5 @@ interface OrganizationAdminRepository : JpaRepository<OrganizationAdmin, Long> {
         AND oa.organizationType = 'ASSOCIATION'
         AND oa.isActive = true
     """)
-    fun findAssociationIdsByUserId(userId: Long): List<Long>
+    override fun findAssociationIdsByUserId(userId: Long): List<Long>
 }

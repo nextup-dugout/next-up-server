@@ -1,17 +1,18 @@
 package com.nextup.infrastructure.repository.stats
 
 import com.nextup.core.domain.stats.CareerPitchingStats
+import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Long> {
+interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Long>, CareerPitchingStatsRepositoryPort {
 
     /**
      * 선수 ID로 통산 투수 통계를 조회합니다.
      */
     @Query("SELECT c FROM CareerPitchingStats c WHERE c.player.id = :playerId")
-    fun findByPlayerId(@Param("playerId") playerId: Long): CareerPitchingStats?
+    override fun findByPlayerId(@Param("playerId") playerId: Long): CareerPitchingStats?
 
     /**
      * 통산 ERA 상위 N명을 조회합니다 (최소 이닝 조건).
@@ -23,7 +24,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY (CAST(c.earnedRuns AS double) * 27.0 / CAST(c.inningsPitchedOuts AS double)) ASC
         LIMIT :limit
     """)
-    fun findTopByEra(
+    override fun findTopByEra(
         @Param("minInningsPitchedOuts") minInningsPitchedOuts: Int,
         @Param("limit") limit: Int
     ): List<CareerPitchingStats>
@@ -36,7 +37,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY c.wins DESC
         LIMIT :limit
     """)
-    fun findTopByWins(@Param("limit") limit: Int): List<CareerPitchingStats>
+    override fun findTopByWins(@Param("limit") limit: Int): List<CareerPitchingStats>
 
     /**
      * 통산 삼진 상위 N명을 조회합니다.
@@ -46,7 +47,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY c.strikeouts DESC
         LIMIT :limit
     """)
-    fun findTopByStrikeouts(@Param("limit") limit: Int): List<CareerPitchingStats>
+    override fun findTopByStrikeouts(@Param("limit") limit: Int): List<CareerPitchingStats>
 
     /**
      * 통산 세이브 상위 N명을 조회합니다.
@@ -56,7 +57,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY c.saves DESC
         LIMIT :limit
     """)
-    fun findTopBySaves(@Param("limit") limit: Int): List<CareerPitchingStats>
+    override fun findTopBySaves(@Param("limit") limit: Int): List<CareerPitchingStats>
 
     /**
      * 통산 WHIP 상위 N명을 조회합니다 (최소 이닝 조건).
@@ -68,7 +69,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY (CAST(c.hitsAllowed + c.walksAllowed AS double) * 3.0 / CAST(c.inningsPitchedOuts AS double)) ASC
         LIMIT :limit
     """)
-    fun findTopByWhip(
+    override fun findTopByWhip(
         @Param("minInningsPitchedOuts") minInningsPitchedOuts: Int,
         @Param("limit") limit: Int
     ): List<CareerPitchingStats>
@@ -81,7 +82,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY c.inningsPitchedOuts DESC
         LIMIT :limit
     """)
-    fun findTopByInningsPitched(@Param("limit") limit: Int): List<CareerPitchingStats>
+    override fun findTopByInningsPitched(@Param("limit") limit: Int): List<CareerPitchingStats>
 
     /**
      * 통산 삼진/볼넷 비율 상위 N명을 조회합니다 (최소 이닝 및 볼넷 조건).
@@ -93,7 +94,7 @@ interface CareerPitchingStatsRepository : JpaRepository<CareerPitchingStats, Lon
         ORDER BY (CAST(c.strikeouts AS double) / CAST(c.walksAllowed AS double)) DESC
         LIMIT :limit
     """)
-    fun findTopByStrikeoutToWalkRatio(
+    override fun findTopByStrikeoutToWalkRatio(
         @Param("minInningsPitchedOuts") minInningsPitchedOuts: Int,
         @Param("limit") limit: Int
     ): List<CareerPitchingStats>

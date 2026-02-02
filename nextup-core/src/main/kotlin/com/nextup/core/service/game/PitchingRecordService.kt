@@ -1,11 +1,11 @@
-package com.nextup.infrastructure.service.game
+package com.nextup.core.service.game
 
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.PitchingRecord
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
-import com.nextup.infrastructure.repository.game.PitchingRecordRepository
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -17,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class PitchingRecordService(
-    private val pitchingRecordRepository: PitchingRecordRepository,
-    private val gamePlayerRepository: GamePlayerRepository
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val gamePlayerRepository: GamePlayerRepositoryPort
 ) {
 
     /**
@@ -26,8 +26,8 @@ class PitchingRecordService(
      */
     @Transactional
     fun createRecord(gamePlayerId: Long, isStartingPitcher: Boolean = false): PitchingRecord {
-        val gamePlayer = gamePlayerRepository.findById(gamePlayerId)
-            .orElseThrow { GamePlayerNotFoundException(gamePlayerId) }
+        val gamePlayer = gamePlayerRepository.findByIdOrNull(gamePlayerId)
+            ?: throw GamePlayerNotFoundException(gamePlayerId)
 
         // 중복 체크
         pitchingRecordRepository.findByGamePlayer(gamePlayer)?.let {

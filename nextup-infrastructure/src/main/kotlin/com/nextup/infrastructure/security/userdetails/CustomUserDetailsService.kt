@@ -2,6 +2,7 @@ package com.nextup.infrastructure.security.userdetails
 
 import com.nextup.core.domain.user.User
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -47,8 +48,8 @@ class CustomUserDetailsService(
      * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
      */
     fun loadUserById(userId: Long): CustomUserDetails {
-        val user = userJpaRepository.findById(userId)
-            .orElseThrow { UsernameNotFoundException("User not found with id: $userId") }
+        val user = userJpaRepository.findByIdOrNull(userId)
+            ?: throw UsernameNotFoundException("User not found with id: $userId")
 
         return CustomUserDetails.from(user)
     }

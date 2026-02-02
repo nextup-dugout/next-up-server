@@ -1,4 +1,4 @@
-package com.nextup.infrastructure.service.game
+package com.nextup.core.service.game
 
 import com.nextup.common.exception.BattingRecordNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
@@ -42,7 +42,7 @@ class BattingRecordServiceTest {
     fun `should create batting record successfully`() {
         // given
         val gamePlayerId = 1L
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.of(mockGamePlayer)
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns mockGamePlayer
         every { battingRecordRepository.findByGamePlayer(mockGamePlayer) } returns null
         every { battingRecordRepository.save(any()) } returns mockBattingRecord
         every { mockBattingRecord.id } returns 100L
@@ -60,7 +60,7 @@ class BattingRecordServiceTest {
     fun `should throw GamePlayerNotFoundException when GamePlayer not found on create`() {
         // given
         val gamePlayerId = 1L
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.empty()
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns null
 
         // when & then
         assertThrows<GamePlayerNotFoundException> {
@@ -72,7 +72,7 @@ class BattingRecordServiceTest {
     fun `should throw RecordAlreadyExistsException when batting record already exists`() {
         // given
         val gamePlayerId = 1L
-        every { gamePlayerRepository.findById(gamePlayerId) } returns java.util.Optional.of(mockGamePlayer)
+        every { gamePlayerRepository.findByIdOrNull(gamePlayerId) } returns mockGamePlayer
         every { battingRecordRepository.findByGamePlayer(mockGamePlayer) } returns mockBattingRecord
 
         // when & then

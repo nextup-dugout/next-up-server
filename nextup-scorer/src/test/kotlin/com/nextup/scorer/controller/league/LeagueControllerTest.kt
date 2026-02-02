@@ -3,7 +3,7 @@ package com.nextup.scorer.controller.league
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.service.league.LeagueService
+import com.nextup.core.service.league.LeagueService
 import com.nextup.scorer.dto.league.CreateLeagueRequest
 import com.nextup.scorer.dto.league.UpdateLeagueRequest
 import io.mockk.every

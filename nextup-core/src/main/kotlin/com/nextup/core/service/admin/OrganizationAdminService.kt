@@ -1,12 +1,12 @@
-package com.nextup.infrastructure.service.admin
+package com.nextup.core.service.admin
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.admin.OrganizationAdmin
 import com.nextup.core.domain.admin.OrganizationRole
 import com.nextup.core.domain.admin.OrganizationType
-import com.nextup.infrastructure.repository.TeamRepository
-import com.nextup.infrastructure.repository.admin.OrganizationAdminRepository
-import com.nextup.infrastructure.repository.user.UserRepository
+import com.nextup.core.port.repository.OrganizationAdminRepositoryPort
+import com.nextup.core.port.repository.TeamRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,9 +18,9 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class OrganizationAdminService(
-    private val organizationAdminRepository: OrganizationAdminRepository,
-    private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository
+    private val organizationAdminRepository: OrganizationAdminRepositoryPort,
+    private val userRepository: UserRepositoryPort,
+    private val teamRepository: TeamRepositoryPort
 ) {
 
     /**
@@ -45,8 +45,8 @@ class OrganizationAdminService(
         assignedBy: Long? = null
     ): OrganizationAdmin {
         // 사용자 존재 확인
-        val user = userRepository.findById(userId)
-            .orElseThrow { UserNotFoundException(userId) }
+        val user = userRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException(userId)
 
         // 이미 할당되어 있는지 확인
         val existing = organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
@@ -228,7 +228,7 @@ class OrganizationAdminService(
      * @throws OrganizationAdminNotFoundByIdException 관리자를 찾을 수 없는 경우
      */
     fun getById(id: Long): OrganizationAdmin {
-        return organizationAdminRepository.findById(id)
-            .orElseThrow { OrganizationAdminNotFoundByIdException(id) }
+        return organizationAdminRepository.findByIdOrNull(id)
+            ?: throw OrganizationAdminNotFoundByIdException(id)
     }
 }
