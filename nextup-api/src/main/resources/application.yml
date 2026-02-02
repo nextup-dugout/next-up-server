@@ -21,6 +21,12 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
 
+jwt:
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHNhbXBsZSBiYXNlNjQgZW5jb2RlZCBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:1800000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  issuer: nextup
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

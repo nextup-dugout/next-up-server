@@ -1,6 +1,7 @@
 package com.nextup.api.exception
 
 import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.exception.AuthenticationException
 import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
@@ -15,6 +16,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 class GlobalExceptionHandler {
 
     private val log = LoggerFactory.getLogger(javaClass)
+
+    @ExceptionHandler(AuthenticationException::class)
+    fun handleAuthenticationException(ex: AuthenticationException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("AuthenticationException: code={}, message={}", ex.code, ex.message)
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error(ex.code, ex.message))
+    }
 
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFoundException(ex: NotFoundException): ResponseEntity<ApiResponse<Nothing>> {
