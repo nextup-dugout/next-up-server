@@ -8,36 +8,26 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 
+/**
+ * Backoffice Security 설정 (임시 - 모든 요청 허용)
+ *
+ * TODO: JWT 인증 및 권한 관리 구현 필요
+ * 관리자 전용 모듈로, 기본적으로 인증이 필요합니다.
+ * 역할별 권한: ADMIN, ASSOCIATION_ADMIN, LEAGUE_ADMIN, TEAM_MANAGER
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        http
+        return http
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // 헬스체크는 인증 없이 접근 가능
-                auth.requestMatchers("/health", "/actuator/health").permitAll()
-
-                // TODO: JWT 인증 구현 후 역할별 접근 제어 추가
-                // 현재는 개발 편의를 위해 모든 요청 허용
                 auth.anyRequest().permitAll()
-
-                // 추후 적용할 권한 설정:
-                // auth.requestMatchers("/api/backoffice/associations/**")
-                //     .hasRole("ASSOCIATION_ADMIN")
-                // auth.requestMatchers("/api/backoffice/leagues/**")
-                //     .hasAnyRole("ASSOCIATION_ADMIN", "LEAGUE_ADMIN")
-                // auth.requestMatchers("/api/backoffice/teams/**")
-                //     .hasAnyRole("LEAGUE_ADMIN", "TEAM_MANAGER")
-                // auth.requestMatchers("/api/backoffice/admin/**")
-                //     .hasRole("ADMIN")
-                // auth.anyRequest().authenticated()
             }
-
-        return http.build()
+            .build()
     }
 }

@@ -1,5 +1,6 @@
 package com.nextup.api.exception
 
+import com.nextup.common.exception.AuthenticationException
 import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
@@ -20,6 +21,21 @@ class GlobalExceptionHandlerTest {
     @BeforeEach
     fun setUp() {
         handler = GlobalExceptionHandler()
+    }
+
+    @Test
+    fun `should handle AuthenticationException and return 401`() {
+        // given
+        val exception = object : AuthenticationException("INVALID_CREDENTIALS", "Invalid email or password") {}
+
+        // when
+        val response = handler.handleAuthenticationException(exception)
+
+        // then
+        assertThat(response.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(response.body?.success).isFalse()
+        assertThat(response.body?.error?.code).isEqualTo("INVALID_CREDENTIALS")
+        assertThat(response.body?.error?.message).isEqualTo("Invalid email or password")
     }
 
     @Test

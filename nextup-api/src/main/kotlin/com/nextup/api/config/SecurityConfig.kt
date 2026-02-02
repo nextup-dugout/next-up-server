@@ -1,4 +1,4 @@
-package com.nextup.scorer.config
+package com.nextup.api.config
 
 import com.nextup.infrastructure.security.handler.CustomAccessDeniedHandler
 import com.nextup.infrastructure.security.handler.CustomAuthenticationEntryPoint
@@ -7,17 +7,20 @@ import com.nextup.infrastructure.security.jwt.JwtProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 /**
- * Scorer Security 설정
- *
- * 기록원 전용 모듈로, SCORER 또는 ADMIN 역할이 필요합니다.
+ * Spring Security 설정
  */
 @Configuration
 @EnableWebSecurity
@@ -30,7 +33,7 @@ class SecurityConfig(
 ) {
 
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
@@ -40,8 +43,10 @@ class SecurityConfig(
             }
             .authorizeHttpRequests { auth ->
                 auth
-                    // Health check
-                    .requestMatchers("/health", "/actuator/health").permitAll()
+                    // Public endpoints
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/associations/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
 
                     // Swagger/OpenAPI
                     .requestMatchers(
@@ -51,19 +56,29 @@ class SecurityConfig(
                         "/swagger-resources/**"
                     ).permitAll()
 
-                    // WebSocket endpoints (for real-time scoreboard)
-                    .requestMatchers("/ws/**").permitAll()
+                    // Actuator endpoints
+                    .requestMatchers("/actuator/health").permitAll()
 
-                    // Scorer API endpoints
-                    .requestMatchers("/api/scorer/**").hasAnyRole("SCORER", "ADMIN")
+                    // Admin endpoints
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                    // League management in scorer module
-                    .requestMatchers("/api/leagues/**").hasAnyRole("SCORER", "ADMIN")
+                    // Scorer endpoints (for game recording)
+                    .requestMatchers("/api/games/*/records/**").hasAnyRole("SCORER", "ADMIN")
 
-                    // All other endpoints require authentication with SCORER or ADMIN role
-                    .anyRequest().hasAnyRole("SCORER", "ADMIN")
+                    // All other endpoints require authentication
+                    .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
+    }
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder {
+        return BCryptPasswordEncoder()
+    }
+
+    @Bean
+    fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager {
+        return authenticationConfiguration.authenticationManager
     }
 }
