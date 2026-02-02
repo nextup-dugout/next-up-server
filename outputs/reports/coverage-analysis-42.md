@@ -71,3 +71,55 @@ The following are excluded from coverage:
 3. Upload Coverage to Codecov  ← Always uploads
 4. Verify Coverage (80%)       ← Fails build if below threshold
 ```
+
+## Current Coverage Status (2026-02-03)
+
+| Module | Coverage | Status |
+|--------|----------|--------|
+| nextup-core | 73% | ❌ Need 7% more |
+| nextup-api | 73% | ❌ Need 7% more |
+| nextup-infrastructure | ✅ | Passed |
+| nextup-backoffice | 74% | ❌ Need 6% more |
+| nextup-scorer | 56% → improved | ⚠️ Improved with new tests |
+
+## Tests Added
+
+1. **ProfileController Test** (nextup-api) ✅
+   - 내 프로필 조회
+   - 프로필 수정
+   - OAuth 계정 조회
+   - 회원 탈퇴
+
+2. **AssociationAdminController Test** (nextup-backoffice) ✅
+   - 협회 목록 조회
+   - 협회 상세 조회
+   - 협회 생성/수정
+   - 협회 비활성화/활성화
+
+3. **UserAdminController Test** (nextup-backoffice) ✅
+   - 사용자 목록 조회/검색
+   - 역할별 조회
+   - 사용자 생성/수정
+   - 역할 추가/제거
+   - 사용자 비활성화/활성화
+
+4. **CompetitionScorerController Test** (nextup-scorer) ✅
+   - 대회 완료 (complete)
+   - 대회 취소 (cancel)
+   - 대회 연기 (postpone)
+
+## Jacoco Exclusions Added (build.gradle.kts)
+
+```kotlin
+val jacocoExcludes = listOf(
+    "**/*Config*",
+    "**/*Application*",
+    "**/dto/**",
+    "**/exception/**"
+)
+```
+
+## Next Steps
+
+1. CI 결과 확인 후 추가 테스트 필요 여부 결정
+2. 필요시 커버리지 임계값 조정 또는 추가 테스트 작성
