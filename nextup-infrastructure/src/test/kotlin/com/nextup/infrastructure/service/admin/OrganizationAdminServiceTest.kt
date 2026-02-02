@@ -403,6 +403,136 @@ class OrganizationAdminServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getById")
+    inner class GetById {
+
+        @Test
+        fun `ID로 관리자를 조회할 수 있다`() {
+            // given
+            val adminId = 1L
+            val user = createUser(1L, "test@example.com")
+            val admin = createOrganizationAdmin(adminId, user, OrganizationType.ASSOCIATION, 1L)
+
+            every { organizationAdminRepository.findById(adminId) } returns Optional.of(admin)
+
+            // when
+            val result = organizationAdminService.getById(adminId)
+
+            // then
+            assertThat(result.id).isEqualTo(adminId)
+            assertThat(result.user.id).isEqualTo(1L)
+        }
+
+        @Test
+        fun `존재하지 않는 ID로 조회하면 예외가 발생한다`() {
+            // given
+            val adminId = 99999L
+            every { organizationAdminRepository.findById(adminId) } returns Optional.empty()
+
+            // when & then
+            assertThatThrownBy {
+                organizationAdminService.getById(adminId)
+            }.isInstanceOf(OrganizationAdminNotFoundByIdException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("validateSameLeagueConflict edge cases")
+    inner class ValidateSameLeagueConflictEdgeCases {
+
+        @Test
+        fun `새 팀을 찾을 수 없으면 TeamNotFoundException 발생`() {
+            // given
+            val userId = 1L
+            val user = createUser(userId, "test@example.com")
+            val newTeamId = 99L
+
+            every { userRepository.findById(userId) } returns Optional.of(user)
+            every {
+                organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
+                    userId, OrganizationType.TEAM, newTeamId
+                )
+            } returns null
+            every { teamRepository.findByIdWithLeague(newTeamId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                organizationAdminService.assignAdmin(
+                    userId = userId,
+                    organizationType = OrganizationType.TEAM,
+                    organizationId = newTeamId,
+                    role = OrganizationRole.ADMIN
+                )
+            }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+
+        @Test
+        fun `기존 관리 팀을 찾을 수 없으면 무시하고 계속 진행한다`() {
+            // given
+            val userId = 1L
+            val user = createUser(userId, "test@example.com")
+            val existingTeamId = 1L
+            val newTeamId = 2L
+
+            val association = createAssociation(1L, "Test Association")
+            val league = createLeague(100L, "Test League", association)
+            val newTeam = createTeam(newTeamId, "New Team", league)
+
+            val existingAdmin = createOrganizationAdmin(1L, user, OrganizationType.TEAM, existingTeamId)
+
+            every { userRepository.findById(userId) } returns Optional.of(user)
+            every {
+                organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
+                    userId, OrganizationType.TEAM, newTeamId
+                )
+            } returns null
+            every { teamRepository.findByIdWithLeague(newTeamId) } returns newTeam
+            every {
+                organizationAdminRepository.findActiveByUserIdAndOrganizationType(
+                    userId, OrganizationType.TEAM
+                )
+            } returns listOf(existingAdmin)
+            every { teamRepository.findByIdWithLeague(existingTeamId) } returns null
+            every { organizationAdminRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val admin = organizationAdminService.assignAdmin(
+                userId = userId,
+                organizationType = OrganizationType.TEAM,
+                organizationId = newTeamId,
+                role = OrganizationRole.ADMIN
+            )
+
+            // then
+            assertThat(admin.organizationId).isEqualTo(newTeamId)
+            verify { organizationAdminRepository.save(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("changeRole edge cases")
+    inner class ChangeRoleEdgeCases {
+
+        @Test
+        fun `존재하지 않는 관리자의 역할을 변경하면 예외가 발생한다`() {
+            // given
+            val userId = 1L
+            every {
+                organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
+                    userId, OrganizationType.ASSOCIATION, 1L
+                )
+            } returns null
+
+            // when & then
+            assertThatThrownBy {
+                organizationAdminService.changeRole(
+                    userId, OrganizationType.ASSOCIATION, 1L, OrganizationRole.MANAGER
+                )
+            }.isInstanceOf(OrganizationAdminNotFoundException::class.java)
+        }
+    }
+
     // Helper methods
 
     private fun createUser(id: Long, email: String): User {
