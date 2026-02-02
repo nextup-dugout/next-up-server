@@ -5,8 +5,8 @@ import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingRecord
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
-import com.nextup.infrastructure.repository.game.PitchingRecordRepository
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,8 +17,8 @@ import org.junit.jupiter.api.assertThrows
 
 class PitchingRecordServiceTest {
 
-    private lateinit var pitchingRecordRepository: PitchingRecordRepository
-    private lateinit var gamePlayerRepository: GamePlayerRepository
+    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var pitchingRecordService: PitchingRecordService
 
     private lateinit var mockGamePlayer: GamePlayer

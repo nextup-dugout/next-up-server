@@ -8,8 +8,8 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.repository.competition.CompetitionRepository
-import com.nextup.infrastructure.repository.league.LeagueRepository
+import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.LeagueRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -25,8 +25,8 @@ import java.util.Optional
 @DisplayName("CompetitionService")
 class CompetitionServiceTest {
 
-    private lateinit var competitionRepository: CompetitionRepository
-    private lateinit var leagueRepository: LeagueRepository
+    private lateinit var competitionRepository: CompetitionRepositoryPort
+    private lateinit var leagueRepository: LeagueRepositoryPort
     private lateinit var competitionService: CompetitionService
 
     @BeforeEach

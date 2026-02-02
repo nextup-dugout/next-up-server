@@ -5,8 +5,8 @@ import com.nextup.core.domain.user.OAuthAccount
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
-import com.nextup.infrastructure.repository.user.OAuthAccountRepository
-import com.nextup.infrastructure.repository.user.UserRepository
+import com.nextup.core.port.repository.OAuthAccountRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,8 +23,8 @@ import java.util.*
 @DisplayName("UserService")
 class UserServiceTest {
 
-    private lateinit var userRepository: UserRepository
-    private lateinit var oauthAccountRepository: OAuthAccountRepository
+    private lateinit var userRepository: UserRepositoryPort
+    private lateinit var oauthAccountRepository: OAuthAccountRepositoryPort
     private lateinit var userService: UserService
 
     @BeforeEach

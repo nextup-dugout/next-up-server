@@ -6,8 +6,8 @@ import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PlateAppearanceResult
-import com.nextup.infrastructure.repository.game.BattingRecordRepository
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -18,8 +18,8 @@ import org.junit.jupiter.api.assertThrows
 
 class BattingRecordServiceTest {
 
-    private lateinit var battingRecordRepository: BattingRecordRepository
-    private lateinit var gamePlayerRepository: GamePlayerRepository
+    private lateinit var battingRecordRepository: BattingRecordRepositoryPort
+    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var battingRecordService: BattingRecordService
 
     private lateinit var mockGamePlayer: GamePlayer

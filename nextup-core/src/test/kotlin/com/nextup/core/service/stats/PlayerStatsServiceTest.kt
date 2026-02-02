@@ -14,13 +14,13 @@ import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
-import com.nextup.infrastructure.repository.PlayerRepository
-import com.nextup.infrastructure.repository.game.BattingRecordRepository
-import com.nextup.infrastructure.repository.game.PitchingRecordRepository
-import com.nextup.infrastructure.repository.stats.CareerBattingStatsRepository
-import com.nextup.infrastructure.repository.stats.CareerPitchingStatsRepository
-import com.nextup.infrastructure.repository.stats.SeasonBattingStatsRepository
-import com.nextup.infrastructure.repository.stats.SeasonPitchingStatsRepository
+import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -37,13 +37,13 @@ import java.util.Optional
 class PlayerStatsServiceTest {
 
     private lateinit var playerStatsService: PlayerStatsService
-    private lateinit var playerRepository: PlayerRepository
-    private lateinit var seasonBattingStatsRepository: SeasonBattingStatsRepository
-    private lateinit var seasonPitchingStatsRepository: SeasonPitchingStatsRepository
-    private lateinit var careerBattingStatsRepository: CareerBattingStatsRepository
-    private lateinit var careerPitchingStatsRepository: CareerPitchingStatsRepository
-    private lateinit var battingRecordRepository: BattingRecordRepository
-    private lateinit var pitchingRecordRepository: PitchingRecordRepository
+    private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort
+    private lateinit var seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort
+    private lateinit var careerBattingStatsRepository: CareerBattingStatsRepositoryPort
+    private lateinit var careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort
+    private lateinit var battingRecordRepository: BattingRecordRepositoryPort
+    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
 
     private val testPlayer = Player(
         name = "홍길동",

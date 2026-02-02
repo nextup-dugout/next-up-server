@@ -3,7 +3,7 @@ package com.nextup.core.service.association
 import com.nextup.common.exception.AssociationNameDuplicateException
 import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.core.domain.association.Association
-import com.nextup.infrastructure.repository.association.AssociationRepository
+import com.nextup.core.port.repository.AssociationRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -18,7 +18,7 @@ import java.util.Optional
 @DisplayName("AssociationService")
 class AssociationServiceTest {
 
-    private lateinit var associationRepository: AssociationRepository
+    private lateinit var associationRepository: AssociationRepositoryPort
     private lateinit var associationService: AssociationService
 
     @BeforeEach

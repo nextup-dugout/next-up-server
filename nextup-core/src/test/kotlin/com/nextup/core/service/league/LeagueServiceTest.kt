@@ -5,8 +5,8 @@ import com.nextup.common.exception.LeagueNameDuplicateException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.repository.association.AssociationRepository
-import com.nextup.infrastructure.repository.league.LeagueRepository
+import com.nextup.core.port.repository.AssociationRepositoryPort
+import com.nextup.core.port.repository.LeagueRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -21,8 +21,8 @@ import java.util.Optional
 @DisplayName("LeagueService")
 class LeagueServiceTest {
 
-    private lateinit var leagueRepository: LeagueRepository
-    private lateinit var associationRepository: AssociationRepository
+    private lateinit var leagueRepository: LeagueRepositoryPort
+    private lateinit var associationRepository: AssociationRepositoryPort
     private lateinit var leagueService: LeagueService
 
     @BeforeEach

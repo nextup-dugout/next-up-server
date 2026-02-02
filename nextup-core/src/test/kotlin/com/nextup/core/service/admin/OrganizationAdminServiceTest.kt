@@ -8,9 +8,9 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
-import com.nextup.infrastructure.repository.TeamRepository
-import com.nextup.infrastructure.repository.admin.OrganizationAdminRepository
-import com.nextup.infrastructure.repository.user.UserRepository
+import com.nextup.core.port.repository.TeamRepositoryPort
+import com.nextup.core.port.repository.OrganizationAdminRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -25,9 +25,9 @@ import java.util.*
 @DisplayName("OrganizationAdminService")
 class OrganizationAdminServiceTest {
 
-    private lateinit var organizationAdminRepository: OrganizationAdminRepository
-    private lateinit var userRepository: UserRepository
-    private lateinit var teamRepository: TeamRepository
+    private lateinit var organizationAdminRepository: OrganizationAdminRepositoryPort
+    private lateinit var userRepository: UserRepositoryPort
+    private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var organizationAdminService: OrganizationAdminService
 
     @BeforeEach
