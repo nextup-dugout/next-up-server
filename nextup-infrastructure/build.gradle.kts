@@ -40,6 +40,9 @@ dependencies {
     // Spring Security
     api("org.springframework.boot:spring-boot-starter-security")
 
+    // OAuth2 Client
+    api("org.springframework.boot:spring-boot-starter-oauth2-client")
+
     // JWT
     api("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
