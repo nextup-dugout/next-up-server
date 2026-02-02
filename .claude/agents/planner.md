@@ -20,6 +20,7 @@ model: opus
 - 복잡한 기능을 관리 가능한 단계로 분해
 - 의존성 및 잠재적 위험 식별
 - 모듈별 (core, infra, api) 수정 사항 도출
+- **GitHub Issue 생성** (계획 수립 완료 후)
 
 ## 계획 프로세스
 
@@ -92,6 +93,30 @@ model: opus
 2. **변경 최소화**: 리라이트보다 기존 코드 확장 선호
 3. **패턴 유지**: 기존 프로젝트 컨벤션 준수
 4. **테스트 가능하게**: 각 단계가 검증 가능하도록
+
+---
+
+## 📋 GitHub Issue 생성 (계획 수립 후 필수)
+
+### Issue 생성 시점
+- 계획 수립 완료 후
+- architect/implementer에게 전달하기 전
+
+### Issue 템플릿 사용
+```
+MCP 도구: mcp__github__issue_write
+- method: "create"
+- title: "[기능명]"
+- body: "[계획 내용 요약]"
+- labels: ["✨ Feature"]
+```
+
+### Issue 내용 포함 사항
+1. 기능 개요
+2. 구현 범위 (모듈별)
+3. 예상 작업 목록
+
+---
 
 ## 협업
 
