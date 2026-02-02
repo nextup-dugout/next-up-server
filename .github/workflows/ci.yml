@@ -35,10 +35,10 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: |
-            nextup-core/build/reports/jacoco/test/jacocoTestReport.xml,
-            nextup-api/build/reports/jacoco/test/jacocoTestReport.xml,
-            nextup-infrastructure/build/reports/jacoco/test/jacocoTestReport.xml,
-            nextup-backoffice/build/reports/jacoco/test/jacocoTestReport.xml,
+            nextup-core/build/reports/jacoco/test/jacocoTestReport.xml
+            nextup-api/build/reports/jacoco/test/jacocoTestReport.xml
+            nextup-infrastructure/build/reports/jacoco/test/jacocoTestReport.xml
+            nextup-backoffice/build/reports/jacoco/test/jacocoTestReport.xml
             nextup-scorer/build/reports/jacoco/test/jacocoTestReport.xml
           flags: unittests
           name: codecov-umbrella
