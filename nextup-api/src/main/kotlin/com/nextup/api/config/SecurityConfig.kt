@@ -4,6 +4,9 @@ import com.nextup.infrastructure.security.handler.CustomAccessDeniedHandler
 import com.nextup.infrastructure.security.handler.CustomAuthenticationEntryPoint
 import com.nextup.infrastructure.security.jwt.JwtAuthenticationFilter
 import com.nextup.infrastructure.security.jwt.JwtProperties
+import com.nextup.infrastructure.security.oauth2.CustomOAuth2UserService
+import com.nextup.infrastructure.security.oauth2.OAuth2AuthenticationFailureHandler
+import com.nextup.infrastructure.security.oauth2.OAuth2AuthenticationSuccessHandler
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -29,7 +32,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val customAuthenticationEntryPoint: CustomAuthenticationEntryPoint,
-    private val customAccessDeniedHandler: CustomAccessDeniedHandler
+    private val customAccessDeniedHandler: CustomAccessDeniedHandler,
+    private val customOAuth2UserService: CustomOAuth2UserService,
+    private val oAuth2AuthenticationSuccessHandler: OAuth2AuthenticationSuccessHandler,
+    private val oAuth2AuthenticationFailureHandler: OAuth2AuthenticationFailureHandler
 ) {
 
     @Bean
@@ -47,6 +53,10 @@ class SecurityConfig(
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/associations/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
+
+                    // OAuth2 endpoints
+                    .requestMatchers("/oauth2/**").permitAll()
+                    .requestMatchers("/login/oauth2/**").permitAll()
 
                     // Swagger/OpenAPI
                     .requestMatchers(
@@ -67,6 +77,12 @@ class SecurityConfig(
 
                     // All other endpoints require authentication
                     .anyRequest().authenticated()
+            }
+            .oauth2Login { oauth2 ->
+                oauth2
+                    .userInfoEndpoint { it.userService(customOAuth2UserService) }
+                    .successHandler(oAuth2AuthenticationSuccessHandler)
+                    .failureHandler(oAuth2AuthenticationFailureHandler)
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()

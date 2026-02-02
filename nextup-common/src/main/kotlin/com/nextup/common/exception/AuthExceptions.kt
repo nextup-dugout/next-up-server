@@ -67,3 +67,23 @@ class RefreshTokenRevokedException(
     "REFRESH_TOKEN_REVOKED",
     message
 )
+
+/**
+ * 지원하지 않는 OAuth2 Provider일 때 발생하는 예외
+ */
+class UnsupportedOAuth2ProviderException(
+    provider: String
+) : AuthenticationException(
+    "UNSUPPORTED_OAUTH2_PROVIDER",
+    "Unsupported OAuth2 provider: $provider"
+)
+
+/**
+ * OAuth2 인증 처리 중 오류가 발생했을 때 발생하는 예외
+ */
+class OAuth2AuthenticationProcessingException(
+    message: String
+) : AuthenticationException(
+    "OAUTH2_PROCESSING_ERROR",
+    message
+)
