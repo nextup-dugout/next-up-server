@@ -30,6 +30,9 @@ jobs:
       - name: Generate Coverage Report
         run: ./gradlew jacocoRootReport
 
+      - name: Verify Coverage (80% minimum)
+        run: ./gradlew jacocoTestCoverageVerification
+
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
