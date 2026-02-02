@@ -23,7 +23,9 @@ import java.time.temporal.ChronoUnit
         Index(name = "idx_pth_team_id", columnList = "team_id"),
         Index(name = "idx_pth_player_dates", columnList = "player_id, start_date, end_date"),
         Index(name = "idx_pth_team_dates", columnList = "team_id, start_date, end_date"),
-        Index(name = "idx_pth_current", columnList = "player_id, end_date")
+        Index(name = "idx_pth_current", columnList = "player_id, end_date"),
+        Index(name = "idx_pth_status", columnList = "status"),
+        Index(name = "idx_pth_player_status", columnList = "player_id, status")
     ]
 )
 class PlayerTeamHistory(
@@ -52,6 +54,10 @@ class PlayerTeamHistory(
     @Column(name = "contract_type", nullable = false, length = 20)
     var contractType: ContractType = ContractType.REGULAR,
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    var status: PlayerTeamStatus = PlayerTeamStatus.ACTIVE,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
@@ -63,9 +69,51 @@ class PlayerTeamHistory(
     val durationInDays: Long?
         get() = endDate?.let { ChronoUnit.DAYS.between(startDate, it) }
 
+    /**
+     * 현재 소속 상태가 ACTIVE인지 확인합니다.
+     */
+    val isActive: Boolean
+        get() = status == PlayerTeamStatus.ACTIVE
+
     fun endAffiliation(date: LocalDate) {
         require(date >= startDate) { "종료일은 시작일 이후여야 합니다." }
         this.endDate = date
+    }
+
+    /**
+     * 선수를 다른 팀으로 이적 처리합니다.
+     *
+     * @param transferDate 이적 날짜
+     * @throws IllegalStateException 이미 이적했거나 비활동 상태인 경우
+     * @throws IllegalArgumentException 이적 날짜가 시작일 이전인 경우
+     */
+    fun transfer(transferDate: LocalDate) {
+        check(status == PlayerTeamStatus.ACTIVE) {
+            "ACTIVE 상태인 선수만 이적할 수 있습니다. 현재 상태: $status"
+        }
+        require(transferDate >= startDate) {
+            "이적일은 소속 시작일($startDate) 이후여야 합니다."
+        }
+        this.status = PlayerTeamStatus.TRANSFERRED
+        this.endDate = transferDate
+    }
+
+    /**
+     * 선수를 비활동 상태로 변경합니다.
+     *
+     * @param deactivateDate 비활동 시작 날짜
+     * @throws IllegalStateException 이미 비활동이거나 이적한 상태인 경우
+     * @throws IllegalArgumentException 비활동 날짜가 시작일 이전인 경우
+     */
+    fun deactivate(deactivateDate: LocalDate) {
+        check(status == PlayerTeamStatus.ACTIVE) {
+            "ACTIVE 상태인 선수만 비활동 처리할 수 있습니다. 현재 상태: $status"
+        }
+        require(deactivateDate >= startDate) {
+            "비활동일은 소속 시작일($startDate) 이후여야 합니다."
+        }
+        this.status = PlayerTeamStatus.INACTIVE
+        this.endDate = deactivateDate
     }
 
     fun changeUniformNumber(number: Int) {
