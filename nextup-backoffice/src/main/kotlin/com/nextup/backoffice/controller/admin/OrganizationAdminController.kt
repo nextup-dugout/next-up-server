@@ -5,7 +5,7 @@ import com.nextup.backoffice.dto.admin.ChangeRoleRequest
 import com.nextup.backoffice.dto.admin.OrganizationAdminResponse
 import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.core.domain.admin.OrganizationType
-import com.nextup.infrastructure.service.admin.OrganizationAdminService
+import com.nextup.core.service.admin.OrganizationAdminService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*

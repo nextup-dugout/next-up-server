@@ -3,7 +3,7 @@ package com.nextup.backoffice.controller.user
 import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.user.*
 import com.nextup.core.domain.user.Role
-import com.nextup.infrastructure.service.user.UserService
+import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

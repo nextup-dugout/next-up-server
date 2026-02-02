@@ -6,6 +6,7 @@ import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.user.OAuthAccountRepository
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
+import org.springframework.data.repository.findByIdOrNull
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -41,7 +42,7 @@ class OAuthLinkServiceTest {
             val oauthId = "kakao_123"
             val user = createLocalUser(userId)
 
-            every { userJpaRepository.findById(userId) } returns Optional.of(user)
+            every { userJpaRepository.findByIdOrNull(userId) } returns user
             every { userJpaRepository.save(any()) } returns user
 
             // when
@@ -58,7 +59,7 @@ class OAuthLinkServiceTest {
         fun `should throw UserNotFoundException when user not found`() {
             // given
             val userId = 999L
-            every { userJpaRepository.findById(userId) } returns Optional.empty()
+            every { userJpaRepository.findByIdOrNull(userId) } returns null
 
             // when & then
             assertThatThrownBy {
@@ -74,7 +75,7 @@ class OAuthLinkServiceTest {
             val oauthId = "kakao_123"
             val user = createOAuthUser(userId)
 
-            every { userJpaRepository.findById(userId) } returns Optional.of(user)
+            every { userJpaRepository.findByIdOrNull(userId) } returns user
 
             // when & then
             assertThatThrownBy {
@@ -94,7 +95,7 @@ class OAuthLinkServiceTest {
             val provider = OAuthProvider.KAKAO
             val user = createOAuthUser(userId)
 
-            every { userJpaRepository.findById(userId) } returns Optional.of(user)
+            every { userJpaRepository.findByIdOrNull(userId) } returns user
             every { userJpaRepository.save(any()) } returns user
 
             // when
@@ -109,7 +110,7 @@ class OAuthLinkServiceTest {
         fun `should throw UserNotFoundException when user not found`() {
             // given
             val userId = 999L
-            every { userJpaRepository.findById(userId) } returns Optional.empty()
+            every { userJpaRepository.findByIdOrNull(userId) } returns null
 
             // when & then
             assertThatThrownBy {

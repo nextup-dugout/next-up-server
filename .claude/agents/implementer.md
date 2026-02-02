@@ -244,7 +244,81 @@ class GlobalExceptionHandler {
 - **architect**: Entity 및 도메인 설계
 - **reviewer**: 코드 검수
 
-## 활용 Skills
+---
 
-- `backend-patterns`: Kotlin/Spring Boot 패턴
-- `quality-metrics`: 빌드/테스트 실행
+## 🔧 Kotlin/Spring Boot 체크리스트 (from backend-patterns)
+
+### 코드 작성 전 확인
+- [ ] `val` 사용 (immutability first)
+- [ ] Data class for DTOs
+- [ ] Null safety (Elvis operator, 명시적 nullable)
+- [ ] Extension function for Entity → DTO 변환
+
+### Entity 설계
+- [ ] `private constructor` + `companion object.create()`
+- [ ] Business logic in Entity (Rich Domain Model)
+- [ ] `@Enumerated(EnumType.STRING)` 사용
+- [ ] Value Objects for complex values (`@Embeddable`)
+
+### Service Layer
+- [ ] 클래스 레벨 `@Transactional(readOnly = true)`
+- [ ] 메서드 레벨 `@Transactional` for write operations
+- [ ] Custom exceptions for domain errors
+
+### Controller Layer
+- [ ] **Zero Entity Leak** - Entity 직접 반환 금지
+- [ ] **ApiResponse** wrapper 필수
+- [ ] `@Valid` for request validation
+- [ ] RESTful URL 설계 (`/api/v1/resources`)
+
+---
+
+## 🔒 보안 체크리스트 (from security-audit)
+
+### 구현 시 필수 확인 (OWASP Top 10)
+
+| 항목 | 체크 |
+|------|------|
+| A01: Access Control | `@PreAuthorize` 적용, 소유권 검증 |
+| A02: Cryptographic | 비밀번호 BCrypt, API 키 환경변수 |
+| A03: Injection | JPA 파라미터 바인딩 사용 |
+| A04: Insecure Design | Zero Entity Leak 준수 |
+| A07: Auth Failures | JWT 시크릿 환경변수, 토큰 만료 설정 |
+| A08: Data Integrity | `@Valid`, `@NotNull` 입력 검증 |
+
+### 금지 패턴
+```kotlin
+// ❌ CRITICAL: 하드코딩 시크릿
+val secret = "my-secret-key"
+
+// ❌ CRITICAL: SQL Injection
+@Query("SELECT * FROM players WHERE name = '$name'")
+
+// ❌ HIGH: 비밀번호 로깅
+logger.info("password=$password")
+
+// ❌ HIGH: Entity 직접 노출
+@GetMapping("/users/{id}")
+fun getUser(@PathVariable id: Long): User
+```
+
+### 보안 이슈 발견 시
+- **CRITICAL/HIGH**: 즉시 수정, reviewer에게 보고
+- **MEDIUM/LOW**: 이슈 생성 후 다음 스프린트 처리
+
+---
+
+## 📋 구현 완료 전 최종 체크
+
+```bash
+# 1. 빌드 확인
+./gradlew build
+
+# 2. 테스트 통과
+./gradlew test
+
+# 3. 코드 스타일 (선택)
+./gradlew ktlintCheck
+```
+
+위 체크리스트를 모두 통과해야 reviewer에게 전달합니다.

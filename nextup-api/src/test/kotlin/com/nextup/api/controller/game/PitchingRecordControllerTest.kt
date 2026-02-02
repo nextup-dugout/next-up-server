@@ -9,7 +9,7 @@ import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.infrastructure.repository.game.GamePlayerRepository
-import com.nextup.infrastructure.service.game.PitchingRecordService
+import com.nextup.core.service.game.PitchingRecordService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

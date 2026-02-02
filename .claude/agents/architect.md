@@ -181,8 +181,86 @@ Accepted / Proposed / Deprecated
 - **implementer**: 설계 기반 구현 수행
 - **reviewer**: 설계 및 구현 검수
 
-## 활용 Skills
+---
 
-- `backend-patterns`: Kotlin/Spring Boot 패턴
-- `domain-baseball`: 야구 도메인 규칙
-- `db-manager`: PostgreSQL/PostGIS 쿼리
+## 🏗️ Entity 설계 체크리스트 (from backend-patterns)
+
+### 필수 패턴
+- [ ] `private constructor` + `companion object.create()` 팩토리
+- [ ] Business logic in Entity (Rich Domain Model)
+- [ ] `@Enumerated(EnumType.STRING)` 사용
+- [ ] `var` 최소화, `val` 선호
+- [ ] `BaseEntity` 상속 (createdAt, updatedAt)
+
+### Value Objects
+```kotlin
+@Embeddable
+data class Score(
+    @Column(name = "home_score") val home: Int = 0,
+    @Column(name = "away_score") val away: Int = 0
+) {
+    init {
+        require(home >= 0 && away >= 0) { "Score must be non-negative" }
+    }
+}
+```
+
+### 관계 매핑
+```kotlin
+// ✅ 단방향 선호
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "team_id", nullable = false)
+val team: Team
+
+// ❌ 양방향은 필요할 때만
+```
+
+### 금지 패턴
+```kotlin
+// ❌ Anemic Domain Model - 로직이 Service에 있음
+class Game {
+    var status: GameStatus = GameStatus.SCHEDULED
+}
+// Service에서 game.status = IN_PROGRESS 직접 변경
+
+// ✅ Rich Domain Model - 로직이 Entity에 있음
+class Game {
+    fun start() {
+        require(status == GameStatus.SCHEDULED)
+        status = GameStatus.IN_PROGRESS
+    }
+}
+```
+
+---
+
+## 🗃️ Repository 체크리스트
+
+### 기본 구조
+- [ ] Core 모듈: interface 정의
+- [ ] Infrastructure 모듈: JPA + QueryDSL 구현
+- [ ] 비즈니스 로직 없음 (조회/저장만)
+
+### QueryDSL 패턴
+```kotlin
+// 복잡한 조건 쿼리
+fun findActiveByCondition(condition: SearchCondition): List<Entity> {
+    return queryFactory
+        .selectFrom(entity)
+        .where(
+            condition.status?.let { entity.status.eq(it) },
+            condition.dateFrom?.let { entity.createdAt.goe(it) }
+        )
+        .orderBy(entity.createdAt.desc())
+        .fetch()
+}
+```
+
+---
+
+## 📋 설계 완료 전 최종 체크
+
+- [ ] 의존성 방향 준수 (api → infra → core → common)
+- [ ] Entity에 비즈니스 로직 캡슐화
+- [ ] Repository 인터페이스 Core, 구현 Infrastructure
+- [ ] 순환 참조 없음

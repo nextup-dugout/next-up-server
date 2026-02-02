@@ -6,6 +6,7 @@ import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.user.OAuthAccountRepository
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -35,8 +36,8 @@ class OAuthLinkService(
         oauthId: String,
         email: String? = null
     ): OAuthAccount {
-        val user = userJpaRepository.findById(userId)
-            .orElseThrow { UserNotFoundException(userId) }
+        val user = userJpaRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException(userId)
 
         val oauthAccount = user.addOAuthAccount(provider, oauthId, email)
         userJpaRepository.save(user)
@@ -53,8 +54,8 @@ class OAuthLinkService(
      * @throws IllegalStateException 최소 1개의 인증 수단이 없는 경우
      */
     fun unlinkOAuthAccount(userId: Long, provider: OAuthProvider) {
-        val user = userJpaRepository.findById(userId)
-            .orElseThrow { UserNotFoundException(userId) }
+        val user = userJpaRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException(userId)
 
         user.removeOAuthAccount(provider)
         userJpaRepository.save(user)

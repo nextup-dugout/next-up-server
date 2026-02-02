@@ -1,11 +1,12 @@
 package com.nextup.infrastructure.repository.game
 
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface GamePlayerRepository : JpaRepository<GamePlayer, Long> {
+interface GamePlayerRepository : JpaRepository<GamePlayer, Long>, GamePlayerRepositoryPort {
 
     /**
      * 경기 ID와 선수 ID로 GamePlayer를 조회합니다.
@@ -16,7 +17,7 @@ interface GamePlayerRepository : JpaRepository<GamePlayer, Long> {
         WHERE gt.game.id = :gameId
         AND gp.player.id = :playerId
     """)
-    fun findByGameIdAndPlayerId(
+    override fun findByGameIdAndPlayerId(
         @Param("gameId") gameId: Long,
         @Param("playerId") playerId: Long
     ): GamePlayer?
@@ -29,13 +30,13 @@ interface GamePlayerRepository : JpaRepository<GamePlayer, Long> {
         JOIN gp.gameTeam gt
         WHERE gt.game.id = :gameId
     """)
-    fun findAllByGameId(@Param("gameId") gameId: Long): List<GamePlayer>
+    override fun findAllByGameId(@Param("gameId") gameId: Long): List<GamePlayer>
 
     /**
      * 선수 ID로 모든 GamePlayer를 조회합니다.
-     * Spring Data JPA 메서드 네이밍 규칙으로 자동 쿼리 생성
      */
-    fun findAllByPlayer_Id(playerId: Long): List<GamePlayer>
+    @Query("SELECT gp FROM GamePlayer gp WHERE gp.player.id = :playerId")
+    override fun findAllByPlayerId(@Param("playerId") playerId: Long): List<GamePlayer>
 
     /**
      * 경기에서 현재 출전 중인 GamePlayer를 조회합니다.
@@ -46,5 +47,5 @@ interface GamePlayerRepository : JpaRepository<GamePlayer, Long> {
         WHERE gt.game.id = :gameId
         AND gp.isCurrentlyPlaying = true
     """)
-    fun findCurrentlyPlayingByGameId(@Param("gameId") gameId: Long): List<GamePlayer>
+    override fun findCurrentlyPlayingByGameId(@Param("gameId") gameId: Long): List<GamePlayer>
 }

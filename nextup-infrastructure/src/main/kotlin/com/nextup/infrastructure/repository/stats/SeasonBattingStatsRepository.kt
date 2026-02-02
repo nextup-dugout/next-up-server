@@ -1,17 +1,18 @@
 package com.nextup.infrastructure.repository.stats
 
 import com.nextup.core.domain.stats.SeasonBattingStats
+import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long> {
+interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>, SeasonBattingStatsRepositoryPort {
 
     /**
      * 선수 ID와 연도로 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.player.id = :playerId AND s.year = :year")
-    fun findByPlayerIdAndYear(
+    override fun findByPlayerIdAndYear(
         @Param("playerId") playerId: Long,
         @Param("year") year: Int
     ): SeasonBattingStats?
@@ -20,13 +21,13 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
      * 선수 ID로 모든 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.player.id = :playerId ORDER BY s.year DESC")
-    fun findAllByPlayerId(@Param("playerId") playerId: Long): List<SeasonBattingStats>
+    override fun findAllByPlayerId(@Param("playerId") playerId: Long): List<SeasonBattingStats>
 
     /**
      * 특정 연도의 모든 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.year = :year")
-    fun findAllByYear(@Param("year") year: Int): List<SeasonBattingStats>
+    override fun findAllByYear(@Param("year") year: Int): List<SeasonBattingStats>
 
     /**
      * 타율 상위 N명을 조회합니다 (최소 타수 조건).
@@ -38,7 +39,7 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
         ORDER BY (CAST(s.hits AS double) / CAST(s.atBats AS double)) DESC
         LIMIT :limit
     """)
-    fun findTopByBattingAverage(
+    override fun findTopByBattingAverage(
         @Param("year") year: Int,
         @Param("minAtBats") minAtBats: Int,
         @Param("limit") limit: Int
@@ -53,7 +54,7 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
         ORDER BY s.homeRuns DESC
         LIMIT :limit
     """)
-    fun findTopByHomeRuns(
+    override fun findTopByHomeRuns(
         @Param("year") year: Int,
         @Param("limit") limit: Int
     ): List<SeasonBattingStats>
@@ -67,7 +68,7 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
         ORDER BY s.runsBattedIn DESC
         LIMIT :limit
     """)
-    fun findTopByRunsBattedIn(
+    override fun findTopByRunsBattedIn(
         @Param("year") year: Int,
         @Param("limit") limit: Int
     ): List<SeasonBattingStats>
@@ -88,7 +89,7 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
         ) DESC
         LIMIT :limit
     """)
-    fun findTopByOps(
+    override fun findTopByOps(
         @Param("year") year: Int,
         @Param("minPlateAppearances") minPlateAppearances: Int,
         @Param("limit") limit: Int

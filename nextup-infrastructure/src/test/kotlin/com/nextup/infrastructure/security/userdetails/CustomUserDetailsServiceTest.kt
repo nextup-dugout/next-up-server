@@ -2,7 +2,9 @@ package com.nextup.infrastructure.security.userdetails
 
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
+import org.springframework.data.repository.findByIdOrNull
 import io.mockk.every
+import org.springframework.data.repository.findByIdOrNull
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -103,7 +105,7 @@ class CustomUserDetailsServiceTest {
         fun `should return user details when user exists`() {
             // given
             val user = createTestUser(id = 42L)
-            every { userJpaRepository.findById(42L) } returns Optional.of(user)
+            every { userJpaRepository.findByIdOrNull(42L) } returns user
 
             // when
             val result = service.loadUserById(42L)
@@ -117,7 +119,7 @@ class CustomUserDetailsServiceTest {
         @Test
         fun `should throw UsernameNotFoundException when user not found`() {
             // given
-            every { userJpaRepository.findById(999L) } returns Optional.empty()
+            every { userJpaRepository.findByIdOrNull(999L) } returns null
 
             // when & then
             val exception = assertThrows<UsernameNotFoundException> {

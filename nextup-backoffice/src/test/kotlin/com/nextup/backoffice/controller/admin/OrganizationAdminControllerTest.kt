@@ -7,7 +7,7 @@ import com.nextup.core.domain.admin.OrganizationAdmin
 import com.nextup.core.domain.admin.OrganizationRole
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.domain.user.User
-import com.nextup.infrastructure.service.admin.OrganizationAdminService
+import com.nextup.core.service.admin.OrganizationAdminService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

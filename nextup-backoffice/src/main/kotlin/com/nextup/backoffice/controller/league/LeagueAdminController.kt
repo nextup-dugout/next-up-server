@@ -4,7 +4,7 @@ import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.league.CreateLeagueRequest
 import com.nextup.backoffice.dto.league.LeagueAdminResponse
 import com.nextup.backoffice.dto.league.UpdateLeagueRequest
-import com.nextup.infrastructure.service.league.LeagueService
+import com.nextup.core.service.league.LeagueService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

@@ -171,6 +171,48 @@ comment:
   behavior: default
 ```
 
+---
+
+## 📝 커밋 메시지 컨벤션 (from git-workflow)
+
+### 형식
+```
+type(#이슈번호): subject (50자 이내)
+
+body (선택, 72자 줄바꿈)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+### Type 종류
+
+| Type | 설명 | 예시 |
+|------|------|------|
+| `feat` | 새로운 기능 | `feat(#1): 선수 등록 API 구현` |
+| `fix` | 버그 수정 | `fix(#2): 로그인 오류 수정` |
+| `refactor` | 리팩토링 | `refactor(#3): GameService 분리` |
+| `test` | 테스트 | `test(#4): PlayerRepository 테스트 추가` |
+| `docs` | 문서화 | `docs(#5): API 문서 업데이트` |
+| `chore` | 기타 | `chore: Gradle 설정 변경` |
+
+---
+
+## 🔄 PR 워크플로우
+
+### reviewer APPROVED 후 머지 순서
+1. reviewer로부터 APPROVED 받음
+2. CI 통과 확인
+3. Squash and Merge
+4. 브랜치 삭제
+
+### Issue 연결 (필수)
+```markdown
+## Summary
+>- close #이슈번호
+```
+
+---
+
 ## 협업
 
 - **planner**: 이슈 생성 요청

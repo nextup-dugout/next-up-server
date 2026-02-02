@@ -1,17 +1,18 @@
 package com.nextup.infrastructure.repository.stats
 
 import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long> {
+interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>, CareerBattingStatsRepositoryPort {
 
     /**
      * 선수 ID로 통산 타격 통계를 조회합니다.
      */
     @Query("SELECT c FROM CareerBattingStats c WHERE c.player.id = :playerId")
-    fun findByPlayerId(@Param("playerId") playerId: Long): CareerBattingStats?
+    override fun findByPlayerId(@Param("playerId") playerId: Long): CareerBattingStats?
 
     /**
      * 통산 타율 상위 N명을 조회합니다 (최소 타수 조건).
@@ -22,7 +23,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ORDER BY (CAST(c.hits AS double) / CAST(c.atBats AS double)) DESC
         LIMIT :limit
     """)
-    fun findTopByBattingAverage(
+    override fun findTopByBattingAverage(
         @Param("minAtBats") minAtBats: Int,
         @Param("limit") limit: Int
     ): List<CareerBattingStats>
@@ -35,7 +36,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ORDER BY c.homeRuns DESC
         LIMIT :limit
     """)
-    fun findTopByHomeRuns(@Param("limit") limit: Int): List<CareerBattingStats>
+    override fun findTopByHomeRuns(@Param("limit") limit: Int): List<CareerBattingStats>
 
     /**
      * 통산 타점 상위 N명을 조회합니다.
@@ -45,7 +46,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ORDER BY c.runsBattedIn DESC
         LIMIT :limit
     """)
-    fun findTopByRunsBattedIn(@Param("limit") limit: Int): List<CareerBattingStats>
+    override fun findTopByRunsBattedIn(@Param("limit") limit: Int): List<CareerBattingStats>
 
     /**
      * 통산 안타 상위 N명을 조회합니다.
@@ -55,7 +56,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ORDER BY c.hits DESC
         LIMIT :limit
     """)
-    fun findTopByHits(@Param("limit") limit: Int): List<CareerBattingStats>
+    override fun findTopByHits(@Param("limit") limit: Int): List<CareerBattingStats>
 
     /**
      * 통산 도루 상위 N명을 조회합니다.
@@ -65,7 +66,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ORDER BY c.stolenBases DESC
         LIMIT :limit
     """)
-    fun findTopByStolenBases(@Param("limit") limit: Int): List<CareerBattingStats>
+    override fun findTopByStolenBases(@Param("limit") limit: Int): List<CareerBattingStats>
 
     /**
      * 통산 OPS 상위 N명을 조회합니다 (최소 타석 조건).
@@ -82,7 +83,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ) DESC
         LIMIT :limit
     """)
-    fun findTopByOps(
+    override fun findTopByOps(
         @Param("minPlateAppearances") minPlateAppearances: Int,
         @Param("limit") limit: Int
     ): List<CareerBattingStats>
@@ -100,7 +101,7 @@ interface CareerBattingStatsRepository : JpaRepository<CareerBattingStats, Long>
         ) DESC
         LIMIT :limit
     """)
-    fun findTopBySluggingPercentage(
+    override fun findTopBySluggingPercentage(
         @Param("minAtBats") minAtBats: Int,
         @Param("limit") limit: Int
     ): List<CareerBattingStats>

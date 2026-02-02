@@ -5,7 +5,7 @@ import com.nextup.backoffice.dto.competition.CompetitionAdminResponse
 import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
 import com.nextup.core.domain.competition.CompetitionStatus
-import com.nextup.infrastructure.service.competition.CompetitionService
+import com.nextup.core.service.competition.CompetitionService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

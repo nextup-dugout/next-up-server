@@ -7,7 +7,7 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.service.competition.CompetitionService
+import com.nextup.core.service.competition.CompetitionService
 import com.nextup.scorer.dto.competition.CreateCompetitionRequest
 import com.nextup.scorer.dto.competition.UpdateCompetitionRequest
 import io.mockk.every

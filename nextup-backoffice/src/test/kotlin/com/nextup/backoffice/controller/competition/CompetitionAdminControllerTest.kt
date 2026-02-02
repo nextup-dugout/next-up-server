@@ -9,7 +9,7 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
-import com.nextup.infrastructure.service.competition.CompetitionService
+import com.nextup.core.service.competition.CompetitionService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

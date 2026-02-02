@@ -9,7 +9,7 @@ import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
-import com.nextup.infrastructure.service.stats.PlayerStatsService
+import com.nextup.core.service.stats.PlayerStatsService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

@@ -6,7 +6,7 @@ import com.nextup.api.dto.game.PitchingRecordResponse
 import com.nextup.api.mapper.game.toResponse
 import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.infrastructure.repository.game.GamePlayerRepository
-import com.nextup.infrastructure.service.game.PitchingRecordService
+import com.nextup.core.service.game.PitchingRecordService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping

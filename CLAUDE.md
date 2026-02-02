@@ -126,6 +126,45 @@ nextup-scorer     ─┘
 
 ---
 
+## 🔄 Agent 협업 워크플로우 (필수)
+
+### 기능 구현 흐름
+
+```
+1. planner     → 요구사항 분석, 구현 계획 수립 → GitHub Issue 생성
+       ↓
+2. devops      → 브랜치 생성
+   architect   → Entity/Repository 설계 및 구조 생성
+       ↓
+3. implementer → Controller/Service/DTO 구현
+       ↓
+4. reviewer    → 검증 (다른 agent들과 대화하며 확인)
+       ↓
+5. APPROVED 후 → PR 템플릿대로 PR 작성 및 머지
+```
+
+### reviewer의 협업 검증 (필수)
+
+**reviewer는 반드시 다른 agent들과 대화하며 검증합니다:**
+
+| 대상 | 질문 예시 |
+|------|----------|
+| **planner** | "이 구현이 계획대로 된 건가요?" |
+| **architect** | "이 구조가 설계 의도와 맞나요?" |
+| **implementer** | "왜 이렇게 구현했나요?" |
+
+### Agent 사용 시점
+
+| 상황 | 사용 Agent |
+|------|-----------|
+| 새 기능 요청 | `planner` (이슈 생성) → `architect` → `implementer` |
+| 설계/구조 생성 | `architect` 또는 `devops` |
+| 버그 수정 | `implementer` |
+| 구현 완료 후 | `reviewer` (필수, 승인 전까지) |
+| reviewer 승인 후 | PR 템플릿대로 PR 작성 |
+
+---
+
 ## ⚠️ Reviewer VETO 권한 (절대적)
 
 **`reviewer` 에이전트는 다음 조건에서 무조건적 승인 거부 권한을 행사합니다:**
@@ -184,6 +223,7 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-02-03 | Agent 협업 워크플로우 추가, Skill 내용 Agent에 merge |
 | 2026-02-01 | 모듈 구조 확장 (4개→6개): backoffice, scorer 모듈 추가 |
 | 2026-01-23 | Agent/Skill 구조 개선 (13개→5개 Agent, 4개→6개 Skill) |
 | 2026-01-23 | Rules, Commands 추가 |
