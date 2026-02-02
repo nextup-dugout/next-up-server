@@ -1,18 +1,12 @@
 # Codecov Configuration
 # https://docs.codecov.com/docs/codecovyml-reference
 
+# 커버리지 검증은 Jacoco에서 수행 (CI: jacocoTestCoverageVerification)
+# Codecov는 리포팅/시각화 용도로만 사용
 coverage:
   status:
-    project:
-      default:
-        target: 80%
-        threshold: 2%
-        informational: false
-    patch:
-      default:
-        target: 80%
-        threshold: 2%
-        informational: false
+    project: off
+    patch: off
 
 # PR에 커버리지 코멘트 추가
 comment:
