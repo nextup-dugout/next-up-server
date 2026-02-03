@@ -13,8 +13,6 @@ interface GamePlayerRepositoryPort {
 
     fun findAll(): List<GamePlayer>
 
-    fun findById(id: Long): GamePlayer?
-
     fun findByIdOrNull(id: Long): GamePlayer?
 
     fun delete(gamePlayer: GamePlayer)
