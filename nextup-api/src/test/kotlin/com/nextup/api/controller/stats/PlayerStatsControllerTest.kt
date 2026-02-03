@@ -89,16 +89,16 @@ class PlayerStatsControllerTest {
         }
 
         @Test
-        fun `should return 500 when season batting stats not found`() {
+        fun `should return 400 when season batting stats not found`() {
             // given
             every { playerStatsService.getSeasonBattingStats(playerId, year) } throws
                 IllegalArgumentException("선수 ID $playerId 의 ${year}년도 타격 통계가 존재하지 않습니다.")
 
             // when & then
             mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/season/$year"))
-                .andExpect(status().isInternalServerError)
+                .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.error.code").value("INVALID_ARGUMENT"))
         }
     }
 
@@ -137,16 +137,16 @@ class PlayerStatsControllerTest {
         }
 
         @Test
-        fun `should return 500 when season pitching stats not found`() {
+        fun `should return 400 when season pitching stats not found`() {
             // given
             every { playerStatsService.getSeasonPitchingStats(playerId, year) } throws
                 IllegalArgumentException("선수 ID $playerId 의 ${year}년도 투수 통계가 존재하지 않습니다.")
 
             // when & then
             mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/season/$year"))
-                .andExpect(status().isInternalServerError)
+                .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.error.code").value("INVALID_ARGUMENT"))
         }
     }
 

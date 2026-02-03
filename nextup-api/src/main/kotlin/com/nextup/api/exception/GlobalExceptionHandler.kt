@@ -59,6 +59,22 @@ class GlobalExceptionHandler {
             .body(ApiResponse.error("VALIDATION_ERROR", errors))
     }
 
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("IllegalArgumentException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("INVALID_ARGUMENT", ex.message ?: "Invalid argument"))
+    }
+
+    @ExceptionHandler(IllegalStateException::class)
+    fun handleIllegalStateException(ex: IllegalStateException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("IllegalStateException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("INVALID_STATE", ex.message ?: "Invalid state"))
+    }
+
     @ExceptionHandler(Exception::class)
     fun handleException(ex: Exception): ResponseEntity<ApiResponse<Nothing>> {
         log.error("UnexpectedException: {}", ex.message, ex)
