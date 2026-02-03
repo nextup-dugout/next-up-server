@@ -249,6 +249,77 @@ class CompetitionScorerControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/scorer/competitions/{id}/complete")
+    inner class CompleteCompetition {
+
+        @Test
+        fun `should complete competition`() {
+            // given
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetitionWithStatus(1L, "2025 춘계대회", league, 2025, 1, CompetitionStatus.COMPLETED)
+            every { competitionService.complete(1L, any()) } returns competition
+
+            // when & then
+            mockMvc.perform(post("/api/scorer/competitions/1/complete"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"))
+
+            verify(exactly = 1) { competitionService.complete(1L, any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/scorer/competitions/{id}")
+    inner class CancelCompetition {
+
+        @Test
+        fun `should cancel competition`() {
+            // given
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetitionWithStatus(1L, "2025 춘계대회", league, 2025, 1, CompetitionStatus.CANCELLED)
+            every { competitionService.cancel(1L) } returns competition
+
+            // when & then
+            mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/scorer/competitions/1")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+
+            verify(exactly = 1) { competitionService.cancel(1L) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/competitions/{id}/postpone")
+    inner class PostponeCompetition {
+
+        @Test
+        fun `should postpone competition`() {
+            // given
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetitionWithStatus(1L, "2025 춘계대회", league, 2025, 1, CompetitionStatus.POSTPONED)
+            every { competitionService.postpone(1L) } returns competition
+
+            // when & then
+            mockMvc.perform(post("/api/scorer/competitions/1/postpone"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("POSTPONED"))
+
+            verify(exactly = 1) { competitionService.postpone(1L) }
+        }
+    }
+
     private fun createAssociation(id: Long, name: String): Association {
         return Association(
             name = name,
@@ -287,6 +358,17 @@ class CompetitionScorerControllerTest {
         year: Int,
         season: Int
     ): Competition {
+        return createCompetitionWithStatus(id, name, league, year, season, CompetitionStatus.SCHEDULED)
+    }
+
+    private fun createCompetitionWithStatus(
+        id: Long,
+        name: String,
+        league: League,
+        year: Int,
+        season: Int,
+        status: CompetitionStatus
+    ): Competition {
         return Competition(
             league = league,
             name = name,
@@ -295,7 +377,7 @@ class CompetitionScorerControllerTest {
             type = CompetitionType.LEAGUE,
             startDate = LocalDate.of(year, 3, 1),
             endDate = LocalDate.of(year, 6, 30),
-            status = CompetitionStatus.SCHEDULED,
+            status = status,
             description = null,
             maxTeams = null
         ).apply {

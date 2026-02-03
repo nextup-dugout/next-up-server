@@ -23,6 +23,30 @@ subprojects {
         toolVersion = "0.8.12"
     }
 
+    // Jacoco 커버리지 제외 대상 (Ant 스타일 패턴)
+    val jacocoExcludes = listOf(
+        // Kotlin generated
+        "**/*\$default*",
+
+        // Config classes - 모든 config 패키지
+        "**/config/**",
+
+        // Application classes
+        "**/*Application*",
+
+        // DTO classes
+        "**/dto/**",
+
+        // Exception classes
+        "**/exception/**",
+
+        // Mapper classes
+        "**/mapper/**",
+
+        // Health controllers
+        "**/HealthController*"
+    )
+
     tasks.withType<JacocoReport> {
         reports {
             xml.required = true
@@ -31,9 +55,7 @@ subprojects {
         classDirectories.setFrom(
             files(classDirectories.files.map {
                 fileTree(it) {
-                    exclude(
-                        "**/*\$default*" // Kotlin default parameter methods
-                    )
+                    exclude(jacocoExcludes)
                 }
             })
         )
@@ -50,9 +72,7 @@ subprojects {
         classDirectories.setFrom(
             files(classDirectories.files.map {
                 fileTree(it) {
-                    exclude(
-                        "**/*\$default*" // Kotlin default parameter methods
-                    )
+                    exclude(jacocoExcludes)
                 }
             })
         )

@@ -1,34 +1,35 @@
 # Codecov Configuration
 # https://docs.codecov.com/docs/codecovyml-reference
 
+# 커버리지 검증은 Jacoco에서 수행 (CI: jacocoTestCoverageVerification)
+# Codecov는 리포팅/시각화 용도로만 사용
 coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 85%
         threshold: 2%
-        informational: false
     patch:
       default:
-        target: 80%
-        threshold: 2%
-        informational: false
+        target: 85%
 
 # PR에 커버리지 코멘트 추가
 comment:
   layout: "reach,diff,flags,files"
   behavior: default
-  require_changes: true
-  require_base: false
-  require_head: true
+  require_changes: false
 
-# 파일/디렉토리 무시
+# 파일/디렉토리 무시 (Jacoco 제외 패턴과 동기화)
 ignore:
   - "**/test/**"
   - "**/generated/**"
+  - "**/config/**"
   - "**/*Config.kt"
   - "**/*Application.kt"
-  - "**/dto/**"  # DTO 클래스 제외 (테스트 불필요)
+  - "**/dto/**"
+  - "**/exception/**"
+  - "**/mapper/**"
+  - "**/HealthController.kt"
 
 # 플래그 설정 (모듈별 커버리지)
 flags:
@@ -43,6 +44,14 @@ flags:
   api:
     paths:
       - nextup-api/
+    carryforward: true
+  backoffice:
+    paths:
+      - nextup-backoffice/
+    carryforward: true
+  scorer:
+    paths:
+      - nextup-scorer/
     carryforward: true
 
 # GitHub 체크 설정
