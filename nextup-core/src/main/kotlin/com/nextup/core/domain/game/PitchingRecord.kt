@@ -348,6 +348,62 @@ class PitchingRecord(
     }
 
     /**
+     * 타자와 대결한 결과를 기록합니다 (BoxScore 계산용).
+     */
+    fun applyBatterFaced(result: PlateAppearanceResult) {
+        battersFaced++
+
+        when (result) {
+            PlateAppearanceResult.SINGLE,
+            PlateAppearanceResult.DOUBLE,
+            PlateAppearanceResult.TRIPLE -> {
+                hitsAllowed++
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                hitsAllowed++
+                homeRunsAllowed++
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                strikeouts++
+            }
+            PlateAppearanceResult.WALK,
+            PlateAppearanceResult.INTENTIONAL_WALK -> {
+                walksAllowed++
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                hitBatsmen++
+            }
+            else -> {
+                // 다른 결과는 투수 기록에 직접적인 영향 없음
+            }
+        }
+    }
+
+    /**
+     * 아웃 카운트를 기록합니다 (이닝 소화).
+     */
+    fun recordOut() {
+        inningsPitchedOuts++
+    }
+
+    /**
+     * 자책점을 기록합니다.
+     */
+    fun recordEarnedRun(runs: Int) {
+        require(runs >= 0) { "자책점은 0 이상이어야 합니다." }
+        earnedRuns += runs
+        runsAllowed += runs
+    }
+
+    /**
+     * 비자책 실점을 기록합니다.
+     */
+    fun recordUnearnedRun(runs: Int) {
+        require(runs >= 0) { "비자책 실점은 0 이상이어야 합니다." }
+        runsAllowed += runs
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

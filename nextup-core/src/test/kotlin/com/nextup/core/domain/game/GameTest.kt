@@ -318,4 +318,245 @@ class GameTest {
             assertThat(game.isExtraInning).isTrue()
         }
     }
+
+    @Nested
+    @DisplayName("아웃 기록")
+    inner class RecordOut {
+
+        @Test
+        fun `진행 중인 경기에서 아웃을 기록할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            val isInningOver = game.recordOut()
+
+            // then
+            assertThat(isInningOver).isFalse()
+        }
+
+        @Test
+        fun `3아웃이 되면 true를 반환한다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.recordOut()
+            game.recordOut()
+
+            // when
+            val isInningOver = game.recordOut()
+
+            // then
+            assertThat(isInningOver).isTrue()
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 아웃을 기록할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.recordOut() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("타자 진행")
+    inner class AdvanceBatter {
+
+        @Test
+        fun `진행 중인 경기에서 타순을 진행할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            game.advanceBatter()
+
+            // then (예외가 발생하지 않으면 성공)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 타순을 진행할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.FINISHED)
+
+            // when & then
+            assertThatThrownBy { game.advanceBatter() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("주자 설정")
+    inner class SetRunner {
+
+        @Test
+        fun `진행 중인 경기에서 주자를 설정할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            game.setRunner(Base.FIRST, 123L)
+
+            // then (예외가 발생하지 않으면 성공)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 주자를 설정할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.setRunner(Base.FIRST, 123L) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("베이스 클리어")
+    inner class ClearBases {
+
+        @Test
+        fun `진행 중인 경기에서 베이스를 클리어할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.setRunner(Base.FIRST, 123L)
+            game.setRunner(Base.SECOND, 456L)
+
+            // when
+            game.clearBases()
+
+            // then (예외가 발생하지 않으면 성공)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 베이스를 클리어할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.FINISHED)
+
+            // when & then
+            assertThatThrownBy { game.clearBases() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("볼카운트 리셋")
+    inner class ResetCount {
+
+        @Test
+        fun `진행 중인 경기에서 볼카운트를 리셋할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            game.resetCount()
+
+            // then (예외가 발생하지 않으면 성공)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 볼카운트를 리셋할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.resetCount() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("볼 추가")
+    inner class AddBall {
+
+        @Test
+        fun `진행 중인 경기에서 볼을 추가할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            val isWalk = game.addBall()
+
+            // then
+            assertThat(isWalk).isFalse()
+        }
+
+        @Test
+        fun `4볼이 되면 true를 반환한다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.addBall()
+            game.addBall()
+            game.addBall()
+
+            // when
+            val isWalk = game.addBall()
+
+            // then
+            assertThat(isWalk).isTrue()
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 볼을 추가할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.CANCELLED)
+
+            // when & then
+            assertThatThrownBy { game.addBall() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("스트라이크 추가")
+    inner class AddStrike {
+
+        @Test
+        fun `진행 중인 경기에서 스트라이크를 추가할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            val isStrikeout = game.addStrike()
+
+            // then
+            assertThat(isStrikeout).isFalse()
+        }
+
+        @Test
+        fun `3스트라이크가 되면 true를 반환한다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.addStrike()
+            game.addStrike()
+
+            // when
+            val isStrikeout = game.addStrike()
+
+            // then
+            assertThat(isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기에서는 스트라이크를 추가할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.POSTPONED)
+
+            // when & then
+            assertThatThrownBy { game.addStrike() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
 }

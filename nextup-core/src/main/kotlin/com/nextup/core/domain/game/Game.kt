@@ -61,6 +61,9 @@ class Game(
     @Column(length = 500)
     var note: String? = null,
 
+    @Embedded
+    var gameState: GameState = GameState(),
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
@@ -75,6 +78,7 @@ class Game(
         currentInning = 1
         isTopInning = true
         startedAt = LocalDateTime.now()
+        gameState.resetForNewInning()
     }
 
     /**
@@ -89,6 +93,7 @@ class Game(
             currentInning++
             isTopInning = true
         }
+        gameState.resetForNewInning()
     }
 
     /**
@@ -173,4 +178,63 @@ class Game(
      */
     val isExtraInning: Boolean
         get() = currentInning > totalInnings
+
+    /**
+     * 아웃을 기록합니다.
+     * @return 3아웃으로 이닝이 종료되었는지 여부
+     */
+    fun recordOut(): Boolean {
+        require(status.isOngoing()) { "진행 중인 경기만 아웃을 기록할 수 있습니다." }
+        return gameState.recordOut()
+    }
+
+    /**
+     * 다음 타자로 타순을 진행합니다.
+     */
+    fun advanceBatter() {
+        require(status.isOngoing()) { "진행 중인 경기만 타순을 진행할 수 있습니다." }
+        gameState.advanceBatter(isHomeTeam = !isTopInning)
+    }
+
+    /**
+     * 주자를 설정합니다.
+     */
+    fun setRunner(base: Base, playerId: Long?) {
+        require(status.isOngoing()) { "진행 중인 경기만 주자를 설정할 수 있습니다." }
+        gameState.setRunner(base, playerId)
+    }
+
+    /**
+     * 모든 베이스를 클리어합니다.
+     */
+    fun clearBases() {
+        require(status.isOngoing()) { "진행 중인 경기만 베이스를 클리어할 수 있습니다." }
+        gameState.clearBases()
+    }
+
+    /**
+     * 볼카운트를 리셋합니다.
+     */
+    fun resetCount() {
+        require(status.isOngoing()) { "진행 중인 경기만 볼카운트를 리셋할 수 있습니다." }
+        gameState.resetCount()
+    }
+
+    /**
+     * 볼을 추가합니다.
+     * @return 4볼로 볼넷 여부
+     */
+    fun addBall(): Boolean {
+        require(status.isOngoing()) { "진행 중인 경기만 볼을 추가할 수 있습니다." }
+        return gameState.addBall()
+    }
+
+    /**
+     * 스트라이크를 추가합니다.
+     * @return 3스트라이크로 삼진 여부
+     */
+    fun addStrike(): Boolean {
+        require(status.isOngoing()) { "진행 중인 경기만 스트라이크를 추가할 수 있습니다." }
+        return gameState.addStrike()
+    }
 }

@@ -28,7 +28,7 @@ class PitchingRecordTest {
         @Test
         fun `아웃을 기록하면 inningsPitchedOuts가 증가한다`() {
             // when
-            pitchingRecord.recordOut()
+            pitchingRecord.recordOut(false)
 
             // then
             assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(1)
@@ -604,6 +604,184 @@ class PitchingRecordTest {
             assertThatThrownBy { PitchingRecord.parseInningsToOuts("5.3") }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("잔여 아웃 수")
+        }
+    }
+
+    @Nested
+    @DisplayName("applyBatterFaced - BoxScore 자동 계산")
+    inner class ApplyBatterFacedTest {
+
+        @Test
+        fun `단타를 적용하면 battersFaced와 hitsAllowed가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `2루타를 적용하면 피안타가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.DOUBLE)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `홈런을 적용하면 피안타와 피홈런이 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.HOME_RUN)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(1)
+            assertThat(pitchingRecord.homeRunsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `삼진을 적용하면 battersFaced와 strikeouts가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.strikeouts).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `볼넷을 적용하면 battersFaced와 walksAllowed가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.WALK)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `고의4구를 적용하면 battersFaced와 walksAllowed가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `사구를 적용하면 battersFaced와 hitBatsmen이 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitBatsmen).isEqualTo(1)
+        }
+
+        @Test
+        fun `땅볼아웃을 적용하면 battersFaced만 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `연속된 타자 대결 결과를 올바르게 누적한다`() {
+            // given
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.WALK)
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.HOME_RUN)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(4)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(2)
+            assertThat(pitchingRecord.strikeouts).isEqualTo(1)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(1)
+            assertThat(pitchingRecord.homeRunsAllowed).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("recordOut - 아웃 카운트 기록")
+    inner class RecordOutOnlyTest {
+
+        @Test
+        fun `recordOut()은 이닝 아웃만 증가시킨다`() {
+            // when
+            pitchingRecord.recordOut()
+
+            // then
+            assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("recordEarnedRun - 자책점 기록")
+    inner class RecordEarnedRunTest {
+
+        @Test
+        fun `자책점을 기록하면 earnedRuns와 runsAllowed가 증가한다`() {
+            // when
+            pitchingRecord.recordEarnedRun(2)
+
+            // then
+            assertThat(pitchingRecord.earnedRuns).isEqualTo(2)
+            assertThat(pitchingRecord.runsAllowed).isEqualTo(2)
+        }
+
+        @Test
+        fun `음수 자책점은 허용되지 않는다`() {
+            // when & then
+            assertThatThrownBy {
+                pitchingRecord.recordEarnedRun(-1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("자책점은 0 이상이어야 합니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("recordUnearnedRun - 비자책 실점 기록")
+    inner class RecordUnearnedRunTest {
+
+        @Test
+        fun `비자책 실점을 기록하면 runsAllowed만 증가한다`() {
+            // when
+            pitchingRecord.recordUnearnedRun(2)
+
+            // then
+            assertThat(pitchingRecord.runsAllowed).isEqualTo(2)
+            assertThat(pitchingRecord.earnedRuns).isEqualTo(0)
+        }
+
+        @Test
+        fun `음수 비자책 실점은 허용되지 않는다`() {
+            // when & then
+            assertThatThrownBy {
+                pitchingRecord.recordUnearnedRun(-1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("비자책 실점은 0 이상이어야 합니다")
+        }
+
+        @Test
+        fun `자책점과 비자책점을 함께 기록할 수 있다`() {
+            // given
+            pitchingRecord.recordEarnedRun(2)
+            pitchingRecord.recordUnearnedRun(1)
+
+            // then
+            assertThat(pitchingRecord.earnedRuns).isEqualTo(2)
+            assertThat(pitchingRecord.runsAllowed).isEqualTo(3)
+            assertThat(pitchingRecord.unearnedRuns).isEqualTo(1)
         }
     }
 }
