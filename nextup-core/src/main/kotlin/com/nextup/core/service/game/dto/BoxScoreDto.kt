@@ -1,6 +1,7 @@
 package com.nextup.core.service.game.dto
 
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * 박스스코어 전체 DTO
@@ -46,7 +47,7 @@ data class BatterLineDto(
 ) {
     companion object {
         fun formatAverage(average: BigDecimal): String {
-            return average.setScale(3, BigDecimal.ROUND_HALF_UP).toString()
+            return average.setScale(3, RoundingMode.HALF_UP).toString()
         }
     }
 }
@@ -69,7 +70,7 @@ data class PitcherLineDto(
 ) {
     companion object {
         fun formatERA(era: BigDecimal): String {
-            return era.setScale(2, BigDecimal.ROUND_HALF_UP).toString()
+            return era.setScale(2, RoundingMode.HALF_UP).toString()
         }
     }
 }
