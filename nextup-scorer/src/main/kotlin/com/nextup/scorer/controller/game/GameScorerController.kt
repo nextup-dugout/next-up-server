@@ -5,15 +5,18 @@ import com.nextup.scorer.dto.common.ApiResponse
 import com.nextup.scorer.dto.game.*
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
  * 기록원 전용 경기 기록 컨트롤러
  *
  * 실시간 경기 기록 입력을 위한 API를 제공합니다.
+ * SCORER 또는 ADMIN 역할이 필요합니다.
  */
 @RestController
 @RequestMapping("/api/scorer/games")
+@PreAuthorize("hasAnyRole('SCORER', 'ADMIN')")
 class GameScorerController(
     private val gameScorerService: GameScorerService
 ) {

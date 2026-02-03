@@ -40,7 +40,7 @@ class GameScorerServiceImpl(
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
-        require(game.status == GameStatus.IN_PROGRESS) {
+        if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 타석 기록을 입력할 수 있습니다. 현재 상태: ${game.status.displayName}")
         }
 
@@ -108,7 +108,7 @@ class GameScorerServiceImpl(
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
-        require(game.status == GameStatus.IN_PROGRESS) {
+        if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 이닝을 진행할 수 있습니다. 현재 상태: ${game.status.displayName}")
         }
 
@@ -123,7 +123,7 @@ class GameScorerServiceImpl(
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
-        require(game.status == GameStatus.IN_PROGRESS) {
+        if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 종료할 수 있습니다. 현재 상태: ${game.status.displayName}")
         }
 
