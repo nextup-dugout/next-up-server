@@ -23,3 +23,11 @@ open class InvalidStateException(
     code: String,
     message: String
 ) : BusinessException(code, message)
+
+/**
+ * 유효하지 않은 입력일 때 발생하는 예외
+ */
+open class InvalidInputException(
+    code: String,
+    message: String
+) : BusinessException(code, message)
