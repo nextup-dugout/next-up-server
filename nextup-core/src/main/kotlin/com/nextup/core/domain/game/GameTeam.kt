@@ -125,6 +125,27 @@ class GameTeam(
     }
 
     /**
+     * 특정 이닝에 득점을 추가합니다 (BoxScore 계산용).
+     */
+    fun addRunInInning(inning: Int, runs: Int = 1) {
+        require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
+        require(runs >= 0) { "점수는 0 이상이어야 합니다." }
+
+        val scores = inningScores?.split(",")?.toMutableList() ?: mutableListOf()
+
+        // 필요한 만큼 이닝 확장
+        while (scores.size < inning) {
+            scores.add("0")
+        }
+
+        val currentScore = scores[inning - 1].toIntOrNull() ?: 0
+        scores[inning - 1] = (currentScore + runs).toString()
+        inningScores = scores.joinToString(",")
+
+        totalScore += runs
+    }
+
+    /**
      * 특정 이닝의 점수를 조회합니다.
      */
     fun getInningScore(inning: Int): Int {

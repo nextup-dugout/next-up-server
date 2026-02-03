@@ -230,6 +230,75 @@ class BattingRecord(
     }
 
     /**
+     * 타석 결과에 따른 기록을 자동으로 갱신합니다 (BoxScore 계산용).
+     * recordPlateAppearance와 유사하지만 더 명시적인 API를 제공합니다.
+     */
+    fun applyPlateAppearanceResult(result: PlateAppearanceResult, rbis: Int = 0) {
+        require(rbis >= 0) { "타점은 0 이상이어야 합니다." }
+
+        plateAppearances++
+
+        when (result) {
+            PlateAppearanceResult.SINGLE -> {
+                atBats++
+                hits++
+            }
+            PlateAppearanceResult.DOUBLE -> {
+                atBats++
+                hits++
+                doubles++
+            }
+            PlateAppearanceResult.TRIPLE -> {
+                atBats++
+                hits++
+                triples++
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                atBats++
+                hits++
+                homeRuns++
+                runs++  // 홈런은 타자 자신도 득점
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                atBats++
+                strikeouts++
+            }
+            PlateAppearanceResult.GROUND_OUT,
+            PlateAppearanceResult.FLY_OUT,
+            PlateAppearanceResult.LINE_OUT,
+            PlateAppearanceResult.FIELDERS_CHOICE,
+            PlateAppearanceResult.ERROR -> {
+                atBats++
+            }
+            PlateAppearanceResult.WALK -> {
+                walks++
+            }
+            PlateAppearanceResult.INTENTIONAL_WALK -> {
+                intentionalWalks++
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                hitByPitch++
+            }
+            PlateAppearanceResult.SACRIFICE_FLY -> {
+                sacrificeFlies++
+            }
+            PlateAppearanceResult.SACRIFICE_BUNT -> {
+                sacrificeBunts++
+            }
+            PlateAppearanceResult.DOUBLE_PLAY,
+            PlateAppearanceResult.TRIPLE_PLAY -> {
+                atBats++
+                groundedIntoDoublePlays++
+            }
+            PlateAppearanceResult.INTERFERENCE -> {
+                // 방해는 타수에 포함되지 않음
+            }
+        }
+
+        this.runsBattedIn += rbis
+    }
+
+    /**
      * 도루를 기록합니다.
      */
     fun recordStolenBase() {

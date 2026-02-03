@@ -7,14 +7,15 @@ package com.nextup.core.domain.game
  */
 enum class PitchingDecision(
     val displayName: String,
+    val abbreviation: String,
     val description: String
 ) {
-    WIN("승", "승리투수"),
-    LOSS("패", "패전투수"),
-    SAVE("세이브", "세이브"),
-    HOLD("홀드", "홀드"),
-    BLOWN_SAVE("블론세이브", "세이브 실패"),
-    NONE("없음", "결정 없음");
+    WIN("승", "W", "승리투수"),
+    LOSS("패", "L", "패전투수"),
+    SAVE("세이브", "S", "세이브"),
+    HOLD("홀드", "H", "홀드"),
+    BLOWN_SAVE("블론세이브", "BS", "세이브 실패"),
+    NONE("없음", "-", "결정 없음");
 
     /**
      * 승리 결정인지 확인합니다.

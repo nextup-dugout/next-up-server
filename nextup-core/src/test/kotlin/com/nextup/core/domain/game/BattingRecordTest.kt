@@ -405,4 +405,193 @@ class BattingRecordTest {
             battingRecord.validate() // 예외 없이 통과
         }
     }
+
+    @Nested
+    @DisplayName("applyPlateAppearanceResult - BoxScore 자동 계산")
+    inner class ApplyPlateAppearanceResultTest {
+
+        @Test
+        fun `단타를 적용하면 타석, 타수, 안타가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(1)
+        }
+
+        @Test
+        fun `2루타를 적용하면 doubles가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(1)
+            assertThat(battingRecord.doubles).isEqualTo(1)
+        }
+
+        @Test
+        fun `3루타를 적용하면 triples가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(1)
+            assertThat(battingRecord.triples).isEqualTo(1)
+        }
+
+        @Test
+        fun `홈런을 적용하면 homeRuns와 runs가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(1)
+            assertThat(battingRecord.homeRuns).isEqualTo(1)
+            assertThat(battingRecord.runs).isEqualTo(1) // 홈런은 타자 자신도 득점
+        }
+
+        @Test
+        fun `삼진을 적용하면 타수와 strikeouts가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.strikeouts).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `볼넷을 적용하면 타수는 증가하지 않고 walks가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.walks).isEqualTo(1)
+        }
+
+        @Test
+        fun `고의사구를 적용하면 intentionalWalks가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.intentionalWalks).isEqualTo(1)
+        }
+
+        @Test
+        fun `사구를 적용하면 hitByPitch가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.hitByPitch).isEqualTo(1)
+        }
+
+        @Test
+        fun `희생플라이를 적용하면 타수는 증가하지 않고 sacrificeFlies가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.sacrificeFlies).isEqualTo(1)
+        }
+
+        @Test
+        fun `희생번트를 적용하면 타수는 증가하지 않고 sacrificeBunts가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_BUNT)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.sacrificeBunts).isEqualTo(1)
+        }
+
+        @Test
+        fun `땅볼아웃을 적용하면 타수만 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `병살타를 적용하면 타수와 groundedIntoDoublePlays가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE_PLAY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `방해는 타수에 포함되지 않는다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `타점을 함께 적용할 수 있다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 2)
+
+            // then
+            assertThat(battingRecord.runsBattedIn).isEqualTo(2)
+        }
+
+        @Test
+        fun `음수 타점은 허용되지 않는다`() {
+            // when & then
+            assertThatThrownBy {
+                battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = -1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("타점은 0 이상이어야 합니다")
+        }
+
+        @Test
+        fun `연속된 타석 결과를 올바르게 누적한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 0)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE, rbis = 1)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 2)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT, rbis = 0)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(4)
+            assertThat(battingRecord.atBats).isEqualTo(4)
+            assertThat(battingRecord.hits).isEqualTo(3)
+            assertThat(battingRecord.doubles).isEqualTo(1)
+            assertThat(battingRecord.homeRuns).isEqualTo(1)
+            assertThat(battingRecord.runs).isEqualTo(1) // 홈런 득점
+            assertThat(battingRecord.runsBattedIn).isEqualTo(3)
+            assertThat(battingRecord.strikeouts).isEqualTo(1)
+        }
+    }
 }
