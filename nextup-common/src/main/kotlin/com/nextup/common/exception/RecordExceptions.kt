@@ -35,3 +35,15 @@ class RecordAlreadyExistsException(gamePlayerId: Long, recordType: String) :
         "RECORD_ALREADY_EXISTS",
         "$recordType record already exists for GamePlayer: $gamePlayerId"
     )
+
+/**
+ * 경기를 찾을 수 없을 때 발생하는 예외
+ */
+class GameNotFoundException(id: Long) :
+    NotFoundException("GAME_NOT_FOUND", "Game not found: $id")
+
+/**
+ * 잘못된 경기 상태일 때 발생하는 예외
+ */
+class InvalidGameStateException(message: String) :
+    InvalidStateException("INVALID_GAME_STATE", message)
