@@ -1,5 +1,9 @@
 package com.nextup.infrastructure.service.game
 
+import com.nextup.common.exception.BattingRecordNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundException
+import com.nextup.common.exception.InvalidStateException
+import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
@@ -131,7 +135,7 @@ class BoxScoreServiceImplTest {
 
             // when & then
             assertThatThrownBy { boxScoreService.getBoxScore(1L) }
-                .isInstanceOf(IllegalArgumentException::class.java)
+                .isInstanceOf(InvalidStateException::class.java)
                 .hasMessageContaining("출전 선수가 없습니다")
         }
 
@@ -252,8 +256,7 @@ class BoxScoreServiceImplTest {
                     inning = 1
                 )
             }
-                .isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("타격 기록을 찾을 수 없습니다")
+                .isInstanceOf(BattingRecordNotFoundException::class.java)
         }
 
         @Test
@@ -280,8 +283,7 @@ class BoxScoreServiceImplTest {
                     inning = 1
                 )
             }
-                .isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("투수 기록을 찾을 수 없습니다")
+                .isInstanceOf(PitchingRecordNotFoundException::class.java)
         }
 
         @Test
@@ -349,8 +351,7 @@ class BoxScoreServiceImplTest {
                     inning = 3
                 )
             }
-                .isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("주자를 찾을 수 없습니다")
+                .isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
         @Test
@@ -384,8 +385,7 @@ class BoxScoreServiceImplTest {
                     inning = 3
                 )
             }
-                .isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("주자의 타격 기록을 찾을 수 없습니다")
+                .isInstanceOf(BattingRecordNotFoundException::class.java)
         }
 
         @Test

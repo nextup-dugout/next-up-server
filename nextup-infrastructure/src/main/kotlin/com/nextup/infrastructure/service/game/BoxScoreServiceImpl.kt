@@ -1,5 +1,9 @@
 package com.nextup.infrastructure.service.game
 
+import com.nextup.common.exception.BattingRecordNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundException
+import com.nextup.common.exception.InvalidStateException
+import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -24,7 +28,9 @@ class BoxScoreServiceImpl(
     override fun getBoxScore(gameId: Long): BoxScoreDto {
         val gamePlayers = gamePlayerRepository.findAllByGameId(gameId)
 
-        require(gamePlayers.isNotEmpty()) { "경기 ID $gameId 에 출전 선수가 없습니다." }
+        if (gamePlayers.isEmpty()) {
+            throw InvalidStateException("NO_PLAYERS_IN_GAME", "경기 ID $gameId 에 출전 선수가 없습니다.")
+        }
 
         val game = gamePlayers.first().gameTeam.game
         val homeTeam = gamePlayers.first { it.gameTeam.isHome }.gameTeam
@@ -54,24 +60,24 @@ class BoxScoreServiceImpl(
     ) {
         // 타자 기록 갱신
         val battingRecord = battingRecordRepository.findByGamePlayer(batter)
-            ?: throw IllegalStateException("타격 기록을 찾을 수 없습니다: GamePlayer ID ${batter.id}")
+            ?: throw BattingRecordNotFoundException(batter.id)
 
         battingRecord.applyPlateAppearanceResult(result, rbis)
 
         // 득점한 주자들의 득점 기록
         runsScored.forEach { runnerId ->
             val runnerGamePlayer = gamePlayerRepository.findByIdOrNull(runnerId)
-                ?: throw IllegalStateException("주자를 찾을 수 없습니다: GamePlayer ID $runnerId")
+                ?: throw GamePlayerNotFoundException(runnerId)
 
             val runnerBattingRecord = battingRecordRepository.findByGamePlayer(runnerGamePlayer)
-                ?: throw IllegalStateException("주자의 타격 기록을 찾을 수 없습니다: GamePlayer ID $runnerId")
+                ?: throw BattingRecordNotFoundException(runnerId)
 
             runnerBattingRecord.recordRun()
         }
 
         // 투수 기록 갱신
         val pitchingRecord = pitchingRecordRepository.findByGamePlayer(pitcher)
-            ?: throw IllegalStateException("투수 기록을 찾을 수 없습니다: GamePlayer ID ${pitcher.id}")
+            ?: throw PitchingRecordNotFoundException(pitcher.id)
 
         pitchingRecord.applyBatterFaced(result)
 
