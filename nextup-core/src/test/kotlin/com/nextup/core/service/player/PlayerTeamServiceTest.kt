@@ -353,6 +353,72 @@ class PlayerTeamServiceTest {
     }
 
     @Nested
+    @DisplayName("changeUniformNumber")
+    inner class ChangeUniformNumber {
+
+        @Test
+        fun `should change uniform number successfully`() {
+            // given
+            val affiliationId = 1L
+            val newNumber = 99
+            val affiliation = createPlayerTeamHistory(affiliationId)
+
+            every { playerTeamHistoryRepository.findByIdOrNull(affiliationId) } returns affiliation
+
+            // when
+            val result = playerTeamService.changeUniformNumber(affiliationId, newNumber)
+
+            // then
+            assertThat(result.uniformNumber).isEqualTo(newNumber)
+        }
+
+        @Test
+        fun `should throw exception when affiliation not found`() {
+            // given
+            val affiliationId = 999L
+            every { playerTeamHistoryRepository.findByIdOrNull(affiliationId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                playerTeamService.changeUniformNumber(affiliationId, 99)
+            }.isInstanceOf(PlayerTeamHistoryNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("changePosition")
+    inner class ChangePosition {
+
+        @Test
+        fun `should change position successfully`() {
+            // given
+            val affiliationId = 1L
+            val newPosition = Position.CENTER_FIELD
+            val affiliation = createPlayerTeamHistory(affiliationId)
+
+            every { playerTeamHistoryRepository.findByIdOrNull(affiliationId) } returns affiliation
+
+            // when
+            val result = playerTeamService.changePosition(affiliationId, newPosition)
+
+            // then
+            assertThat(result.position).isEqualTo(newPosition)
+        }
+
+        @Test
+        fun `should throw exception when affiliation not found`() {
+            // given
+            val affiliationId = 999L
+            every { playerTeamHistoryRepository.findByIdOrNull(affiliationId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                playerTeamService.changePosition(affiliationId, Position.CENTER_FIELD)
+            }.isInstanceOf(PlayerTeamHistoryNotFoundException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("getTeamRoster")
     inner class GetTeamRoster {
 
@@ -389,6 +455,87 @@ class PlayerTeamServiceTest {
             assertThatThrownBy {
                 playerTeamService.getTeamRoster(teamId)
             }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getTeamRosterAtDate")
+    inner class GetTeamRosterAtDate {
+
+        @Test
+        fun `should return team roster at specific date`() {
+            // given
+            val teamId = 1L
+            val date = LocalDate.of(2023, 6, 15)
+            val team = createTeam(teamId, "서울 타이거즈", 1L)
+            val player1 = createPlayer(1L, "홍길동")
+            val player2 = createPlayer(2L, "김철수")
+            val affiliations = listOf(
+                createPlayerTeamHistory(1L, player1, team),
+                createPlayerTeamHistory(2L, player2, team)
+            )
+
+            every { teamRepository.findByIdWithLeague(teamId) } returns team
+            every { playerTeamHistoryRepository.findByTeamIdAtDate(teamId, date) } returns affiliations
+
+            // when
+            val result = playerTeamService.getTeamRosterAtDate(teamId, date)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result.all { it.team.id == teamId }).isTrue()
+        }
+
+        @Test
+        fun `should throw exception when team not found`() {
+            // given
+            val teamId = 999L
+            every { teamRepository.findByIdWithLeague(teamId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                playerTeamService.getTeamRosterAtDate(teamId, LocalDate.now())
+            }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getPlayerHistory")
+    inner class GetPlayerHistory {
+
+        @Test
+        fun `should return player affiliation history`() {
+            // given
+            val playerId = 1L
+            val player = createPlayer(playerId, "홍길동")
+            val team1 = createTeam(1L, "서울 타이거즈", 1L)
+            val team2 = createTeam(2L, "경기 라이온즈", 2L)
+            val history = listOf(
+                createPlayerTeamHistory(1L, player, team1),
+                createPlayerTeamHistory(2L, player, team2)
+            )
+
+            every { playerRepository.findByIdOrNull(playerId) } returns player
+            every { playerTeamHistoryRepository.findByPlayerIdWithDetails(playerId) } returns history
+
+            // when
+            val result = playerTeamService.getPlayerHistory(playerId)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result.all { it.player.id == playerId }).isTrue()
+        }
+
+        @Test
+        fun `should throw exception when player not found`() {
+            // given
+            val playerId = 999L
+            every { playerRepository.findByIdOrNull(playerId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                playerTeamService.getPlayerHistory(playerId)
+            }.isInstanceOf(PlayerNotFoundException::class.java)
         }
     }
 
