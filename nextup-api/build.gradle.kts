@@ -48,8 +48,33 @@ tasks.jacocoTestReport {
         files(classDirectories.files.map {
             fileTree(it) {
                 exclude(
-                    "**/dto/**",  // DTO 클래스 제외
-                    "**/NextUpApplication*"  // Spring Boot main 클래스 제외
+                    "**/dto/**",
+                    "**/config/**",
+                    "**/NextUpApplication*",
+                    "**/HealthController*"
+                )
+            }
+        })
+    )
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    "**/dto/**",
+                    "**/config/**",
+                    "**/NextUpApplication*",
+                    "**/HealthController*"
                 )
             }
         })

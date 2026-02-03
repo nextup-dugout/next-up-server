@@ -51,7 +51,32 @@ tasks.jacocoTestReport {
             fileTree(it) {
                 exclude(
                     "**/dto/**",
-                    "**/BackofficeApplication*"
+                    "**/config/**",
+                    "**/BackofficeApplication*",
+                    "**/HealthController*"
+                )
+            }
+        })
+    )
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    "**/dto/**",
+                    "**/config/**",
+                    "**/BackofficeApplication*",
+                    "**/HealthController*"
                 )
             }
         })
