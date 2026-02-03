@@ -5,8 +5,13 @@
 # Codecov는 리포팅/시각화 용도로만 사용
 coverage:
   status:
-    project: off
-    patch: off
+    project:
+      default:
+        target: 85%
+        threshold: 2%
+    patch:
+      default:
+        target: 85%
 
 # PR에 커버리지 코멘트 추가
 comment:
