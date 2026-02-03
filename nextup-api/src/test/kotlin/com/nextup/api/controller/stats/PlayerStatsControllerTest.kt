@@ -7,6 +7,8 @@ import com.nextup.core.domain.player.BattingHand
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
+import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.service.stats.PlayerStatsService
@@ -234,6 +236,66 @@ class PlayerStatsControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/v1/players/{playerId}/stats/batting/career")
+    inner class GetCareerBattingStats {
+
+        @Test
+        fun `should return career batting stats successfully`() {
+            // given
+            val stats = CareerBattingStats(testPlayer).apply {
+                setCareerBattingStatsDirectly(
+                    seasonsPlayed = 3,
+                    gamesPlayed = 30,
+                    atBats = 100,
+                    hits = 30
+                )
+            }
+
+            every { playerStatsService.getCareerBattingStats(playerId) } returns stats
+
+            // when & then
+            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/career"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.playerId").value(playerId))
+                .andExpect(jsonPath("$.data.seasonsPlayed").value(3))
+                .andExpect(jsonPath("$.data.gamesPlayed").value(30))
+                .andExpect(jsonPath("$.data.atBats").value(100))
+                .andExpect(jsonPath("$.data.hits").value(30))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/players/{playerId}/stats/pitching/career")
+    inner class GetCareerPitchingStats {
+
+        @Test
+        fun `should return career pitching stats successfully`() {
+            // given
+            val stats = CareerPitchingStats(testPlayer).apply {
+                setCareerPitchingStatsDirectly(
+                    seasonsPlayed = 3,
+                    gamesPlayed = 20,
+                    wins = 10,
+                    losses = 5
+                )
+            }
+
+            every { playerStatsService.getCareerPitchingStats(playerId) } returns stats
+
+            // when & then
+            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/career"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.playerId").value(playerId))
+                .andExpect(jsonPath("$.data.seasonsPlayed").value(3))
+                .andExpect(jsonPath("$.data.gamesPlayed").value(20))
+                .andExpect(jsonPath("$.data.wins").value(10))
+                .andExpect(jsonPath("$.data.losses").value(5))
+        }
+    }
+
     // Helper methods
 
     private fun SeasonBattingStats.setStatsDirectly(
@@ -280,6 +342,32 @@ class PlayerStatsControllerTest {
         setField(clazz, this, "saves", saves)
         setField(clazz, this, "earnedRuns", earnedRuns)
         setField(clazz, this, "strikeouts", strikeouts)
+    }
+
+    private fun CareerBattingStats.setCareerBattingStatsDirectly(
+        seasonsPlayed: Int = 0,
+        gamesPlayed: Int = 0,
+        atBats: Int = 0,
+        hits: Int = 0
+    ) {
+        val clazz = CareerBattingStats::class.java
+        setField(clazz, this, "seasonsPlayed", seasonsPlayed)
+        setField(clazz, this, "gamesPlayed", gamesPlayed)
+        setField(clazz, this, "atBats", atBats)
+        setField(clazz, this, "hits", hits)
+    }
+
+    private fun CareerPitchingStats.setCareerPitchingStatsDirectly(
+        seasonsPlayed: Int = 0,
+        gamesPlayed: Int = 0,
+        wins: Int = 0,
+        losses: Int = 0
+    ) {
+        val clazz = CareerPitchingStats::class.java
+        setField(clazz, this, "seasonsPlayed", seasonsPlayed)
+        setField(clazz, this, "gamesPlayed", gamesPlayed)
+        setField(clazz, this, "wins", wins)
+        setField(clazz, this, "losses", losses)
     }
 
     private fun setField(clazz: Class<*>, obj: Any, fieldName: String, value: Any?) {
