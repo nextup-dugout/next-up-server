@@ -233,6 +233,134 @@ class PlayerTeamHistoryTest {
     }
 
     @Nested
+    @DisplayName("이적 처리")
+    inner class Transfer {
+
+        @Test
+        fun `ACTIVE 상태에서 이적할 수 있다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+
+            // when
+            history.transfer(LocalDate.of(2023, 6, 30))
+
+            // then
+            assertThat(history.status).isEqualTo(PlayerTeamStatus.TRANSFERRED)
+            assertThat(history.endDate).isEqualTo(LocalDate.of(2023, 6, 30))
+        }
+
+        @Test
+        fun `ACTIVE 상태가 아니면 이적할 수 없다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+            history.deactivate(LocalDate.of(2023, 1, 1))
+
+            // when & then
+            assertThatThrownBy { history.transfer(LocalDate.of(2023, 6, 30)) }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("ACTIVE 상태인 선수만")
+        }
+
+        @Test
+        fun `이적일이 시작일보다 이전이면 예외가 발생한다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+
+            // when & then
+            assertThatThrownBy { history.transfer(LocalDate.of(2019, 12, 31)) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이적일은")
+        }
+    }
+
+    @Nested
+    @DisplayName("비활동 처리")
+    inner class Deactivate {
+
+        @Test
+        fun `ACTIVE 상태에서 비활동 처리할 수 있다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+
+            // when
+            history.deactivate(LocalDate.of(2023, 6, 30))
+
+            // then
+            assertThat(history.status).isEqualTo(PlayerTeamStatus.INACTIVE)
+            assertThat(history.endDate).isEqualTo(LocalDate.of(2023, 6, 30))
+        }
+
+        @Test
+        fun `ACTIVE 상태가 아니면 비활동 처리할 수 없다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+            history.transfer(LocalDate.of(2023, 1, 1))
+
+            // when & then
+            assertThatThrownBy { history.deactivate(LocalDate.of(2023, 6, 30)) }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("ACTIVE 상태인 선수만")
+        }
+
+        @Test
+        fun `비활동일이 시작일보다 이전이면 예외가 발생한다`() {
+            // given
+            val history = createHistory(
+                startDate = LocalDate.of(2020, 1, 1)
+            )
+
+            // when & then
+            assertThatThrownBy { history.deactivate(LocalDate.of(2019, 12, 31)) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("비활동일은")
+        }
+    }
+
+    @Nested
+    @DisplayName("활성 상태 확인")
+    inner class IsActive {
+
+        @Test
+        fun `ACTIVE 상태면 true를 반환한다`() {
+            // given
+            val history = createHistory()
+
+            // then
+            assertThat(history.isActive).isTrue()
+        }
+
+        @Test
+        fun `INACTIVE 상태면 false를 반환한다`() {
+            // given
+            val history = createHistory()
+            history.deactivate(LocalDate.now())
+
+            // then
+            assertThat(history.isActive).isFalse()
+        }
+
+        @Test
+        fun `TRANSFERRED 상태면 false를 반환한다`() {
+            // given
+            val history = createHistory()
+            history.transfer(LocalDate.now())
+
+            // then
+            assertThat(history.isActive).isFalse()
+        }
+    }
+
+    @Nested
     @DisplayName("기간 중복 확인")
     inner class Overlaps {
 
