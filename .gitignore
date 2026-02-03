@@ -42,3 +42,4 @@ out/
 ### MCP ###
 .mcp.json
 /.omc
+.omc/

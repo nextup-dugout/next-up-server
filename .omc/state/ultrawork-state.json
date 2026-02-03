@@ -1,8 +1,0 @@
-{
-  "active": true,
-  "started_at": "2026-02-03T12:50:18.595Z",
-  "original_prompt": "<ide_opened_file>The user opened the file /Users/nninjoon/Documents/GitHub/next-up-server/nextup-infrastructure/src/main/kotlin/com/nextup/infrastructure/repository/TeamRepository.kt in the IDE. This may or may not be related to the current task.</ide_opened_file>\nralph: 그 있잖아 지금 이슈 49번 푸시 했고 48번 이슈를 보면 53번 이슈까지 epic1이거든? 그래서 이거 좀 진행해줘 계속 지금 플랜이 /.omc/plans/roadmap-2026-02파일이랑 /.omc/drafts/issue-48번 파일 보면 계획이 있어 그거 참고해서 진행해주면 돼 각 이슈 마다 브랜치 파서 pr날려줘야해",
-  "session_id": "ed9e37e2-f35f-4911-ba22-9f7a919de134",
-  "reinforcement_count": 0,
-  "last_checked_at": "2026-02-03T12:50:18.595Z"
-}
