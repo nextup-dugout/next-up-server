@@ -10,11 +10,9 @@ import org.junit.jupiter.params.provider.CsvSource
 
 @DisplayName("OrganizationType 테스트")
 class OrganizationTypeTest {
-
     @Nested
     @DisplayName("enum 값")
     inner class EnumValues {
-
         @Test
         fun `should have correct ASSOCIATION properties`() {
             // given
@@ -49,7 +47,6 @@ class OrganizationTypeTest {
     @Nested
     @DisplayName("fromValue 메서드")
     inner class FromValue {
-
         @ParameterizedTest
         @CsvSource(
             "ASSOCIATION, ASSOCIATION",
@@ -60,9 +57,12 @@ class OrganizationTypeTest {
             "League, LEAGUE",
             "TEAM, TEAM",
             "team, TEAM",
-            "Team, TEAM"
+            "Team, TEAM",
         )
-        fun `should return correct type for valid values`(input: String, expected: OrganizationType) {
+        fun `should return correct type for valid values`(
+            input: String,
+            expected: OrganizationType,
+        ) {
             // when
             val result = OrganizationType.fromValue(input)
 
@@ -73,9 +73,10 @@ class OrganizationTypeTest {
         @Test
         fun `should throw exception for invalid value`() {
             // when & then
-            val exception = assertThrows<IllegalArgumentException> {
-                OrganizationType.fromValue("INVALID")
-            }
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    OrganizationType.fromValue("INVALID")
+                }
             assertThat(exception.message).contains("Invalid organization type")
         }
 
@@ -91,7 +92,6 @@ class OrganizationTypeTest {
     @Nested
     @DisplayName("전체 enum 값")
     inner class AllValues {
-
         @Test
         fun `should have exactly three types`() {
             // when
@@ -102,7 +102,7 @@ class OrganizationTypeTest {
             assertThat(allTypes).containsExactly(
                 OrganizationType.ASSOCIATION,
                 OrganizationType.LEAGUE,
-                OrganizationType.TEAM
+                OrganizationType.TEAM,
             )
         }
     }

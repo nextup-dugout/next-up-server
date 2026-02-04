@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.stats.CareerBattingStats
-import java.util.Optional
 
 /**
  * CareerBattingStats Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface CareerBattingStatsRepositoryPort {
-
     fun save(careerBattingStats: CareerBattingStats): CareerBattingStats
 
     fun findAll(): List<CareerBattingStats>
@@ -25,7 +23,10 @@ interface CareerBattingStatsRepositoryPort {
     /**
      * 통산 타율 상위 N명을 조회합니다 (최소 타수 조건).
      */
-    fun findTopByBattingAverage(minAtBats: Int, limit: Int): List<CareerBattingStats>
+    fun findTopByBattingAverage(
+        minAtBats: Int,
+        limit: Int,
+    ): List<CareerBattingStats>
 
     /**
      * 통산 홈런 상위 N명을 조회합니다.
@@ -50,10 +51,16 @@ interface CareerBattingStatsRepositoryPort {
     /**
      * 통산 OPS 상위 N명을 조회합니다 (최소 타석 조건).
      */
-    fun findTopByOps(minPlateAppearances: Int, limit: Int): List<CareerBattingStats>
+    fun findTopByOps(
+        minPlateAppearances: Int,
+        limit: Int,
+    ): List<CareerBattingStats>
 
     /**
      * 통산 장타율 상위 N명을 조회합니다 (최소 타수 조건).
      */
-    fun findTopBySluggingPercentage(minAtBats: Int, limit: Int): List<CareerBattingStats>
+    fun findTopBySluggingPercentage(
+        minAtBats: Int,
+        limit: Int,
+    ): List<CareerBattingStats>
 }

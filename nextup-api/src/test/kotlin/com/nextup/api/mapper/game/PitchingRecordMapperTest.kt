@@ -1,28 +1,26 @@
 package com.nextup.api.mapper.game
 
 import com.nextup.core.domain.game.GamePlayer
-import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class PitchingRecordMapperTest {
-
     @Test
     fun `should map PitchingRecord to PitchingRecordResponse`() {
         // given
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 123L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-            repeat(15) { recordOut() }  // 5 innings
-            recordHit(isHomeRun = false, runsScored = 1, earnedRuns = 1)
-            recordWalk()
-            recordHitByPitch()
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                repeat(15) { recordOut() } // 5 innings
+                recordHit(isHomeRun = false, runsScored = 1, earnedRuns = 1)
+                recordWalk()
+                recordHitByPitch()
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -44,9 +42,10 @@ class PitchingRecordMapperTest {
         every { gamePlayer.id } returns 1L
 
         // 5.1 innings (16 outs)
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(16) { recordOut() }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(16) { recordOut() }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -66,9 +65,10 @@ class PitchingRecordMapperTest {
         every { gamePlayer.id } returns 1L
 
         // 7.0 innings (21 outs)
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(21) { recordOut() }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(21) { recordOut() }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -88,10 +88,11 @@ class PitchingRecordMapperTest {
         every { gamePlayer.id } returns 1L
 
         // 6 innings, 2 earned runs
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(18) { recordOut() }  // 6 innings
-            recordHit(runsScored = 2, earnedRuns = 2)
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(18) { recordOut() } // 6 innings
+                recordHit(runsScored = 2, earnedRuns = 2)
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -123,11 +124,12 @@ class PitchingRecordMapperTest {
         every { gamePlayer.id } returns 1L
 
         // 6 innings, 5 hits, 2 walks
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(18) { recordOut() }  // 6 innings
-            repeat(5) { recordHit() }
-            repeat(2) { recordWalk() }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(18) { recordOut() } // 6 innings
+                repeat(5) { recordHit() }
+                repeat(2) { recordWalk() }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -145,11 +147,12 @@ class PitchingRecordMapperTest {
         every { gamePlayer.id } returns 1L
 
         // 6 innings, 9 strikeouts, 3 walks
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(9) { recordOut(isStrikeout = true) }  // 3 innings with K
-            repeat(9) { recordOut() }  // 3 more innings
-            repeat(3) { recordWalk() }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(9) { recordOut(isStrikeout = true) } // 3 innings with K
+                repeat(9) { recordOut() } // 3 more innings
+                repeat(3) { recordWalk() }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -168,10 +171,11 @@ class PitchingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(9) { recordOut(isStrikeout = true) }
-            repeat(3) { recordWalk() }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(9) { recordOut(isStrikeout = true) }
+                repeat(3) { recordWalk() }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -186,9 +190,10 @@ class PitchingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            repeat(9) { recordOut(isStrikeout = true) }
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                repeat(9) { recordOut(isStrikeout = true) }
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -205,9 +210,10 @@ class PitchingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            recordPitchCount(totalPitches = 100, strikes = 65)
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                recordPitchCount(totalPitches = 100, strikes = 65)
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -241,10 +247,11 @@ class PitchingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-            repeat(15) { recordOut() }  // 5 innings (qualified for win)
-            assignWin()
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                repeat(15) { recordOut() } // 5 innings (qualified for win)
+                assignWin()
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -260,9 +267,10 @@ class PitchingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val pitchingRecord = PitchingRecord.create(gamePlayer).apply {
-            recordHit(runsScored = 3, earnedRuns = 1)  // 3 runs, 1 earned
-        }
+        val pitchingRecord =
+            PitchingRecord.create(gamePlayer).apply {
+                recordHit(runsScored = 3, earnedRuns = 1) // 3 runs, 1 earned
+            }
 
         // when
         val response = pitchingRecord.toResponse()
@@ -281,10 +289,11 @@ class PitchingRecordMapperTest {
         every { gamePlayer1.id } returns 1L
         every { gamePlayer2.id } returns 2L
 
-        val records = listOf(
-            PitchingRecord.create(gamePlayer1, isStartingPitcher = true),
-            PitchingRecord.create(gamePlayer2, isStartingPitcher = false)
-        )
+        val records =
+            listOf(
+                PitchingRecord.create(gamePlayer1, isStartingPitcher = true),
+                PitchingRecord.create(gamePlayer2, isStartingPitcher = false),
+            )
 
         // when
         val responses = records.toResponse()
@@ -309,7 +318,7 @@ class PitchingRecordMapperTest {
         val response = pitchingRecord.toResponse()
 
         // then
-        assertThat(response.id).isEqualTo(0L)  // Entity not persisted yet
+        assertThat(response.id).isEqualTo(0L) // Entity not persisted yet
         assertThat(response.gamePlayerId).isEqualTo(999L)
         assertThat(response.createdAt).isNotNull
         assertThat(response.updatedAt).isNotNull

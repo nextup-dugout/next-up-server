@@ -18,11 +18,11 @@ data class LeagueResponse(
     val logoUrl: String?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(league: League): LeagueResponse {
-            return LeagueResponse(
+        fun from(league: League): LeagueResponse =
+            LeagueResponse(
                 id = league.id,
                 associationId = league.association.id,
                 associationName = league.association.name,
@@ -34,9 +34,8 @@ data class LeagueResponse(
                 logoUrl = league.logoUrl,
                 isActive = league.isActive,
                 createdAt = league.createdAt,
-                updatedAt = league.updatedAt
+                updatedAt = league.updatedAt,
             )
-        }
     }
 }
 
@@ -50,19 +49,18 @@ data class LeagueSummaryResponse(
     val name: String,
     val abbreviation: String?,
     val divisionLevel: Int?,
-    val logoUrl: String?
+    val logoUrl: String?,
 ) {
     companion object {
-        fun from(league: League): LeagueSummaryResponse {
-            return LeagueSummaryResponse(
+        fun from(league: League): LeagueSummaryResponse =
+            LeagueSummaryResponse(
                 id = league.id,
                 associationId = league.association.id,
                 associationName = league.association.name,
                 name = league.name,
                 abbreviation = league.abbreviation,
                 divisionLevel = league.divisionLevel,
-                logoUrl = league.logoUrl
+                logoUrl = league.logoUrl,
             )
-        }
     }
 }

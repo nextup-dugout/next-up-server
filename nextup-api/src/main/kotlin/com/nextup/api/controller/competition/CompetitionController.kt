@@ -6,7 +6,6 @@ import com.nextup.core.service.competition.CompetitionService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -15,9 +14,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/competitions")
 class CompetitionController(
-    private val competitionService: CompetitionService
+    private val competitionService: CompetitionService,
 ) {
-
     /**
      * 진행 중인 대회 목록을 조회합니다.
      */
@@ -25,7 +23,7 @@ class CompetitionController(
     fun getCompetitions(): ApiResponse<List<CompetitionResponse>> {
         val competitions = competitionService.getInProgress()
         return ApiResponse.success(
-            competitions.map { CompetitionResponse.from(it) }
+            competitions.map { CompetitionResponse.from(it) },
         )
     }
 
@@ -34,7 +32,7 @@ class CompetitionController(
      */
     @GetMapping("/{id}")
     fun getCompetition(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<CompetitionResponse> {
         val competition = competitionService.getByIdWithLeague(id)
         return ApiResponse.success(CompetitionResponse.from(competition))
@@ -45,11 +43,11 @@ class CompetitionController(
      */
     @GetMapping("/by-league/{leagueId}")
     fun getCompetitionsByLeague(
-        @PathVariable leagueId: Long
+        @PathVariable leagueId: Long,
     ): ApiResponse<List<CompetitionResponse>> {
         val competitions = competitionService.getByLeagueId(leagueId)
         return ApiResponse.success(
-            competitions.map { CompetitionResponse.from(it) }
+            competitions.map { CompetitionResponse.from(it) },
         )
     }
 }

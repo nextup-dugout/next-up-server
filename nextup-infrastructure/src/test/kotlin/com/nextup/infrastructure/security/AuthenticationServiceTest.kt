@@ -2,12 +2,10 @@ package com.nextup.infrastructure.security
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.auth.RefreshToken
-import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
-import org.springframework.data.repository.findByIdOrNull
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -21,7 +19,6 @@ import java.util.*
 
 @DisplayName("AuthenticationService")
 class AuthenticationServiceTest {
-
     private lateinit var userJpaRepository: UserJpaRepository
     private lateinit var refreshTokenRepository: RefreshTokenRepository
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -34,18 +31,18 @@ class AuthenticationServiceTest {
         refreshTokenRepository = mockk()
         jwtTokenProvider = mockk()
         passwordEncoder = mockk()
-        authenticationService = AuthenticationService(
-            userJpaRepository,
-            refreshTokenRepository,
-            jwtTokenProvider,
-            passwordEncoder
-        )
+        authenticationService =
+            AuthenticationService(
+                userJpaRepository,
+                refreshTokenRepository,
+                jwtTokenProvider,
+                passwordEncoder,
+            )
     }
 
     @Nested
     @DisplayName("login")
     inner class Login {
-
         @Test
         fun `should return token pair on successful login`() {
             // given
@@ -129,7 +126,6 @@ class AuthenticationServiceTest {
     @Nested
     @DisplayName("refresh")
     inner class Refresh {
-
         @Test
         fun `should return new token pair on successful refresh`() {
             // given
@@ -209,7 +205,6 @@ class AuthenticationServiceTest {
     @Nested
     @DisplayName("logout")
     inner class Logout {
-
         @Test
         fun `should revoke refresh token on logout`() {
             // given
@@ -242,7 +237,6 @@ class AuthenticationServiceTest {
     @Nested
     @DisplayName("logoutAll")
     inner class LogoutAll {
-
         @Test
         fun `should revoke all refresh tokens for user`() {
             // given
@@ -260,7 +254,6 @@ class AuthenticationServiceTest {
     @Nested
     @DisplayName("getUserDetails")
     inner class GetUserDetails {
-
         @Test
         fun `should return user details when user found`() {
             // given
@@ -288,52 +281,70 @@ class AuthenticationServiceTest {
     }
 
     // Helper methods
-    private fun createTestUser(id: Long, email: String, password: String): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = password,
-            nickname = "테스터"
-        )
+    private fun createTestUser(
+        id: Long,
+        email: String,
+        password: String,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = password,
+                nickname = "테스터",
+            )
         setUserId(user, id)
         return user
     }
 
-    private fun createOAuthUser(id: Long, email: String): User {
-        val user = User.createOAuthUser(
-            email = email,
-            nickname = "OAuth테스터",
-            provider = com.nextup.core.domain.user.OAuthProvider.KAKAO,
-            oauthId = "kakao_123"
-        )
+    private fun createOAuthUser(
+        id: Long,
+        email: String,
+    ): User {
+        val user =
+            User.createOAuthUser(
+                email = email,
+                nickname = "OAuth테스터",
+                provider = com.nextup.core.domain.user.OAuthProvider.KAKAO,
+                oauthId = "kakao_123",
+            )
         setUserId(user, id)
         return user
     }
 
-    private fun setUserId(user: User, id: Long) {
+    private fun setUserId(
+        user: User,
+        id: Long,
+    ) {
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
     }
 
-    private fun createRefreshToken(userId: Long, token: String): RefreshToken {
-        return RefreshToken.create(
+    private fun createRefreshToken(
+        userId: Long,
+        token: String,
+    ): RefreshToken =
+        RefreshToken.create(
             userId = userId,
             token = token,
-            expiresAt = Instant.now().plusSeconds(3600)
+            expiresAt = Instant.now().plusSeconds(3600),
         )
-    }
 
-    private fun createExpiredRefreshToken(userId: Long, token: String): RefreshToken {
+    private fun createExpiredRefreshToken(
+        userId: Long,
+        token: String,
+    ): RefreshToken {
         // Use reflection to create expired token since create() doesn't allow past expiration
-        val constructor = RefreshToken::class.java.getDeclaredConstructor(
-            Long::class.java,
-            String::class.java,
-            Instant::class.java,
-            Boolean::class.java,
-            String::class.java,
-            String::class.java,
-            Long::class.java
-        )
+        val constructor =
+            RefreshToken::class.java.getDeclaredConstructor(
+                Long::class.java,
+                String::class.java,
+                Instant::class.java,
+                Boolean::class.java,
+                String::class.java,
+                String::class.java,
+                Long::class.java,
+            )
         constructor.isAccessible = true
         return constructor.newInstance(
             userId,
@@ -342,16 +353,20 @@ class AuthenticationServiceTest {
             false,
             null,
             null,
-            0L
+            0L,
         )
     }
 
-    private fun createRevokedRefreshToken(userId: Long, token: String): RefreshToken {
-        val refreshToken = RefreshToken.create(
-            userId = userId,
-            token = token,
-            expiresAt = Instant.now().plusSeconds(3600)
-        )
+    private fun createRevokedRefreshToken(
+        userId: Long,
+        token: String,
+    ): RefreshToken {
+        val refreshToken =
+            RefreshToken.create(
+                userId = userId,
+                token = token,
+                expiresAt = Instant.now().plusSeconds(3600),
+            )
         refreshToken.revoke()
         return refreshToken
     }

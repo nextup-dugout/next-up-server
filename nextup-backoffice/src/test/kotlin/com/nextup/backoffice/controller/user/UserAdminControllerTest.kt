@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
-import org.springframework.http.MediaType
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -29,7 +29,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("UserAdminController")
 class UserAdminControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var userService: UserService
     private lateinit var controller: UserAdminController
@@ -39,31 +38,35 @@ class UserAdminControllerTest {
     fun setUp() {
         userService = mockk()
         controller = UserAdminController(userService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-            .setCustomArgumentResolvers(PageableHandlerMethodArgumentResolver())
-            .build()
-        objectMapper = ObjectMapper().apply {
-            findAndRegisterModules()
-        }
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(PageableHandlerMethodArgumentResolver())
+                .build()
+        objectMapper =
+            ObjectMapper().apply {
+                findAndRegisterModules()
+            }
     }
 
     @Nested
     @DisplayName("GET /api/backoffice/users")
     inner class GetAllUsers {
-
         @Test
         fun `should return all users`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "user1@example.com", "사용자1", true),
-                createTestUser(2L, "user2@example.com", "사용자2", false)
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "user1@example.com", "사용자1", true),
+                    createTestUser(2L, "user2@example.com", "사용자2", false),
+                )
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(users, pageable, 2)
             every { userService.getAll(any()) } returns page
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/users"))
+            mockMvc
+                .perform(get("/api/backoffice/users"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
@@ -75,15 +78,17 @@ class UserAdminControllerTest {
         @Test
         fun `should filter by active status`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "user1@example.com", "사용자1", true)
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "user1@example.com", "사용자1", true),
+                )
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(users, pageable, 1)
             every { userService.getAllByStatus(true, any()) } returns page
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/users").param("isActive", "true"))
+            mockMvc
+                .perform(get("/api/backoffice/users").param("isActive", "true"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -95,19 +100,20 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/users/search")
     inner class SearchUsers {
-
         @Test
         fun `should search users by keyword`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "user1@example.com", "검색결과", true)
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "user1@example.com", "검색결과", true),
+                )
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(users, pageable, 1)
             every { userService.search("검색", any()) } returns page
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/users/search").param("keyword", "검색"))
+            mockMvc
+                .perform(get("/api/backoffice/users/search").param("keyword", "검색"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -120,19 +126,20 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/users/by-role/{role}")
     inner class GetUsersByRole {
-
         @Test
         fun `should get users by role`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "admin@example.com", "관리자", true)
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "admin@example.com", "관리자", true),
+                )
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(users, pageable, 1)
             every { userService.getAllByRole(Role.ADMIN, any()) } returns page
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/users/by-role/ADMIN"))
+            mockMvc
+                .perform(get("/api/backoffice/users/by-role/ADMIN"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
@@ -144,7 +151,6 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/users/{id}")
     inner class GetUser {
-
         @Test
         fun `should return user when found`() {
             // given
@@ -152,7 +158,8 @@ class UserAdminControllerTest {
             every { userService.getById(1L) } returns user
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/users/1"))
+            mockMvc
+                .perform(get("/api/backoffice/users/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -166,34 +173,34 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/users")
     inner class CreateUser {
-
         @Test
         fun `should create user with valid request`() {
             // given
-            val request = CreateUserRequest(
-                email = "newuser@example.com",
-                password = "password123",
-                nickname = "새사용자",
-                roles = setOf("USER")
-            )
+            val request =
+                CreateUserRequest(
+                    email = "newuser@example.com",
+                    password = "password123",
+                    nickname = "새사용자",
+                    roles = setOf("USER"),
+                )
             val user = createTestUser(1L, "newuser@example.com", "새사용자", true)
 
             every {
                 userService.createLocalUser(
                     email = "newuser@example.com",
                     encodedPassword = "password123",
-                    nickname = "새사용자"
+                    nickname = "새사용자",
                 )
             } returns user
             every { userService.getById(1L) } returns user
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/users")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isCreated)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.email").value("newuser@example.com"))
@@ -202,7 +209,7 @@ class UserAdminControllerTest {
                 userService.createLocalUser(
                     email = "newuser@example.com",
                     encodedPassword = "password123",
-                    nickname = "새사용자"
+                    nickname = "새사용자",
                 )
             }
         }
@@ -210,31 +217,32 @@ class UserAdminControllerTest {
         @Test
         fun `should create user with admin role`() {
             // given
-            val request = CreateUserRequest(
-                email = "admin@example.com",
-                password = "password123",
-                nickname = "관리자",
-                roles = setOf("USER", "ADMIN")
-            )
+            val request =
+                CreateUserRequest(
+                    email = "admin@example.com",
+                    password = "password123",
+                    nickname = "관리자",
+                    roles = setOf("USER", "ADMIN"),
+                )
             val user = createTestUser(1L, "admin@example.com", "관리자", true)
 
             every {
                 userService.createLocalUser(
                     email = "admin@example.com",
                     encodedPassword = "password123",
-                    nickname = "관리자"
+                    nickname = "관리자",
                 )
             } returns user
             every { userService.addRole(1L, Role.ADMIN) } returns user
             every { userService.getById(1L) } returns user
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/users")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isCreated)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
 
             verify(exactly = 1) { userService.addRole(1L, Role.ADMIN) }
@@ -244,32 +252,32 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("PUT /api/backoffice/users/{id}")
     inner class UpdateUser {
-
         @Test
         fun `should update user with valid request`() {
             // given
-            val request = UpdateUserRequest(
-                nickname = "수정된닉네임",
-                profileImageUrl = "https://example.com/image.jpg"
-            )
+            val request =
+                UpdateUserRequest(
+                    nickname = "수정된닉네임",
+                    profileImageUrl = "https://example.com/image.jpg",
+                )
             val user = createTestUser(1L, "user@example.com", "수정된닉네임", true)
 
             every {
                 userService.updateProfile(
                     userId = 1L,
                     nickname = "수정된닉네임",
-                    profileImageUrl = "https://example.com/image.jpg"
+                    profileImageUrl = "https://example.com/image.jpg",
                 )
             } returns user
             every { userService.getById(1L) } returns user
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/users/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
 
@@ -277,7 +285,7 @@ class UserAdminControllerTest {
                 userService.updateProfile(
                     userId = 1L,
                     nickname = "수정된닉네임",
-                    profileImageUrl = "https://example.com/image.jpg"
+                    profileImageUrl = "https://example.com/image.jpg",
                 )
             }
         }
@@ -285,17 +293,18 @@ class UserAdminControllerTest {
         @Test
         fun `should update user with role changes`() {
             // given
-            val request = UpdateUserRequest(
-                nickname = "수정된닉네임",
-                roles = setOf("USER", "ADMIN")
-            )
+            val request =
+                UpdateUserRequest(
+                    nickname = "수정된닉네임",
+                    roles = setOf("USER", "ADMIN"),
+                )
             val userWithRoles = createTestUserWithRoles(1L, "user@example.com", "수정된닉네임", setOf(Role.USER, Role.SCORER))
 
             every {
                 userService.updateProfile(
                     userId = 1L,
                     nickname = "수정된닉네임",
-                    profileImageUrl = null
+                    profileImageUrl = null,
                 )
             } returns userWithRoles
             every { userService.removeRole(1L, Role.SCORER) } returns userWithRoles
@@ -303,12 +312,12 @@ class UserAdminControllerTest {
             every { userService.getById(1L) } returns userWithRoles
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/users/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
 
             verify(exactly = 1) { userService.removeRole(1L, Role.SCORER) }
@@ -319,7 +328,6 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/users/{id}/roles")
     inner class AddRole {
-
         @Test
         fun `should add role to user`() {
             // given
@@ -329,12 +337,12 @@ class UserAdminControllerTest {
             every { userService.addRole(1L, Role.ADMIN) } returns user
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/users/1/roles")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/users/1/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
 
@@ -345,7 +353,6 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("DELETE /api/backoffice/users/{id}/roles/{role}")
     inner class RemoveRole {
-
         @Test
         fun `should remove role from user`() {
             // given
@@ -353,7 +360,8 @@ class UserAdminControllerTest {
             every { userService.removeRole(1L, Role.ADMIN) } returns user
 
             // when & then
-            mockMvc.perform(delete("/api/backoffice/users/1/roles/ADMIN"))
+            mockMvc
+                .perform(delete("/api/backoffice/users/1/roles/ADMIN"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -365,7 +373,6 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("DELETE /api/backoffice/users/{id}")
     inner class DeactivateUser {
-
         @Test
         fun `should deactivate user`() {
             // given
@@ -373,7 +380,8 @@ class UserAdminControllerTest {
             every { userService.deactivate(1L) } returns user
 
             // when & then
-            mockMvc.perform(delete("/api/backoffice/users/1"))
+            mockMvc
+                .perform(delete("/api/backoffice/users/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -386,7 +394,6 @@ class UserAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/users/{id}/activate")
     inner class ActivateUser {
-
         @Test
         fun `should activate user`() {
             // given
@@ -394,7 +401,8 @@ class UserAdminControllerTest {
             every { userService.activate(1L) } returns user
 
             // when & then
-            mockMvc.perform(post("/api/backoffice/users/1/activate"))
+            mockMvc
+                .perform(post("/api/backoffice/users/1/activate"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -404,12 +412,18 @@ class UserAdminControllerTest {
         }
     }
 
-    private fun createTestUser(id: Long, email: String, nickname: String, isActive: Boolean): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = "encoded",
-            nickname = nickname
-        )
+    private fun createTestUser(
+        id: Long,
+        email: String,
+        nickname: String,
+        isActive: Boolean,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = "encoded",
+                nickname = nickname,
+            )
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
@@ -421,12 +435,18 @@ class UserAdminControllerTest {
         return user
     }
 
-    private fun createTestUserWithRoles(id: Long, email: String, nickname: String, roles: Set<Role>): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = "encoded",
-            nickname = nickname
-        )
+    private fun createTestUserWithRoles(
+        id: Long,
+        email: String,
+        nickname: String,
+        roles: Set<Role>,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = "encoded",
+                nickname = nickname,
+            )
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)

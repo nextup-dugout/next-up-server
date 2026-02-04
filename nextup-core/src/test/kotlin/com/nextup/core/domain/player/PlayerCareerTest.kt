@@ -10,36 +10,34 @@ import java.time.LocalDate
 
 @DisplayName("PlayerCareer 엔티티 테스트")
 class PlayerCareerTest {
-
     private lateinit var player: Player
 
     @BeforeEach
     fun setUp() {
-        player = Player(
-            name = "홍길동",
-            primaryPosition = Position.SHORTSTOP
-        )
+        player =
+            Player(
+                name = "홍길동",
+                primaryPosition = Position.SHORTSTOP,
+            )
     }
 
     private fun createCareer(
         type: CareerType = CareerType.UNIVERSITY,
         organization: String = "서울대학교",
         startDate: LocalDate = LocalDate.of(2015, 3, 1),
-        endDate: LocalDate? = null
-    ): PlayerCareer {
-        return PlayerCareer(
+        endDate: LocalDate? = null,
+    ): PlayerCareer =
+        PlayerCareer(
             player = player,
             type = type,
             organization = organization,
             startDate = startDate,
-            endDate = endDate
+            endDate = endDate,
         )
-    }
 
     @Nested
     @DisplayName("활동 상태 확인")
     inner class IsActive {
-
         @Test
         fun `종료일이 없으면 활동 중이다`() {
             // given
@@ -62,7 +60,6 @@ class PlayerCareerTest {
     @Nested
     @DisplayName("프로 경력 확인")
     inner class IsProfessional {
-
         @Test
         fun `KBO 경력은 프로 경력이다`() {
             // given
@@ -130,7 +127,6 @@ class PlayerCareerTest {
     @Nested
     @DisplayName("경력 종료")
     inner class EndCareer {
-
         @Test
         fun `경력을 종료할 수 있다`() {
             // given
@@ -159,14 +155,14 @@ class PlayerCareerTest {
     @Nested
     @DisplayName("특정 날짜 활동 여부 확인")
     inner class IsActiveAt {
-
         @Test
         fun `시작일 이전에는 활동 중이 아니다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2014, 12, 31))).isFalse()
@@ -175,10 +171,11 @@ class PlayerCareerTest {
         @Test
         fun `시작일에는 활동 중이다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2015, 3, 1))).isTrue()
@@ -187,10 +184,11 @@ class PlayerCareerTest {
         @Test
         fun `기간 중에는 활동 중이다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2017, 6, 15))).isTrue()
@@ -199,10 +197,11 @@ class PlayerCareerTest {
         @Test
         fun `종료일에는 활동 중이다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2019, 2, 28))).isTrue()
@@ -211,10 +210,11 @@ class PlayerCareerTest {
         @Test
         fun `종료일 이후에는 활동 중이 아니다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2019, 3, 1))).isFalse()
@@ -223,10 +223,11 @@ class PlayerCareerTest {
         @Test
         fun `종료일이 없으면 현재까지 활동 중이다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = null
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = null,
+                )
 
             // then
             assertThat(career.isActiveAt(LocalDate.of(2030, 12, 31))).isTrue()
@@ -236,14 +237,14 @@ class PlayerCareerTest {
     @Nested
     @DisplayName("경력 기간 계산")
     inner class CalculateYears {
-
         @Test
         fun `경력 기간을 년 단위로 계산한다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = LocalDate.of(2019, 2, 28)
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = LocalDate.of(2019, 2, 28),
+                )
 
             // then
             assertThat(career.calculateYears()).isEqualTo(4)
@@ -252,10 +253,11 @@ class PlayerCareerTest {
         @Test
         fun `종료일이 없으면 기준일까지 계산한다`() {
             // given
-            val career = createCareer(
-                startDate = LocalDate.of(2015, 3, 1),
-                endDate = null
-            )
+            val career =
+                createCareer(
+                    startDate = LocalDate.of(2015, 3, 1),
+                    endDate = null,
+                )
             val baseDate = LocalDate.of(2024, 3, 1)
 
             // then

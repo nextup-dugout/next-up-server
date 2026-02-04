@@ -6,8 +6,9 @@ import com.nextup.core.port.repository.CompetitionRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface CompetitionRepository : JpaRepository<Competition, Long>, CompetitionRepositoryPort {
-
+interface CompetitionRepository :
+    JpaRepository<Competition, Long>,
+    CompetitionRepositoryPort {
     /**
      * 리그별 대회 목록 조회
      */
@@ -16,7 +17,11 @@ interface CompetitionRepository : JpaRepository<Competition, Long>, CompetitionR
     /**
      * 리그 + 연도 + 시즌으로 대회 조회
      */
-    override fun findByLeagueIdAndYearAndSeason(leagueId: Long, year: Int, season: Int): Competition?
+    override fun findByLeagueIdAndYearAndSeason(
+        leagueId: Long,
+        year: Int,
+        season: Int,
+    ): Competition?
 
     /**
      * 특정 상태의 대회 목록 조회

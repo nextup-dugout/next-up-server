@@ -16,19 +16,17 @@ import java.math.RoundingMode
     name = "pitching_records",
     indexes = [
         Index(name = "idx_pitching_records_game_player", columnList = "game_player_id"),
-        Index(name = "idx_pitching_records_decision", columnList = "decision")
-    ]
+        Index(name = "idx_pitching_records_decision", columnList = "decision"),
+    ],
 )
 class PitchingRecord(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_player_id", nullable = false, unique = true)
     val gamePlayer: GamePlayer,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     /**
      * 이닝 수를 아웃 카운트로 저장 (5.1이닝 = 16 outs)
      */
@@ -124,72 +122,78 @@ class PitchingRecord(
      * 이닝이 0이면 0.00
      */
     val earnedRunAverage: BigDecimal
-        get() = if (inningsPitchedOuts == 0) {
-            BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-        } else {
-            val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-            BigDecimal(earnedRuns)
-                .multiply(BigDecimal(9))
-                .divide(innings, 2, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (inningsPitchedOuts == 0) {
+                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+            } else {
+                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
+                BigDecimal(earnedRuns)
+                    .multiply(BigDecimal(9))
+                    .divide(innings, 2, RoundingMode.HALF_UP)
+            }
 
     /**
      * WHIP = (피안타 + 볼넷) / 이닝
      */
     val whip: BigDecimal
-        get() = if (inningsPitchedOuts == 0) {
-            BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-        } else {
-            val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-            BigDecimal(hitsAllowed + walksAllowed).divide(innings, 2, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (inningsPitchedOuts == 0) {
+                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+            } else {
+                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
+                BigDecimal(hitsAllowed + walksAllowed).divide(innings, 2, RoundingMode.HALF_UP)
+            }
 
     /**
      * 9이닝당 삼진 (K/9) = (삼진 / 이닝) * 9
      */
     val strikeoutsPer9: BigDecimal
-        get() = if (inningsPitchedOuts == 0) {
-            BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-        } else {
-            val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-            BigDecimal(strikeouts)
-                .multiply(BigDecimal(9))
-                .divide(innings, 2, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (inningsPitchedOuts == 0) {
+                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+            } else {
+                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
+                BigDecimal(strikeouts)
+                    .multiply(BigDecimal(9))
+                    .divide(innings, 2, RoundingMode.HALF_UP)
+            }
 
     /**
      * 9이닝당 볼넷 (BB/9) = (볼넷 / 이닝) * 9
      */
     val walksPer9: BigDecimal
-        get() = if (inningsPitchedOuts == 0) {
-            BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-        } else {
-            val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-            BigDecimal(walksAllowed)
-                .multiply(BigDecimal(9))
-                .divide(innings, 2, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (inningsPitchedOuts == 0) {
+                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+            } else {
+                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
+                BigDecimal(walksAllowed)
+                    .multiply(BigDecimal(9))
+                    .divide(innings, 2, RoundingMode.HALF_UP)
+            }
 
     /**
      * 삼진/볼넷 비율 (K/BB)
      */
     val strikeoutToWalkRatio: BigDecimal
-        get() = if (walksAllowed == 0) {
-            if (strikeouts == 0) BigDecimal.ZERO else BigDecimal(strikeouts)
-        } else {
-            BigDecimal(strikeouts).divide(BigDecimal(walksAllowed), 2, RoundingMode.HALF_UP)
-        }.setScale(2, RoundingMode.HALF_UP)
+        get() =
+            if (walksAllowed == 0) {
+                if (strikeouts == 0) BigDecimal.ZERO else BigDecimal(strikeouts)
+            } else {
+                BigDecimal(strikeouts).divide(BigDecimal(walksAllowed), 2, RoundingMode.HALF_UP)
+            }.setScale(2, RoundingMode.HALF_UP)
 
     /**
      * 스트라이크 비율 (투구 수 대비 스트라이크)
      */
     val strikePercentage: BigDecimal?
-        get() = if (pitchesThrown == null || strikesThrown == null || pitchesThrown == 0) {
-            null
-        } else {
-            BigDecimal(strikesThrown!!)
-                .divide(BigDecimal(pitchesThrown!!), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (pitchesThrown == null || strikesThrown == null || pitchesThrown == 0) {
+                null
+            } else {
+                BigDecimal(strikesThrown!!)
+                    .divide(BigDecimal(pitchesThrown!!), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * 비자책 실점 = 실점 - 자책점
@@ -219,7 +223,11 @@ class PitchingRecord(
     /**
      * 피안타를 기록합니다.
      */
-    fun recordHit(isHomeRun: Boolean = false, runsScored: Int = 0, earnedRuns: Int = 0) {
+    fun recordHit(
+        isHomeRun: Boolean = false,
+        runsScored: Int = 0,
+        earnedRuns: Int = 0,
+    ) {
         require(earnedRuns <= runsScored) {
             "자책점($earnedRuns)이 실점($runsScored)보다 클 수 없습니다."
         }
@@ -276,7 +284,10 @@ class PitchingRecord(
     /**
      * 투구 수를 기록합니다.
      */
-    fun recordPitchCount(totalPitches: Int, strikes: Int) {
+    fun recordPitchCount(
+        totalPitches: Int,
+        strikes: Int,
+    ) {
         require(strikes <= totalPitches) {
             "스트라이크 수($strikes)가 총 투구 수($totalPitches)보다 클 수 없습니다."
         }
@@ -356,7 +367,8 @@ class PitchingRecord(
         when (result) {
             PlateAppearanceResult.SINGLE,
             PlateAppearanceResult.DOUBLE,
-            PlateAppearanceResult.TRIPLE -> {
+            PlateAppearanceResult.TRIPLE,
+            -> {
                 hitsAllowed++
             }
             PlateAppearanceResult.HOME_RUN -> {
@@ -367,7 +379,8 @@ class PitchingRecord(
                 strikeouts++
             }
             PlateAppearanceResult.WALK,
-            PlateAppearanceResult.INTENTIONAL_WALK -> {
+            PlateAppearanceResult.INTENTIONAL_WALK,
+            -> {
                 walksAllowed++
             }
             PlateAppearanceResult.HIT_BY_PITCH -> {
@@ -412,7 +425,7 @@ class PitchingRecord(
         }
         if (pitchesThrown != null && strikesThrown != null) {
             require(strikesThrown!! <= pitchesThrown!!) {
-                "스트라이크 수(${strikesThrown})가 총 투구 수(${pitchesThrown})보다 클 수 없습니다."
+                "스트라이크 수($strikesThrown)가 총 투구 수($pitchesThrown)보다 클 수 없습니다."
             }
         }
         if (isStartingPitcher && decision == PitchingDecision.WIN) {
@@ -426,7 +439,10 @@ class PitchingRecord(
         /**
          * 경기 출전 선수의 투수 기록을 생성합니다.
          */
-        fun create(gamePlayer: GamePlayer, isStartingPitcher: Boolean = false): PitchingRecord =
+        fun create(
+            gamePlayer: GamePlayer,
+            isStartingPitcher: Boolean = false,
+        ): PitchingRecord =
             PitchingRecord(gamePlayer = gamePlayer).apply {
                 this.isStartingPitcher = isStartingPitcher
             }

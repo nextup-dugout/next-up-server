@@ -12,9 +12,7 @@ import jakarta.validation.constraints.NotNull
 data class RecordPlateAppearanceRequest(
     @field:NotNull(message = "타석 결과는 필수입니다.")
     val result: PlateAppearanceResult,
-
     @field:Min(value = 0, message = "타점은 0 이상이어야 합니다.")
     val runsBattedIn: Int = 0,
-
-    val runsScored: Boolean = false
+    val runsScored: Boolean = false,
 )

@@ -2,14 +2,12 @@ package com.nextup.core.port.repository
 
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
-import java.util.Optional
 
 /**
  * Competition Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface CompetitionRepositoryPort {
-
     fun save(competition: Competition): Competition
 
     fun findAll(): List<Competition>
@@ -30,7 +28,11 @@ interface CompetitionRepositoryPort {
     /**
      * 리그 + 연도 + 시즌으로 대회 조회
      */
-    fun findByLeagueIdAndYearAndSeason(leagueId: Long, year: Int, season: Int): Competition?
+    fun findByLeagueIdAndYearAndSeason(
+        leagueId: Long,
+        year: Int,
+        season: Int,
+    ): Competition?
 
     /**
      * 특정 상태의 대회 목록 조회

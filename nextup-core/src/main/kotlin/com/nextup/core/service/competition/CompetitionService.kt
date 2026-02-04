@@ -21,9 +21,8 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class CompetitionService(
     private val competitionRepository: CompetitionRepositoryPort,
-    private val leagueRepository: LeagueRepositoryPort
+    private val leagueRepository: LeagueRepositoryPort,
 ) {
-
     /**
      * 대회를 생성합니다.
      */
@@ -37,30 +36,32 @@ class CompetitionService(
         startDate: LocalDate,
         endDate: LocalDate? = null,
         description: String? = null,
-        maxTeams: Int? = null
+        maxTeams: Int? = null,
     ): Competition {
         // 리그 존재 확인
-        val league = leagueRepository.findByIdOrNull(leagueId)
-            ?: throw LeagueNotFoundException(leagueId)
+        val league =
+            leagueRepository.findByIdOrNull(leagueId)
+                ?: throw LeagueNotFoundException(leagueId)
 
         // 동일한 리그, 연도, 시즌의 대회가 이미 존재하는지 확인
         competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season)?.let {
             throw InvalidCompetitionStateException(
-                "Competition already exists for league $leagueId, year $year, season $season"
+                "Competition already exists for league $leagueId, year $year, season $season",
             )
         }
 
-        val competition = Competition(
-            league = league,
-            name = name,
-            year = year,
-            season = season,
-            type = type,
-            startDate = startDate,
-            endDate = endDate,
-            description = description,
-            maxTeams = maxTeams
-        )
+        val competition =
+            Competition(
+                league = league,
+                name = name,
+                year = year,
+                season = season,
+                type = type,
+                startDate = startDate,
+                endDate = endDate,
+                description = description,
+                maxTeams = maxTeams,
+            )
 
         return competitionRepository.save(competition)
     }
@@ -68,46 +69,36 @@ class CompetitionService(
     /**
      * ID로 대회를 조회합니다.
      */
-    fun getById(id: Long): Competition {
-        return competitionRepository.findByIdOrNull(id)
+    fun getById(id: Long): Competition =
+        competitionRepository.findByIdOrNull(id)
             ?: throw CompetitionNotFoundException(id)
-    }
 
     /**
      * ID로 대회를 조회합니다 (League 함께 조회).
      */
-    fun getByIdWithLeague(id: Long): Competition {
-        return competitionRepository.findByIdWithLeague(id)
+    fun getByIdWithLeague(id: Long): Competition =
+        competitionRepository.findByIdWithLeague(id)
             ?: throw CompetitionNotFoundException(id)
-    }
 
     /**
      * 모든 대회를 조회합니다.
      */
-    fun getAll(): List<Competition> {
-        return competitionRepository.findAll()
-    }
+    fun getAll(): List<Competition> = competitionRepository.findAll()
 
     /**
      * 리그별 대회 목록을 조회합니다.
      */
-    fun getByLeagueId(leagueId: Long): List<Competition> {
-        return competitionRepository.findByLeagueId(leagueId)
-    }
+    fun getByLeagueId(leagueId: Long): List<Competition> = competitionRepository.findByLeagueId(leagueId)
 
     /**
      * 진행 중인 대회 목록을 조회합니다.
      */
-    fun getInProgress(): List<Competition> {
-        return competitionRepository.findInProgressCompetitions()
-    }
+    fun getInProgress(): List<Competition> = competitionRepository.findInProgressCompetitions()
 
     /**
      * 특정 상태의 대회 목록을 조회합니다.
      */
-    fun getByStatus(status: CompetitionStatus): List<Competition> {
-        return competitionRepository.findByStatus(status)
-    }
+    fun getByStatus(status: CompetitionStatus): List<Competition> = competitionRepository.findByStatus(status)
 
     /**
      * 대회 정보를 수정합니다.
@@ -116,7 +107,7 @@ class CompetitionService(
     fun update(
         id: Long,
         description: String?,
-        endDate: LocalDate?
+        endDate: LocalDate?,
     ): Competition {
         val competition = getById(id)
 
@@ -144,7 +135,10 @@ class CompetitionService(
      * 대회를 완료합니다.
      */
     @Transactional
-    fun complete(id: Long, endDate: LocalDate = LocalDate.now()): Competition {
+    fun complete(
+        id: Long,
+        endDate: LocalDate = LocalDate.now(),
+    ): Competition {
         val competition = getById(id)
         try {
             competition.complete(endDate)

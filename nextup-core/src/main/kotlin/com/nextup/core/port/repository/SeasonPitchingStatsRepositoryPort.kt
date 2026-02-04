@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.stats.SeasonPitchingStats
-import java.util.Optional
 
 /**
  * SeasonPitchingStats Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface SeasonPitchingStatsRepositoryPort {
-
     fun save(seasonPitchingStats: SeasonPitchingStats): SeasonPitchingStats
 
     fun findAll(): List<SeasonPitchingStats>
@@ -20,7 +18,10 @@ interface SeasonPitchingStatsRepositoryPort {
     /**
      * 선수 ID와 연도로 시즌 투수 통계를 조회합니다.
      */
-    fun findByPlayerIdAndYear(playerId: Long, year: Int): SeasonPitchingStats?
+    fun findByPlayerIdAndYear(
+        playerId: Long,
+        year: Int,
+    ): SeasonPitchingStats?
 
     /**
      * 선수 ID로 모든 시즌 투수 통계를 조회합니다.
@@ -36,26 +37,43 @@ interface SeasonPitchingStatsRepositoryPort {
      * ERA 상위 N명을 조회합니다 (최소 이닝 조건).
      * ERA는 낮을수록 좋으므로 ASC 정렬합니다.
      */
-    fun findTopByEra(year: Int, minInningsPitchedOuts: Int, limit: Int): List<SeasonPitchingStats>
+    fun findTopByEra(
+        year: Int,
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<SeasonPitchingStats>
 
     /**
      * 승수 상위 N명을 조회합니다.
      */
-    fun findTopByWins(year: Int, limit: Int): List<SeasonPitchingStats>
+    fun findTopByWins(
+        year: Int,
+        limit: Int,
+    ): List<SeasonPitchingStats>
 
     /**
      * 삼진 상위 N명을 조회합니다.
      */
-    fun findTopByStrikeouts(year: Int, limit: Int): List<SeasonPitchingStats>
+    fun findTopByStrikeouts(
+        year: Int,
+        limit: Int,
+    ): List<SeasonPitchingStats>
 
     /**
      * 세이브 상위 N명을 조회합니다.
      */
-    fun findTopBySaves(year: Int, limit: Int): List<SeasonPitchingStats>
+    fun findTopBySaves(
+        year: Int,
+        limit: Int,
+    ): List<SeasonPitchingStats>
 
     /**
      * WHIP 상위 N명을 조회합니다 (최소 이닝 조건).
      * WHIP는 낮을수록 좋으므로 ASC 정렬합니다.
      */
-    fun findTopByWhip(year: Int, minInningsPitchedOuts: Int, limit: Int): List<SeasonPitchingStats>
+    fun findTopByWhip(
+        year: Int,
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<SeasonPitchingStats>
 }

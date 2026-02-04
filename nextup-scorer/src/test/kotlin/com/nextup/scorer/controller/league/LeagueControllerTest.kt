@@ -47,10 +47,11 @@ class LeagueControllerTest {
         fun `should return all leagues when no filter provided`() {
             // given
             val association = createAssociation(1L, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association),
-                createLeague(2L, "2부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association),
+                    createLeague(2L, "2부 리그", association)
+                )
             every { leagueService.getAll() } returns leagues
 
             // when & then
@@ -70,9 +71,10 @@ class LeagueControllerTest {
             // given
             val associationId = 1L
             val association = createAssociation(associationId, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association)
+                )
             every { leagueService.getByAssociationId(associationId) } returns leagues
 
             // when & then
@@ -121,15 +123,16 @@ class LeagueControllerTest {
         @Test
         fun `should create league with valid request`() {
             // given
-            val request = CreateLeagueRequest(
-                associationId = 1L,
-                name = "1부 리그",
-                abbreviation = "1st",
-                foundedYear = 2020,
-                divisionLevel = 1,
-                description = "최상위 리그",
-                logoUrl = "https://example.com/logo.png"
-            )
+            val request =
+                CreateLeagueRequest(
+                    associationId = 1L,
+                    name = "1부 리그",
+                    abbreviation = "1st",
+                    foundedYear = 2020,
+                    divisionLevel = 1,
+                    description = "최상위 리그",
+                    logoUrl = "https://example.com/logo.png"
+                )
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
 
@@ -177,10 +180,11 @@ class LeagueControllerTest {
         @Test
         fun `should update league with valid request`() {
             // given
-            val request = UpdateLeagueRequest(
-                description = "수정된 설명",
-                logoUrl = "https://example.com/new-logo.png"
-            )
+            val request =
+                UpdateLeagueRequest(
+                    description = "수정된 설명",
+                    logoUrl = "https://example.com/new-logo.png"
+                )
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
 
@@ -220,9 +224,10 @@ class LeagueControllerTest {
         fun `should deactivate league`() {
             // given
             val association = createAssociation(1L, "서울시야구협회")
-            val league = createLeague(1L, "1부 리그", association).apply {
-                deactivate()
-            }
+            val league =
+                createLeague(1L, "1부 리그", association).apply {
+                    deactivate()
+                }
             every { leagueService.deactivate(1L) } returns league
 
             // when & then
@@ -258,7 +263,10 @@ class LeagueControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
+    private fun createAssociation(
+        id: Long,
+        name: String
+    ): Association {
         return Association(
             name = name,
             abbreviation = null,
@@ -273,7 +281,11 @@ class LeagueControllerTest {
         }
     }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association
+    ): League {
         return League(
             association = association,
             name = name,

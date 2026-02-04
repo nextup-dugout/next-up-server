@@ -27,11 +27,11 @@ data class CompetitionAdminResponse(
     val maxTeams: Int?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(competition: Competition): CompetitionAdminResponse {
-            return CompetitionAdminResponse(
+        fun from(competition: Competition): CompetitionAdminResponse =
+            CompetitionAdminResponse(
                 id = competition.id,
                 leagueId = competition.league.id,
                 leagueName = competition.league.name,
@@ -47,8 +47,7 @@ data class CompetitionAdminResponse(
                 maxTeams = competition.maxTeams,
                 isActive = competition.isActive,
                 createdAt = competition.createdAt,
-                updatedAt = competition.updatedAt
+                updatedAt = competition.updatedAt,
             )
-        }
     }
 }

@@ -29,11 +29,11 @@ data class PlayerTeamResponse(
     val isCurrentAffiliation: Boolean,
     val durationInDays: Long?,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(history: PlayerTeamHistory): PlayerTeamResponse {
-            return PlayerTeamResponse(
+        fun from(history: PlayerTeamHistory): PlayerTeamResponse =
+            PlayerTeamResponse(
                 id = history.id,
                 playerId = history.player.id,
                 playerName = history.player.name,
@@ -50,8 +50,7 @@ data class PlayerTeamResponse(
                 isCurrentAffiliation = history.isCurrentAffiliation,
                 durationInDays = history.durationInDays,
                 createdAt = history.createdAt,
-                updatedAt = history.updatedAt
+                updatedAt = history.updatedAt,
             )
-        }
     }
 }

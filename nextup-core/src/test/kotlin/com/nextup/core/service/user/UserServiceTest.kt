@@ -22,7 +22,6 @@ import java.util.*
 
 @DisplayName("UserService")
 class UserServiceTest {
-
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var oauthAccountRepository: OAuthAccountRepositoryPort
     private lateinit var userService: UserService
@@ -37,7 +36,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("createLocalUser")
     inner class CreateLocalUser {
-
         @Test
         fun `should create local user successfully`() {
             // given
@@ -74,22 +72,23 @@ class UserServiceTest {
     @Nested
     @DisplayName("createOrLinkOAuthUser")
     inner class CreateOrLinkOAuthUser {
-
         @Test
         fun `should return existing user when oauth account exists`() {
             // given
             val user = createTestUser(1L, "existing@example.com")
             val oauthAccount = mockk<OAuthAccount>()
             every { oauthAccount.user } returns user
-            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns oauthAccount
+            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns
+                oauthAccount
 
             // when
-            val (resultUser, isNew) = userService.createOrLinkOAuthUser(
-                email = "new@example.com",
-                nickname = "새사용자",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_123"
-            )
+            val (resultUser, isNew) =
+                userService.createOrLinkOAuthUser(
+                    email = "new@example.com",
+                    nickname = "새사용자",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_123",
+                )
 
             // then
             assertThat(resultUser.id).isEqualTo(1L)
@@ -104,12 +103,13 @@ class UserServiceTest {
             every { userRepository.findByEmail("existing@example.com") } returns existingUser
 
             // when
-            val (resultUser, isNew) = userService.createOrLinkOAuthUser(
-                email = "existing@example.com",
-                nickname = "새닉네임",
-                provider = OAuthProvider.GOOGLE,
-                oauthId = "google_123"
-            )
+            val (resultUser, isNew) =
+                userService.createOrLinkOAuthUser(
+                    email = "existing@example.com",
+                    nickname = "새닉네임",
+                    provider = OAuthProvider.GOOGLE,
+                    oauthId = "google_123",
+                )
 
             // then
             assertThat(resultUser.id).isEqualTo(1L)
@@ -125,12 +125,13 @@ class UserServiceTest {
             every { userRepository.save(any()) } answers { firstArg() }
 
             // when
-            val (resultUser, isNew) = userService.createOrLinkOAuthUser(
-                email = "new@example.com",
-                nickname = "새사용자",
-                provider = OAuthProvider.NAVER,
-                oauthId = "naver_123"
-            )
+            val (resultUser, isNew) =
+                userService.createOrLinkOAuthUser(
+                    email = "new@example.com",
+                    nickname = "새사용자",
+                    provider = OAuthProvider.NAVER,
+                    oauthId = "naver_123",
+                )
 
             // then
             assertThat(resultUser.email).isEqualTo("new@example.com")
@@ -147,13 +148,14 @@ class UserServiceTest {
             every { userRepository.findByEmail("existing@example.com") } returns existingUser
 
             // when
-            val (resultUser, isNew) = userService.createOrLinkOAuthUser(
-                email = "existing@example.com",
-                nickname = "새닉네임",
-                provider = OAuthProvider.GOOGLE,
-                oauthId = "google_123",
-                profileImageUrl = "http://example.com/profile.jpg"
-            )
+            val (resultUser, isNew) =
+                userService.createOrLinkOAuthUser(
+                    email = "existing@example.com",
+                    nickname = "새닉네임",
+                    provider = OAuthProvider.GOOGLE,
+                    oauthId = "google_123",
+                    profileImageUrl = "http://example.com/profile.jpg",
+                )
 
             // then
             assertThat(resultUser.profileImageUrl).isEqualTo("http://example.com/profile.jpg")
@@ -163,20 +165,22 @@ class UserServiceTest {
         @Test
         fun `should not update profile image when existing user already has one`() {
             // given
-            val existingUser = createTestUser(1L, "existing@example.com").apply {
-                updateProfile(profileImageUrl = "http://example.com/existing.jpg")
-            }
+            val existingUser =
+                createTestUser(1L, "existing@example.com").apply {
+                    updateProfile(profileImageUrl = "http://example.com/existing.jpg")
+                }
             every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.GOOGLE, "google_123") } returns null
             every { userRepository.findByEmail("existing@example.com") } returns existingUser
 
             // when
-            val (resultUser, isNew) = userService.createOrLinkOAuthUser(
-                email = "existing@example.com",
-                nickname = "새닉네임",
-                provider = OAuthProvider.GOOGLE,
-                oauthId = "google_123",
-                profileImageUrl = "http://example.com/new.jpg"
-            )
+            val (resultUser, isNew) =
+                userService.createOrLinkOAuthUser(
+                    email = "existing@example.com",
+                    nickname = "새닉네임",
+                    provider = OAuthProvider.GOOGLE,
+                    oauthId = "google_123",
+                    profileImageUrl = "http://example.com/new.jpg",
+                )
 
             // then
             assertThat(resultUser.profileImageUrl).isEqualTo("http://example.com/existing.jpg")
@@ -187,7 +191,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("getById")
     inner class GetById {
-
         @Test
         fun `should return user when found`() {
             // given
@@ -217,7 +220,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("getActiveById")
     inner class GetActiveById {
-
         @Test
         fun `should return active user`() {
             // given
@@ -247,7 +249,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("getByEmail")
     inner class GetByEmail {
-
         @Test
         fun `should return user when found by email`() {
             // given
@@ -276,7 +277,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("findByEmail")
     inner class FindByEmail {
-
         @Test
         fun `should return user when found`() {
             // given
@@ -307,14 +307,14 @@ class UserServiceTest {
     @Nested
     @DisplayName("findByOAuth")
     inner class FindByOAuth {
-
         @Test
         fun `should return user when oauth account found`() {
             // given
             val user = createTestUser(1L, "oauth@example.com")
             val oauthAccount = mockk<OAuthAccount>()
             every { oauthAccount.user } returns user
-            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns oauthAccount
+            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns
+                oauthAccount
 
             // when
             val result = userService.findByOAuth(OAuthProvider.KAKAO, "kakao_123")
@@ -340,14 +340,14 @@ class UserServiceTest {
     @Nested
     @DisplayName("getAllActive")
     inner class GetAllActive {
-
         @Test
         fun `should return paginated active users`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "user1@example.com"),
-                createTestUser(2L, "user2@example.com")
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "user1@example.com"),
+                    createTestUser(2L, "user2@example.com"),
+                )
             val pageable = PageRequest.of(0, 10)
             every { userRepository.findAllActive(pageable) } returns PageImpl(users)
 
@@ -362,15 +362,15 @@ class UserServiceTest {
     @Nested
     @DisplayName("getAll")
     inner class GetAll {
-
         @Test
         fun `should return all users paginated`() {
             // given
-            val users = listOf(
-                createTestUser(1L, "user1@example.com"),
-                createTestUser(2L, "user2@example.com"),
-                createTestUser(3L, "user3@example.com")
-            )
+            val users =
+                listOf(
+                    createTestUser(1L, "user1@example.com"),
+                    createTestUser(2L, "user2@example.com"),
+                    createTestUser(3L, "user3@example.com"),
+                )
             val pageable = PageRequest.of(0, 10)
             every { userRepository.findAllByIsActive(true, pageable) } returns PageImpl(users)
 
@@ -385,7 +385,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("getAllByStatus")
     inner class GetAllByStatus {
-
         @Test
         fun `should return active users only`() {
             // given
@@ -403,9 +402,10 @@ class UserServiceTest {
         @Test
         fun `should return inactive users only`() {
             // given
-            val inactiveUsers = listOf(
-                createTestUser(1L, "inactive@example.com").apply { deactivate() }
-            )
+            val inactiveUsers =
+                listOf(
+                    createTestUser(1L, "inactive@example.com").apply { deactivate() },
+                )
             val pageable = PageRequest.of(0, 10)
             every { userRepository.findAllByIsActive(false, pageable) } returns PageImpl(inactiveUsers)
 
@@ -420,7 +420,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("search")
     inner class Search {
-
         @Test
         fun `should search users by keyword`() {
             // given
@@ -439,13 +438,13 @@ class UserServiceTest {
     @Nested
     @DisplayName("getAllByRole")
     inner class GetAllByRole {
-
         @Test
         fun `should return users with specific role`() {
             // given
-            val admins = listOf(
-                createTestUser(1L, "admin@example.com").apply { addRole(Role.ADMIN) }
-            )
+            val admins =
+                listOf(
+                    createTestUser(1L, "admin@example.com").apply { addRole(Role.ADMIN) },
+                )
             val pageable = PageRequest.of(0, 10)
             every { userRepository.findAllByRole(Role.ADMIN, pageable) } returns PageImpl(admins)
 
@@ -460,7 +459,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("updateProfile")
     inner class UpdateProfile {
-
         @Test
         fun `should update profile successfully`() {
             // given
@@ -468,11 +466,12 @@ class UserServiceTest {
             every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
-            val result = userService.updateProfile(
-                userId = 1L,
-                nickname = "새닉네임",
-                profileImageUrl = "http://example.com/new.jpg"
-            )
+            val result =
+                userService.updateProfile(
+                    userId = 1L,
+                    nickname = "새닉네임",
+                    profileImageUrl = "http://example.com/new.jpg",
+                )
 
             // then
             assertThat(result.nickname).isEqualTo("새닉네임")
@@ -486,11 +485,12 @@ class UserServiceTest {
             every { userRepository.findByIdOrNull(1L) } returns user
 
             // when
-            val result = userService.updateProfile(
-                userId = 1L,
-                nickname = null,
-                profileImageUrl = "http://example.com/new.jpg"
-            )
+            val result =
+                userService.updateProfile(
+                    userId = 1L,
+                    nickname = null,
+                    profileImageUrl = "http://example.com/new.jpg",
+                )
 
             // then
             assertThat(result.nickname).isEqualTo("테스터")
@@ -501,7 +501,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("changePassword")
     inner class ChangePassword {
-
         @Test
         fun `should change password successfully`() {
             // given
@@ -519,7 +518,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("addRole / removeRole")
     inner class RoleManagement {
-
         @Test
         fun `should add role to user`() {
             // given
@@ -550,7 +548,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("linkOAuthAccount")
     inner class LinkOAuthAccount {
-
         @Test
         fun `should link oauth account successfully`() {
             // given
@@ -574,7 +571,8 @@ class UserServiceTest {
             every { existingOAuth.user } returns anotherUser
 
             every { userRepository.findByIdOrNull(1L) } returns user
-            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_used") } returns existingOAuth
+            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_used") } returns
+                existingOAuth
 
             // when & then
             assertThatThrownBy {
@@ -590,7 +588,8 @@ class UserServiceTest {
             every { existingOAuth.user } returns user
 
             every { userRepository.findByIdOrNull(1L) } returns user
-            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns existingOAuth
+            every { oauthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "kakao_123") } returns
+                existingOAuth
 
             // when - no exception should be thrown
             val result = userService.linkOAuthAccount(1L, OAuthProvider.KAKAO, "kakao_123")
@@ -603,7 +602,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("unlinkOAuthAccount")
     inner class UnlinkOAuthAccount {
-
         @Test
         fun `should unlink oauth account when multiple auth methods exist`() {
             // given
@@ -621,12 +619,13 @@ class UserServiceTest {
         @Test
         fun `should throw exception when trying to remove last auth method`() {
             // given - OAuth only user (no password)
-            val user = User.createOAuthUser(
-                email = "oauth@example.com",
-                nickname = "OAuth사용자",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_only"
-            )
+            val user =
+                User.createOAuthUser(
+                    email = "oauth@example.com",
+                    nickname = "OAuth사용자",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_only",
+                )
             setUserId(user, 1L)
             every { userRepository.findByIdOrNull(1L) } returns user
 
@@ -640,7 +639,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("getLinkedProviders")
     inner class GetLinkedProviders {
-
         @Test
         fun `should return list of linked providers`() {
             // given
@@ -671,7 +669,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("deactivate / activate")
     inner class DeactivateActivate {
-
         @Test
         fun `should deactivate user`() {
             // given
@@ -702,7 +699,6 @@ class UserServiceTest {
     @Nested
     @DisplayName("utility methods")
     inner class UtilityMethods {
-
         @Test
         fun `should validate email not duplicate`() {
             // given
@@ -735,17 +731,24 @@ class UserServiceTest {
         }
     }
 
-    private fun createTestUser(id: Long, email: String): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = "encoded_password",
-            nickname = "테스터"
-        )
+    private fun createTestUser(
+        id: Long,
+        email: String,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = "encoded_password",
+                nickname = "테스터",
+            )
         setUserId(user, id)
         return user
     }
 
-    private fun setUserId(user: User, id: Long) {
+    private fun setUserId(
+        user: User,
+        id: Long,
+    ) {
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)

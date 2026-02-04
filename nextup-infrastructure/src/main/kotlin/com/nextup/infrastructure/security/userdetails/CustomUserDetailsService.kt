@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
  */
 interface UserJpaRepository : JpaRepository<User, Long> {
     fun findByEmail(email: String): User?
+
     fun existsByEmail(email: String): Boolean
 }
 
@@ -23,9 +24,8 @@ interface UserJpaRepository : JpaRepository<User, Long> {
  */
 @Service
 class CustomUserDetailsService(
-    private val userJpaRepository: UserJpaRepository
+    private val userJpaRepository: UserJpaRepository,
 ) : UserDetailsService {
-
     /**
      * 이메일로 사용자를 조회합니다.
      *
@@ -34,8 +34,9 @@ class CustomUserDetailsService(
      * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
      */
     override fun loadUserByUsername(username: String): UserDetails {
-        val user = userJpaRepository.findByEmail(username)
-            ?: throw UsernameNotFoundException("User not found with email: $username")
+        val user =
+            userJpaRepository.findByEmail(username)
+                ?: throw UsernameNotFoundException("User not found with email: $username")
 
         return CustomUserDetails.from(user)
     }
@@ -48,8 +49,9 @@ class CustomUserDetailsService(
      * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
      */
     fun loadUserById(userId: Long): CustomUserDetails {
-        val user = userJpaRepository.findByIdOrNull(userId)
-            ?: throw UsernameNotFoundException("User not found with id: $userId")
+        val user =
+            userJpaRepository.findByIdOrNull(userId)
+                ?: throw UsernameNotFoundException("User not found with id: $userId")
 
         return CustomUserDetails.from(user)
     }

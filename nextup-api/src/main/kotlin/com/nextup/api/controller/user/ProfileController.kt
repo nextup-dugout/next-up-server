@@ -15,15 +15,14 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/v1/me")
 class ProfileController(
-    private val userService: UserService
+    private val userService: UserService,
 ) {
-
     /**
      * 내 프로필을 조회합니다.
      */
     @GetMapping
     fun getMyProfile(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<ProfileResponse> {
         val user = userService.getActiveById(userId)
         return ApiResponse.success(ProfileResponse.from(user))
@@ -35,13 +34,14 @@ class ProfileController(
     @PutMapping
     fun updateMyProfile(
         @AuthenticationPrincipal userId: Long,
-        @Valid @RequestBody request: UpdateProfileRequest
+        @Valid @RequestBody request: UpdateProfileRequest,
     ): ApiResponse<ProfileResponse> {
-        val user = userService.updateProfile(
-            userId = userId,
-            nickname = request.nickname,
-            profileImageUrl = request.profileImageUrl
-        )
+        val user =
+            userService.updateProfile(
+                userId = userId,
+                nickname = request.nickname,
+                profileImageUrl = request.profileImageUrl,
+            )
         return ApiResponse.success(ProfileResponse.from(user))
     }
 
@@ -50,16 +50,17 @@ class ProfileController(
      */
     @GetMapping("/oauth-accounts")
     fun getLinkedOAuthAccounts(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<LinkedOAuthProvider>> {
         val user = userService.getActiveById(userId)
-        val providers = user.oauthAccounts.map {
-            LinkedOAuthProvider(
-                provider = it.provider.name,
-                displayName = it.provider.displayName,
-                connectedAt = it.connectedAt
-            )
-        }
+        val providers =
+            user.oauthAccounts.map {
+                LinkedOAuthProvider(
+                    provider = it.provider.name,
+                    displayName = it.provider.displayName,
+                    connectedAt = it.connectedAt,
+                )
+            }
         return ApiResponse.success(providers)
     }
 
@@ -68,7 +69,7 @@ class ProfileController(
      */
     @DeleteMapping
     fun deactivateMyAccount(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<Unit> {
         userService.deactivate(userId)
         return ApiResponse.success(Unit)
@@ -83,15 +84,14 @@ class ProfileController(
 @RestController
 @RequestMapping("/api/v1/users")
 class PublicProfileController(
-    private val userService: UserService
+    private val userService: UserService,
 ) {
-
     /**
      * 사용자의 공개 프로필을 조회합니다.
      */
     @GetMapping("/{userId}")
     fun getPublicProfile(
-        @PathVariable userId: Long
+        @PathVariable userId: Long,
     ): ApiResponse<PublicProfileResponse> {
         val user = userService.getActiveById(userId)
         return ApiResponse.success(PublicProfileResponse.from(user))

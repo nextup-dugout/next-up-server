@@ -2,9 +2,7 @@ package com.nextup.infrastructure.security.userdetails
 
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
-import org.springframework.data.repository.findByIdOrNull
 import io.mockk.every
-import org.springframework.data.repository.findByIdOrNull
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -12,12 +10,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import java.util.*
 
 @DisplayName("CustomUserDetailsService 테스트")
 class CustomUserDetailsServiceTest {
-
     private lateinit var userJpaRepository: UserJpaRepository
     private lateinit var service: CustomUserDetailsService
 
@@ -32,13 +30,14 @@ class CustomUserDetailsServiceTest {
         password: String = "encoded_password",
         nickname: String = "테스터",
         id: Long = 1L,
-        isActive: Boolean = true
+        isActive: Boolean = true,
     ): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = password,
-            nickname = nickname
-        )
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = password,
+                nickname = nickname,
+            )
         // Set ID using reflection
         val idField = user.javaClass.getDeclaredField("id")
         idField.isAccessible = true
@@ -54,7 +53,6 @@ class CustomUserDetailsServiceTest {
     @Nested
     @DisplayName("이메일로 사용자 조회")
     inner class LoadUserByUsername {
-
         @Test
         fun `should return user details when user exists`() {
             // given
@@ -76,9 +74,10 @@ class CustomUserDetailsServiceTest {
             every { userJpaRepository.findByEmail("notfound@example.com") } returns null
 
             // when & then
-            val exception = assertThrows<UsernameNotFoundException> {
-                service.loadUserByUsername("notfound@example.com")
-            }
+            val exception =
+                assertThrows<UsernameNotFoundException> {
+                    service.loadUserByUsername("notfound@example.com")
+                }
             assertThat(exception.message).contains("notfound@example.com")
         }
 
@@ -100,7 +99,6 @@ class CustomUserDetailsServiceTest {
     @Nested
     @DisplayName("ID로 사용자 조회")
     inner class LoadUserById {
-
         @Test
         fun `should return user details when user exists`() {
             // given
@@ -122,9 +120,10 @@ class CustomUserDetailsServiceTest {
             every { userJpaRepository.findByIdOrNull(999L) } returns null
 
             // when & then
-            val exception = assertThrows<UsernameNotFoundException> {
-                service.loadUserById(999L)
-            }
+            val exception =
+                assertThrows<UsernameNotFoundException> {
+                    service.loadUserById(999L)
+                }
             assertThat(exception.message).contains("999")
         }
     }
@@ -132,19 +131,19 @@ class CustomUserDetailsServiceTest {
 
 @DisplayName("CustomUserDetails 테스트")
 class CustomUserDetailsTest {
-
     private fun createTestUser(
         email: String = "test@example.com",
         password: String = "encoded_password",
         nickname: String = "테스터",
         id: Long = 1L,
-        isActive: Boolean = true
+        isActive: Boolean = true,
     ): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = password,
-            nickname = nickname
-        )
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = password,
+                nickname = nickname,
+            )
         // Set ID using reflection
         val idField = user.javaClass.getDeclaredField("id")
         idField.isAccessible = true
@@ -160,7 +159,6 @@ class CustomUserDetailsTest {
     @Nested
     @DisplayName("UserDetails 인터페이스 구현")
     inner class UserDetailsInterface {
-
         @Test
         fun `should return correct username as email`() {
             // given
@@ -257,7 +255,6 @@ class CustomUserDetailsTest {
     @Nested
     @DisplayName("추가 속성")
     inner class AdditionalProperties {
-
         @Test
         fun `should expose user id`() {
             // given
@@ -325,7 +322,6 @@ class CustomUserDetailsTest {
     @Nested
     @DisplayName("팩토리 메소드")
     inner class FactoryMethod {
-
         @Test
         fun `should create CustomUserDetails from User`() {
             // given

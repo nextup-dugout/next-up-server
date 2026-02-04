@@ -18,9 +18,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class LeagueService(
     private val leagueRepository: LeagueRepositoryPort,
-    private val associationRepository: AssociationRepositoryPort
+    private val associationRepository: AssociationRepositoryPort,
 ) {
-
     /**
      * 리그를 생성합니다.
      */
@@ -32,25 +31,27 @@ class LeagueService(
         foundedYear: Int,
         divisionLevel: Int? = null,
         description: String? = null,
-        logoUrl: String? = null
+        logoUrl: String? = null,
     ): League {
-        val association = associationRepository.findByIdOrNull(associationId)
-            ?: throw AssociationNotFoundException(associationId)
+        val association =
+            associationRepository.findByIdOrNull(associationId)
+                ?: throw AssociationNotFoundException(associationId)
 
         // 협회 내 이름 중복 체크
         if (leagueRepository.existsByAssociationIdAndName(associationId, name)) {
             throw LeagueNameDuplicateException(associationId, name)
         }
 
-        val league = League(
-            association = association,
-            name = name,
-            abbreviation = abbreviation,
-            foundedYear = foundedYear,
-            divisionLevel = divisionLevel,
-            description = description,
-            logoUrl = logoUrl
-        )
+        val league =
+            League(
+                association = association,
+                name = name,
+                abbreviation = abbreviation,
+                foundedYear = foundedYear,
+                divisionLevel = divisionLevel,
+                description = description,
+                logoUrl = logoUrl,
+            )
 
         return leagueRepository.save(league)
     }
@@ -58,38 +59,30 @@ class LeagueService(
     /**
      * ID로 리그를 조회합니다.
      */
-    fun getById(id: Long): League {
-        return leagueRepository.findByIdOrNull(id)
+    fun getById(id: Long): League =
+        leagueRepository.findByIdOrNull(id)
             ?: throw LeagueNotFoundException(id)
-    }
 
     /**
      * 활성화된 모든 리그를 조회합니다.
      */
-    fun getAllActive(): List<League> {
-        return leagueRepository.findAllActive()
-    }
+    fun getAllActive(): List<League> = leagueRepository.findAllActive()
 
     /**
      * 모든 리그를 조회합니다 (관리자용).
      */
-    fun getAll(): List<League> {
-        return leagueRepository.findAll()
-    }
+    fun getAll(): List<League> = leagueRepository.findAll()
 
     /**
      * 협회별 활성화된 리그를 조회합니다.
      */
-    fun getActiveByAssociationId(associationId: Long): List<League> {
-        return leagueRepository.findActiveByAssociationId(associationId)
-    }
+    fun getActiveByAssociationId(associationId: Long): List<League> =
+        leagueRepository.findActiveByAssociationId(associationId)
 
     /**
      * 협회별 모든 리그를 조회합니다 (관리자용).
      */
-    fun getByAssociationId(associationId: Long): List<League> {
-        return leagueRepository.findByAssociationId(associationId)
-    }
+    fun getByAssociationId(associationId: Long): List<League> = leagueRepository.findByAssociationId(associationId)
 
     /**
      * 리그 정보를 수정합니다.
@@ -98,12 +91,12 @@ class LeagueService(
     fun update(
         id: Long,
         description: String? = null,
-        logoUrl: String? = null
+        logoUrl: String? = null,
     ): League {
         val league = getById(id)
         league.updateInfo(
             description = description,
-            logoUrl = logoUrl
+            logoUrl = logoUrl,
         )
         return league
     }

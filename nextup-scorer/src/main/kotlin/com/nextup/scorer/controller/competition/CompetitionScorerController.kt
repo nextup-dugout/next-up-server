@@ -72,17 +72,18 @@ class CompetitionScorerController(
     fun createCompetition(
         @Valid @RequestBody request: CreateCompetitionRequest
     ): ApiResponse<CompetitionScorerResponse> {
-        val competition = competitionService.create(
-            leagueId = request.leagueId,
-            name = request.name,
-            year = request.year,
-            season = request.season,
-            type = request.type,
-            startDate = request.startDate,
-            endDate = request.endDate,
-            description = request.description,
-            maxTeams = request.maxTeams
-        )
+        val competition =
+            competitionService.create(
+                leagueId = request.leagueId,
+                name = request.name,
+                year = request.year,
+                season = request.season,
+                type = request.type,
+                startDate = request.startDate,
+                endDate = request.endDate,
+                description = request.description,
+                maxTeams = request.maxTeams
+            )
         return ApiResponse.success(CompetitionScorerResponse.from(competition))
     }
 
@@ -94,11 +95,12 @@ class CompetitionScorerController(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateCompetitionRequest
     ): ApiResponse<CompetitionScorerResponse> {
-        val competition = competitionService.update(
-            id = id,
-            description = request.description,
-            endDate = request.endDate
-        )
+        val competition =
+            competitionService.update(
+                id = id,
+                description = request.description,
+                endDate = request.endDate
+            )
         return ApiResponse.success(CompetitionScorerResponse.from(competition))
     }
 

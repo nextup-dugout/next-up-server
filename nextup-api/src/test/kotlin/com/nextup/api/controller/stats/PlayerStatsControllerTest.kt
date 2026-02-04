@@ -26,7 +26,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("PlayerStatsController 테스트")
 class PlayerStatsControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var playerStatsService: PlayerStatsService
     private lateinit var objectMapper: ObjectMapper
@@ -34,13 +33,14 @@ class PlayerStatsControllerTest {
     private val playerId = 1L
     private val year = 2024
 
-    private val testPlayer = Player(
-        name = "홍길동",
-        primaryPosition = Position.CATCHER,
-        throwingHand = ThrowingHand.RIGHT,
-        battingHand = BattingHand.RIGHT,
-        id = playerId
-    )
+    private val testPlayer =
+        Player(
+            name = "홍길동",
+            primaryPosition = Position.CATCHER,
+            throwingHand = ThrowingHand.RIGHT,
+            battingHand = BattingHand.RIGHT,
+            id = playerId,
+        )
 
     @BeforeEach
     fun setUp() {
@@ -48,35 +48,38 @@ class PlayerStatsControllerTest {
         objectMapper = jacksonObjectMapper()
 
         val controller = PlayerStatsController(playerStatsService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-            .setControllerAdvice(GlobalExceptionHandler())
-            .build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
+                .build()
     }
 
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/batting/season/{year}")
     inner class GetSeasonBattingStats {
-
         @Test
         fun `should return season batting stats successfully`() {
             // given
-            val stats = SeasonBattingStats.create(testPlayer, year).apply {
-                setStatsDirectly(
-                    gamesPlayed = 10,
-                    pa = 45,
-                    atBats = 40,
-                    hits = 12,
-                    doubles = 2,
-                    homeRuns = 1,
-                    runs = 5,
-                    rbi = 8
-                )
-            }
+            val stats =
+                SeasonBattingStats.create(testPlayer, year).apply {
+                    setStatsDirectly(
+                        gamesPlayed = 10,
+                        pa = 45,
+                        atBats = 40,
+                        hits = 12,
+                        doubles = 2,
+                        homeRuns = 1,
+                        runs = 5,
+                        rbi = 8,
+                    )
+                }
 
             every { playerStatsService.getSeasonBattingStats(playerId, year) } returns stats
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/season/$year"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/batting/season/$year"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
@@ -95,7 +98,8 @@ class PlayerStatsControllerTest {
                 IllegalArgumentException("선수 ID $playerId 의 ${year}년도 타격 통계가 존재하지 않습니다.")
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/season/$year"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/batting/season/$year"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_ARGUMENT"))
@@ -105,26 +109,27 @@ class PlayerStatsControllerTest {
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/pitching/season/{year}")
     inner class GetSeasonPitchingStats {
-
         @Test
         fun `should return season pitching stats successfully`() {
             // given
-            val stats = SeasonPitchingStats.create(testPlayer, year).apply {
-                setStatsDirectly(
-                    gamesPlayed = 10,
-                    gamesStarted = 8,
-                    inningsPitchedOuts = 60, // 20 이닝
-                    wins = 5,
-                    losses = 3,
-                    earnedRuns = 15,
-                    strikeouts = 40
-                )
-            }
+            val stats =
+                SeasonPitchingStats.create(testPlayer, year).apply {
+                    setStatsDirectly(
+                        gamesPlayed = 10,
+                        gamesStarted = 8,
+                        inningsPitchedOuts = 60, // 20 이닝
+                        wins = 5,
+                        losses = 3,
+                        earnedRuns = 15,
+                        strikeouts = 40,
+                    )
+                }
 
             every { playerStatsService.getSeasonPitchingStats(playerId, year) } returns stats
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/season/$year"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/pitching/season/$year"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
@@ -143,7 +148,8 @@ class PlayerStatsControllerTest {
                 IllegalArgumentException("선수 ID $playerId 의 ${year}년도 투수 통계가 존재하지 않습니다.")
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/season/$year"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/pitching/season/$year"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_ARGUMENT"))
@@ -153,22 +159,24 @@ class PlayerStatsControllerTest {
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/batting/seasons")
     inner class GetAllSeasonBattingStats {
-
         @Test
         fun `should return all season batting stats successfully`() {
             // given
-            val stats2023 = SeasonBattingStats.create(testPlayer, 2023).apply {
-                setStatsDirectly(gamesPlayed = 8, atBats = 30, hits = 9)
-            }
-            val stats2024 = SeasonBattingStats.create(testPlayer, 2024).apply {
-                setStatsDirectly(gamesPlayed = 10, atBats = 40, hits = 12)
-            }
+            val stats2023 =
+                SeasonBattingStats.create(testPlayer, 2023).apply {
+                    setStatsDirectly(gamesPlayed = 8, atBats = 30, hits = 9)
+                }
+            val stats2024 =
+                SeasonBattingStats.create(testPlayer, 2024).apply {
+                    setStatsDirectly(gamesPlayed = 10, atBats = 40, hits = 12)
+                }
 
             every { playerStatsService.getAllSeasonBattingStats(playerId) } returns
                 listOf(stats2023, stats2024)
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/seasons"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/batting/seasons"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -185,7 +193,8 @@ class PlayerStatsControllerTest {
             every { playerStatsService.getAllSeasonBattingStats(playerId) } returns emptyList()
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/seasons"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/batting/seasons"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -196,22 +205,24 @@ class PlayerStatsControllerTest {
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/pitching/seasons")
     inner class GetAllSeasonPitchingStats {
-
         @Test
         fun `should return all season pitching stats successfully`() {
             // given
-            val stats2023 = SeasonPitchingStats.create(testPlayer, 2023).apply {
-                setStatsDirectly(gamesPlayed = 8, wins = 3, losses = 2)
-            }
-            val stats2024 = SeasonPitchingStats.create(testPlayer, 2024).apply {
-                setStatsDirectly(gamesPlayed = 10, wins = 5, losses = 3)
-            }
+            val stats2023 =
+                SeasonPitchingStats.create(testPlayer, 2023).apply {
+                    setStatsDirectly(gamesPlayed = 8, wins = 3, losses = 2)
+                }
+            val stats2024 =
+                SeasonPitchingStats.create(testPlayer, 2024).apply {
+                    setStatsDirectly(gamesPlayed = 10, wins = 5, losses = 3)
+                }
 
             every { playerStatsService.getAllSeasonPitchingStats(playerId) } returns
                 listOf(stats2023, stats2024)
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/seasons"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/pitching/seasons"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -228,7 +239,8 @@ class PlayerStatsControllerTest {
             every { playerStatsService.getAllSeasonPitchingStats(playerId) } returns emptyList()
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/seasons"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/pitching/seasons"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -239,23 +251,24 @@ class PlayerStatsControllerTest {
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/batting/career")
     inner class GetCareerBattingStats {
-
         @Test
         fun `should return career batting stats successfully`() {
             // given
-            val stats = CareerBattingStats(testPlayer).apply {
-                setCareerBattingStatsDirectly(
-                    seasonsPlayed = 3,
-                    gamesPlayed = 30,
-                    atBats = 100,
-                    hits = 30
-                )
-            }
+            val stats =
+                CareerBattingStats(testPlayer).apply {
+                    setCareerBattingStatsDirectly(
+                        seasonsPlayed = 3,
+                        gamesPlayed = 30,
+                        atBats = 100,
+                        hits = 30,
+                    )
+                }
 
             every { playerStatsService.getCareerBattingStats(playerId) } returns stats
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/batting/career"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/batting/career"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
@@ -269,23 +282,24 @@ class PlayerStatsControllerTest {
     @Nested
     @DisplayName("GET /api/v1/players/{playerId}/stats/pitching/career")
     inner class GetCareerPitchingStats {
-
         @Test
         fun `should return career pitching stats successfully`() {
             // given
-            val stats = CareerPitchingStats(testPlayer).apply {
-                setCareerPitchingStatsDirectly(
-                    seasonsPlayed = 3,
-                    gamesPlayed = 20,
-                    wins = 10,
-                    losses = 5
-                )
-            }
+            val stats =
+                CareerPitchingStats(testPlayer).apply {
+                    setCareerPitchingStatsDirectly(
+                        seasonsPlayed = 3,
+                        gamesPlayed = 20,
+                        wins = 10,
+                        losses = 5,
+                    )
+                }
 
             every { playerStatsService.getCareerPitchingStats(playerId) } returns stats
 
             // when & then
-            mockMvc.perform(get("/api/v1/players/$playerId/stats/pitching/career"))
+            mockMvc
+                .perform(get("/api/v1/players/$playerId/stats/pitching/career"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
@@ -308,7 +322,7 @@ class PlayerStatsControllerTest {
         homeRuns: Int = 0,
         runs: Int = 0,
         rbi: Int = 0,
-        walks: Int = 0
+        walks: Int = 0,
     ) {
         val clazz = SeasonBattingStats::class.java
         setField(clazz, this, "gamesPlayed", gamesPlayed)
@@ -331,7 +345,7 @@ class PlayerStatsControllerTest {
         losses: Int = 0,
         saves: Int = 0,
         earnedRuns: Int = 0,
-        strikeouts: Int = 0
+        strikeouts: Int = 0,
     ) {
         val clazz = SeasonPitchingStats::class.java
         setField(clazz, this, "gamesPlayed", gamesPlayed)
@@ -348,7 +362,7 @@ class PlayerStatsControllerTest {
         seasonsPlayed: Int = 0,
         gamesPlayed: Int = 0,
         atBats: Int = 0,
-        hits: Int = 0
+        hits: Int = 0,
     ) {
         val clazz = CareerBattingStats::class.java
         setField(clazz, this, "seasonsPlayed", seasonsPlayed)
@@ -361,7 +375,7 @@ class PlayerStatsControllerTest {
         seasonsPlayed: Int = 0,
         gamesPlayed: Int = 0,
         wins: Int = 0,
-        losses: Int = 0
+        losses: Int = 0,
     ) {
         val clazz = CareerPitchingStats::class.java
         setField(clazz, this, "seasonsPlayed", seasonsPlayed)
@@ -370,7 +384,12 @@ class PlayerStatsControllerTest {
         setField(clazz, this, "losses", losses)
     }
 
-    private fun setField(clazz: Class<*>, obj: Any, fieldName: String, value: Any?) {
+    private fun setField(
+        clazz: Class<*>,
+        obj: Any,
+        fieldName: String,
+        value: Any?,
+    ) {
         val field = clazz.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(obj, value)

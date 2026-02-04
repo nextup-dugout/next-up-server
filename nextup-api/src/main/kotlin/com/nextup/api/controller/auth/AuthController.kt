@@ -5,7 +5,6 @@ import com.nextup.api.dto.common.ApiResponse
 import com.nextup.infrastructure.security.AuthenticationService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
@@ -16,9 +15,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
-    private val authenticationService: AuthenticationService
+    private val authenticationService: AuthenticationService,
 ) {
-
     /**
      * 로그인
      *
@@ -27,17 +25,18 @@ class AuthController(
     @PostMapping("/login")
     fun login(
         @Valid @RequestBody request: LoginRequest,
-        httpRequest: HttpServletRequest
+        httpRequest: HttpServletRequest,
     ): ResponseEntity<ApiResponse<TokenResponse>> {
         val deviceInfo = httpRequest.getHeader("User-Agent")
         val ipAddress = getClientIpAddress(httpRequest)
 
-        val tokenPair = authenticationService.login(
-            email = request.email,
-            password = request.password,
-            deviceInfo = deviceInfo,
-            ipAddress = ipAddress
-        )
+        val tokenPair =
+            authenticationService.login(
+                email = request.email,
+                password = request.password,
+                deviceInfo = deviceInfo,
+                ipAddress = ipAddress,
+            )
 
         return ResponseEntity.ok(ApiResponse.success(TokenResponse.from(tokenPair)))
     }
@@ -50,16 +49,17 @@ class AuthController(
     @PostMapping("/refresh")
     fun refresh(
         @Valid @RequestBody request: RefreshTokenRequest,
-        httpRequest: HttpServletRequest
+        httpRequest: HttpServletRequest,
     ): ResponseEntity<ApiResponse<TokenResponse>> {
         val deviceInfo = httpRequest.getHeader("User-Agent")
         val ipAddress = getClientIpAddress(httpRequest)
 
-        val tokenPair = authenticationService.refresh(
-            refreshTokenString = request.refreshToken,
-            deviceInfo = deviceInfo,
-            ipAddress = ipAddress
-        )
+        val tokenPair =
+            authenticationService.refresh(
+                refreshTokenString = request.refreshToken,
+                deviceInfo = deviceInfo,
+                ipAddress = ipAddress,
+            )
 
         return ResponseEntity.ok(ApiResponse.success(TokenResponse.from(tokenPair)))
     }
@@ -71,7 +71,7 @@ class AuthController(
      */
     @PostMapping("/logout")
     fun logout(
-        @Valid @RequestBody request: LogoutRequest
+        @Valid @RequestBody request: LogoutRequest,
     ): ResponseEntity<ApiResponse<Unit>> {
         authenticationService.logout(request.refreshToken)
         return ResponseEntity.ok(ApiResponse.success(Unit))
@@ -84,7 +84,7 @@ class AuthController(
      */
     @PostMapping("/logout-all")
     fun logoutAll(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<Unit>> {
         authenticationService.logoutAll(userId)
         return ResponseEntity.ok(ApiResponse.success(Unit))
@@ -97,17 +97,18 @@ class AuthController(
      */
     @GetMapping("/me")
     fun getCurrentUser(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<CurrentUserResponse>> {
         val userDetails = authenticationService.getUserDetails(userId)
 
-        val response = CurrentUserResponse(
-            id = userDetails.id,
-            email = userDetails.email,
-            nickname = userDetails.nickname,
-            roles = userDetails.getRoleNames(),
-            isActive = userDetails.isEnabled
-        )
+        val response =
+            CurrentUserResponse(
+                id = userDetails.id,
+                email = userDetails.email,
+                nickname = userDetails.nickname,
+                roles = userDetails.getRoleNames(),
+                isActive = userDetails.isEnabled,
+            )
 
         return ResponseEntity.ok(ApiResponse.success(response))
     }

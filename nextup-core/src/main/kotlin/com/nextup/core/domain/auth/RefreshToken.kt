@@ -16,33 +16,26 @@ import java.time.Instant
     indexes = [
         Index(name = "idx_refresh_token_user", columnList = "user_id"),
         Index(name = "idx_refresh_token_token", columnList = "token", unique = true),
-        Index(name = "idx_refresh_token_expires", columnList = "expires_at")
-    ]
+        Index(name = "idx_refresh_token_expires", columnList = "expires_at"),
+    ],
 )
 class RefreshToken private constructor(
     @Column(name = "user_id", nullable = false)
     val userId: Long,
-
     @Column(nullable = false, unique = true, length = 500)
     val token: String,
-
     @Column(name = "expires_at", nullable = false)
     val expiresAt: Instant,
-
     @Column(name = "is_revoked", nullable = false)
     var isRevoked: Boolean = false,
-
     @Column(name = "device_info", length = 255)
     val deviceInfo: String? = null,
-
     @Column(name = "ip_address", length = 45)
     val ipAddress: String? = null,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     /**
      * 토큰이 만료되었는지 확인합니다.
      */
@@ -85,8 +78,7 @@ class RefreshToken private constructor(
 
     override fun hashCode(): Int = id.hashCode()
 
-    override fun toString(): String =
-        "RefreshToken(id=$id, userId=$userId, isRevoked=$isRevoked, expiresAt=$expiresAt)"
+    override fun toString(): String = "RefreshToken(id=$id, userId=$userId, isRevoked=$isRevoked, expiresAt=$expiresAt)"
 
     companion object {
         /**
@@ -105,7 +97,7 @@ class RefreshToken private constructor(
             token: String,
             expiresAt: Instant,
             deviceInfo: String? = null,
-            ipAddress: String? = null
+            ipAddress: String? = null,
         ): RefreshToken {
             require(token.isNotBlank()) { "Token cannot be blank" }
             require(expiresAt.isAfter(Instant.now())) {
@@ -117,7 +109,7 @@ class RefreshToken private constructor(
                 token = token,
                 expiresAt = expiresAt,
                 deviceInfo = deviceInfo,
-                ipAddress = ipAddress
+                ipAddress = ipAddress,
             )
         }
     }

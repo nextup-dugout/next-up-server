@@ -11,7 +11,6 @@ import java.time.Instant
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class)
 abstract class BaseTimeEntity {
-
     @CreatedDate
     @Column(nullable = false, updatable = false)
     var createdAt: Instant = Instant.now()

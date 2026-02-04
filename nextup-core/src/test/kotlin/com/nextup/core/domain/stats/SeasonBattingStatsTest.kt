@@ -7,7 +7,6 @@ import com.nextup.core.domain.player.BattingHand
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
-import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -18,19 +17,18 @@ import java.math.BigDecimal
 
 @DisplayName("SeasonBattingStats 테스트")
 class SeasonBattingStatsTest {
-
-    private val testPlayer = Player(
-        name = "홍길동",
-        primaryPosition = Position.CATCHER,
-        throwingHand = ThrowingHand.RIGHT,
-        battingHand = BattingHand.RIGHT,
-        id = 1L
-    )
+    private val testPlayer =
+        Player(
+            name = "홍길동",
+            primaryPosition = Position.CATCHER,
+            throwingHand = ThrowingHand.RIGHT,
+            battingHand = BattingHand.RIGHT,
+            id = 1L,
+        )
 
     @Nested
     @DisplayName("시즌 타격 통계 생성")
     inner class Create {
-
         @Test
         fun `should create season batting stats successfully`() {
             // when
@@ -56,46 +54,46 @@ class SeasonBattingStatsTest {
     @Nested
     @DisplayName("경기 기록 누적")
     inner class AddGameRecord {
-
         @Test
         fun `should accumulate single game record correctly`() {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             val gamePlayer = mockk<GamePlayer>()
-            val record = BattingRecord.create(gamePlayer).apply {
-                // 4타수 2안타 (2루타 1개) 1볼넷 1삼진
-                val field = BattingRecord::class.java.getDeclaredField("plateAppearances")
-                field.isAccessible = true
-                field.set(this, 5)
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    // 4타수 2안타 (2루타 1개) 1볼넷 1삼진
+                    val field = BattingRecord::class.java.getDeclaredField("plateAppearances")
+                    field.isAccessible = true
+                    field.set(this, 5)
 
-                val atBatsField = BattingRecord::class.java.getDeclaredField("atBats")
-                atBatsField.isAccessible = true
-                atBatsField.set(this, 4)
+                    val atBatsField = BattingRecord::class.java.getDeclaredField("atBats")
+                    atBatsField.isAccessible = true
+                    atBatsField.set(this, 4)
 
-                val hitsField = BattingRecord::class.java.getDeclaredField("hits")
-                hitsField.isAccessible = true
-                hitsField.set(this, 2)
+                    val hitsField = BattingRecord::class.java.getDeclaredField("hits")
+                    hitsField.isAccessible = true
+                    hitsField.set(this, 2)
 
-                val doublesField = BattingRecord::class.java.getDeclaredField("doubles")
-                doublesField.isAccessible = true
-                doublesField.set(this, 1)
+                    val doublesField = BattingRecord::class.java.getDeclaredField("doubles")
+                    doublesField.isAccessible = true
+                    doublesField.set(this, 1)
 
-                val walksField = BattingRecord::class.java.getDeclaredField("walks")
-                walksField.isAccessible = true
-                walksField.set(this, 1)
+                    val walksField = BattingRecord::class.java.getDeclaredField("walks")
+                    walksField.isAccessible = true
+                    walksField.set(this, 1)
 
-                val strikeoutsField = BattingRecord::class.java.getDeclaredField("strikeouts")
-                strikeoutsField.isAccessible = true
-                strikeoutsField.set(this, 1)
+                    val strikeoutsField = BattingRecord::class.java.getDeclaredField("strikeouts")
+                    strikeoutsField.isAccessible = true
+                    strikeoutsField.set(this, 1)
 
-                val runsField = BattingRecord::class.java.getDeclaredField("runs")
-                runsField.isAccessible = true
-                runsField.set(this, 1)
+                    val runsField = BattingRecord::class.java.getDeclaredField("runs")
+                    runsField.isAccessible = true
+                    runsField.set(this, 1)
 
-                val rbiField = BattingRecord::class.java.getDeclaredField("runsBattedIn")
-                rbiField.isAccessible = true
-                rbiField.set(this, 1)
-            }
+                    val rbiField = BattingRecord::class.java.getDeclaredField("runsBattedIn")
+                    rbiField.isAccessible = true
+                    rbiField.set(this, 1)
+                }
 
             // when
             stats.addGameRecord(record)
@@ -119,19 +117,22 @@ class SeasonBattingStatsTest {
             val gamePlayer = mockk<GamePlayer>()
 
             // Game 1: 4타수 2안타 1홈런
-            val record1 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 4, ab = 4, h = 2, hr = 1, runs = 2, rbi = 2)
-            }
+            val record1 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 4, h = 2, hr = 1, runs = 2, rbi = 2)
+                }
 
             // Game 2: 3타수 1안타 1볼넷
-            val record2 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 4, ab = 3, h = 1, bb = 1, runs = 0, rbi = 0)
-            }
+            val record2 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 3, h = 1, bb = 1, runs = 0, rbi = 0)
+                }
 
             // Game 3: 5타수 3안타 (2루타 1개, 3루타 1개)
-            val record3 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 5, ab = 5, h = 3, doubles = 1, triples = 1, runs = 1, rbi = 2)
-            }
+            val record3 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 5, h = 3, doubles = 1, triples = 1, runs = 1, rbi = 2)
+                }
 
             // when
             stats.addGameRecord(record1)
@@ -155,7 +156,6 @@ class SeasonBattingStatsTest {
     @Nested
     @DisplayName("계산 속성 검증")
     inner class CalculatedProperties {
-
         @Test
         fun `should calculate batting average correctly`() {
             // given: 10타수 3안타 = .300
@@ -270,7 +270,6 @@ class SeasonBattingStatsTest {
     @Nested
     @DisplayName("유효성 검증")
     inner class Validation {
-
         @Test
         fun `should validate successfully with valid stats`() {
             // given
@@ -342,7 +341,7 @@ class SeasonBattingStatsTest {
         bb: Int = 0,
         hbp: Int = 0,
         runs: Int = 0,
-        rbi: Int = 0
+        rbi: Int = 0,
     ) {
         setField("plateAppearances", pa)
         setField("atBats", ab)
@@ -356,7 +355,10 @@ class SeasonBattingStatsTest {
         setField("runsBattedIn", rbi)
     }
 
-    private fun BattingRecord.setField(fieldName: String, value: Int) {
+    private fun BattingRecord.setField(
+        fieldName: String,
+        value: Int,
+    ) {
         val field = BattingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
@@ -374,7 +376,7 @@ class SeasonBattingStatsTest {
         walks: Int = 0,
         hbp: Int = 0,
         stolenBases: Int = 0,
-        caughtStealing: Int = 0
+        caughtStealing: Int = 0,
     ) {
         val clazz = SeasonBattingStats::class.java
         setField(clazz, stats, "gamesPlayed", gamesPlayed)
@@ -390,7 +392,12 @@ class SeasonBattingStatsTest {
         setField(clazz, stats, "caughtStealing", caughtStealing)
     }
 
-    private fun setField(clazz: Class<*>, obj: Any, fieldName: String, value: Int) {
+    private fun setField(
+        clazz: Class<*>,
+        obj: Any,
+        fieldName: String,
+        value: Int,
+    ) {
         val field = clazz.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(obj, value)

@@ -13,7 +13,6 @@ import java.time.Instant
  */
 @Repository
 interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
-
     /**
      * 토큰 문자열로 RefreshToken을 조회합니다.
      *
@@ -36,15 +35,17 @@ interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
      * @param userId 사용자 ID
      * @return 유효한 RefreshToken 목록
      */
-    @Query("""
+    @Query(
+        """
         SELECT r FROM RefreshToken r
         WHERE r.userId = :userId
         AND r.isRevoked = false
         AND r.expiresAt > :now
-    """)
+    """,
+    )
     fun findValidTokensByUserId(
         @Param("userId") userId: Long,
-        @Param("now") now: Instant = Instant.now()
+        @Param("now") now: Instant = Instant.now(),
     ): List<RefreshToken>
 
     /**
@@ -54,7 +55,9 @@ interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
      */
     @Modifying
     @Query("UPDATE RefreshToken r SET r.isRevoked = true WHERE r.userId = :userId")
-    fun revokeAllByUserId(@Param("userId") userId: Long)
+    fun revokeAllByUserId(
+        @Param("userId") userId: Long,
+    )
 
     /**
      * 만료된 RefreshToken을 삭제합니다.
@@ -64,7 +67,9 @@ interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
      */
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.expiresAt < :expiredBefore")
-    fun deleteExpiredTokens(@Param("expiredBefore") expiredBefore: Instant): Int
+    fun deleteExpiredTokens(
+        @Param("expiredBefore") expiredBefore: Instant,
+    ): Int
 
     /**
      * 폐기된 RefreshToken을 삭제합니다.

@@ -25,44 +25,35 @@ import java.time.temporal.ChronoUnit
         Index(name = "idx_pth_team_dates", columnList = "team_id, start_date, end_date"),
         Index(name = "idx_pth_current", columnList = "player_id, end_date"),
         Index(name = "idx_pth_status", columnList = "status"),
-        Index(name = "idx_pth_player_status", columnList = "player_id, status")
-    ]
+        Index(name = "idx_pth_player_status", columnList = "player_id, status"),
+    ],
 )
 class PlayerTeamHistory(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     val player: Player,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
     val team: Team,
-
     @Column(name = "start_date", nullable = false)
     val startDate: LocalDate,
-
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
-
     @Column(name = "uniform_number")
     var uniformNumber: Int? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var position: Position,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "contract_type", nullable = false, length = 20)
     var contractType: ContractType = ContractType.REGULAR,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: PlayerTeamStatus = PlayerTeamStatus.ACTIVE,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     val isCurrentAffiliation: Boolean
         get() = endDate == null
 
@@ -124,9 +115,8 @@ class PlayerTeamHistory(
         this.position = newPosition
     }
 
-    fun isActiveAt(date: LocalDate): Boolean {
-        return !startDate.isAfter(date) && (endDate == null || !endDate!!.isBefore(date))
-    }
+    fun isActiveAt(date: LocalDate): Boolean =
+        !startDate.isAfter(date) && (endDate == null || !endDate!!.isBefore(date))
 
     fun overlaps(other: PlayerTeamHistory): Boolean {
         if (this.player.id != other.player.id) return false

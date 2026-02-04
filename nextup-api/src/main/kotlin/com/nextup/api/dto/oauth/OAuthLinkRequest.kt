@@ -10,5 +10,5 @@ import jakarta.validation.constraints.NotNull
  */
 data class OAuthLinkRequest(
     @field:NotNull(message = "OAuth provider is required")
-    val provider: OAuthProvider
+    val provider: OAuthProvider,
 )

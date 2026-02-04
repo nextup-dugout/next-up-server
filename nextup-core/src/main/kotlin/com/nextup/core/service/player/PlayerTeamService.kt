@@ -22,9 +22,8 @@ import java.time.LocalDate
 class PlayerTeamService(
     private val playerTeamHistoryRepository: PlayerTeamHistoryRepositoryPort,
     private val playerRepository: PlayerRepositoryPort,
-    private val teamRepository: TeamRepositoryPort
+    private val teamRepository: TeamRepositoryPort,
 ) {
-
     // ========== CREATE ==========
 
     /**
@@ -48,13 +47,15 @@ class PlayerTeamService(
         startDate: LocalDate,
         position: Position,
         uniformNumber: Int? = null,
-        contractType: ContractType = ContractType.REGULAR
+        contractType: ContractType = ContractType.REGULAR,
     ): PlayerTeamHistory {
-        val player = playerRepository.findByIdOrNull(playerId)
-            ?: throw PlayerNotFoundException(playerId)
+        val player =
+            playerRepository.findByIdOrNull(playerId)
+                ?: throw PlayerNotFoundException(playerId)
 
-        val team = teamRepository.findByIdWithLeague(teamId)
-            ?: throw TeamNotFoundException(teamId)
+        val team =
+            teamRepository.findByIdWithLeague(teamId)
+                ?: throw TeamNotFoundException(teamId)
 
         val leagueId = team.league.id
 
@@ -63,15 +64,16 @@ class PlayerTeamService(
             throw PlayerAlreadyInLeagueException(playerId, leagueId)
         }
 
-        val affiliation = PlayerTeamHistory(
-            player = player,
-            team = team,
-            startDate = startDate,
-            position = position,
-            uniformNumber = uniformNumber,
-            contractType = contractType,
-            status = PlayerTeamStatus.ACTIVE
-        )
+        val affiliation =
+            PlayerTeamHistory(
+                player = player,
+                team = team,
+                startDate = startDate,
+                position = position,
+                uniformNumber = uniformNumber,
+                contractType = contractType,
+                status = PlayerTeamStatus.ACTIVE,
+            )
 
         return playerTeamHistoryRepository.save(affiliation)
     }
@@ -89,7 +91,7 @@ class PlayerTeamService(
     @Transactional
     fun endAffiliation(
         affiliationId: Long,
-        endDate: LocalDate
+        endDate: LocalDate,
     ): PlayerTeamHistory {
         val affiliation = findAffiliationById(affiliationId)
         affiliation.deactivate(endDate)
@@ -120,16 +122,19 @@ class PlayerTeamService(
         transferDate: LocalDate,
         newPosition: Position,
         newUniformNumber: Int? = null,
-        newContractType: ContractType = ContractType.REGULAR
+        newContractType: ContractType = ContractType.REGULAR,
     ): PlayerTeamHistory {
-        val player = playerRepository.findByIdOrNull(playerId)
-            ?: throw PlayerNotFoundException(playerId)
+        val player =
+            playerRepository.findByIdOrNull(playerId)
+                ?: throw PlayerNotFoundException(playerId)
 
-        val fromTeam = teamRepository.findByIdWithLeague(fromTeamId)
-            ?: throw TeamNotFoundException(fromTeamId)
+        val fromTeam =
+            teamRepository.findByIdWithLeague(fromTeamId)
+                ?: throw TeamNotFoundException(fromTeamId)
 
-        val toTeam = teamRepository.findByIdWithLeague(toTeamId)
-            ?: throw TeamNotFoundException(toTeamId)
+        val toTeam =
+            teamRepository.findByIdWithLeague(toTeamId)
+                ?: throw TeamNotFoundException(toTeamId)
 
         // 같은 리그 내 이적만 허용
         val fromLeagueId = fromTeam.league.id
@@ -137,27 +142,29 @@ class PlayerTeamService(
 
         if (fromLeagueId != toLeagueId) {
             throw PlayerTransferNotAllowedException(
-                "선수는 같은 리그 내에서만 이적할 수 있습니다. (From: League $fromLeagueId, To: League $toLeagueId)"
+                "선수는 같은 리그 내에서만 이적할 수 있습니다. (From: League $fromLeagueId, To: League $toLeagueId)",
             )
         }
 
         // 현재 소속 이력 조회
-        val currentAffiliation = playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, fromLeagueId)
-            ?: throw PlayerNotInTeamException(playerId, fromTeamId)
+        val currentAffiliation =
+            playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, fromLeagueId)
+                ?: throw PlayerNotInTeamException(playerId, fromTeamId)
 
         // 기존 소속 TRANSFERRED 처리
         currentAffiliation.transfer(transferDate)
 
         // 새 팀으로 소속 생성
-        val newAffiliation = PlayerTeamHistory(
-            player = player,
-            team = toTeam,
-            startDate = transferDate,
-            position = newPosition,
-            uniformNumber = newUniformNumber,
-            contractType = newContractType,
-            status = PlayerTeamStatus.ACTIVE
-        )
+        val newAffiliation =
+            PlayerTeamHistory(
+                player = player,
+                team = toTeam,
+                startDate = transferDate,
+                position = newPosition,
+                uniformNumber = newUniformNumber,
+                contractType = newContractType,
+                status = PlayerTeamStatus.ACTIVE,
+            )
 
         return playerTeamHistoryRepository.save(newAffiliation)
     }
@@ -172,7 +179,7 @@ class PlayerTeamService(
     @Transactional
     fun changeUniformNumber(
         affiliationId: Long,
-        uniformNumber: Int
+        uniformNumber: Int,
     ): PlayerTeamHistory {
         val affiliation = findAffiliationById(affiliationId)
         affiliation.changeUniformNumber(uniformNumber)
@@ -189,7 +196,7 @@ class PlayerTeamService(
     @Transactional
     fun changePosition(
         affiliationId: Long,
-        position: Position
+        position: Position,
     ): PlayerTeamHistory {
         val affiliation = findAffiliationById(affiliationId)
         affiliation.changePosition(position)
@@ -233,7 +240,10 @@ class PlayerTeamService(
      * @param date 기준 날짜
      * @return 해당 날짜의 팀 로스터
      */
-    fun getTeamRosterAtDate(teamId: Long, date: LocalDate): List<PlayerTeamHistory> {
+    fun getTeamRosterAtDate(
+        teamId: Long,
+        date: LocalDate,
+    ): List<PlayerTeamHistory> {
         // 팀 존재 여부 확인
         teamRepository.findByIdWithLeague(teamId)
             ?: throw TeamNotFoundException(teamId)
@@ -260,8 +270,7 @@ class PlayerTeamService(
     /**
      * ID로 소속 이력을 조회합니다.
      */
-    private fun findAffiliationById(id: Long): PlayerTeamHistory {
-        return playerTeamHistoryRepository.findByIdOrNull(id)
+    private fun findAffiliationById(id: Long): PlayerTeamHistory =
+        playerTeamHistoryRepository.findByIdOrNull(id)
             ?: throw PlayerTeamHistoryNotFoundException(id)
-    }
 }

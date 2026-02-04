@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("GameTeam")
 class GameTeamTest {
-
     private lateinit var game: Game
     private lateinit var team: Team
     private lateinit var gameTeam: GameTeam
@@ -20,17 +19,17 @@ class GameTeamTest {
     fun setup() {
         game = mockk<Game>(relaxed = true)
         team = mockk<Team>(relaxed = true)
-        gameTeam = GameTeam(
-            game = game,
-            team = team,
-            homeAway = HomeAway.HOME
-        )
+        gameTeam =
+            GameTeam(
+                game = game,
+                team = team,
+                homeAway = HomeAway.HOME,
+            )
     }
 
     @Nested
     @DisplayName("점수 추가")
     inner class AddScoreTest {
-
         @Test
         fun `점수를 추가할 수 있다`() {
             // when
@@ -63,7 +62,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("안타 추가")
     inner class AddHitTest {
-
         @Test
         fun `안타를 추가할 수 있다`() {
             // when
@@ -88,7 +86,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("실책 추가")
     inner class AddErrorTest {
-
         @Test
         fun `실책을 추가할 수 있다`() {
             // when
@@ -112,7 +109,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("이닝별 점수 기록")
     inner class RecordInningScoreTest {
-
         @Test
         fun `이닝별 점수를 기록할 수 있다`() {
             // when
@@ -169,7 +165,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("addRunInInning - 이닝별 득점 추가 (BoxScore)")
     inner class AddRunInInningTest {
-
         @Test
         fun `특정 이닝에 득점을 추가할 수 있다`() {
             // when
@@ -260,7 +255,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("이닝 점수 조회")
     inner class GetInningScoreTest {
-
         @Test
         fun `기록되지 않은 이닝은 0점이다`() {
             // when
@@ -286,7 +280,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("경기 결과 업데이트")
     inner class UpdateResultTest {
-
         @Test
         fun `경기 결과를 업데이트할 수 있다`() {
             // when
@@ -300,7 +293,6 @@ class GameTeamTest {
     @Nested
     @DisplayName("점수 업데이트")
     inner class UpdateScoreTest {
-
         @Test
         fun `전체 점수를 한 번에 업데이트할 수 있다`() {
             // when

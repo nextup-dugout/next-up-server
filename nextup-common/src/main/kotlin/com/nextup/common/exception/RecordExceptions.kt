@@ -3,35 +3,56 @@ package com.nextup.common.exception
 /**
  * 타격 기록을 찾을 수 없을 때 발생하는 예외
  */
-class BattingRecordNotFoundException(gamePlayerId: Long) :
-    NotFoundException("BATTING_RECORD_NOT_FOUND", "Batting record not found for GamePlayer: $gamePlayerId")
+class BattingRecordNotFoundException(
+    gamePlayerId: Long,
+) : NotFoundException("BATTING_RECORD_NOT_FOUND", "Batting record not found for GamePlayer: $gamePlayerId")
 
 /**
  * 투수 기록을 찾을 수 없을 때 발생하는 예외
  */
-class PitchingRecordNotFoundException(gamePlayerId: Long) :
-    NotFoundException("PITCHING_RECORD_NOT_FOUND", "Pitching record not found for GamePlayer: $gamePlayerId")
+class PitchingRecordNotFoundException(
+    gamePlayerId: Long,
+) : NotFoundException("PITCHING_RECORD_NOT_FOUND", "Pitching record not found for GamePlayer: $gamePlayerId")
 
 /**
  * 경기 출전 선수를 찾을 수 없을 때 발생하는 예외
  */
-class GamePlayerNotFoundException(id: Long) :
-    NotFoundException("GAME_PLAYER_NOT_FOUND", "GamePlayer not found: $id")
+class GamePlayerNotFoundException(
+    id: Long,
+) : NotFoundException("GAME_PLAYER_NOT_FOUND", "GamePlayer not found: $id")
 
 /**
  * 경기 출전 선수를 게임과 선수 ID로 찾을 수 없을 때 발생하는 예외
  */
-class GamePlayerNotFoundByGameAndPlayerException(gameId: Long, playerId: Long) :
-    NotFoundException(
+class GamePlayerNotFoundByGameAndPlayerException(
+    gameId: Long,
+    playerId: Long,
+) : NotFoundException(
         "GAME_PLAYER_NOT_FOUND",
-        "GamePlayer not found for Game: $gameId and Player: $playerId"
+        "GamePlayer not found for Game: $gameId and Player: $playerId",
     )
 
 /**
  * 이미 기록이 존재할 때 발생하는 예외
  */
-class RecordAlreadyExistsException(gamePlayerId: Long, recordType: String) :
-    InvalidStateException(
+class RecordAlreadyExistsException(
+    gamePlayerId: Long,
+    recordType: String,
+) : InvalidStateException(
         "RECORD_ALREADY_EXISTS",
-        "$recordType record already exists for GamePlayer: $gamePlayerId"
+        "$recordType record already exists for GamePlayer: $gamePlayerId",
     )
+
+/**
+ * 경기를 찾을 수 없을 때 발생하는 예외
+ */
+class GameNotFoundException(
+    id: Long,
+) : NotFoundException("GAME_NOT_FOUND", "Game not found: $id")
+
+/**
+ * 잘못된 경기 상태일 때 발생하는 예외
+ */
+class InvalidGameStateException(
+    message: String,
+) : InvalidStateException("INVALID_GAME_STATE", message)

@@ -35,66 +35,61 @@ class SecurityConfig(
     private val customAccessDeniedHandler: CustomAccessDeniedHandler,
     private val customOAuth2UserService: CustomOAuth2UserService,
     private val oAuth2AuthenticationSuccessHandler: OAuth2AuthenticationSuccessHandler,
-    private val oAuth2AuthenticationFailureHandler: OAuth2AuthenticationFailureHandler
+    private val oAuth2AuthenticationFailureHandler: OAuth2AuthenticationFailureHandler,
 ) {
-
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        return http
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
+        http
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .exceptionHandling {
                 it.authenticationEntryPoint(customAuthenticationEntryPoint)
                 it.accessDeniedHandler(customAccessDeniedHandler)
-            }
-            .authorizeHttpRequests { auth ->
+            }.authorizeHttpRequests { auth ->
                 auth
                     // Public endpoints
-                    .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/associations/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
-
+                    .requestMatchers("/api/auth/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/associations/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/stats/**")
+                    .permitAll()
                     // OAuth2 endpoints
-                    .requestMatchers("/oauth2/**").permitAll()
-                    .requestMatchers("/login/oauth2/**").permitAll()
-
+                    .requestMatchers("/oauth2/**")
+                    .permitAll()
+                    .requestMatchers("/login/oauth2/**")
+                    .permitAll()
                     // Swagger/OpenAPI
                     .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
-                        "/swagger-resources/**"
+                        "/swagger-resources/**",
                     ).permitAll()
-
                     // Actuator endpoints
-                    .requestMatchers("/actuator/health").permitAll()
-
+                    .requestMatchers("/actuator/health")
+                    .permitAll()
                     // Admin endpoints
-                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
                     // Scorer endpoints (for game recording)
-                    .requestMatchers("/api/games/*/records/**").hasAnyRole("SCORER", "ADMIN")
-
+                    .requestMatchers("/api/games/*/records/**")
+                    .hasAnyRole("SCORER", "ADMIN")
                     // All other endpoints require authentication
-                    .anyRequest().authenticated()
-            }
-            .oauth2Login { oauth2 ->
+                    .anyRequest()
+                    .authenticated()
+            }.oauth2Login { oauth2 ->
                 oauth2
                     .userInfoEndpoint { it.userService(customOAuth2UserService) }
                     .successHandler(oAuth2AuthenticationSuccessHandler)
                     .failureHandler(oAuth2AuthenticationFailureHandler)
-            }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
-    }
 
     @Bean
-    fun passwordEncoder(): PasswordEncoder {
-        return BCryptPasswordEncoder()
-    }
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager {
-        return authenticationConfiguration.authenticationManager
-    }
+    fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager =
+        authenticationConfiguration.authenticationManager
 }

@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.association.Association
-import java.util.Optional
 
 /**
  * Association Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface AssociationRepositoryPort {
-
     fun save(association: Association): Association
 
     fun findAll(): List<Association>

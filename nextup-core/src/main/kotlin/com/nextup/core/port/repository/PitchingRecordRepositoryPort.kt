@@ -3,14 +3,12 @@ package com.nextup.core.port.repository
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
-import java.util.Optional
 
 /**
  * PitchingRecord Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface PitchingRecordRepositoryPort {
-
     fun save(pitchingRecord: PitchingRecord): PitchingRecord
 
     fun findAll(): List<PitchingRecord>
@@ -42,12 +40,18 @@ interface PitchingRecordRepositoryPort {
     /**
      * 선수의 최근 N경기 투수 기록을 조회합니다.
      */
-    fun findRecentByPlayerId(playerId: Long, limit: Int): List<PitchingRecord>
+    fun findRecentByPlayerId(
+        playerId: Long,
+        limit: Int,
+    ): List<PitchingRecord>
 
     /**
      * 팀의 특정 경기 투수 기록을 조회합니다.
      */
-    fun findAllByTeamIdAndGameId(teamId: Long, gameId: Long): List<PitchingRecord>
+    fun findAllByTeamIdAndGameId(
+        teamId: Long,
+        gameId: Long,
+    ): List<PitchingRecord>
 
     /**
      * 경기의 선발 투수 기록을 조회합니다.
@@ -82,7 +86,10 @@ interface PitchingRecordRepositoryPort {
     /**
      * ERA 상위 N명을 조회합니다 (최소 이닝 조건).
      */
-    fun findTopByEarnedRunAverage(minInningsPitchedOuts: Int, limit: Int): List<PitchingRecord>
+    fun findTopByEarnedRunAverage(
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<PitchingRecord>
 
     /**
      * 삼진 상위 N명을 조회합니다.
@@ -102,5 +109,8 @@ interface PitchingRecordRepositoryPort {
     /**
      * 선수의 특정 연도 투수 기록을 조회합니다.
      */
-    fun findAllByPlayerIdAndYear(playerId: Long, year: Int): List<PitchingRecord>
+    fun findAllByPlayerIdAndYear(
+        playerId: Long,
+        year: Int,
+    ): List<PitchingRecord>
 }

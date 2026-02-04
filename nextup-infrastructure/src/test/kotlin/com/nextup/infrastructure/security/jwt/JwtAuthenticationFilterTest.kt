@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder
 
 @DisplayName("JwtAuthenticationFilter 테스트")
 class JwtAuthenticationFilterTest {
-
     private lateinit var jwtTokenProvider: JwtTokenProvider
     private lateinit var filter: JwtAuthenticationFilter
     private lateinit var request: MockHttpServletRequest
@@ -37,7 +36,6 @@ class JwtAuthenticationFilterTest {
     @Nested
     @DisplayName("토큰 추출")
     inner class ResolveToken {
-
         @Test
         fun `should pass filter when no Authorization header`() {
             // given - no Authorization header set
@@ -67,7 +65,6 @@ class JwtAuthenticationFilterTest {
     @Nested
     @DisplayName("토큰 검증")
     inner class ValidateToken {
-
         @Test
         fun `should set authentication when valid access token`() {
             // given
@@ -125,7 +122,6 @@ class JwtAuthenticationFilterTest {
     @Nested
     @DisplayName("예외 처리")
     inner class ExceptionHandling {
-
         @Test
         fun `should set exception attribute when token expired`() {
             // given
@@ -162,7 +158,6 @@ class JwtAuthenticationFilterTest {
     @Nested
     @DisplayName("Bearer 토큰 파싱")
     inner class BearerTokenParsing {
-
         @Test
         fun `should extract token from Bearer prefix`() {
             // given

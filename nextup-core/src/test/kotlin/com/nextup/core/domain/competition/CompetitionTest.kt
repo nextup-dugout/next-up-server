@@ -12,32 +12,33 @@ import java.time.LocalDate
 
 @DisplayName("Competition 엔티티 테스트")
 class CompetitionTest {
-
     private lateinit var association: Association
     private lateinit var league: League
 
     @BeforeEach
     fun setUp() {
-        association = Association(
-            name = "서울시야구협회",
-            abbreviation = "SBA",
-            region = "서울"
-        )
-        league = League(
-            association = association,
-            name = "1부 리그",
-            abbreviation = "1st",
-            foundedYear = 2020,
-            divisionLevel = 1
-        )
+        association =
+            Association(
+                name = "서울시야구협회",
+                abbreviation = "SBA",
+                region = "서울",
+            )
+        league =
+            League(
+                association = association,
+                name = "1부 리그",
+                abbreviation = "1st",
+                foundedYear = 2020,
+                divisionLevel = 1,
+            )
     }
 
     private fun createCompetition(
         status: CompetitionStatus = CompetitionStatus.SCHEDULED,
         startDate: LocalDate = LocalDate.of(2025, 3, 1),
-        endDate: LocalDate? = null
-    ): Competition {
-        return Competition(
+        endDate: LocalDate? = null,
+    ): Competition =
+        Competition(
             league = league,
             name = "2025 춘계대회",
             year = 2025,
@@ -45,14 +46,12 @@ class CompetitionTest {
             type = CompetitionType.LEAGUE,
             startDate = startDate,
             endDate = endDate,
-            status = status
+            status = status,
         )
-    }
 
     @Nested
     @DisplayName("대회 시작")
     inner class Start {
-
         @Test
         fun `예정된 대회를 시작할 수 있다`() {
             // given
@@ -90,7 +89,6 @@ class CompetitionTest {
     @Nested
     @DisplayName("대회 완료")
     inner class Complete {
-
         @Test
         fun `진행 중인 대회를 완료할 수 있다`() {
             // given
@@ -119,10 +117,11 @@ class CompetitionTest {
         @Test
         fun `종료일이 시작일보다 이전이면 완료할 수 없다`() {
             // given
-            val competition = createCompetition(
-                status = CompetitionStatus.IN_PROGRESS,
-                startDate = LocalDate.of(2025, 3, 1)
-            )
+            val competition =
+                createCompetition(
+                    status = CompetitionStatus.IN_PROGRESS,
+                    startDate = LocalDate.of(2025, 3, 1),
+                )
 
             // when & then
             assertThatThrownBy { competition.complete(LocalDate.of(2025, 2, 1)) }
@@ -134,7 +133,6 @@ class CompetitionTest {
     @Nested
     @DisplayName("대회 취소")
     inner class Cancel {
-
         @Test
         fun `예정된 대회를 취소할 수 있다`() {
             // given
@@ -174,7 +172,6 @@ class CompetitionTest {
     @Nested
     @DisplayName("활성 상태 확인")
     inner class IsActive {
-
         @Test
         fun `진행 중인 대회는 활성 상태이다`() {
             // given
@@ -206,15 +203,15 @@ class CompetitionTest {
     @Nested
     @DisplayName("특정 날짜 활성 상태 확인")
     inner class IsActiveAt {
-
         @Test
         fun `진행 중인 대회의 시작일과 종료일 사이 날짜는 활성이다`() {
             // given
-            val competition = createCompetition(
-                status = CompetitionStatus.IN_PROGRESS,
-                startDate = LocalDate.of(2025, 3, 1),
-                endDate = LocalDate.of(2025, 6, 30)
-            )
+            val competition =
+                createCompetition(
+                    status = CompetitionStatus.IN_PROGRESS,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    endDate = LocalDate.of(2025, 6, 30),
+                )
 
             // then
             assertThat(competition.isActiveAt(LocalDate.of(2025, 4, 15))).isTrue()
@@ -223,10 +220,11 @@ class CompetitionTest {
         @Test
         fun `대회 시작일 이전 날짜는 활성이 아니다`() {
             // given
-            val competition = createCompetition(
-                status = CompetitionStatus.IN_PROGRESS,
-                startDate = LocalDate.of(2025, 3, 1)
-            )
+            val competition =
+                createCompetition(
+                    status = CompetitionStatus.IN_PROGRESS,
+                    startDate = LocalDate.of(2025, 3, 1),
+                )
 
             // then
             assertThat(competition.isActiveAt(LocalDate.of(2025, 2, 28))).isFalse()

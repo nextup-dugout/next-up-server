@@ -13,25 +13,25 @@ package com.nextup.api.dto.common
 data class ApiResponse<T>(
     val success: Boolean,
     val data: T?,
-    val error: ErrorDetails?
+    val error: ErrorDetails?,
 ) {
     companion object {
         /**
          * 성공 응답을 생성합니다.
          */
-        fun <T> success(data: T): ApiResponse<T> {
-            return ApiResponse(success = true, data = data, error = null)
-        }
+        fun <T> success(data: T): ApiResponse<T> = ApiResponse(success = true, data = data, error = null)
 
         /**
          * 실패 응답을 생성합니다.
          */
-        fun <T> error(code: String, message: String): ApiResponse<T> {
-            return ApiResponse(
+        fun <T> error(
+            code: String,
+            message: String,
+        ): ApiResponse<T> =
+            ApiResponse(
                 success = false,
                 data = null,
-                error = ErrorDetails(code, message)
+                error = ErrorDetails(code, message),
             )
-        }
     }
 }

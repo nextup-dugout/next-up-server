@@ -11,7 +11,6 @@ import java.math.BigDecimal
 
 @DisplayName("PitchingRecord")
 class PitchingRecordTest {
-
     private lateinit var gamePlayer: GamePlayer
     private lateinit var pitchingRecord: PitchingRecord
 
@@ -24,7 +23,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("아웃 기록")
     inner class RecordOutTest {
-
         @Test
         fun `아웃을 기록하면 inningsPitchedOuts가 증가한다`() {
             // when
@@ -60,7 +58,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("피안타 기록")
     inner class RecordHitTest {
-
         @Test
         fun `피안타를 기록하면 hitsAllowed가 증가한다`() {
             // when
@@ -104,7 +101,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("볼넷 기록")
     inner class RecordWalkTest {
-
         @Test
         fun `볼넷을 기록하면 walksAllowed가 증가한다`() {
             // when
@@ -119,7 +115,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("사구 기록")
     inner class RecordHitByPitchTest {
-
         @Test
         fun `사구를 기록하면 hitBatsmen이 증가한다`() {
             // when
@@ -134,7 +129,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("실점 기록")
     inner class RecordRunTest {
-
         @Test
         fun `자책점을 기록하면 earnedRuns와 runsAllowed 모두 증가한다`() {
             // when
@@ -159,7 +153,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("와일드피치와 보크")
     inner class WildPitchAndBalkTest {
-
         @Test
         fun `와일드피치를 기록할 수 있다`() {
             // when
@@ -182,7 +175,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("투구 수 기록")
     inner class RecordPitchCountTest {
-
         @Test
         fun `투구 수를 기록할 수 있다`() {
             // when
@@ -206,7 +198,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("이닝 계산")
     inner class InningsCalculationTest {
-
         @Test
         fun `0아웃은 0이닝이다`() {
             assertThat(pitchingRecord.inningsPitchedDisplay).isEqualTo("0.0")
@@ -236,7 +227,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("ERA 계산")
     inner class EarnedRunAverageTest {
-
         @Test
         fun `이닝이 0이면 ERA는 0이다`() {
             assertThat(pitchingRecord.earnedRunAverage).isEqualTo(BigDecimal("0.00"))
@@ -269,7 +259,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("WHIP 계산")
     inner class WhipTest {
-
         @Test
         fun `이닝이 0이면 WHIP은 0이다`() {
             assertThat(pitchingRecord.whip).isEqualTo(BigDecimal("0.00"))
@@ -300,7 +289,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("K/9 계산")
     inner class StrikeoutsPer9Test {
-
         @Test
         fun `이닝이 0이면 9이닝당 삼진은 0이다`() {
             assertThat(pitchingRecord.strikeoutsPer9).isEqualTo(BigDecimal("0.00"))
@@ -320,7 +308,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("BB/9 계산")
     inner class WalksPer9Test {
-
         @Test
         fun `이닝이 0이면 9이닝당 볼넷은 0이다`() {
             assertThat(pitchingRecord.walksPer9).isEqualTo(BigDecimal("0.00"))
@@ -340,7 +327,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("K/BB 비율")
     inner class StrikeoutToWalkRatioTest {
-
         @Test
         fun `삼진과 볼넷이 모두 0이면 0이다`() {
             assertThat(pitchingRecord.strikeoutToWalkRatio).isEqualTo(BigDecimal("0.00"))
@@ -369,7 +355,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("스트라이크 비율")
     inner class StrikePercentageTest {
-
         @Test
         fun `투구 수가 없으면 null이다`() {
             assertThat(pitchingRecord.strikePercentage).isNull()
@@ -388,7 +373,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("비자책점 계산")
     inner class UnearnedRunsTest {
-
         @Test
         fun `비자책점 = 실점 - 자책점`() {
             // given
@@ -405,7 +389,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("선발 투수")
     inner class StartingPitcherTest {
-
         @Test
         fun `기본값은 선발투수가 아니다`() {
             assertThat(pitchingRecord.isStartingPitcher).isFalse()
@@ -433,7 +416,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("선발 승리 자격")
     inner class QualifiedForWinTest {
-
         @Test
         fun `선발투수가 아니면 자격이 없다`() {
             // given
@@ -467,7 +449,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("승/패/세이브/홀드 결정")
     inner class DecisionTest {
-
         @Test
         fun `기본 결정은 NONE이다`() {
             assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.NONE)
@@ -554,7 +535,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("유효성 검증")
     inner class ValidationTest {
-
         @Test
         fun `정상적인 기록은 검증에 통과한다`() {
             // given
@@ -578,7 +558,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("이닝 문자열 파싱")
     inner class ParseInningsToOutsTest {
-
         @Test
         fun `5_0을 15아웃으로 변환한다`() {
             assertThat(PitchingRecord.parseInningsToOuts("5.0")).isEqualTo(15)
@@ -610,7 +589,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("applyBatterFaced - BoxScore 자동 계산")
     inner class ApplyBatterFacedTest {
-
         @Test
         fun `단타를 적용하면 battersFaced와 hitsAllowed가 증가한다`() {
             // when
@@ -714,7 +692,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("recordOut - 아웃 카운트 기록")
     inner class RecordOutOnlyTest {
-
         @Test
         fun `recordOut()은 이닝 아웃만 증가시킨다`() {
             // when
@@ -728,7 +705,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("recordEarnedRun - 자책점 기록")
     inner class RecordEarnedRunTest {
-
         @Test
         fun `자책점을 기록하면 earnedRuns와 runsAllowed가 증가한다`() {
             // when
@@ -752,7 +728,6 @@ class PitchingRecordTest {
     @Nested
     @DisplayName("recordUnearnedRun - 비자책 실점 기록")
     inner class RecordUnearnedRunTest {
-
         @Test
         fun `비자책 실점을 기록하면 runsAllowed만 증가한다`() {
             // when

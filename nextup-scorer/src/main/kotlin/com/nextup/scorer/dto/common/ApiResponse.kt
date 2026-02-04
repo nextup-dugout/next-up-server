@@ -15,7 +15,10 @@ data class ApiResponse<T>(
             return ApiResponse(success = true, data = data, error = null)
         }
 
-        fun <T> error(code: String, message: String): ApiResponse<T> {
+        fun <T> error(
+            code: String,
+            message: String
+        ): ApiResponse<T> {
             return ApiResponse(
                 success = false,
                 data = null,

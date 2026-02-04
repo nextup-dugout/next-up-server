@@ -4,14 +4,12 @@ import com.nextup.core.domain.admin.OrganizationAdmin
 import com.nextup.core.domain.admin.OrganizationRole
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.domain.user.User
-import java.util.Optional
 
 /**
  * OrganizationAdmin Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface OrganizationAdminRepositoryPort {
-
     fun save(organizationAdmin: OrganizationAdmin): OrganizationAdmin
 
     fun findAll(): List<OrganizationAdmin>
@@ -42,7 +40,7 @@ interface OrganizationAdminRepositoryPort {
      */
     fun findByOrganizationTypeAndOrganizationId(
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): List<OrganizationAdmin>
 
     /**
@@ -50,7 +48,7 @@ interface OrganizationAdminRepositoryPort {
      */
     fun findActiveByOrganizationTypeAndOrganizationId(
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): List<OrganizationAdmin>
 
     /**
@@ -59,7 +57,7 @@ interface OrganizationAdminRepositoryPort {
     fun findByUserAndOrganizationTypeAndOrganizationId(
         user: User,
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): OrganizationAdmin?
 
     /**
@@ -68,7 +66,7 @@ interface OrganizationAdminRepositoryPort {
     fun findByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): OrganizationAdmin?
 
     /**
@@ -77,7 +75,7 @@ interface OrganizationAdminRepositoryPort {
     fun existsByUserAndOrganizationTypeAndOrganizationId(
         user: User,
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): Boolean
 
     /**
@@ -86,7 +84,7 @@ interface OrganizationAdminRepositoryPort {
     fun existsByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): Boolean
 
     /**
@@ -95,7 +93,7 @@ interface OrganizationAdminRepositoryPort {
     fun existsActiveByUserIdAndOrganizationTypeAndOrganizationId(
         userId: Long,
         organizationType: OrganizationType,
-        organizationId: Long
+        organizationId: Long,
     ): Boolean
 
     /**
@@ -103,7 +101,7 @@ interface OrganizationAdminRepositoryPort {
      */
     fun findByUserIdAndOrganizationType(
         userId: Long,
-        organizationType: OrganizationType
+        organizationType: OrganizationType,
     ): List<OrganizationAdmin>
 
     /**
@@ -111,7 +109,7 @@ interface OrganizationAdminRepositoryPort {
      */
     fun findActiveByUserIdAndOrganizationType(
         userId: Long,
-        organizationType: OrganizationType
+        organizationType: OrganizationType,
     ): List<OrganizationAdmin>
 
     /**
@@ -120,7 +118,7 @@ interface OrganizationAdminRepositoryPort {
     fun findByOrganizationAndRole(
         organizationType: OrganizationType,
         organizationId: Long,
-        role: OrganizationRole
+        role: OrganizationRole,
     ): List<OrganizationAdmin>
 
     /**

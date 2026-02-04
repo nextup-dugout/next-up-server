@@ -10,11 +10,9 @@ import java.time.temporal.ChronoUnit
 
 @DisplayName("RefreshToken Entity")
 class RefreshTokenTest {
-
     @Nested
     @DisplayName("create()")
     inner class Create {
-
         @Test
         fun `should create RefreshToken with valid parameters`() {
             // given
@@ -23,11 +21,12 @@ class RefreshTokenTest {
             val expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
 
             // when
-            val refreshToken = RefreshToken.create(
-                userId = userId,
-                token = token,
-                expiresAt = expiresAt
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = userId,
+                    token = token,
+                    expiresAt = expiresAt,
+                )
 
             // then
             assertThat(refreshToken.userId).isEqualTo(userId)
@@ -48,13 +47,14 @@ class RefreshTokenTest {
             val ipAddress = "192.168.1.1"
 
             // when
-            val refreshToken = RefreshToken.create(
-                userId = userId,
-                token = token,
-                expiresAt = expiresAt,
-                deviceInfo = deviceInfo,
-                ipAddress = ipAddress
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = userId,
+                    token = token,
+                    expiresAt = expiresAt,
+                    deviceInfo = deviceInfo,
+                    ipAddress = ipAddress,
+                )
 
             // then
             assertThat(refreshToken.deviceInfo).isEqualTo(deviceInfo)
@@ -72,10 +72,9 @@ class RefreshTokenTest {
                 RefreshToken.create(
                     userId = userId,
                     token = "   ",
-                    expiresAt = expiresAt
+                    expiresAt = expiresAt,
                 )
-            }
-                .isInstanceOf(IllegalArgumentException::class.java)
+            }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("Token cannot be blank")
         }
 
@@ -91,10 +90,9 @@ class RefreshTokenTest {
                 RefreshToken.create(
                     userId = userId,
                     token = token,
-                    expiresAt = expiresAt
+                    expiresAt = expiresAt,
                 )
-            }
-                .isInstanceOf(IllegalArgumentException::class.java)
+            }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("Expiration time must be in the future")
         }
     }
@@ -102,15 +100,15 @@ class RefreshTokenTest {
     @Nested
     @DisplayName("isExpired")
     inner class IsExpired {
-
         @Test
         fun `should return false when token is not expired`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             assertThat(refreshToken.isExpired).isFalse()
@@ -126,16 +124,20 @@ class RefreshTokenTest {
         }
     }
 
-    private fun createExpiredRefreshToken(userId: Long, token: String): RefreshToken {
-        val constructor = RefreshToken::class.java.getDeclaredConstructor(
-            Long::class.java,
-            String::class.java,
-            Instant::class.java,
-            Boolean::class.java,
-            String::class.java,
-            String::class.java,
-            Long::class.java
-        )
+    private fun createExpiredRefreshToken(
+        userId: Long,
+        token: String,
+    ): RefreshToken {
+        val constructor =
+            RefreshToken::class.java.getDeclaredConstructor(
+                Long::class.java,
+                String::class.java,
+                Instant::class.java,
+                Boolean::class.java,
+                String::class.java,
+                String::class.java,
+                Long::class.java,
+            )
         constructor.isAccessible = true
         return constructor.newInstance(
             userId,
@@ -144,22 +146,22 @@ class RefreshTokenTest {
             false,
             null,
             null,
-            0L
+            0L,
         )
     }
 
     @Nested
     @DisplayName("isValid")
     inner class IsValid {
-
         @Test
         fun `should return true when token is not expired and not revoked`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             assertThat(refreshToken.isValid).isTrue()
@@ -168,11 +170,12 @@ class RefreshTokenTest {
         @Test
         fun `should return false when token is revoked`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
             refreshToken.revoke()
 
             // when & then
@@ -192,15 +195,15 @@ class RefreshTokenTest {
     @Nested
     @DisplayName("revoke()")
     inner class Revoke {
-
         @Test
         fun `should revoke token`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when
             refreshToken.revoke()
@@ -212,11 +215,12 @@ class RefreshTokenTest {
         @Test
         fun `should not change state when already revoked`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
             refreshToken.revoke()
 
             // when
@@ -230,15 +234,15 @@ class RefreshTokenTest {
     @Nested
     @DisplayName("validate()")
     inner class Validate {
-
         @Test
         fun `should not throw when token is valid`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             refreshToken.validate() // should not throw
@@ -247,11 +251,12 @@ class RefreshTokenTest {
         @Test
         fun `should throw when token is revoked`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
             refreshToken.revoke()
 
             // when & then
@@ -275,15 +280,15 @@ class RefreshTokenTest {
     @Nested
     @DisplayName("equals() and hashCode()")
     inner class EqualsAndHashCode {
-
         @Test
         fun `should be equal when same reference`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             assertThat(refreshToken).isEqualTo(refreshToken)
@@ -292,16 +297,18 @@ class RefreshTokenTest {
         @Test
         fun `should not be equal when id is 0`() {
             // given
-            val token1 = RefreshToken.create(
-                userId = 1L,
-                token = "test-token-1",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
-            val token2 = RefreshToken.create(
-                userId = 1L,
-                token = "test-token-2",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val token1 =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token-1",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
+            val token2 =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token-2",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             assertThat(token1).isNotEqualTo(token2)
@@ -310,11 +317,12 @@ class RefreshTokenTest {
         @Test
         fun `should not be equal to different type`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when & then
             assertThat(refreshToken).isNotEqualTo("string")
@@ -324,15 +332,15 @@ class RefreshTokenTest {
     @Nested
     @DisplayName("toString()")
     inner class ToString {
-
         @Test
         fun `should return readable string representation`() {
             // given
-            val refreshToken = RefreshToken.create(
-                userId = 1L,
-                token = "test-token",
-                expiresAt = Instant.now().plus(7, ChronoUnit.DAYS)
-            )
+            val refreshToken =
+                RefreshToken.create(
+                    userId = 1L,
+                    token = "test-token",
+                    expiresAt = Instant.now().plus(7, ChronoUnit.DAYS),
+                )
 
             // when
             val result = refreshToken.toString()

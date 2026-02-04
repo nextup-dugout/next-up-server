@@ -13,25 +13,25 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/backoffice/player-teams")
 class PlayerTeamAdminController(
-    private val playerTeamService: PlayerTeamService
+    private val playerTeamService: PlayerTeamService,
 ) {
-
     /**
      * 선수를 팀에 소속시킵니다.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun registerAffiliation(
-        @Valid @RequestBody request: RegisterAffiliationRequest
+        @Valid @RequestBody request: RegisterAffiliationRequest,
     ): ApiResponse<PlayerTeamResponse> {
-        val affiliation = playerTeamService.registerAffiliation(
-            playerId = request.playerId,
-            teamId = request.teamId,
-            startDate = request.startDate,
-            position = request.position,
-            uniformNumber = request.uniformNumber,
-            contractType = request.contractType
-        )
+        val affiliation =
+            playerTeamService.registerAffiliation(
+                playerId = request.playerId,
+                teamId = request.teamId,
+                startDate = request.startDate,
+                position = request.position,
+                uniformNumber = request.uniformNumber,
+                contractType = request.contractType,
+            )
         return ApiResponse.success(PlayerTeamResponse.from(affiliation))
     }
 
@@ -41,12 +41,13 @@ class PlayerTeamAdminController(
     @PutMapping("/{id}/end")
     fun endAffiliation(
         @PathVariable id: Long,
-        @Valid @RequestBody request: EndAffiliationRequest
+        @Valid @RequestBody request: EndAffiliationRequest,
     ): ApiResponse<PlayerTeamResponse> {
-        val affiliation = playerTeamService.endAffiliation(
-            affiliationId = id,
-            endDate = request.endDate
-        )
+        val affiliation =
+            playerTeamService.endAffiliation(
+                affiliationId = id,
+                endDate = request.endDate,
+            )
         return ApiResponse.success(PlayerTeamResponse.from(affiliation))
     }
 
@@ -55,17 +56,18 @@ class PlayerTeamAdminController(
      */
     @PostMapping("/transfer")
     fun transferPlayer(
-        @Valid @RequestBody request: TransferPlayerRequest
+        @Valid @RequestBody request: TransferPlayerRequest,
     ): ApiResponse<PlayerTeamResponse> {
-        val affiliation = playerTeamService.transferPlayer(
-            playerId = request.playerId,
-            fromTeamId = request.fromTeamId,
-            toTeamId = request.toTeamId,
-            transferDate = request.transferDate,
-            newPosition = request.newPosition,
-            newUniformNumber = request.newUniformNumber,
-            newContractType = request.newContractType
-        )
+        val affiliation =
+            playerTeamService.transferPlayer(
+                playerId = request.playerId,
+                fromTeamId = request.fromTeamId,
+                toTeamId = request.toTeamId,
+                transferDate = request.transferDate,
+                newPosition = request.newPosition,
+                newUniformNumber = request.newUniformNumber,
+                newContractType = request.newContractType,
+            )
         return ApiResponse.success(PlayerTeamResponse.from(affiliation))
     }
 
@@ -75,12 +77,13 @@ class PlayerTeamAdminController(
     @PutMapping("/{id}/uniform-number")
     fun changeUniformNumber(
         @PathVariable id: Long,
-        @Valid @RequestBody request: ChangeUniformNumberRequest
+        @Valid @RequestBody request: ChangeUniformNumberRequest,
     ): ApiResponse<PlayerTeamResponse> {
-        val affiliation = playerTeamService.changeUniformNumber(
-            affiliationId = id,
-            uniformNumber = request.uniformNumber
-        )
+        val affiliation =
+            playerTeamService.changeUniformNumber(
+                affiliationId = id,
+                uniformNumber = request.uniformNumber,
+            )
         return ApiResponse.success(PlayerTeamResponse.from(affiliation))
     }
 
@@ -90,12 +93,13 @@ class PlayerTeamAdminController(
     @PutMapping("/{id}/position")
     fun changePosition(
         @PathVariable id: Long,
-        @Valid @RequestBody request: ChangePositionRequest
+        @Valid @RequestBody request: ChangePositionRequest,
     ): ApiResponse<PlayerTeamResponse> {
-        val affiliation = playerTeamService.changePosition(
-            affiliationId = id,
-            position = request.position
-        )
+        val affiliation =
+            playerTeamService.changePosition(
+                affiliationId = id,
+                position = request.position,
+            )
         return ApiResponse.success(PlayerTeamResponse.from(affiliation))
     }
 
@@ -104,11 +108,11 @@ class PlayerTeamAdminController(
      */
     @GetMapping("/player/{playerId}")
     fun getPlayerAffiliations(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<List<PlayerTeamResponse>> {
         val affiliations = playerTeamService.getActiveAffiliationsByPlayer(playerId)
         return ApiResponse.success(
-            affiliations.map { PlayerTeamResponse.from(it) }
+            affiliations.map { PlayerTeamResponse.from(it) },
         )
     }
 
@@ -117,11 +121,11 @@ class PlayerTeamAdminController(
      */
     @GetMapping("/team/{teamId}/roster")
     fun getTeamRoster(
-        @PathVariable teamId: Long
+        @PathVariable teamId: Long,
     ): ApiResponse<List<PlayerTeamResponse>> {
         val roster = playerTeamService.getTeamRoster(teamId)
         return ApiResponse.success(
-            roster.map { PlayerTeamResponse.from(it) }
+            roster.map { PlayerTeamResponse.from(it) },
         )
     }
 
@@ -130,11 +134,11 @@ class PlayerTeamAdminController(
      */
     @GetMapping("/player/{playerId}/history")
     fun getPlayerHistory(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<List<PlayerTeamResponse>> {
         val history = playerTeamService.getPlayerHistory(playerId)
         return ApiResponse.success(
-            history.map { PlayerTeamResponse.from(it) }
+            history.map { PlayerTeamResponse.from(it) },
         )
     }
 }

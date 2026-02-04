@@ -1,6 +1,10 @@
 package com.nextup.core.domain.player
 
-enum class Position(val displayName: String, val abbreviation: String, val category: PositionCategory) {
+enum class Position(
+    val displayName: String,
+    val abbreviation: String,
+    val category: PositionCategory,
+) {
     // Pitcher
     STARTING_PITCHER("선발투수", "SP", PositionCategory.PITCHER),
     RELIEF_PITCHER("중간계투", "RP", PositionCategory.PITCHER),
@@ -21,13 +25,15 @@ enum class Position(val displayName: String, val abbreviation: String, val categ
     RIGHT_FIELD("우익수", "RF", PositionCategory.OUTFIELD),
 
     // Designated Hitter
-    DESIGNATED_HITTER("지명타자", "DH", PositionCategory.DESIGNATED_HITTER);
+    DESIGNATED_HITTER("지명타자", "DH", PositionCategory.DESIGNATED_HITTER),
 }
 
-enum class PositionCategory(val displayName: String) {
+enum class PositionCategory(
+    val displayName: String,
+) {
     PITCHER("투수"),
     CATCHER("포수"),
     INFIELD("내야수"),
     OUTFIELD("외야수"),
-    DESIGNATED_HITTER("지명타자")
+    DESIGNATED_HITTER("지명타자"),
 }

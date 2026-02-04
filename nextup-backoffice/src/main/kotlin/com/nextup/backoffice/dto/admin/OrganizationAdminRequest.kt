@@ -11,9 +11,8 @@ data class AssignAdminRequest(
     @field:NotNull(message = "사용자 ID는 필수입니다")
     @field:Positive(message = "사용자 ID는 양수여야 합니다")
     val userId: Long,
-
     @field:NotNull(message = "역할은 필수입니다")
-    val role: OrganizationRole
+    val role: OrganizationRole,
 )
 
 /**
@@ -21,5 +20,5 @@ data class AssignAdminRequest(
  */
 data class ChangeRoleRequest(
     @field:NotNull(message = "역할은 필수입니다")
-    val role: OrganizationRole
+    val role: OrganizationRole,
 )

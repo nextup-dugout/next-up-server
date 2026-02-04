@@ -44,11 +44,12 @@ class GameStateMapper {
             outs = gameState.outs,
             balls = gameState.balls,
             strikes = gameState.strikes,
-            runners = RunnersDto(
-                first = runnerOnFirst?.let { toPlayerBriefDto(it) },
-                second = runnerOnSecond?.let { toPlayerBriefDto(it) },
-                third = runnerOnThird?.let { toPlayerBriefDto(it) }
-            ),
+            runners =
+                RunnersDto(
+                    first = runnerOnFirst?.let { toPlayerBriefDto(it) },
+                    second = runnerOnSecond?.let { toPlayerBriefDto(it) },
+                    third = runnerOnThird?.let { toPlayerBriefDto(it) }
+                ),
             currentBatter = currentBatter?.let { toPlayerBriefDto(it) },
             currentPitcher = currentPitcher?.let { toPlayerBriefDto(it) }
         )
@@ -69,7 +70,11 @@ class GameStateMapper {
      * 선수 ID로 간략 정보를 생성합니다.
      * 실제 구현에서는 Repository를 통해 선수 정보를 조회해야 합니다.
      */
-    fun toPlayerBriefDtoById(playerId: Long, name: String, backNumber: Int?): PlayerBriefDto {
+    fun toPlayerBriefDtoById(
+        playerId: Long,
+        name: String,
+        backNumber: Int?
+    ): PlayerBriefDto {
         return PlayerBriefDto(
             id = playerId,
             name = name,

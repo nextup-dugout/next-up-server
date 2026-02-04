@@ -18,39 +18,33 @@ import jakarta.persistence.*
         Index(name = "idx_game_players_game_team", columnList = "game_team_id"),
         Index(name = "idx_game_players_player", columnList = "player_id"),
         Index(name = "idx_game_players_batting_order", columnList = "game_team_id, batting_order"),
-        Index(name = "idx_game_players_position", columnList = "game_team_id, position")
+        Index(name = "idx_game_players_position", columnList = "game_team_id, position"),
     ],
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_game_players_game_team_player",
-            columnNames = ["game_team_id", "player_id"]
-        )
-    ]
+            columnNames = ["game_team_id", "player_id"],
+        ),
+    ],
 )
 class GamePlayer(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_team_id", nullable = false)
     val gameTeam: GameTeam,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     val player: Player,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var position: Position,
-
     @Column(name = "batting_order")
     var battingOrder: Int? = null,
-
     @Column(name = "back_number")
     var backNumber: Int? = null,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     @Column(name = "is_starter", nullable = false)
     var isStarter: Boolean = true
         protected set
@@ -96,7 +90,11 @@ class GamePlayer(
     /**
      * 교체 선수로 출전합니다.
      */
-    fun enterAsSubstitute(inning: Int, newPosition: Position, newBattingOrder: Int?) {
+    fun enterAsSubstitute(
+        inning: Int,
+        newPosition: Position,
+        newBattingOrder: Int?,
+    ) {
         require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
         this.isStarter = false
         this.isCurrentlyPlaying = true
@@ -158,18 +156,19 @@ class GamePlayer(
             player: Player,
             position: Position,
             battingOrder: Int?,
-            backNumber: Int? = null
-        ): GamePlayer = GamePlayer(
-            gameTeam = gameTeam,
-            player = player,
-            position = position,
-            battingOrder = battingOrder,
-            backNumber = backNumber
-        ).apply {
-            this.isStarter = true
-            this.isCurrentlyPlaying = true
-            this.entryInning = 1
-        }
+            backNumber: Int? = null,
+        ): GamePlayer =
+            GamePlayer(
+                gameTeam = gameTeam,
+                player = player,
+                position = position,
+                battingOrder = battingOrder,
+                backNumber = backNumber,
+            ).apply {
+                this.isStarter = true
+                this.isCurrentlyPlaying = true
+                this.entryInning = 1
+            }
 
         /**
          * 대기 선수(벤치)를 생성합니다.
@@ -178,16 +177,17 @@ class GamePlayer(
             gameTeam: GameTeam,
             player: Player,
             position: Position,
-            backNumber: Int? = null
-        ): GamePlayer = GamePlayer(
-            gameTeam = gameTeam,
-            player = player,
-            position = position,
-            battingOrder = null,
-            backNumber = backNumber
-        ).apply {
-            this.isStarter = false
-            this.isCurrentlyPlaying = false
-        }
+            backNumber: Int? = null,
+        ): GamePlayer =
+            GamePlayer(
+                gameTeam = gameTeam,
+                player = player,
+                position = position,
+                battingOrder = null,
+                backNumber = backNumber,
+            ).apply {
+                this.isStarter = false
+                this.isCurrentlyPlaying = false
+            }
     }
 }

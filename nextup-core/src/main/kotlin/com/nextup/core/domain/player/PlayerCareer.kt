@@ -16,38 +16,30 @@ import java.time.LocalDate
     indexes = [
         Index(name = "idx_player_careers_player", columnList = "player_id"),
         Index(name = "idx_player_careers_type", columnList = "career_type"),
-        Index(name = "idx_player_careers_dates", columnList = "player_id, start_date, end_date")
-    ]
+        Index(name = "idx_player_careers_dates", columnList = "player_id, start_date, end_date"),
+    ],
 )
 class PlayerCareer(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     val player: Player,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "career_type", nullable = false, length = 20)
     val type: CareerType,
-
     @Column(nullable = false, length = 100)
     val organization: String,
-
     @Column(name = "start_date", nullable = false)
     val startDate: LocalDate,
-
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
-
     @Column(length = 50)
     val position: String? = null,
-
     @Column(length = 500)
     var description: String? = null,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     /**
      * 현재 활동 중인 경력인지 확인합니다.
      */
@@ -71,9 +63,8 @@ class PlayerCareer(
     /**
      * 특정 날짜에 이 경력이 활성 상태였는지 확인합니다.
      */
-    fun isActiveAt(date: LocalDate): Boolean {
-        return !startDate.isAfter(date) && (endDate == null || !endDate!!.isBefore(date))
-    }
+    fun isActiveAt(date: LocalDate): Boolean =
+        !startDate.isAfter(date) && (endDate == null || !endDate!!.isBefore(date))
 
     /**
      * 경력 기간(년)을 계산합니다.

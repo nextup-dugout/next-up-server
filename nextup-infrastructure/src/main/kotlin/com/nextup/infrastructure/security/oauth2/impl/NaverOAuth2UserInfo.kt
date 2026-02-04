@@ -19,9 +19,8 @@ import com.nextup.infrastructure.security.oauth2.OAuth2UserInfo
  * }
  */
 class NaverOAuth2UserInfo(
-    override val attributes: Map<String, Any>
+    override val attributes: Map<String, Any>,
 ) : OAuth2UserInfo {
-
     private val response: Map<*, *>?
         get() = attributes["response"] as? Map<*, *>
 

@@ -16,37 +16,31 @@ import java.time.Instant
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_oauth_provider_id",
-            columnNames = ["provider", "oauth_id"]
-        )
+            columnNames = ["provider", "oauth_id"],
+        ),
     ],
     indexes = [
         Index(name = "idx_oauth_user", columnList = "user_id"),
-        Index(name = "idx_oauth_provider", columnList = "provider")
-    ]
+        Index(name = "idx_oauth_provider", columnList = "provider"),
+    ],
 )
 class OAuthAccount private constructor(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     val provider: OAuthProvider,
-
     @Column(name = "oauth_id", nullable = false, length = 100)
     val oauthId: String,
-
     @Column(length = 100)
     val email: String? = null,
-
     @Column(name = "connected_at", nullable = false)
     val connectedAt: Instant = Instant.now(),
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     companion object {
         /**
          * OAuthAccount를 생성합니다.
@@ -62,7 +56,7 @@ class OAuthAccount private constructor(
             user: User,
             provider: OAuthProvider,
             oauthId: String,
-            email: String? = null
+            email: String? = null,
         ): OAuthAccount {
             require(provider != OAuthProvider.LOCAL) {
                 "LOCAL은 OAuthAccount로 관리하지 않습니다."
@@ -74,7 +68,7 @@ class OAuthAccount private constructor(
                 user = user,
                 provider = provider,
                 oauthId = oauthId,
-                email = email
+                email = email,
             )
         }
     }
@@ -88,6 +82,5 @@ class OAuthAccount private constructor(
 
     override fun hashCode(): Int = id.hashCode()
 
-    override fun toString(): String =
-        "OAuthAccount(id=$id, provider=$provider, oauthId=$oauthId, userId=${user.id})"
+    override fun toString(): String = "OAuthAccount(id=$id, provider=$provider, oauthId=$oauthId, userId=${user.id})"
 }

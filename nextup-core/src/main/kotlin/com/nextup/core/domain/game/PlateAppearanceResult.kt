@@ -10,7 +10,7 @@ enum class PlateAppearanceResult(
     val displayName: String,
     val description: String,
     val isAtBat: Boolean,
-    val isHit: Boolean
+    val isHit: Boolean,
 ) {
     // 안타 (Hit) - 타수 O, 안타 O
     SINGLE("1루타", "안타로 1루에 진루", true, true),
@@ -34,7 +34,8 @@ enum class PlateAppearanceResult(
     HIT_BY_PITCH("사구", "몸에 맞는 공으로 출루", false, false),
     SACRIFICE_BUNT("희생번트", "희생번트로 아웃", false, false),
     SACRIFICE_FLY("희생플라이", "희생플라이로 아웃", false, false),
-    INTERFERENCE("방해", "수비 방해로 출루", false, false);
+    INTERFERENCE("방해", "수비 방해로 출루", false, false),
+    ;
 
     /**
      * 단타인지 확인합니다.
@@ -100,11 +101,12 @@ enum class PlateAppearanceResult(
      * 루타 수를 반환합니다 (안타가 아니면 0).
      */
     val totalBases: Int
-        get() = when (this) {
-            SINGLE -> 1
-            DOUBLE -> 2
-            TRIPLE -> 3
-            HOME_RUN -> 4
-            else -> 0
-        }
+        get() =
+            when (this) {
+                SINGLE -> 1
+                DOUBLE -> 2
+                TRIPLE -> 3
+                HOME_RUN -> 4
+                else -> 0
+            }
 }

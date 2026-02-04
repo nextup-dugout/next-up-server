@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class RecordPlateAppearanceRequestTest {
-
     private lateinit var validator: Validator
 
     @BeforeEach
@@ -19,11 +18,12 @@ class RecordPlateAppearanceRequestTest {
     @Test
     fun `should create request with valid data`() {
         // when
-        val request = RecordPlateAppearanceRequest(
-            result = PlateAppearanceResult.SINGLE,
-            runsBattedIn = 1,
-            runsScored = true
-        )
+        val request =
+            RecordPlateAppearanceRequest(
+                result = PlateAppearanceResult.SINGLE,
+                runsBattedIn = 1,
+                runsScored = true,
+            )
 
         // then
         assertThat(request.result).isEqualTo(PlateAppearanceResult.SINGLE)
@@ -34,9 +34,10 @@ class RecordPlateAppearanceRequestTest {
     @Test
     fun `should use default values`() {
         // when
-        val request = RecordPlateAppearanceRequest(
-            result = PlateAppearanceResult.HOME_RUN
-        )
+        val request =
+            RecordPlateAppearanceRequest(
+                result = PlateAppearanceResult.HOME_RUN,
+            )
 
         // then
         assertThat(request.runsBattedIn).isEqualTo(0)
@@ -46,11 +47,12 @@ class RecordPlateAppearanceRequestTest {
     @Test
     fun `should pass validation with valid data`() {
         // given
-        val request = RecordPlateAppearanceRequest(
-            result = PlateAppearanceResult.DOUBLE,
-            runsBattedIn = 2,
-            runsScored = false
-        )
+        val request =
+            RecordPlateAppearanceRequest(
+                result = PlateAppearanceResult.DOUBLE,
+                runsBattedIn = 2,
+                runsScored = false,
+            )
 
         // when
         val violations = validator.validate(request)
@@ -62,11 +64,12 @@ class RecordPlateAppearanceRequestTest {
     @Test
     fun `should fail validation when runsBattedIn is negative`() {
         // given
-        val request = RecordPlateAppearanceRequest(
-            result = PlateAppearanceResult.SINGLE,
-            runsBattedIn = -1,
-            runsScored = false
-        )
+        val request =
+            RecordPlateAppearanceRequest(
+                result = PlateAppearanceResult.SINGLE,
+                runsBattedIn = -1,
+                runsScored = false,
+            )
 
         // when
         val violations = validator.validate(request)
@@ -79,11 +82,12 @@ class RecordPlateAppearanceRequestTest {
     @Test
     fun `should support data class copy`() {
         // given
-        val original = RecordPlateAppearanceRequest(
-            result = PlateAppearanceResult.SINGLE,
-            runsBattedIn = 1,
-            runsScored = true
-        )
+        val original =
+            RecordPlateAppearanceRequest(
+                result = PlateAppearanceResult.SINGLE,
+                runsBattedIn = 1,
+                runsScored = true,
+            )
 
         // when
         val copied = original.copy(runsBattedIn = 2)

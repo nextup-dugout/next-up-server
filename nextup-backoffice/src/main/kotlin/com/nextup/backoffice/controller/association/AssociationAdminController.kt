@@ -23,9 +23,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/backoffice/associations")
 class AssociationAdminController(
-    private val associationService: AssociationService
+    private val associationService: AssociationService,
 ) {
-
     /**
      * 모든 협회 목록을 조회합니다 (비활성화 포함).
      */
@@ -33,7 +32,7 @@ class AssociationAdminController(
     fun getAllAssociations(): ApiResponse<List<AssociationAdminResponse>> {
         val associations = associationService.getAll()
         return ApiResponse.success(
-            associations.map { AssociationAdminResponse.from(it) }
+            associations.map { AssociationAdminResponse.from(it) },
         )
     }
 
@@ -42,7 +41,7 @@ class AssociationAdminController(
      */
     @GetMapping("/{id}")
     fun getAssociation(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.getById(id)
         return ApiResponse.success(AssociationAdminResponse.from(association))
@@ -54,16 +53,17 @@ class AssociationAdminController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createAssociation(
-        @Valid @RequestBody request: CreateAssociationRequest
+        @Valid @RequestBody request: CreateAssociationRequest,
     ): ApiResponse<AssociationAdminResponse> {
-        val association = associationService.create(
-            name = request.name,
-            abbreviation = request.abbreviation,
-            region = request.region,
-            description = request.description,
-            logoUrl = request.logoUrl,
-            websiteUrl = request.websiteUrl
-        )
+        val association =
+            associationService.create(
+                name = request.name,
+                abbreviation = request.abbreviation,
+                region = request.region,
+                description = request.description,
+                logoUrl = request.logoUrl,
+                websiteUrl = request.websiteUrl,
+            )
         return ApiResponse.success(AssociationAdminResponse.from(association))
     }
 
@@ -73,14 +73,15 @@ class AssociationAdminController(
     @PutMapping("/{id}")
     fun updateAssociation(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateAssociationRequest
+        @Valid @RequestBody request: UpdateAssociationRequest,
     ): ApiResponse<AssociationAdminResponse> {
-        val association = associationService.update(
-            id = id,
-            description = request.description,
-            logoUrl = request.logoUrl,
-            websiteUrl = request.websiteUrl
-        )
+        val association =
+            associationService.update(
+                id = id,
+                description = request.description,
+                logoUrl = request.logoUrl,
+                websiteUrl = request.websiteUrl,
+            )
         return ApiResponse.success(AssociationAdminResponse.from(association))
     }
 
@@ -89,7 +90,7 @@ class AssociationAdminController(
      */
     @DeleteMapping("/{id}")
     fun deactivateAssociation(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.deactivate(id)
         return ApiResponse.success(AssociationAdminResponse.from(association))
@@ -100,7 +101,7 @@ class AssociationAdminController(
      */
     @PostMapping("/{id}/activate")
     fun activateAssociation(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.activate(id)
         return ApiResponse.success(AssociationAdminResponse.from(association))

@@ -5,8 +5,9 @@ import com.nextup.core.port.repository.AssociationRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface AssociationRepository : JpaRepository<Association, Long>, AssociationRepositoryPort {
-
+interface AssociationRepository :
+    JpaRepository<Association, Long>,
+    AssociationRepositoryPort {
     /**
      * 협회 이름으로 조회합니다.
      */

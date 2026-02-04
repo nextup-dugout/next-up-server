@@ -15,7 +15,7 @@ import javax.crypto.SecretKey
  */
 @Component
 class JwtTokenProvider(
-    private val jwtProperties: JwtProperties
+    private val jwtProperties: JwtProperties,
 ) {
     private val secretKey: SecretKey by lazy {
         val keyBytes = Decoders.BASE64.decode(jwtProperties.secret)
@@ -33,12 +33,13 @@ class JwtTokenProvider(
     fun createAccessToken(
         userId: Long,
         email: String,
-        roles: Set<String>
+        roles: Set<String>,
     ): String {
         val now = Instant.now()
         val expiration = now.plusMillis(jwtProperties.accessTokenExpiration)
 
-        return Jwts.builder()
+        return Jwts
+            .builder()
             .subject(userId.toString())
             .claim("email", email)
             .claim("roles", roles.toList())
@@ -60,7 +61,8 @@ class JwtTokenProvider(
         val now = Instant.now()
         val expiration = now.plusMillis(jwtProperties.refreshTokenExpiration)
 
-        return Jwts.builder()
+        return Jwts
+            .builder()
             .subject(userId.toString())
             .claim("type", "refresh")
             .issuer(jwtProperties.issuer)
@@ -78,9 +80,7 @@ class JwtTokenProvider(
      * @throws InvalidTokenException 토큰이 유효하지 않은 경우
      * @throws TokenExpiredException 토큰이 만료된 경우
      */
-    fun getUserId(token: String): Long {
-        return getClaims(token).subject.toLong()
-    }
+    fun getUserId(token: String): Long = getClaims(token).subject.toLong()
 
     /**
      * 토큰에서 이메일을 추출합니다.
@@ -88,9 +88,7 @@ class JwtTokenProvider(
      * @param token JWT 토큰
      * @return 사용자 이메일
      */
-    fun getEmail(token: String): String {
-        return getClaims(token).get("email", String::class.java)
-    }
+    fun getEmail(token: String): String = getClaims(token).get("email", String::class.java)
 
     /**
      * 토큰에서 권한 목록을 추출합니다.
@@ -110,9 +108,7 @@ class JwtTokenProvider(
      * @param token JWT 토큰
      * @return Access Token이면 true
      */
-    fun isAccessToken(token: String): Boolean {
-        return getClaims(token).get("type", String::class.java) == "access"
-    }
+    fun isAccessToken(token: String): Boolean = getClaims(token).get("type", String::class.java) == "access"
 
     /**
      * 토큰이 Refresh Token인지 확인합니다.
@@ -120,9 +116,7 @@ class JwtTokenProvider(
      * @param token JWT 토큰
      * @return Refresh Token이면 true
      */
-    fun isRefreshToken(token: String): Boolean {
-        return getClaims(token).get("type", String::class.java) == "refresh"
-    }
+    fun isRefreshToken(token: String): Boolean = getClaims(token).get("type", String::class.java) == "refresh"
 
     /**
      * 토큰의 유효성을 검증합니다.
@@ -130,27 +124,25 @@ class JwtTokenProvider(
      * @param token JWT 토큰
      * @return 유효하면 true
      */
-    fun validateToken(token: String): Boolean {
-        return try {
+    fun validateToken(token: String): Boolean =
+        try {
             getClaims(token)
             true
         } catch (e: Exception) {
             false
         }
-    }
 
     /**
      * Refresh Token의 만료 시간을 반환합니다.
      *
      * @return Refresh Token 만료 시간 (Instant)
      */
-    fun getRefreshTokenExpiration(): Instant {
-        return Instant.now().plusMillis(jwtProperties.refreshTokenExpiration)
-    }
+    fun getRefreshTokenExpiration(): Instant = Instant.now().plusMillis(jwtProperties.refreshTokenExpiration)
 
-    private fun getClaims(token: String): Claims {
-        return try {
-            Jwts.parser()
+    private fun getClaims(token: String): Claims =
+        try {
+            Jwts
+                .parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
@@ -162,5 +154,4 @@ class JwtTokenProvider(
         } catch (e: IllegalArgumentException) {
             throw InvalidTokenException("Token is empty or malformed")
         }
-    }
 }

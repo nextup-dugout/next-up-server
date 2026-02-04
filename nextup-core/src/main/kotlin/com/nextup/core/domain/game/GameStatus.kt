@@ -3,7 +3,10 @@ package com.nextup.core.domain.game
 /**
  * 경기 상태
  */
-enum class GameStatus(val displayName: String, val description: String) {
+enum class GameStatus(
+    val displayName: String,
+    val description: String,
+) {
     /** 경기 예정 */
     SCHEDULED("예정", "경기가 예정된 상태"),
 
@@ -23,7 +26,8 @@ enum class GameStatus(val displayName: String, val description: String) {
     FORFEITED("몰수", "몰수 처리된 경기"),
 
     /** 콜드게임 */
-    CALLED("콜드게임", "점수차 또는 기상 조건으로 조기 종료된 경기");
+    CALLED("콜드게임", "점수차 또는 기상 조건으로 조기 종료된 경기"),
+    ;
 
     /**
      * 경기가 시작 가능한 상태인지 확인합니다.

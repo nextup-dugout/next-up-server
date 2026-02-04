@@ -15,19 +15,17 @@ import java.math.RoundingMode
 @Table(
     name = "batting_records",
     indexes = [
-        Index(name = "idx_batting_records_game_player", columnList = "game_player_id")
-    ]
+        Index(name = "idx_batting_records_game_player", columnList = "game_player_id"),
+    ],
 )
 class BattingRecord(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_player_id", nullable = false, unique = true)
     val gamePlayer: GamePlayer,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     // 기본 타격 기록
     @Column(name = "plate_appearances", nullable = false)
     var plateAppearances: Int = 0
@@ -134,11 +132,12 @@ class BattingRecord(
      * 타수가 0이면 .000
      */
     val battingAverage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * 출루율 (OBP) = (안타 + 볼넷 + 사구) / (타수 + 볼넷 + 사구 + 희생플라이)
@@ -158,11 +157,12 @@ class BattingRecord(
      * 장타율 (SLG) = 총 루타 / 타수
      */
     val sluggingPercentage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * OPS = 출루율 + 장타율
@@ -191,7 +191,7 @@ class BattingRecord(
     fun recordPlateAppearance(
         result: PlateAppearanceResult,
         runsBattedIn: Int = 0,
-        runsScored: Boolean = false
+        runsScored: Boolean = false,
     ) {
         require(runsBattedIn >= 0) { "타점은 0 이상이어야 합니다." }
 
@@ -233,7 +233,10 @@ class BattingRecord(
      * 타석 결과에 따른 기록을 자동으로 갱신합니다 (BoxScore 계산용).
      * recordPlateAppearance와 유사하지만 더 명시적인 API를 제공합니다.
      */
-    fun applyPlateAppearanceResult(result: PlateAppearanceResult, rbis: Int = 0) {
+    fun applyPlateAppearanceResult(
+        result: PlateAppearanceResult,
+        rbis: Int = 0,
+    ) {
         require(rbis >= 0) { "타점은 0 이상이어야 합니다." }
 
         plateAppearances++
@@ -257,7 +260,7 @@ class BattingRecord(
                 atBats++
                 hits++
                 homeRuns++
-                runs++  // 홈런은 타자 자신도 득점
+                runs++ // 홈런은 타자 자신도 득점
             }
             PlateAppearanceResult.STRIKEOUT -> {
                 atBats++
@@ -267,7 +270,8 @@ class BattingRecord(
             PlateAppearanceResult.FLY_OUT,
             PlateAppearanceResult.LINE_OUT,
             PlateAppearanceResult.FIELDERS_CHOICE,
-            PlateAppearanceResult.ERROR -> {
+            PlateAppearanceResult.ERROR,
+            -> {
                 atBats++
             }
             PlateAppearanceResult.WALK -> {
@@ -286,7 +290,8 @@ class BattingRecord(
                 sacrificeBunts++
             }
             PlateAppearanceResult.DOUBLE_PLAY,
-            PlateAppearanceResult.TRIPLE_PLAY -> {
+            PlateAppearanceResult.TRIPLE_PLAY,
+            -> {
                 atBats++
                 groundedIntoDoublePlays++
             }

@@ -16,11 +16,11 @@ data class AssociationResponse(
     val websiteUrl: String?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(association: Association): AssociationResponse {
-            return AssociationResponse(
+        fun from(association: Association): AssociationResponse =
+            AssociationResponse(
                 id = association.id,
                 name = association.name,
                 abbreviation = association.abbreviation,
@@ -30,9 +30,8 @@ data class AssociationResponse(
                 websiteUrl = association.websiteUrl,
                 isActive = association.isActive,
                 createdAt = association.createdAt,
-                updatedAt = association.updatedAt
+                updatedAt = association.updatedAt,
             )
-        }
     }
 }
 
@@ -44,17 +43,16 @@ data class AssociationSummaryResponse(
     val name: String,
     val abbreviation: String?,
     val region: String?,
-    val logoUrl: String?
+    val logoUrl: String?,
 ) {
     companion object {
-        fun from(association: Association): AssociationSummaryResponse {
-            return AssociationSummaryResponse(
+        fun from(association: Association): AssociationSummaryResponse =
+            AssociationSummaryResponse(
                 id = association.id,
                 name = association.name,
                 abbreviation = association.abbreviation,
                 region = association.region,
-                logoUrl = association.logoUrl
+                logoUrl = association.logoUrl,
             )
-        }
     }
 }

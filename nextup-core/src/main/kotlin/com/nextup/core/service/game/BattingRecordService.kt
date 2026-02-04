@@ -19,16 +19,16 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class BattingRecordService(
     private val battingRecordRepository: BattingRecordRepositoryPort,
-    private val gamePlayerRepository: GamePlayerRepositoryPort
+    private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
-
     /**
      * 타격 기록을 생성합니다.
      */
     @Transactional
     fun createRecord(gamePlayerId: Long): BattingRecord {
-        val gamePlayer = gamePlayerRepository.findByIdOrNull(gamePlayerId)
-            ?: throw GamePlayerNotFoundException(gamePlayerId)
+        val gamePlayer =
+            gamePlayerRepository.findByIdOrNull(gamePlayerId)
+                ?: throw GamePlayerNotFoundException(gamePlayerId)
 
         // 중복 체크
         battingRecordRepository.findByGamePlayer(gamePlayer)?.let {
@@ -42,10 +42,9 @@ class BattingRecordService(
     /**
      * GamePlayer ID로 타격 기록을 조회합니다.
      */
-    fun getByGamePlayerId(gamePlayerId: Long): BattingRecord {
-        return battingRecordRepository.findByGamePlayerId(gamePlayerId)
+    fun getByGamePlayerId(gamePlayerId: Long): BattingRecord =
+        battingRecordRepository.findByGamePlayerId(gamePlayerId)
             ?: throw BattingRecordNotFoundException(gamePlayerId)
-    }
 
     /**
      * 타석 결과를 기록합니다.
@@ -55,7 +54,7 @@ class BattingRecordService(
         gamePlayerId: Long,
         result: PlateAppearanceResult,
         runsBattedIn: Int = 0,
-        runsScored: Boolean = false
+        runsScored: Boolean = false,
     ) {
         val battingRecord = getByGamePlayerId(gamePlayerId)
         battingRecord.recordPlateAppearance(result, runsBattedIn, runsScored)
@@ -91,14 +90,10 @@ class BattingRecordService(
     /**
      * 경기 ID로 모든 타격 기록을 조회합니다.
      */
-    fun getAllByGameId(gameId: Long): List<BattingRecord> {
-        return battingRecordRepository.findAllByGameId(gameId)
-    }
+    fun getAllByGameId(gameId: Long): List<BattingRecord> = battingRecordRepository.findAllByGameId(gameId)
 
     /**
      * 선수 ID로 모든 타격 기록을 조회합니다.
      */
-    fun getAllByPlayerId(playerId: Long): List<BattingRecord> {
-        return battingRecordRepository.findAllByPlayerId(playerId)
-    }
+    fun getAllByPlayerId(playerId: Long): List<BattingRecord> = battingRecordRepository.findAllByPlayerId(playerId)
 }

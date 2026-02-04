@@ -9,15 +9,16 @@ import org.junit.jupiter.params.provider.EnumSource
 
 @DisplayName("PlateAppearanceResult")
 class PlateAppearanceResultTest {
-
     @Nested
     @DisplayName("isAtBat 속성")
     inner class IsAtBatTest {
-
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY"]
+            names = [
+                "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "STRIKEOUT", "GROUND_OUT",
+                "FLY_OUT", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY",
+            ],
         )
         fun `타수에 포함되는 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isAtBat).isTrue()
@@ -26,7 +27,7 @@ class PlateAppearanceResultTest {
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["WALK", "INTENTIONAL_WALK", "HIT_BY_PITCH", "SACRIFICE_BUNT", "SACRIFICE_FLY", "INTERFERENCE"]
+            names = ["WALK", "INTENTIONAL_WALK", "HIT_BY_PITCH", "SACRIFICE_BUNT", "SACRIFICE_FLY", "INTERFERENCE"],
         )
         fun `타수에 포함되지 않는 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isAtBat).isFalse()
@@ -36,11 +37,10 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("isHit 속성")
     inner class IsHitTest {
-
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN"]
+            names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN"],
         )
         fun `안타 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isHit).isTrue()
@@ -49,7 +49,7 @@ class PlateAppearanceResultTest {
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["STRIKEOUT", "GROUND_OUT", "FLY_OUT", "WALK", "SACRIFICE_BUNT"]
+            names = ["STRIKEOUT", "GROUND_OUT", "FLY_OUT", "WALK", "SACRIFICE_BUNT"],
         )
         fun `안타가 아닌 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isHit).isFalse()
@@ -59,7 +59,6 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("totalBases 속성")
     inner class TotalBasesTest {
-
         @Test
         fun `단타는 1루타를 반환한다`() {
             assertThat(PlateAppearanceResult.SINGLE.totalBases).isEqualTo(1)
@@ -90,7 +89,6 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("장타 속성")
     inner class ExtraBaseHitTest {
-
         @Test
         fun `2루타는 장타이다`() {
             assertThat(PlateAppearanceResult.DOUBLE.isExtraBaseHit).isTrue()
@@ -115,11 +113,13 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("출루 속성")
     inner class IsOnBaseTest {
-
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "WALK", "INTENTIONAL_WALK", "HIT_BY_PITCH", "FIELDERS_CHOICE", "ERROR", "INTERFERENCE"]
+            names = [
+                "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "WALK", "INTENTIONAL_WALK",
+                "HIT_BY_PITCH", "FIELDERS_CHOICE", "ERROR", "INTERFERENCE",
+            ],
         )
         fun `출루에 성공한 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isOnBase).isTrue()
@@ -128,7 +128,10 @@ class PlateAppearanceResultTest {
         @ParameterizedTest
         @EnumSource(
             value = PlateAppearanceResult::class,
-            names = ["STRIKEOUT", "GROUND_OUT", "FLY_OUT", "LINE_OUT", "SACRIFICE_BUNT", "SACRIFICE_FLY", "DOUBLE_PLAY", "TRIPLE_PLAY"]
+            names = [
+                "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "LINE_OUT",
+                "SACRIFICE_BUNT", "SACRIFICE_FLY", "DOUBLE_PLAY", "TRIPLE_PLAY",
+            ],
         )
         fun `출루에 실패한 결과를 반환한다`(result: PlateAppearanceResult) {
             assertThat(result.isOnBase).isFalse()
@@ -138,7 +141,6 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("볼넷 관련 속성")
     inner class WalkTest {
-
         @Test
         fun `볼넷은 isWalk가 true이다`() {
             assertThat(PlateAppearanceResult.WALK.isWalk).isTrue()
@@ -158,7 +160,6 @@ class PlateAppearanceResultTest {
     @Nested
     @DisplayName("희생타 속성")
     inner class SacrificeTest {
-
         @Test
         fun `희생번트는 희생타이다`() {
             assertThat(PlateAppearanceResult.SACRIFICE_BUNT.isSacrifice).isTrue()

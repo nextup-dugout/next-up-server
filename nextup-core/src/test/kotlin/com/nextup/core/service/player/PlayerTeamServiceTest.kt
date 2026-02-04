@@ -21,7 +21,6 @@ import java.time.LocalDate
 
 @DisplayName("PlayerTeamService")
 class PlayerTeamServiceTest {
-
     private lateinit var playerTeamHistoryRepository: PlayerTeamHistoryRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
@@ -32,17 +31,17 @@ class PlayerTeamServiceTest {
         playerTeamHistoryRepository = mockk()
         playerRepository = mockk()
         teamRepository = mockk()
-        playerTeamService = PlayerTeamService(
-            playerTeamHistoryRepository,
-            playerRepository,
-            teamRepository
-        )
+        playerTeamService =
+            PlayerTeamService(
+                playerTeamHistoryRepository,
+                playerRepository,
+                teamRepository,
+            )
     }
 
     @Nested
     @DisplayName("registerAffiliation")
     inner class RegisterAffiliation {
-
         @Test
         fun `should register player affiliation successfully`() {
             // given
@@ -62,14 +61,15 @@ class PlayerTeamServiceTest {
             every { playerTeamHistoryRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = playerTeamService.registerAffiliation(
-                playerId = playerId,
-                teamId = teamId,
-                startDate = startDate,
-                position = position,
-                uniformNumber = uniformNumber,
-                contractType = ContractType.REGULAR
-            )
+            val result =
+                playerTeamService.registerAffiliation(
+                    playerId = playerId,
+                    teamId = teamId,
+                    startDate = startDate,
+                    position = position,
+                    uniformNumber = uniformNumber,
+                    contractType = ContractType.REGULAR,
+                )
 
             // then
             assertThat(result.player.id).isEqualTo(playerId)
@@ -100,7 +100,7 @@ class PlayerTeamServiceTest {
                     playerId = playerId,
                     teamId = teamId,
                     startDate = LocalDate.now(),
-                    position = Position.STARTING_PITCHER
+                    position = Position.STARTING_PITCHER,
                 )
             }.isInstanceOf(PlayerAlreadyInLeagueException::class.java)
         }
@@ -121,12 +121,13 @@ class PlayerTeamServiceTest {
             every { playerTeamHistoryRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = playerTeamService.registerAffiliation(
-                playerId = playerId,
-                teamId = teamId,
-                startDate = LocalDate.now(),
-                position = Position.STARTING_PITCHER
-            )
+            val result =
+                playerTeamService.registerAffiliation(
+                    playerId = playerId,
+                    teamId = teamId,
+                    startDate = LocalDate.now(),
+                    position = Position.STARTING_PITCHER,
+                )
 
             // then
             assertThat(result.status).isEqualTo(PlayerTeamStatus.ACTIVE)
@@ -145,7 +146,7 @@ class PlayerTeamServiceTest {
                     playerId = playerId,
                     teamId = 1L,
                     startDate = LocalDate.now(),
-                    position = Position.STARTING_PITCHER
+                    position = Position.STARTING_PITCHER,
                 )
             }.isInstanceOf(PlayerNotFoundException::class.java)
         }
@@ -166,7 +167,7 @@ class PlayerTeamServiceTest {
                     playerId = playerId,
                     teamId = teamId,
                     startDate = LocalDate.now(),
-                    position = Position.STARTING_PITCHER
+                    position = Position.STARTING_PITCHER,
                 )
             }.isInstanceOf(TeamNotFoundException::class.java)
         }
@@ -175,7 +176,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("endAffiliation")
     inner class EndAffiliation {
-
         @Test
         fun `should end affiliation successfully`() {
             // given
@@ -209,7 +209,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("transferPlayer")
     inner class TransferPlayer {
-
         @Test
         fun `should transfer player within same league successfully`() {
             // given
@@ -227,19 +226,21 @@ class PlayerTeamServiceTest {
             every { playerRepository.findByIdOrNull(playerId) } returns player
             every { teamRepository.findByIdWithLeague(fromTeamId) } returns fromTeam
             every { teamRepository.findByIdWithLeague(toTeamId) } returns toTeam
-            every { playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, leagueId) } returns currentAffiliation
+            every { playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, leagueId) } returns
+                currentAffiliation
             every { playerTeamHistoryRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = playerTeamService.transferPlayer(
-                playerId = playerId,
-                fromTeamId = fromTeamId,
-                toTeamId = toTeamId,
-                transferDate = transferDate,
-                newPosition = Position.LEFT_FIELD,
-                newUniformNumber = 20,
-                newContractType = ContractType.REGULAR
-            )
+            val result =
+                playerTeamService.transferPlayer(
+                    playerId = playerId,
+                    fromTeamId = fromTeamId,
+                    toTeamId = toTeamId,
+                    transferDate = transferDate,
+                    newPosition = Position.LEFT_FIELD,
+                    newUniformNumber = 20,
+                    newContractType = ContractType.REGULAR,
+                )
 
             // then
             assertThat(result.player.id).isEqualTo(playerId)
@@ -276,7 +277,7 @@ class PlayerTeamServiceTest {
                     fromTeamId = fromTeamId,
                     toTeamId = toTeamId,
                     transferDate = LocalDate.now(),
-                    newPosition = Position.LEFT_FIELD
+                    newPosition = Position.LEFT_FIELD,
                 )
             }.isInstanceOf(PlayerTransferNotAllowedException::class.java)
                 .hasMessageContaining("같은 리그 내에서만 이적")
@@ -306,7 +307,7 @@ class PlayerTeamServiceTest {
                     fromTeamId = fromTeamId,
                     toTeamId = toTeamId,
                     transferDate = LocalDate.now(),
-                    newPosition = Position.LEFT_FIELD
+                    newPosition = Position.LEFT_FIELD,
                 )
             }.isInstanceOf(PlayerNotInTeamException::class.java)
         }
@@ -315,7 +316,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("getActiveAffiliationsByPlayer")
     inner class GetActiveAffiliationsByPlayer {
-
         @Test
         fun `should return active affiliations for player`() {
             // given
@@ -323,10 +323,11 @@ class PlayerTeamServiceTest {
             val player = createPlayer(playerId, "홍길동")
             val team1 = createTeam(1L, "서울 타이거즈", 1L)
             val team2 = createTeam(2L, "경기 라이온즈", 2L)
-            val affiliations = listOf(
-                createPlayerTeamHistory(1L, player, team1),
-                createPlayerTeamHistory(2L, player, team2)
-            )
+            val affiliations =
+                listOf(
+                    createPlayerTeamHistory(1L, player, team1),
+                    createPlayerTeamHistory(2L, player, team2),
+                )
 
             every { playerRepository.findByIdOrNull(playerId) } returns player
             every { playerTeamHistoryRepository.findActiveByPlayerId(playerId) } returns affiliations
@@ -355,7 +356,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("changeUniformNumber")
     inner class ChangeUniformNumber {
-
         @Test
         fun `should change uniform number successfully`() {
             // given
@@ -388,7 +388,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("changePosition")
     inner class ChangePosition {
-
         @Test
         fun `should change position successfully`() {
             // given
@@ -421,7 +420,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("getTeamRoster")
     inner class GetTeamRoster {
-
         @Test
         fun `should return team roster`() {
             // given
@@ -429,10 +427,11 @@ class PlayerTeamServiceTest {
             val team = createTeam(teamId, "서울 타이거즈", 1L)
             val player1 = createPlayer(1L, "홍길동")
             val player2 = createPlayer(2L, "김철수")
-            val affiliations = listOf(
-                createPlayerTeamHistory(1L, player1, team),
-                createPlayerTeamHistory(2L, player2, team)
-            )
+            val affiliations =
+                listOf(
+                    createPlayerTeamHistory(1L, player1, team),
+                    createPlayerTeamHistory(2L, player2, team),
+                )
 
             every { teamRepository.findByIdWithLeague(teamId) } returns team
             every { playerTeamHistoryRepository.findActiveByTeamId(teamId) } returns affiliations
@@ -461,7 +460,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("getTeamRosterAtDate")
     inner class GetTeamRosterAtDate {
-
         @Test
         fun `should return team roster at specific date`() {
             // given
@@ -470,10 +468,11 @@ class PlayerTeamServiceTest {
             val team = createTeam(teamId, "서울 타이거즈", 1L)
             val player1 = createPlayer(1L, "홍길동")
             val player2 = createPlayer(2L, "김철수")
-            val affiliations = listOf(
-                createPlayerTeamHistory(1L, player1, team),
-                createPlayerTeamHistory(2L, player2, team)
-            )
+            val affiliations =
+                listOf(
+                    createPlayerTeamHistory(1L, player1, team),
+                    createPlayerTeamHistory(2L, player2, team),
+                )
 
             every { teamRepository.findByIdWithLeague(teamId) } returns team
             every { playerTeamHistoryRepository.findByTeamIdAtDate(teamId, date) } returns affiliations
@@ -502,7 +501,6 @@ class PlayerTeamServiceTest {
     @Nested
     @DisplayName("getPlayerHistory")
     inner class GetPlayerHistory {
-
         @Test
         fun `should return player affiliation history`() {
             // given
@@ -510,10 +508,11 @@ class PlayerTeamServiceTest {
             val player = createPlayer(playerId, "홍길동")
             val team1 = createTeam(1L, "서울 타이거즈", 1L)
             val team2 = createTeam(2L, "경기 라이온즈", 2L)
-            val history = listOf(
-                createPlayerTeamHistory(1L, player, team1),
-                createPlayerTeamHistory(2L, player, team2)
-            )
+            val history =
+                listOf(
+                    createPlayerTeamHistory(1L, player, team1),
+                    createPlayerTeamHistory(2L, player, team2),
+                )
 
             every { playerRepository.findByIdOrNull(playerId) } returns player
             every { playerTeamHistoryRepository.findByPlayerIdWithDetails(playerId) } returns history
@@ -539,24 +538,30 @@ class PlayerTeamServiceTest {
         }
     }
 
-    private fun createPlayer(id: Long, name: String): Player {
-        return Player(
+    private fun createPlayer(
+        id: Long,
+        name: String,
+    ): Player =
+        Player(
             name = name,
-            primaryPosition = Position.STARTING_PITCHER
+            primaryPosition = Position.STARTING_PITCHER,
         ).apply {
             val idField = Player::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createTeam(id: Long, name: String, leagueId: Long): Team {
+    private fun createTeam(
+        id: Long,
+        name: String,
+        leagueId: Long,
+    ): Team {
         val league = createLeague(leagueId)
         return Team(
             league = league,
             name = name,
             city = "서울",
-            foundedYear = 2020
+            foundedYear = 2020,
         ).apply {
             val idField = Team::class.java.getDeclaredField("id")
             idField.isAccessible = true
@@ -569,7 +574,7 @@ class PlayerTeamServiceTest {
         return League(
             association = association,
             name = "서울리그",
-            foundedYear = 2020
+            foundedYear = 2020,
         ).apply {
             val idField = League::class.java.getDeclaredField("id")
             idField.isAccessible = true
@@ -577,33 +582,31 @@ class PlayerTeamServiceTest {
         }
     }
 
-    private fun createAssociation(id: Long): Association {
-        return Association(
+    private fun createAssociation(id: Long): Association =
+        Association(
             name = "서울협회",
-            region = "서울"
+            region = "서울",
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
     private fun createPlayerTeamHistory(
         id: Long,
         player: Player = createPlayer(1L, "홍길동"),
-        team: Team = createTeam(1L, "서울 타이거즈", 1L)
-    ): PlayerTeamHistory {
-        return PlayerTeamHistory(
+        team: Team = createTeam(1L, "서울 타이거즈", 1L),
+    ): PlayerTeamHistory =
+        PlayerTeamHistory(
             player = player,
             team = team,
             startDate = LocalDate.now(),
             position = Position.STARTING_PITCHER,
             contractType = ContractType.REGULAR,
-            status = PlayerTeamStatus.ACTIVE
+            status = PlayerTeamStatus.ACTIVE,
         ).apply {
             val idField = PlayerTeamHistory::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.stats.SeasonBattingStats
-import java.util.Optional
 
 /**
  * SeasonBattingStats Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface SeasonBattingStatsRepositoryPort {
-
     fun save(seasonBattingStats: SeasonBattingStats): SeasonBattingStats
 
     fun findAll(): List<SeasonBattingStats>
@@ -20,7 +18,10 @@ interface SeasonBattingStatsRepositoryPort {
     /**
      * 선수 ID와 연도로 시즌 타격 통계를 조회합니다.
      */
-    fun findByPlayerIdAndYear(playerId: Long, year: Int): SeasonBattingStats?
+    fun findByPlayerIdAndYear(
+        playerId: Long,
+        year: Int,
+    ): SeasonBattingStats?
 
     /**
      * 선수 ID로 모든 시즌 타격 통계를 조회합니다.
@@ -35,20 +36,34 @@ interface SeasonBattingStatsRepositoryPort {
     /**
      * 타율 상위 N명을 조회합니다 (최소 타수 조건).
      */
-    fun findTopByBattingAverage(year: Int, minAtBats: Int, limit: Int): List<SeasonBattingStats>
+    fun findTopByBattingAverage(
+        year: Int,
+        minAtBats: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
 
     /**
      * 홈런 상위 N명을 조회합니다.
      */
-    fun findTopByHomeRuns(year: Int, limit: Int): List<SeasonBattingStats>
+    fun findTopByHomeRuns(
+        year: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
 
     /**
      * 타점 상위 N명을 조회합니다.
      */
-    fun findTopByRunsBattedIn(year: Int, limit: Int): List<SeasonBattingStats>
+    fun findTopByRunsBattedIn(
+        year: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
 
     /**
      * OPS 상위 N명을 조회합니다 (최소 타석 조건).
      */
-    fun findTopByOps(year: Int, minPlateAppearances: Int, limit: Int): List<SeasonBattingStats>
+    fun findTopByOps(
+        year: Int,
+        minPlateAppearances: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
 }

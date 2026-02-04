@@ -14,12 +14,10 @@ data class CareerPitchingStatsResponse(
     val playerId: Long,
     val createdAt: Instant,
     val updatedAt: Instant,
-
     // 시즌 및 출전 정보
     val seasonsPlayed: Int,
     val gamesPlayed: Int,
     val gamesStarted: Int,
-
     // 기본 투수 기록
     val inningsPitchedOuts: Int,
     val wins: Int,
@@ -37,20 +35,19 @@ data class CareerPitchingStatsResponse(
     val wildPitches: Int,
     val balks: Int,
     val battersFaced: Int,
-    val pitchesThrown: Int?,       // nullable
-    val strikesThrown: Int?,       // nullable
-
+    val pitchesThrown: Int?, // nullable
+    val strikesThrown: Int?, // nullable
     // 계산 속성
     val completeInnings: Int,
     val remainingOuts: Int,
-    val inningsPitched: String,           // "5.33"
-    val inningsPitchedDisplay: String,    // "5.1"
-    val earnedRunAverage: String,         // "3.50"
-    val whip: String,                     // "1.20"
-    val strikeoutsPer9: String,           // "9.00"
-    val walksPer9: String,                // "2.50"
-    val strikeoutToWalkRatio: String,     // "3.60"
-    val strikePercentage: String?,        // "0.650" (nullable)
+    val inningsPitched: String, // "5.33"
+    val inningsPitchedDisplay: String, // "5.1"
+    val earnedRunAverage: String, // "3.50"
+    val whip: String, // "1.20"
+    val strikeoutsPer9: String, // "9.00"
+    val walksPer9: String, // "2.50"
+    val strikeoutToWalkRatio: String, // "3.60"
+    val strikePercentage: String?, // "0.650" (nullable)
     val unearnedRuns: Int,
-    val winningPercentage: String         // "0.667"
+    val winningPercentage: String, // "0.667"
 )

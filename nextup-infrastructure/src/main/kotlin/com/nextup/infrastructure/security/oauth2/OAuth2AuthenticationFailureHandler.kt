@@ -18,22 +18,23 @@ import java.nio.charset.StandardCharsets
 @Component
 class OAuth2AuthenticationFailureHandler(
     @Value("\${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
-    private val redirectUri: String
+    private val redirectUri: String,
 ) : SimpleUrlAuthenticationFailureHandler() {
-
     override fun onAuthenticationFailure(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        exception: AuthenticationException
+        exception: AuthenticationException,
     ) {
         val errorMessage = exception.message ?: "Authentication failed"
         val encodedMessage = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8)
 
-        val targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-            .queryParam("error", "oauth_error")
-            .queryParam("message", encodedMessage)
-            .build()
-            .toUriString()
+        val targetUrl =
+            UriComponentsBuilder
+                .fromUriString(redirectUri)
+                .queryParam("error", "oauth_error")
+                .queryParam("message", encodedMessage)
+                .build()
+                .toUriString()
 
         response.sendRedirect(targetUrl)
     }

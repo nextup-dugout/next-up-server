@@ -15,40 +15,31 @@ import jakarta.persistence.*
     name = "leagues",
     indexes = [
         Index(name = "idx_leagues_association", columnList = "association_id"),
-        Index(name = "idx_leagues_is_active", columnList = "is_active")
-    ]
+        Index(name = "idx_leagues_is_active", columnList = "is_active"),
+    ],
 )
 class League(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "association_id", nullable = false)
     val association: Association,
-
     @Column(nullable = false, length = 100)
     val name: String,
-
     @Column(length = 20)
     val abbreviation: String? = null,
-
     @Column(nullable = false)
     val foundedYear: Int,
-
     @Column(name = "division_level")
     val divisionLevel: Int? = null,
-
     @Column(length = 500)
     var description: String? = null,
-
     @Column(length = 255)
     var logoUrl: String? = null,
-
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     fun deactivate() {
         this.isActive = false
     }
@@ -59,7 +50,7 @@ class League(
 
     fun updateInfo(
         description: String? = this.description,
-        logoUrl: String? = this.logoUrl
+        logoUrl: String? = this.logoUrl,
     ) {
         this.description = description
         this.logoUrl = logoUrl

@@ -20,9 +20,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class UserService(
     private val userRepository: UserRepositoryPort,
-    private val oauthAccountRepository: OAuthAccountRepositoryPort
+    private val oauthAccountRepository: OAuthAccountRepositoryPort,
 ) {
-
     // ========== CREATE ==========
 
     /**
@@ -32,15 +31,16 @@ class UserService(
     fun createLocalUser(
         email: String,
         encodedPassword: String,
-        nickname: String
+        nickname: String,
     ): User {
         validateEmailNotDuplicate(email)
 
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = encodedPassword,
-            nickname = nickname
-        )
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = encodedPassword,
+                nickname = nickname,
+            )
 
         return userRepository.save(user)
     }
@@ -56,7 +56,7 @@ class UserService(
         nickname: String,
         provider: OAuthProvider,
         oauthId: String,
-        profileImageUrl: String? = null
+        profileImageUrl: String? = null,
     ): Pair<User, Boolean> {
         // 이미 연동된 OAuth 계정이 있는지 확인
         val existingOAuth = oauthAccountRepository.findByProviderAndOauthId(provider, oauthId)
@@ -76,13 +76,14 @@ class UserService(
         }
 
         // 신규 사용자 생성
-        val newUser = User.createOAuthUser(
-            email = email,
-            nickname = nickname,
-            provider = provider,
-            oauthId = oauthId,
-            profileImageUrl = profileImageUrl
-        )
+        val newUser =
+            User.createOAuthUser(
+                email = email,
+                nickname = nickname,
+                provider = provider,
+                oauthId = oauthId,
+                profileImageUrl = profileImageUrl,
+            )
 
         return Pair(userRepository.save(newUser), true)
     }
@@ -92,10 +93,9 @@ class UserService(
     /**
      * ID로 사용자를 조회합니다.
      */
-    fun getById(id: Long): User {
-        return userRepository.findByIdOrNull(id)
+    fun getById(id: Long): User =
+        userRepository.findByIdOrNull(id)
             ?: throw UserNotFoundException(id)
-    }
 
     /**
      * 활성 사용자를 ID로 조회합니다.
@@ -111,59 +111,56 @@ class UserService(
     /**
      * 이메일로 사용자를 조회합니다.
      */
-    fun getByEmail(email: String): User {
-        return userRepository.findByEmail(email)
+    fun getByEmail(email: String): User =
+        userRepository.findByEmail(email)
             ?: throw UserNotFoundByEmailException(email)
-    }
 
     /**
      * 이메일로 사용자를 조회합니다 (없으면 null).
      */
-    fun findByEmail(email: String): User? {
-        return userRepository.findByEmail(email)
-    }
+    fun findByEmail(email: String): User? = userRepository.findByEmail(email)
 
     /**
      * OAuth 정보로 사용자를 조회합니다.
      */
-    fun findByOAuth(provider: OAuthProvider, oauthId: String): User? {
-        return oauthAccountRepository.findByProviderAndOauthId(provider, oauthId)?.user
-    }
+    fun findByOAuth(
+        provider: OAuthProvider,
+        oauthId: String,
+    ): User? = oauthAccountRepository.findByProviderAndOauthId(provider, oauthId)?.user
 
     /**
      * 활성화된 모든 사용자를 페이징으로 조회합니다.
      */
-    fun getAllActive(pageable: Pageable): Page<User> {
-        return userRepository.findAllActive(pageable)
-    }
+    fun getAllActive(pageable: Pageable): Page<User> = userRepository.findAllActive(pageable)
 
     /**
      * 모든 사용자를 페이징으로 조회합니다 (관리자용).
      */
-    fun getAll(pageable: Pageable): Page<User> {
-        return userRepository.findAllByIsActive(true, pageable)
-    }
+    fun getAll(pageable: Pageable): Page<User> = userRepository.findAllByIsActive(true, pageable)
 
     /**
      * 활성 상태별로 사용자를 조회합니다 (관리자용).
      */
-    fun getAllByStatus(isActive: Boolean, pageable: Pageable): Page<User> {
-        return userRepository.findAllByIsActive(isActive, pageable)
-    }
+    fun getAllByStatus(
+        isActive: Boolean,
+        pageable: Pageable,
+    ): Page<User> = userRepository.findAllByIsActive(isActive, pageable)
 
     /**
      * 키워드로 사용자를 검색합니다 (관리자용).
      */
-    fun search(keyword: String, pageable: Pageable): Page<User> {
-        return userRepository.searchByKeyword(keyword, pageable)
-    }
+    fun search(
+        keyword: String,
+        pageable: Pageable,
+    ): Page<User> = userRepository.searchByKeyword(keyword, pageable)
 
     /**
      * 역할별로 사용자를 조회합니다 (관리자용).
      */
-    fun getAllByRole(role: Role, pageable: Pageable): Page<User> {
-        return userRepository.findAllByRole(role, pageable)
-    }
+    fun getAllByRole(
+        role: Role,
+        pageable: Pageable,
+    ): Page<User> = userRepository.findAllByRole(role, pageable)
 
     // ========== UPDATE ==========
 
@@ -174,13 +171,13 @@ class UserService(
     fun updateProfile(
         userId: Long,
         nickname: String? = null,
-        profileImageUrl: String? = null
+        profileImageUrl: String? = null,
     ): User {
         val user = getActiveById(userId)
 
         user.updateProfile(
             nickname = nickname ?: user.nickname,
-            profileImageUrl = profileImageUrl
+            profileImageUrl = profileImageUrl,
         )
 
         return user
@@ -190,7 +187,10 @@ class UserService(
      * 비밀번호를 변경합니다.
      */
     @Transactional
-    fun changePassword(userId: Long, encodedPassword: String): User {
+    fun changePassword(
+        userId: Long,
+        encodedPassword: String,
+    ): User {
         val user = getActiveById(userId)
         user.changePassword(encodedPassword)
         return user
@@ -200,7 +200,10 @@ class UserService(
      * 역할을 추가합니다 (관리자용).
      */
     @Transactional
-    fun addRole(userId: Long, role: Role): User {
+    fun addRole(
+        userId: Long,
+        role: Role,
+    ): User {
         val user = getById(userId)
         user.addRole(role)
         return user
@@ -210,7 +213,10 @@ class UserService(
      * 역할을 제거합니다 (관리자용).
      */
     @Transactional
-    fun removeRole(userId: Long, role: Role): User {
+    fun removeRole(
+        userId: Long,
+        role: Role,
+    ): User {
         val user = getById(userId)
         user.removeRole(role)
         return user
@@ -226,7 +232,7 @@ class UserService(
         userId: Long,
         provider: OAuthProvider,
         oauthId: String,
-        email: String? = null
+        email: String? = null,
     ): User {
         val user = getActiveById(userId)
 
@@ -244,7 +250,10 @@ class UserService(
      * OAuth 계정 연동을 해제합니다.
      */
     @Transactional
-    fun unlinkOAuthAccount(userId: Long, provider: OAuthProvider): User {
+    fun unlinkOAuthAccount(
+        userId: Long,
+        provider: OAuthProvider,
+    ): User {
         val user = getActiveById(userId)
 
         if (!user.canRemoveAuthMethod()) {
@@ -258,9 +267,7 @@ class UserService(
     /**
      * 사용자의 연동된 OAuth Provider 목록을 조회합니다.
      */
-    fun getLinkedProviders(userId: Long): List<OAuthProvider> {
-        return oauthAccountRepository.findProvidersByUserId(userId)
-    }
+    fun getLinkedProviders(userId: Long): List<OAuthProvider> = oauthAccountRepository.findProvidersByUserId(userId)
 
     // ========== 상태 변경 ==========
 
@@ -298,7 +305,5 @@ class UserService(
     /**
      * 이메일 존재 여부를 확인합니다.
      */
-    fun existsByEmail(email: String): Boolean {
-        return userRepository.existsByEmail(email)
-    }
+    fun existsByEmail(email: String): Boolean = userRepository.existsByEmail(email)
 }

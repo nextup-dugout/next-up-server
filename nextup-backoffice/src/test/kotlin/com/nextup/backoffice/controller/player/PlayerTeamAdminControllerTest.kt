@@ -24,7 +24,6 @@ import java.time.LocalDate
 
 @DisplayName("PlayerTeamAdminController")
 class PlayerTeamAdminControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var playerTeamService: PlayerTeamService
     private lateinit var controller: PlayerTeamAdminController
@@ -41,7 +40,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/player-teams")
     inner class RegisterAffiliation {
-
         @Test
         fun `선수 소속을 등록할 수 있다`() {
             // given
@@ -55,14 +53,15 @@ class PlayerTeamAdminControllerTest {
             val team = createTeam(teamId, "서울 타이거즈", 1L)
             val affiliation = createPlayerTeamHistory(1L, player, team)
 
-            val request = RegisterAffiliationRequest(
-                playerId = playerId,
-                teamId = teamId,
-                startDate = startDate,
-                position = position,
-                uniformNumber = uniformNumber,
-                contractType = ContractType.REGULAR
-            )
+            val request =
+                RegisterAffiliationRequest(
+                    playerId = playerId,
+                    teamId = teamId,
+                    startDate = startDate,
+                    position = position,
+                    uniformNumber = uniformNumber,
+                    contractType = ContractType.REGULAR,
+                )
 
             every {
                 playerTeamService.registerAffiliation(
@@ -71,17 +70,17 @@ class PlayerTeamAdminControllerTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR
+                    contractType = ContractType.REGULAR,
                 )
             } returns affiliation
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/player-teams")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isCreated)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/player-teams")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
                 .andExpect(jsonPath("$.data.teamId").value(teamId))
@@ -96,7 +95,7 @@ class PlayerTeamAdminControllerTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR
+                    contractType = ContractType.REGULAR,
                 )
             }
         }
@@ -105,7 +104,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("PUT /api/backoffice/player-teams/{id}/end")
     inner class EndAffiliation {
-
         @Test
         fun `선수 소속을 종료할 수 있다`() {
             // given
@@ -113,9 +111,10 @@ class PlayerTeamAdminControllerTest {
             val endDate = LocalDate.of(2024, 12, 31)
             val player = createPlayer(1L, "홍길동")
             val team = createTeam(1L, "서울 타이거즈", 1L)
-            val affiliation = createPlayerTeamHistory(affiliationId, player, team).apply {
-                deactivate(endDate)
-            }
+            val affiliation =
+                createPlayerTeamHistory(affiliationId, player, team).apply {
+                    deactivate(endDate)
+                }
 
             val request = EndAffiliationRequest(endDate = endDate)
 
@@ -124,12 +123,12 @@ class PlayerTeamAdminControllerTest {
             } returns affiliation
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/player-teams/$affiliationId/end")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/player-teams/$affiliationId/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(affiliationId))
                 .andExpect(jsonPath("$.data.status").value("INACTIVE"))
@@ -143,7 +142,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/player-teams/transfer")
     inner class TransferPlayer {
-
         @Test
         fun `선수를 이적시킬 수 있다`() {
             // given
@@ -156,20 +154,22 @@ class PlayerTeamAdminControllerTest {
 
             val player = createPlayer(playerId, "홍길동")
             val toTeam = createTeam(toTeamId, "서울 라이온즈", 1L)
-            val newAffiliation = createPlayerTeamHistory(2L, player, toTeam).apply {
-                changePosition(newPosition)
-                changeUniformNumber(newUniformNumber)
-            }
+            val newAffiliation =
+                createPlayerTeamHistory(2L, player, toTeam).apply {
+                    changePosition(newPosition)
+                    changeUniformNumber(newUniformNumber)
+                }
 
-            val request = TransferPlayerRequest(
-                playerId = playerId,
-                fromTeamId = fromTeamId,
-                toTeamId = toTeamId,
-                transferDate = transferDate,
-                newPosition = newPosition,
-                newUniformNumber = newUniformNumber,
-                newContractType = ContractType.REGULAR
-            )
+            val request =
+                TransferPlayerRequest(
+                    playerId = playerId,
+                    fromTeamId = fromTeamId,
+                    toTeamId = toTeamId,
+                    transferDate = transferDate,
+                    newPosition = newPosition,
+                    newUniformNumber = newUniformNumber,
+                    newContractType = ContractType.REGULAR,
+                )
 
             every {
                 playerTeamService.transferPlayer(
@@ -179,17 +179,17 @@ class PlayerTeamAdminControllerTest {
                     transferDate = transferDate,
                     newPosition = newPosition,
                     newUniformNumber = newUniformNumber,
-                    newContractType = ContractType.REGULAR
+                    newContractType = ContractType.REGULAR,
                 )
             } returns newAffiliation
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/player-teams/transfer")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/player-teams/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.playerId").value(playerId))
                 .andExpect(jsonPath("$.data.teamId").value(toTeamId))
@@ -204,7 +204,7 @@ class PlayerTeamAdminControllerTest {
                     transferDate = transferDate,
                     newPosition = newPosition,
                     newUniformNumber = newUniformNumber,
-                    newContractType = ContractType.REGULAR
+                    newContractType = ContractType.REGULAR,
                 )
             }
         }
@@ -213,7 +213,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("PUT /api/backoffice/player-teams/{id}/uniform-number")
     inner class ChangeUniformNumber {
-
         @Test
         fun `등번호를 변경할 수 있다`() {
             // given
@@ -221,9 +220,10 @@ class PlayerTeamAdminControllerTest {
             val newUniformNumber = 99
             val player = createPlayer(1L, "홍길동")
             val team = createTeam(1L, "서울 타이거즈", 1L)
-            val affiliation = createPlayerTeamHistory(affiliationId, player, team).apply {
-                changeUniformNumber(newUniformNumber)
-            }
+            val affiliation =
+                createPlayerTeamHistory(affiliationId, player, team).apply {
+                    changeUniformNumber(newUniformNumber)
+                }
 
             val request = ChangeUniformNumberRequest(uniformNumber = newUniformNumber)
 
@@ -232,12 +232,12 @@ class PlayerTeamAdminControllerTest {
             } returns affiliation
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/player-teams/$affiliationId/uniform-number")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/player-teams/$affiliationId/uniform-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.uniformNumber").value(newUniformNumber))
 
@@ -250,7 +250,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("PUT /api/backoffice/player-teams/{id}/position")
     inner class ChangePosition {
-
         @Test
         fun `포지션을 변경할 수 있다`() {
             // given
@@ -258,9 +257,10 @@ class PlayerTeamAdminControllerTest {
             val newPosition = Position.FIRST_BASE
             val player = createPlayer(1L, "홍길동")
             val team = createTeam(1L, "서울 타이거즈", 1L)
-            val affiliation = createPlayerTeamHistory(affiliationId, player, team).apply {
-                changePosition(newPosition)
-            }
+            val affiliation =
+                createPlayerTeamHistory(affiliationId, player, team).apply {
+                    changePosition(newPosition)
+                }
 
             val request = ChangePositionRequest(position = newPosition)
 
@@ -269,12 +269,12 @@ class PlayerTeamAdminControllerTest {
             } returns affiliation
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/player-teams/$affiliationId/position")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/player-teams/$affiliationId/position")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.position").value("FIRST_BASE"))
 
@@ -287,7 +287,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/player-teams/player/{playerId}")
     inner class GetPlayerAffiliations {
-
         @Test
         fun `선수의 활성 소속 목록을 조회할 수 있다`() {
             // given
@@ -295,18 +294,19 @@ class PlayerTeamAdminControllerTest {
             val player = createPlayer(playerId, "홍길동")
             val team1 = createTeam(1L, "서울 타이거즈", 1L)
             val team2 = createTeam(2L, "경기 라이온즈", 2L)
-            val affiliations = listOf(
-                createPlayerTeamHistory(1L, player, team1),
-                createPlayerTeamHistory(2L, player, team2)
-            )
+            val affiliations =
+                listOf(
+                    createPlayerTeamHistory(1L, player, team1),
+                    createPlayerTeamHistory(2L, player, team2),
+                )
 
             every { playerTeamService.getActiveAffiliationsByPlayer(playerId) } returns affiliations
 
             // when & then
-            mockMvc.perform(
-                get("/api/backoffice/player-teams/player/$playerId")
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    get("/api/backoffice/player-teams/player/$playerId"),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
@@ -320,7 +320,6 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/player-teams/team/{teamId}/roster")
     inner class GetTeamRoster {
-
         @Test
         fun `팀의 현재 로스터를 조회할 수 있다`() {
             // given
@@ -328,18 +327,19 @@ class PlayerTeamAdminControllerTest {
             val team = createTeam(teamId, "서울 타이거즈", 1L)
             val player1 = createPlayer(1L, "홍길동")
             val player2 = createPlayer(2L, "김철수")
-            val roster = listOf(
-                createPlayerTeamHistory(1L, player1, team),
-                createPlayerTeamHistory(2L, player2, team)
-            )
+            val roster =
+                listOf(
+                    createPlayerTeamHistory(1L, player1, team),
+                    createPlayerTeamHistory(2L, player2, team),
+                )
 
             every { playerTeamService.getTeamRoster(teamId) } returns roster
 
             // when & then
-            mockMvc.perform(
-                get("/api/backoffice/player-teams/team/$teamId/roster")
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    get("/api/backoffice/player-teams/team/$teamId/roster"),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
@@ -353,27 +353,27 @@ class PlayerTeamAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/player-teams/player/{playerId}/history")
     inner class GetPlayerHistory {
-
         @Test
         fun `선수의 전체 소속 이력을 조회할 수 있다`() {
             // given
             val playerId = 1L
             val player = createPlayer(playerId, "홍길동")
             val team = createTeam(1L, "서울 타이거즈", 1L)
-            val history = listOf(
-                createPlayerTeamHistory(1L, player, team),
-                createPlayerTeamHistory(2L, player, team).apply {
-                    deactivate(LocalDate.of(2024, 12, 31))
-                }
-            )
+            val history =
+                listOf(
+                    createPlayerTeamHistory(1L, player, team),
+                    createPlayerTeamHistory(2L, player, team).apply {
+                        deactivate(LocalDate.of(2024, 12, 31))
+                    },
+                )
 
             every { playerTeamService.getPlayerHistory(playerId) } returns history
 
             // when & then
-            mockMvc.perform(
-                get("/api/backoffice/player-teams/player/$playerId/history")
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    get("/api/backoffice/player-teams/player/$playerId/history"),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
@@ -386,43 +386,54 @@ class PlayerTeamAdminControllerTest {
 
     // Helper methods
 
-    private fun createPlayer(id: Long, name: String): Player {
-        val player = Player(
-            name = name,
-            primaryPosition = Position.STARTING_PITCHER
-        )
+    private fun createPlayer(
+        id: Long,
+        name: String,
+    ): Player {
+        val player =
+            Player(
+                name = name,
+                primaryPosition = Position.STARTING_PITCHER,
+            )
         setEntityId(player, id)
         return player
     }
 
-    private fun createTeam(id: Long, name: String, leagueId: Long): Team {
+    private fun createTeam(
+        id: Long,
+        name: String,
+        leagueId: Long,
+    ): Team {
         val league = createLeague(leagueId)
-        val team = Team(
-            league = league,
-            name = name,
-            city = "서울",
-            foundedYear = 2020
-        )
+        val team =
+            Team(
+                league = league,
+                name = name,
+                city = "서울",
+                foundedYear = 2020,
+            )
         setEntityId(team, id)
         return team
     }
 
     private fun createLeague(id: Long): League {
         val association = createAssociation(1L)
-        val league = League(
-            association = association,
-            name = "서울리그",
-            foundedYear = 2020
-        )
+        val league =
+            League(
+                association = association,
+                name = "서울리그",
+                foundedYear = 2020,
+            )
         setEntityId(league, id)
         return league
     }
 
     private fun createAssociation(id: Long): Association {
-        val association = Association(
-            name = "서울협회",
-            region = "서울"
-        )
+        val association =
+            Association(
+                name = "서울협회",
+                region = "서울",
+            )
         setEntityId(association, id)
         return association
     }
@@ -430,22 +441,26 @@ class PlayerTeamAdminControllerTest {
     private fun createPlayerTeamHistory(
         id: Long,
         player: Player,
-        team: Team
+        team: Team,
     ): PlayerTeamHistory {
-        val history = PlayerTeamHistory(
-            player = player,
-            team = team,
-            startDate = LocalDate.of(2024, 1, 1),
-            position = Position.STARTING_PITCHER,
-            uniformNumber = 10,
-            contractType = ContractType.REGULAR,
-            status = PlayerTeamStatus.ACTIVE
-        )
+        val history =
+            PlayerTeamHistory(
+                player = player,
+                team = team,
+                startDate = LocalDate.of(2024, 1, 1),
+                position = Position.STARTING_PITCHER,
+                uniformNumber = 10,
+                contractType = ContractType.REGULAR,
+                status = PlayerTeamStatus.ACTIVE,
+            )
         setEntityId(history, id)
         return history
     }
 
-    private fun setEntityId(entity: Any, id: Long) {
+    private fun setEntityId(
+        entity: Any,
+        id: Long,
+    ) {
         val idField = entity::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(entity, id)

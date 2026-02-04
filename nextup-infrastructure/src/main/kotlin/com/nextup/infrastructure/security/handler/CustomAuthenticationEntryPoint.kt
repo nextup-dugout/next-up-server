@@ -18,33 +18,35 @@ import org.springframework.stereotype.Component
  */
 @Component
 class CustomAuthenticationEntryPoint(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) : AuthenticationEntryPoint {
-
     override fun commence(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        authException: AuthenticationException
+        authException: AuthenticationException,
     ) {
         val exception = request.getAttribute("exception")
 
-        val (code, message) = when (exception) {
-            is TokenExpiredException -> "TOKEN_EXPIRED" to exception.message
-            is InvalidTokenException -> "INVALID_TOKEN" to exception.message
-            else -> "UNAUTHORIZED" to "Authentication required"
-        }
+        val (code, message) =
+            when (exception) {
+                is TokenExpiredException -> "TOKEN_EXPIRED" to exception.message
+                is InvalidTokenException -> "INVALID_TOKEN" to exception.message
+                else -> "UNAUTHORIZED" to "Authentication required"
+            }
 
         response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.characterEncoding = "UTF-8"
 
-        val errorResponse = mapOf(
-            "success" to false,
-            "error" to mapOf(
-                "code" to code,
-                "message" to message
+        val errorResponse =
+            mapOf(
+                "success" to false,
+                "error" to
+                    mapOf(
+                        "code" to code,
+                        "message" to message,
+                    ),
             )
-        )
 
         objectMapper.writeValue(response.writer, errorResponse)
     }

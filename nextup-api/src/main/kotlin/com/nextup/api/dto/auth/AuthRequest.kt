@@ -11,9 +11,8 @@ data class LoginRequest(
     @field:NotBlank(message = "Email is required")
     @field:Email(message = "Invalid email format")
     val email: String,
-
     @field:NotBlank(message = "Password is required")
-    val password: String
+    val password: String,
 )
 
 /**
@@ -23,14 +22,12 @@ data class SignUpRequest(
     @field:NotBlank(message = "Email is required")
     @field:Email(message = "Invalid email format")
     val email: String,
-
     @field:NotBlank(message = "Password is required")
     @field:Size(min = 8, max = 100, message = "Password must be 8-100 characters")
     val password: String,
-
     @field:NotBlank(message = "Nickname is required")
     @field:Size(min = 2, max = 50, message = "Nickname must be 2-50 characters")
-    val nickname: String
+    val nickname: String,
 )
 
 /**
@@ -38,7 +35,7 @@ data class SignUpRequest(
  */
 data class RefreshTokenRequest(
     @field:NotBlank(message = "Refresh token is required")
-    val refreshToken: String
+    val refreshToken: String,
 )
 
 /**
@@ -46,7 +43,7 @@ data class RefreshTokenRequest(
  */
 data class LogoutRequest(
     @field:NotBlank(message = "Refresh token is required")
-    val refreshToken: String
+    val refreshToken: String,
 )
 
 /**
@@ -55,8 +52,7 @@ data class LogoutRequest(
 data class ChangePasswordRequest(
     @field:NotBlank(message = "Current password is required")
     val currentPassword: String,
-
     @field:NotBlank(message = "New password is required")
     @field:Size(min = 8, max = 100, message = "Password must be 8-100 characters")
-    val newPassword: String
+    val newPassword: String,
 )

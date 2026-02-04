@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class BattingRecordServiceTest {
-
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var battingRecordService: BattingRecordService
@@ -29,10 +28,11 @@ class BattingRecordServiceTest {
     fun setUp() {
         battingRecordRepository = mockk()
         gamePlayerRepository = mockk()
-        battingRecordService = BattingRecordService(
-            battingRecordRepository = battingRecordRepository,
-            gamePlayerRepository = gamePlayerRepository
-        )
+        battingRecordService =
+            BattingRecordService(
+                battingRecordRepository = battingRecordRepository,
+                gamePlayerRepository = gamePlayerRepository,
+            )
 
         mockGamePlayer = mockk(relaxed = true)
         mockBattingRecord = mockk(relaxed = true)

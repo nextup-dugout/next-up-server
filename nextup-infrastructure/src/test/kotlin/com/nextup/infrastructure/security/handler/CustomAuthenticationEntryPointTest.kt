@@ -21,7 +21,6 @@ import java.io.StringWriter
 
 @DisplayName("CustomAuthenticationEntryPoint 테스트")
 class CustomAuthenticationEntryPointTest {
-
     private lateinit var objectMapper: ObjectMapper
     private lateinit var entryPoint: CustomAuthenticationEntryPoint
     private lateinit var request: HttpServletRequest
@@ -44,7 +43,6 @@ class CustomAuthenticationEntryPointTest {
     @Nested
     @DisplayName("토큰 만료 시")
     inner class TokenExpired {
-
         @Test
         fun `should return TOKEN_EXPIRED error`() {
             // given
@@ -67,7 +65,6 @@ class CustomAuthenticationEntryPointTest {
     @Nested
     @DisplayName("유효하지 않은 토큰")
     inner class InvalidToken {
-
         @Test
         fun `should return INVALID_TOKEN error`() {
             // given
@@ -90,7 +87,6 @@ class CustomAuthenticationEntryPointTest {
     @Nested
     @DisplayName("기타 인증 오류")
     inner class OtherAuthError {
-
         @Test
         fun `should return UNAUTHORIZED error when no exception attribute`() {
             // given
@@ -128,7 +124,6 @@ class CustomAuthenticationEntryPointTest {
     @Nested
     @DisplayName("응답 형식")
     inner class ResponseFormat {
-
         @Test
         fun `should set correct content type and encoding`() {
             // given
@@ -171,7 +166,10 @@ class CustomAuthenticationEntryPointTest {
         }
     }
 
-    private fun verify(response: HttpServletResponse, expectedStatus: Int) {
+    private fun verify(
+        response: HttpServletResponse,
+        expectedStatus: Int,
+    ) {
         io.mockk.verify { response.status = expectedStatus }
         io.mockk.verify { response.contentType = MediaType.APPLICATION_JSON_VALUE }
         io.mockk.verify { response.characterEncoding = "UTF-8" }

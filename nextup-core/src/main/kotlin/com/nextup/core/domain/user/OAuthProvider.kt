@@ -3,7 +3,9 @@ package com.nextup.core.domain.user
 /**
  * OAuth 제공자
  */
-enum class OAuthProvider(val displayName: String) {
+enum class OAuthProvider(
+    val displayName: String,
+) {
     /** 일반 회원가입 (OAuth 미사용) */
     LOCAL("일반"),
 
@@ -17,5 +19,5 @@ enum class OAuthProvider(val displayName: String) {
     NAVER("네이버"),
 
     /** 애플 로그인 */
-    APPLE("애플")
+    APPLE("애플"),
 }

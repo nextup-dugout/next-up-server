@@ -13,9 +13,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 class OAuth2UserPrincipal(
     private val user: User,
     private val oAuth2UserInfo: OAuth2UserInfo,
-    val isNewUser: Boolean = false
+    val isNewUser: Boolean = false,
 ) : OAuth2User {
-
     val userId: Long
         get() = user.id
 
@@ -29,11 +28,10 @@ class OAuth2UserPrincipal(
 
     override fun getAttributes(): Map<String, Any> = oAuth2UserInfo.attributes
 
-    override fun getAuthorities(): Collection<GrantedAuthority> {
-        return user.roles.map { role ->
+    override fun getAuthorities(): Collection<GrantedAuthority> =
+        user.roles.map { role ->
             SimpleGrantedAuthority("ROLE_${role.name}")
         }
-    }
 
     /**
      * 사용자 역할 이름 목록을 반환합니다 (ROLE_ 접두사 없음).

@@ -9,7 +9,6 @@ import java.time.LocalDate
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface PlayerTeamHistoryRepositoryPort {
-
     fun save(playerTeamHistory: PlayerTeamHistory): PlayerTeamHistory
 
     fun findAll(): List<PlayerTeamHistory>
@@ -30,7 +29,10 @@ interface PlayerTeamHistoryRepositoryPort {
 
     fun findByPlayerIdWithDetails(playerId: Long): List<PlayerTeamHistory>
 
-    fun findByTeamIdAtDate(teamId: Long, date: LocalDate): List<PlayerTeamHistory>
+    fun findByTeamIdAtDate(
+        teamId: Long,
+        date: LocalDate,
+    ): List<PlayerTeamHistory>
 
     // ===== 신규 메서드 (Issue #37) =====
 
@@ -49,7 +51,10 @@ interface PlayerTeamHistoryRepositoryPort {
      * @param leagueId 리그 ID
      * @return 해당 리그 내 활성 소속 이력 (없으면 null)
      */
-    fun findActiveByPlayerIdAndLeagueId(playerId: Long, leagueId: Long): PlayerTeamHistory?
+    fun findActiveByPlayerIdAndLeagueId(
+        playerId: Long,
+        leagueId: Long,
+    ): PlayerTeamHistory?
 
     /**
      * 선수가 특정 리그에 활성 소속되어 있는지 확인합니다.
@@ -58,7 +63,10 @@ interface PlayerTeamHistoryRepositoryPort {
      * @param leagueId 리그 ID
      * @return 활성 소속 여부
      */
-    fun existsActiveByPlayerIdAndLeagueId(playerId: Long, leagueId: Long): Boolean
+    fun existsActiveByPlayerIdAndLeagueId(
+        playerId: Long,
+        leagueId: Long,
+    ): Boolean
 
     /**
      * 특정 상태의 소속 이력을 조회합니다.
@@ -67,7 +75,10 @@ interface PlayerTeamHistoryRepositoryPort {
      * @param status 소속 상태
      * @return 해당 상태의 소속 이력 목록
      */
-    fun findByPlayerIdAndStatus(playerId: Long, status: PlayerTeamStatus): List<PlayerTeamHistory>
+    fun findByPlayerIdAndStatus(
+        playerId: Long,
+        status: PlayerTeamStatus,
+    ): List<PlayerTeamHistory>
 
     /**
      * 팀의 활성 선수 목록을 조회합니다.

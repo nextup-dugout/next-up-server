@@ -1,11 +1,9 @@
 package com.nextup.api.controller.association
 
-import com.nextup.common.exception.AssociationNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.service.association.AssociationService
 import io.mockk.every
 import io.mockk.mockk
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -18,7 +16,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("AssociationController")
 class AssociationControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var associationService: AssociationService
     private lateinit var controller: AssociationController
@@ -33,18 +30,19 @@ class AssociationControllerTest {
     @Nested
     @DisplayName("GET /api/associations")
     inner class GetAssociations {
-
         @Test
         fun `should return all active associations`() {
             // given
-            val associations = listOf(
-                createAssociation(1L, "서울시야구협회", "서울"),
-                createAssociation(2L, "경기도야구협회", "경기")
-            )
+            val associations =
+                listOf(
+                    createAssociation(1L, "서울시야구협회", "서울"),
+                    createAssociation(2L, "경기도야구협회", "경기"),
+                )
             every { associationService.getAllActive() } returns associations
 
             // when & then
-            mockMvc.perform(get("/api/associations"))
+            mockMvc
+                .perform(get("/api/associations"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -55,13 +53,15 @@ class AssociationControllerTest {
         @Test
         fun `should filter by region when region parameter is provided`() {
             // given
-            val associations = listOf(
-                createAssociation(1L, "서울시야구협회", "서울")
-            )
+            val associations =
+                listOf(
+                    createAssociation(1L, "서울시야구협회", "서울"),
+                )
             every { associationService.getActiveByRegion("서울") } returns associations
 
             // when & then
-            mockMvc.perform(get("/api/associations").param("region", "서울"))
+            mockMvc
+                .perform(get("/api/associations").param("region", "서울"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(1))
@@ -72,7 +72,6 @@ class AssociationControllerTest {
     @Nested
     @DisplayName("GET /api/associations/{id}")
     inner class GetAssociation {
-
         @Test
         fun `should return association when found`() {
             // given
@@ -80,7 +79,8 @@ class AssociationControllerTest {
             every { associationService.getById(1L) } returns association
 
             // when & then
-            mockMvc.perform(get("/api/associations/1"))
+            mockMvc
+                .perform(get("/api/associations/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -89,18 +89,21 @@ class AssociationControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String, region: String): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+        region: String,
+    ): Association =
+        Association(
             name = name,
             abbreviation = null,
             region = region,
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

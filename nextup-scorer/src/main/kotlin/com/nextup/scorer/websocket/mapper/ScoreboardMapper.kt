@@ -63,11 +63,12 @@ class ScoreboardMapper {
         awayTeam: GameTeam,
         totalInnings: Int
     ): InningScoresDto {
-        val maxInning = maxOf(
-            totalInnings,
-            homeTeam.inningScores?.split(",")?.size ?: 0,
-            awayTeam.inningScores?.split(",")?.size ?: 0
-        )
+        val maxInning =
+            maxOf(
+                totalInnings,
+                homeTeam.inningScores?.split(",")?.size ?: 0,
+                awayTeam.inningScores?.split(",")?.size ?: 0
+            )
 
         val homeScores = (1..maxInning).map { homeTeam.getInningScore(it) }
         val awayScores = (1..maxInning).map { awayTeam.getInningScore(it) }

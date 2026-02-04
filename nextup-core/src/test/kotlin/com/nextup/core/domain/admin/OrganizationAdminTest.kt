@@ -9,23 +9,22 @@ import org.junit.jupiter.api.assertThrows
 
 @DisplayName("OrganizationAdmin 테스트")
 class OrganizationAdminTest {
-
     @Nested
     @DisplayName("create 팩토리 메서드")
     inner class Create {
-
         @Test
         fun `should create organization admin successfully`() {
             // given
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.create(
-                user = user,
-                organizationType = OrganizationType.ASSOCIATION,
-                organizationId = 1L,
-                role = OrganizationRole.ADMIN
-            )
+            val admin =
+                OrganizationAdmin.create(
+                    user = user,
+                    organizationType = OrganizationType.ASSOCIATION,
+                    organizationId = 1L,
+                    role = OrganizationRole.ADMIN,
+                )
 
             // then
             assertThat(admin.user).isEqualTo(user)
@@ -43,13 +42,14 @@ class OrganizationAdminTest {
             val assignedByUserId = 100L
 
             // when
-            val admin = OrganizationAdmin.create(
-                user = user,
-                organizationType = OrganizationType.LEAGUE,
-                organizationId = 2L,
-                role = OrganizationRole.MANAGER,
-                assignedBy = assignedByUserId
-            )
+            val admin =
+                OrganizationAdmin.create(
+                    user = user,
+                    organizationType = OrganizationType.LEAGUE,
+                    organizationId = 2L,
+                    role = OrganizationRole.MANAGER,
+                    assignedBy = assignedByUserId,
+                )
 
             // then
             assertThat(admin.assignedBy).isEqualTo(assignedByUserId)
@@ -66,7 +66,7 @@ class OrganizationAdminTest {
                     user = user,
                     organizationType = OrganizationType.TEAM,
                     organizationId = 0L,
-                    role = OrganizationRole.SCORER
+                    role = OrganizationRole.SCORER,
                 )
             }
         }
@@ -82,7 +82,7 @@ class OrganizationAdminTest {
                     user = user,
                     organizationType = OrganizationType.TEAM,
                     organizationId = -1L,
-                    role = OrganizationRole.SCORER
+                    role = OrganizationRole.SCORER,
                 )
             }
         }
@@ -91,17 +91,17 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("createAssociationAdmin 팩토리 메서드")
     inner class CreateAssociationAdmin {
-
         @Test
         fun `should create association admin with default role`() {
             // given
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createAssociationAdmin(
-                user = user,
-                associationId = 1L
-            )
+            val admin =
+                OrganizationAdmin.createAssociationAdmin(
+                    user = user,
+                    associationId = 1L,
+                )
 
             // then
             assertThat(admin.organizationType).isEqualTo(OrganizationType.ASSOCIATION)
@@ -115,11 +115,12 @@ class OrganizationAdminTest {
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createAssociationAdmin(
-                user = user,
-                associationId = 1L,
-                role = OrganizationRole.MANAGER
-            )
+            val admin =
+                OrganizationAdmin.createAssociationAdmin(
+                    user = user,
+                    associationId = 1L,
+                    role = OrganizationRole.MANAGER,
+                )
 
             // then
             assertThat(admin.role).isEqualTo(OrganizationRole.MANAGER)
@@ -129,17 +130,17 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("createLeagueAdmin 팩토리 메서드")
     inner class CreateLeagueAdmin {
-
         @Test
         fun `should create league admin with default role`() {
             // given
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createLeagueAdmin(
-                user = user,
-                leagueId = 2L
-            )
+            val admin =
+                OrganizationAdmin.createLeagueAdmin(
+                    user = user,
+                    leagueId = 2L,
+                )
 
             // then
             assertThat(admin.organizationType).isEqualTo(OrganizationType.LEAGUE)
@@ -153,11 +154,12 @@ class OrganizationAdminTest {
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createLeagueAdmin(
-                user = user,
-                leagueId = 2L,
-                assignedBy = 99L
-            )
+            val admin =
+                OrganizationAdmin.createLeagueAdmin(
+                    user = user,
+                    leagueId = 2L,
+                    assignedBy = 99L,
+                )
 
             // then
             assertThat(admin.assignedBy).isEqualTo(99L)
@@ -167,17 +169,17 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("createTeamAdmin 팩토리 메서드")
     inner class CreateTeamAdmin {
-
         @Test
         fun `should create team admin with default role`() {
             // given
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createTeamAdmin(
-                user = user,
-                teamId = 3L
-            )
+            val admin =
+                OrganizationAdmin.createTeamAdmin(
+                    user = user,
+                    teamId = 3L,
+                )
 
             // then
             assertThat(admin.organizationType).isEqualTo(OrganizationType.TEAM)
@@ -191,11 +193,12 @@ class OrganizationAdminTest {
             val user = createUser()
 
             // when
-            val admin = OrganizationAdmin.createTeamAdmin(
-                user = user,
-                teamId = 3L,
-                role = OrganizationRole.SCORER
-            )
+            val admin =
+                OrganizationAdmin.createTeamAdmin(
+                    user = user,
+                    teamId = 3L,
+                    role = OrganizationRole.SCORER,
+                )
 
             // then
             assertThat(admin.role).isEqualTo(OrganizationRole.SCORER)
@@ -205,7 +208,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("changeRole 메서드")
     inner class ChangeRole {
-
         @Test
         fun `should change role successfully when active`() {
             // given
@@ -234,7 +236,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("activate/deactivate 메서드")
     inner class ActivateDeactivate {
-
         @Test
         fun `should deactivate admin successfully`() {
             // given
@@ -264,7 +265,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("hasRoleOrHigher 메서드")
     inner class HasRoleOrHigher {
-
         @Test
         fun `should return true when admin has higher role`() {
             // given
@@ -308,7 +308,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("조직 유형 프로퍼티")
     inner class OrganizationTypeProperties {
-
         @Test
         fun `should return true for isAssociationAdmin when type is ASSOCIATION`() {
             // given
@@ -346,7 +345,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("equals/hashCode")
     inner class EqualsHashCode {
-
         @Test
         fun `should be equal when same instance`() {
             // given
@@ -409,7 +407,6 @@ class OrganizationAdminTest {
     @Nested
     @DisplayName("toString")
     inner class ToString {
-
         @Test
         fun `should return readable string representation`() {
             // given
@@ -430,32 +427,30 @@ class OrganizationAdminTest {
 
     // Helper methods
 
-    private fun createUser(): User {
-        return User.createLocalUser(
+    private fun createUser(): User =
+        User.createLocalUser(
             email = "test@example.com",
             encodedPassword = "password",
-            nickname = "테스터"
+            nickname = "테스터",
         )
-    }
 
     private fun createAdmin(
         organizationType: OrganizationType = OrganizationType.ASSOCIATION,
         organizationId: Long = 1L,
-        role: OrganizationRole = OrganizationRole.ADMIN
-    ): OrganizationAdmin {
-        return OrganizationAdmin.create(
+        role: OrganizationRole = OrganizationRole.ADMIN,
+    ): OrganizationAdmin =
+        OrganizationAdmin.create(
             user = createUser(),
             organizationType = organizationType,
             organizationId = organizationId,
-            role = role
+            role = role,
         )
-    }
 
     private fun createAdminWithId(
         id: Long,
         organizationType: OrganizationType = OrganizationType.ASSOCIATION,
         organizationId: Long = 1L,
-        role: OrganizationRole = OrganizationRole.ADMIN
+        role: OrganizationRole = OrganizationRole.ADMIN,
     ): OrganizationAdmin {
         val admin = createAdmin(organizationType, organizationId, role)
         val idField = OrganizationAdmin::class.java.getDeclaredField("id")

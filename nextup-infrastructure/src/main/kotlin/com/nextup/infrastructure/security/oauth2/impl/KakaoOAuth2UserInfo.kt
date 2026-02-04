@@ -19,9 +19,8 @@ import com.nextup.infrastructure.security.oauth2.OAuth2UserInfo
  * }
  */
 class KakaoOAuth2UserInfo(
-    override val attributes: Map<String, Any>
+    override val attributes: Map<String, Any>,
 ) : OAuth2UserInfo {
-
     override val provider: OAuthProvider = OAuthProvider.KAKAO
 
     override val id: String

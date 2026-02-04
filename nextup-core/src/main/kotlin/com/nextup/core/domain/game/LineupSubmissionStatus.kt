@@ -5,7 +5,9 @@ package com.nextup.core.domain.game
  *
  * 감독의 라인업 작성부터 기록원 확인까지의 워크플로우를 나타냅니다.
  */
-enum class LineupSubmissionStatus(val displayName: String) {
+enum class LineupSubmissionStatus(
+    val displayName: String,
+) {
     /**
      * 작성 중 - 감독이 라인업을 작성 중인 상태
      */
@@ -24,7 +26,8 @@ enum class LineupSubmissionStatus(val displayName: String) {
     /**
      * 반려됨 - 기록원이 라인업을 반려한 상태
      */
-    REJECTED("반려됨");
+    REJECTED("반려됨"),
+    ;
 
     /**
      * 제출 가능한 상태인지 확인합니다.

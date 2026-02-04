@@ -11,5 +11,5 @@ import jakarta.validation.constraints.NotNull
 data class CreatePitchingRecordRequest(
     @field:NotNull(message = "playerId is required")
     val playerId: Long,
-    val isStartingPitcher: Boolean = false
+    val isStartingPitcher: Boolean = false,
 )

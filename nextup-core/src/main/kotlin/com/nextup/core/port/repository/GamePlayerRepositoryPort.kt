@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.game.GamePlayer
-import java.util.Optional
 
 /**
  * GamePlayer Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface GamePlayerRepositoryPort {
-
     fun save(gamePlayer: GamePlayer): GamePlayer
 
     fun findAll(): List<GamePlayer>
@@ -22,7 +20,10 @@ interface GamePlayerRepositoryPort {
     /**
      * 경기 ID와 선수 ID로 GamePlayer를 조회합니다.
      */
-    fun findByGameIdAndPlayerId(gameId: Long, playerId: Long): GamePlayer?
+    fun findByGameIdAndPlayerId(
+        gameId: Long,
+        playerId: Long,
+    ): GamePlayer?
 
     /**
      * 경기 ID로 모든 GamePlayer를 조회합니다.

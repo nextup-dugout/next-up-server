@@ -16,25 +16,26 @@ import org.springframework.stereotype.Component
  */
 @Component
 class CustomAccessDeniedHandler(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) : AccessDeniedHandler {
-
     override fun handle(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        accessDeniedException: AccessDeniedException
+        accessDeniedException: AccessDeniedException,
     ) {
         response.status = HttpStatus.FORBIDDEN.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.characterEncoding = "UTF-8"
 
-        val errorResponse = mapOf(
-            "success" to false,
-            "error" to mapOf(
-                "code" to "ACCESS_DENIED",
-                "message" to "Access denied: insufficient permissions"
+        val errorResponse =
+            mapOf(
+                "success" to false,
+                "error" to
+                    mapOf(
+                        "code" to "ACCESS_DENIED",
+                        "message" to "Access denied: insufficient permissions",
+                    ),
             )
-        )
 
         objectMapper.writeValue(response.writer, errorResponse)
     }

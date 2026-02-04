@@ -11,7 +11,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("HealthController (Backoffice)")
 class HealthControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var controller: HealthController
 
@@ -23,7 +22,8 @@ class HealthControllerTest {
 
     @Test
     fun `should return health status`() {
-        mockMvc.perform(get("/health"))
+        mockMvc
+            .perform(get("/health"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("UP"))
             .andExpect(jsonPath("$.service").value("next-up-backoffice"))

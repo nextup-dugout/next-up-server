@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("Team 엔티티 테스트")
 class TeamTest {
-
     private lateinit var league: League
 
     @BeforeEach
@@ -22,21 +21,19 @@ class TeamTest {
     private fun createTeam(
         name: String = "타이거즈",
         city: String = "서울",
-        isActive: Boolean = true
-    ): Team {
-        return Team(
+        isActive: Boolean = true,
+    ): Team =
+        Team(
             league = league,
             name = name,
             city = city,
             foundedYear = 2015,
-            isActive = isActive
+            isActive = isActive,
         )
-    }
 
     @Nested
     @DisplayName("전체 이름")
     inner class FullName {
-
         @Test
         fun `도시명과 팀명을 합쳐서 반환한다`() {
             // given
@@ -50,7 +47,6 @@ class TeamTest {
     @Nested
     @DisplayName("비활성화")
     inner class Deactivate {
-
         @Test
         fun `팀을 비활성화할 수 있다`() {
             // given
@@ -67,7 +63,6 @@ class TeamTest {
     @Nested
     @DisplayName("활성화")
     inner class Activate {
-
         @Test
         fun `팀을 활성화할 수 있다`() {
             // given
@@ -84,7 +79,6 @@ class TeamTest {
     @Nested
     @DisplayName("정보 수정")
     inner class UpdateInfo {
-
         @Test
         fun `모든 정보를 수정할 수 있다`() {
             // given
@@ -94,7 +88,7 @@ class TeamTest {
             team.updateInfo(
                 logoUrl = "https://example.com/logo.png",
                 primaryColor = "#FF0000",
-                secondaryColor = "#FFFFFF"
+                secondaryColor = "#FFFFFF",
             )
 
             // then
@@ -106,13 +100,14 @@ class TeamTest {
         @Test
         fun `일부 정보만 수정할 수 있다`() {
             // given
-            val team = createTeam().apply {
-                updateInfo(
-                    logoUrl = "https://example.com/old-logo.png",
-                    primaryColor = "#0000FF",
-                    secondaryColor = "#000000"
-                )
-            }
+            val team =
+                createTeam().apply {
+                    updateInfo(
+                        logoUrl = "https://example.com/old-logo.png",
+                        primaryColor = "#0000FF",
+                        secondaryColor = "#000000",
+                    )
+                }
 
             // when
             team.updateInfo(primaryColor = "#FF0000")
@@ -126,9 +121,10 @@ class TeamTest {
         @Test
         fun `정보를 null로 설정할 수 있다`() {
             // given
-            val team = createTeam().apply {
-                updateInfo(logoUrl = "https://example.com/logo.png")
-            }
+            val team =
+                createTeam().apply {
+                    updateInfo(logoUrl = "https://example.com/logo.png")
+                }
 
             // when
             team.updateInfo(logoUrl = null)

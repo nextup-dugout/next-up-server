@@ -21,9 +21,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class CustomOAuth2UserService(
     private val userJpaRepository: UserJpaRepository,
-    private val oAuthAccountRepository: OAuthAccountRepository
+    private val oAuthAccountRepository: OAuthAccountRepository,
 ) : DefaultOAuth2UserService() {
-
     override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
         val oAuth2User = super.loadUser(userRequest)
         return processOAuth2User(userRequest, oAuth2User)
@@ -31,7 +30,7 @@ class CustomOAuth2UserService(
 
     private fun processOAuth2User(
         userRequest: OAuth2UserRequest,
-        oAuth2User: OAuth2User
+        oAuth2User: OAuth2User,
     ): OAuth2UserPrincipal {
         val registrationId = userRequest.clientRegistration.registrationId
         val attributes = oAuth2User.attributes
@@ -41,21 +40,22 @@ class CustomOAuth2UserService(
 
         if (oAuth2UserInfo.id.isBlank()) {
             throw OAuth2AuthenticationProcessingException(
-                "OAuth2 provider did not return user ID"
+                "OAuth2 provider did not return user ID",
             )
         }
 
         // 1. 기존 OAuthAccount로 User 조회
-        val existingOAuthAccount = oAuthAccountRepository.findByProviderAndOauthId(
-            provider,
-            oAuth2UserInfo.id
-        )
+        val existingOAuthAccount =
+            oAuthAccountRepository.findByProviderAndOauthId(
+                provider,
+                oAuth2UserInfo.id,
+            )
 
         if (existingOAuthAccount != null) {
             return OAuth2UserPrincipal(
                 user = existingOAuthAccount.user,
                 oAuth2UserInfo = oAuth2UserInfo,
-                isNewUser = false
+                isNewUser = false,
             )
         }
 
@@ -67,38 +67,40 @@ class CustomOAuth2UserService(
                 existingUser.addOAuthAccount(
                     provider = provider,
                     oauthId = oAuth2UserInfo.id,
-                    email = email
+                    email = email,
                 )
                 userJpaRepository.save(existingUser)
 
                 return OAuth2UserPrincipal(
                     user = existingUser,
                     oAuth2UserInfo = oAuth2UserInfo,
-                    isNewUser = false
+                    isNewUser = false,
                 )
             }
         }
 
         // 3. 신규 User 생성
-        val nickname = oAuth2UserInfo.name
-            ?: email?.substringBefore("@")
-            ?: "${provider.displayName}사용자"
+        val nickname =
+            oAuth2UserInfo.name
+                ?: email?.substringBefore("@")
+                ?: "${provider.displayName}사용자"
 
         val userEmail = email ?: "${provider.name.lowercase()}_${oAuth2UserInfo.id}@oauth.local"
 
-        val newUser = User.createOAuthUser(
-            email = userEmail,
-            nickname = nickname,
-            provider = provider,
-            oauthId = oAuth2UserInfo.id,
-            profileImageUrl = oAuth2UserInfo.profileImageUrl
-        )
+        val newUser =
+            User.createOAuthUser(
+                email = userEmail,
+                nickname = nickname,
+                provider = provider,
+                oauthId = oAuth2UserInfo.id,
+                profileImageUrl = oAuth2UserInfo.profileImageUrl,
+            )
         userJpaRepository.save(newUser)
 
         return OAuth2UserPrincipal(
             user = newUser,
             oAuth2UserInfo = oAuth2UserInfo,
-            isNewUser = true
+            isNewUser = true,
         )
     }
 }

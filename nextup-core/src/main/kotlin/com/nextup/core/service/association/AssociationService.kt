@@ -15,9 +15,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AssociationService(
-    private val associationRepository: AssociationRepositoryPort
+    private val associationRepository: AssociationRepositoryPort,
 ) {
-
     /**
      * 협회를 생성합니다.
      */
@@ -28,21 +27,22 @@ class AssociationService(
         region: String? = null,
         description: String? = null,
         logoUrl: String? = null,
-        websiteUrl: String? = null
+        websiteUrl: String? = null,
     ): Association {
         // 이름 중복 체크
         if (associationRepository.existsByName(name)) {
             throw AssociationNameDuplicateException(name)
         }
 
-        val association = Association(
-            name = name,
-            abbreviation = abbreviation,
-            region = region,
-            description = description,
-            logoUrl = logoUrl,
-            websiteUrl = websiteUrl
-        )
+        val association =
+            Association(
+                name = name,
+                abbreviation = abbreviation,
+                region = region,
+                description = description,
+                logoUrl = logoUrl,
+                websiteUrl = websiteUrl,
+            )
 
         return associationRepository.save(association)
     }
@@ -50,31 +50,24 @@ class AssociationService(
     /**
      * ID로 협회를 조회합니다.
      */
-    fun getById(id: Long): Association {
-        return associationRepository.findByIdOrNull(id)
+    fun getById(id: Long): Association =
+        associationRepository.findByIdOrNull(id)
             ?: throw AssociationNotFoundException(id)
-    }
 
     /**
      * 활성화된 모든 협회를 조회합니다.
      */
-    fun getAllActive(): List<Association> {
-        return associationRepository.findAllActive()
-    }
+    fun getAllActive(): List<Association> = associationRepository.findAllActive()
 
     /**
      * 모든 협회를 조회합니다 (관리자용).
      */
-    fun getAll(): List<Association> {
-        return associationRepository.findAll()
-    }
+    fun getAll(): List<Association> = associationRepository.findAll()
 
     /**
      * 지역별 활성화된 협회를 조회합니다.
      */
-    fun getActiveByRegion(region: String): List<Association> {
-        return associationRepository.findActiveByRegion(region)
-    }
+    fun getActiveByRegion(region: String): List<Association> = associationRepository.findActiveByRegion(region)
 
     /**
      * 협회 정보를 수정합니다.
@@ -84,13 +77,13 @@ class AssociationService(
         id: Long,
         description: String? = null,
         logoUrl: String? = null,
-        websiteUrl: String? = null
+        websiteUrl: String? = null,
     ): Association {
         val association = getById(id)
         association.updateInfo(
             description = description,
             logoUrl = logoUrl,
-            websiteUrl = websiteUrl
+            websiteUrl = websiteUrl,
         )
         return association
     }

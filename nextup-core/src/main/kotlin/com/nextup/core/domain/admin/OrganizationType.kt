@@ -7,7 +7,7 @@ package com.nextup.core.domain.admin
  */
 enum class OrganizationType(
     val displayName: String,
-    val description: String
+    val description: String,
 ) {
     /**
      * 협회 (최상위 조직)
@@ -22,7 +22,8 @@ enum class OrganizationType(
     /**
      * 팀 (리그 하위 조직)
      */
-    TEAM("팀", "리그에 속한 팀");
+    TEAM("팀", "리그에 속한 팀"),
+    ;
 
     companion object {
         /**
@@ -32,9 +33,8 @@ enum class OrganizationType(
          * @return OrganizationType
          * @throws IllegalArgumentException 유효하지 않은 값인 경우
          */
-        fun fromValue(value: String): OrganizationType {
-            return entries.find { it.name.equals(value, ignoreCase = true) }
+        fun fromValue(value: String): OrganizationType =
+            entries.find { it.name.equals(value, ignoreCase = true) }
                 ?: throw IllegalArgumentException("Invalid organization type: $value")
-        }
     }
 }

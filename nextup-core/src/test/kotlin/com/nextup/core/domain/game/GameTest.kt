@@ -16,37 +16,35 @@ import java.time.LocalDateTime
 
 @DisplayName("Game 엔티티 테스트")
 class GameTest {
-
     private lateinit var competition: Competition
 
     @BeforeEach
     fun setUp() {
         val association = Association(name = "서울시야구협회", region = "서울")
         val league = League(association = association, name = "1부 리그", foundedYear = 2020)
-        competition = Competition(
-            league = league,
-            name = "2025 춘계대회",
-            year = 2025,
-            season = 1,
-            type = CompetitionType.LEAGUE,
-            startDate = LocalDate.of(2025, 3, 1),
-            status = CompetitionStatus.IN_PROGRESS
-        )
+        competition =
+            Competition(
+                league = league,
+                name = "2025 춘계대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                status = CompetitionStatus.IN_PROGRESS,
+            )
     }
 
-    private fun createGame(status: GameStatus = GameStatus.SCHEDULED): Game {
-        return Game(
+    private fun createGame(status: GameStatus = GameStatus.SCHEDULED): Game =
+        Game(
             competition = competition,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실야구장",
-            status = status
+            status = status,
         )
-    }
 
     @Nested
     @DisplayName("경기 시작")
     inner class Start {
-
         @Test
         fun `예정된 경기를 시작할 수 있다`() {
             // given
@@ -76,14 +74,14 @@ class GameTest {
     @Nested
     @DisplayName("이닝 진행")
     inner class NextHalfInning {
-
         @Test
         fun `초에서 말로 진행한다`() {
             // given
-            val game = createGame(status = GameStatus.IN_PROGRESS).apply {
-                currentInning = 1
-                isTopInning = true
-            }
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 1
+                    isTopInning = true
+                }
 
             // when
             game.nextHalfInning()
@@ -96,10 +94,11 @@ class GameTest {
         @Test
         fun `말에서 다음 이닝 초로 진행한다`() {
             // given
-            val game = createGame(status = GameStatus.IN_PROGRESS).apply {
-                currentInning = 1
-                isTopInning = false
-            }
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 1
+                    isTopInning = false
+                }
 
             // when
             game.nextHalfInning()
@@ -123,7 +122,6 @@ class GameTest {
     @Nested
     @DisplayName("경기 종료")
     inner class Finish {
-
         @Test
         fun `진행 중인 경기를 종료할 수 있다`() {
             // given
@@ -151,7 +149,6 @@ class GameTest {
     @Nested
     @DisplayName("콜드게임")
     inner class CallGame {
-
         @Test
         fun `진행 중인 경기를 콜드게임 처리할 수 있다`() {
             // given
@@ -170,7 +167,6 @@ class GameTest {
     @Nested
     @DisplayName("경기 취소")
     inner class Cancel {
-
         @Test
         fun `예정된 경기를 취소할 수 있다`() {
             // given
@@ -198,7 +194,6 @@ class GameTest {
     @Nested
     @DisplayName("경기 연기")
     inner class Postpone {
-
         @Test
         fun `예정된 경기를 연기할 수 있다`() {
             // given
@@ -218,7 +213,6 @@ class GameTest {
     @Nested
     @DisplayName("몰수패")
     inner class Forfeit {
-
         @Test
         fun `예정된 경기를 몰수 처리할 수 있다`() {
             // given
@@ -236,7 +230,6 @@ class GameTest {
     @Nested
     @DisplayName("일정 변경")
     inner class Reschedule {
-
         @Test
         fun `연기된 경기를 재스케줄하면 예정 상태로 변경된다`() {
             // given
@@ -255,7 +248,6 @@ class GameTest {
     @Nested
     @DisplayName("이닝 표시")
     inner class InningDisplay {
-
         @Test
         fun `경기 전에는 '경기 전'을 반환한다`() {
             // given
@@ -268,10 +260,11 @@ class GameTest {
         @Test
         fun `1회초는 '1회초'를 반환한다`() {
             // given
-            val game = createGame().apply {
-                currentInning = 1
-                isTopInning = true
-            }
+            val game =
+                createGame().apply {
+                    currentInning = 1
+                    isTopInning = true
+                }
 
             // then
             assertThat(game.currentInningDisplay).isEqualTo("1회초")
@@ -280,10 +273,11 @@ class GameTest {
         @Test
         fun `5회말은 '5회말'을 반환한다`() {
             // given
-            val game = createGame().apply {
-                currentInning = 5
-                isTopInning = false
-            }
+            val game =
+                createGame().apply {
+                    currentInning = 5
+                    isTopInning = false
+                }
 
             // then
             assertThat(game.currentInningDisplay).isEqualTo("5회말")
@@ -293,14 +287,14 @@ class GameTest {
     @Nested
     @DisplayName("연장전 확인")
     inner class ExtraInning {
-
         @Test
         fun `9회까지는 연장전이 아니다`() {
             // given
-            val game = createGame().apply {
-                currentInning = 9
-                totalInnings = 9
-            }
+            val game =
+                createGame().apply {
+                    currentInning = 9
+                    totalInnings = 9
+                }
 
             // then
             assertThat(game.isExtraInning).isFalse()
@@ -309,10 +303,11 @@ class GameTest {
         @Test
         fun `10회 이상은 연장전이다`() {
             // given
-            val game = createGame().apply {
-                currentInning = 10
-                totalInnings = 9
-            }
+            val game =
+                createGame().apply {
+                    currentInning = 10
+                    totalInnings = 9
+                }
 
             // then
             assertThat(game.isExtraInning).isTrue()
@@ -322,7 +317,6 @@ class GameTest {
     @Nested
     @DisplayName("아웃 기록")
     inner class RecordOut {
-
         @Test
         fun `진행 중인 경기에서 아웃을 기록할 수 있다`() {
             // given
@@ -364,7 +358,6 @@ class GameTest {
     @Nested
     @DisplayName("타자 진행")
     inner class AdvanceBatter {
-
         @Test
         fun `진행 중인 경기에서 타순을 진행할 수 있다`() {
             // given
@@ -392,7 +385,6 @@ class GameTest {
     @Nested
     @DisplayName("주자 설정")
     inner class SetRunner {
-
         @Test
         fun `진행 중인 경기에서 주자를 설정할 수 있다`() {
             // given
@@ -420,7 +412,6 @@ class GameTest {
     @Nested
     @DisplayName("베이스 클리어")
     inner class ClearBases {
-
         @Test
         fun `진행 중인 경기에서 베이스를 클리어할 수 있다`() {
             // given
@@ -450,7 +441,6 @@ class GameTest {
     @Nested
     @DisplayName("볼카운트 리셋")
     inner class ResetCount {
-
         @Test
         fun `진행 중인 경기에서 볼카운트를 리셋할 수 있다`() {
             // given
@@ -478,7 +468,6 @@ class GameTest {
     @Nested
     @DisplayName("볼 추가")
     inner class AddBall {
-
         @Test
         fun `진행 중인 경기에서 볼을 추가할 수 있다`() {
             // given
@@ -521,7 +510,6 @@ class GameTest {
     @Nested
     @DisplayName("스트라이크 추가")
     inner class AddStrike {
-
         @Test
         fun `진행 중인 경기에서 스트라이크를 추가할 수 있다`() {
             // given

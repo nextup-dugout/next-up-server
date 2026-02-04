@@ -8,31 +8,29 @@ import org.junit.jupiter.api.assertThrows
 
 @DisplayName("OAuthAccount 테스트")
 class OAuthAccountTest {
-
-    private fun createTestUser(): User {
-        return User.createLocalUser(
+    private fun createTestUser(): User =
+        User.createLocalUser(
             email = "test@example.com",
             encodedPassword = "password",
-            nickname = "테스터"
+            nickname = "테스터",
         )
-    }
 
     @Nested
     @DisplayName("OAuth 계정 생성")
     inner class Create {
-
         @Test
         fun `should create oauth account successfully`() {
             // given
             val user = createTestUser()
 
             // when
-            val account = OAuthAccount.create(
-                user = user,
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_12345",
-                email = "kakao@example.com"
-            )
+            val account =
+                OAuthAccount.create(
+                    user = user,
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_12345",
+                    email = "kakao@example.com",
+                )
 
             // then
             assertThat(account.user).isEqualTo(user)
@@ -48,11 +46,12 @@ class OAuthAccountTest {
             val user = createTestUser()
 
             // when
-            val account = OAuthAccount.create(
-                user = user,
-                provider = OAuthProvider.GOOGLE,
-                oauthId = "google_12345"
-            )
+            val account =
+                OAuthAccount.create(
+                    user = user,
+                    provider = OAuthProvider.GOOGLE,
+                    oauthId = "google_12345",
+                )
 
             // then
             assertThat(account.email).isNull()
@@ -68,7 +67,7 @@ class OAuthAccountTest {
                 OAuthAccount.create(
                     user = user,
                     provider = OAuthProvider.LOCAL,
-                    oauthId = "local_123"
+                    oauthId = "local_123",
                 )
             }
         }
@@ -83,7 +82,7 @@ class OAuthAccountTest {
                 OAuthAccount.create(
                     user = user,
                     provider = OAuthProvider.KAKAO,
-                    oauthId = ""
+                    oauthId = "",
                 )
             }
         }
@@ -98,7 +97,7 @@ class OAuthAccountTest {
                 OAuthAccount.create(
                     user = user,
                     provider = OAuthProvider.NAVER,
-                    oauthId = "   "
+                    oauthId = "   ",
                 )
             }
         }
@@ -107,25 +106,26 @@ class OAuthAccountTest {
     @Nested
     @DisplayName("OAuth Provider 종류")
     inner class ProviderTypes {
-
         @Test
         fun `should create account for each provider`() {
             // given
             val user = createTestUser()
-            val providers = listOf(
-                OAuthProvider.KAKAO,
-                OAuthProvider.GOOGLE,
-                OAuthProvider.NAVER,
-                OAuthProvider.APPLE
-            )
+            val providers =
+                listOf(
+                    OAuthProvider.KAKAO,
+                    OAuthProvider.GOOGLE,
+                    OAuthProvider.NAVER,
+                    OAuthProvider.APPLE,
+                )
 
             // when & then
             providers.forEach { provider ->
-                val account = OAuthAccount.create(
-                    user = user,
-                    provider = provider,
-                    oauthId = "${provider.name.lowercase()}_123"
-                )
+                val account =
+                    OAuthAccount.create(
+                        user = user,
+                        provider = provider,
+                        oauthId = "${provider.name.lowercase()}_123",
+                    )
                 assertThat(account.provider).isEqualTo(provider)
             }
         }

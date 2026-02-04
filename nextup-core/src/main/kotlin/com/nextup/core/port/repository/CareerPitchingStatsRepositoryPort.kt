@@ -1,14 +1,12 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.stats.CareerPitchingStats
-import java.util.Optional
 
 /**
  * CareerPitchingStats Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface CareerPitchingStatsRepositoryPort {
-
     fun save(careerPitchingStats: CareerPitchingStats): CareerPitchingStats
 
     fun findAll(): List<CareerPitchingStats>
@@ -26,7 +24,10 @@ interface CareerPitchingStatsRepositoryPort {
      * 통산 ERA 상위 N명을 조회합니다 (최소 이닝 조건).
      * ERA는 낮을수록 좋으므로 ASC 정렬합니다.
      */
-    fun findTopByEra(minInningsPitchedOuts: Int, limit: Int): List<CareerPitchingStats>
+    fun findTopByEra(
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<CareerPitchingStats>
 
     /**
      * 통산 승수 상위 N명을 조회합니다.
@@ -47,7 +48,10 @@ interface CareerPitchingStatsRepositoryPort {
      * 통산 WHIP 상위 N명을 조회합니다 (최소 이닝 조건).
      * WHIP는 낮을수록 좋으므로 ASC 정렬합니다.
      */
-    fun findTopByWhip(minInningsPitchedOuts: Int, limit: Int): List<CareerPitchingStats>
+    fun findTopByWhip(
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<CareerPitchingStats>
 
     /**
      * 통산 이닝 상위 N명을 조회합니다.
@@ -57,5 +61,8 @@ interface CareerPitchingStatsRepositoryPort {
     /**
      * 통산 삼진/볼넷 비율 상위 N명을 조회합니다 (최소 이닝 및 볼넷 조건).
      */
-    fun findTopByStrikeoutToWalkRatio(minInningsPitchedOuts: Int, limit: Int): List<CareerPitchingStats>
+    fun findTopByStrikeoutToWalkRatio(
+        minInningsPitchedOuts: Int,
+        limit: Int,
+    ): List<CareerPitchingStats>
 }
