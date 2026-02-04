@@ -56,4 +56,25 @@ interface GameTeamRepository :
     override fun findAllByGameIds(gameIds: List<Long>): List<GameTeam> = findByGameIdIn(gameIds)
 
     fun findByGameIdIn(gameIds: List<Long>): List<GameTeam>
+
+    @Query(
+        """
+        SELECT gt FROM GameTeam gt
+        JOIN FETCH gt.team
+        JOIN FETCH gt.game g
+        WHERE g.competition.id = :competitionId
+        AND gt.result != 'UNDECIDED'
+        """,
+    )
+    override fun findAllByCompetitionIdWithDecidedResult(competitionId: Long): List<GameTeam>
+
+    @Query(
+        """
+        SELECT gt FROM GameTeam gt
+        JOIN FETCH gt.team
+        JOIN FETCH gt.game g
+        WHERE g.competition.id = :competitionId
+        """,
+    )
+    override fun findAllByCompetitionId(competitionId: Long): List<GameTeam>
 }
