@@ -48,6 +48,29 @@ mcp__github__create_pull_request:
 ```markdown
 ## Summary
 
+>- close #[이슈번호]
+
+[변경 사항 요약]
+
+## Tasks
+
+- [완료한 작업 1]
+- [완료한 작업 2]
+
+## To Reviewer
+
+[리뷰어에게 전달할 사항]
+
+## Screenshot
+
+(해당 시 스크린샷 첨부)
+```
+
+### Example
+
+```markdown
+## Summary
+
 >- close #52
 
 Phase 2: 조회/통계 API 고도화 구현
@@ -56,11 +79,10 @@ Phase 2: 조회/통계 API 고도화 구현
 
 - [x] 경기 타임라인 API 구현
 - [x] 팀 통계 API 구현
-- [x] 선수 기록실 API 구현
 
 ## To Reviewer
 
-- 커버리지: 79% (목표 80%에 1% 부족)
+- 커버리지: 79%
 - 빌드/테스트: ✅ 통과
 
 ## Screenshot
