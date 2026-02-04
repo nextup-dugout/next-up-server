@@ -27,7 +27,7 @@ git push -u origin [branch-name]
 mcp__github__create_pull_request:
   owner: nextup-dugout
   repo: next-up-server
-  title: [브랜치명 그대로]
+  title: [타입(#이슈번호): 간단한 설명]
   body: [PR 템플릿]
   head: [feature-branch]
   base: develop
@@ -35,12 +35,13 @@ mcp__github__create_pull_request:
 
 ## PR Title Rule
 
-**PR 제목 = 브랜치명 그대로**
+**PR 제목 = `타입(#이슈번호): 간단한 설명`**
 
 | 브랜치 | PR 제목 |
 |--------|---------|
-| `feat/#1-user-auth` | `feat/#1-user-auth` |
-| `fix/#2-login-error` | `fix/#2-login-error` |
+| `feat/#1-user-auth` | `feat(#1): 사용자 인증 기능 구현` |
+| `fix/#2-login-error` | `fix(#2): 로그인 오류 수정` |
+| `feat/#54-box-score` | `feat(#54): 박스스코어 자동 계산 및 Exception 개선` |
 
 ## PR Template
 
@@ -87,7 +88,7 @@ PR 생성을 시작합니다...
 
 ## PR Created Successfully
 
-- **Title**: feat/#5-agent-skill-refactoring
+- **Title**: feat(#5): Agent/Skill 구조 리팩토링
 - **URL**: https://github.com/nextup-dugout/next-up-server/pull/6
 - **Base**: develop
 - **Head**: feat/#5-agent-skill-refactoring
