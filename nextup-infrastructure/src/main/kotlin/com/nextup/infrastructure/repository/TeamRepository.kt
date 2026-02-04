@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query
 interface TeamRepository :
     JpaRepository<Team, Long>,
     TeamRepositoryPort {
+    override fun findByIdOrNull(id: Long): Team? = findById(id).orElse(null)
+
     override fun findByName(name: String): Team?
 
     override fun findByLeagueId(leagueId: Long): List<Team>

@@ -11,6 +11,8 @@ interface TeamRepositoryPort {
 
     fun findAll(): List<Team>
 
+    fun findByIdOrNull(id: Long): Team?
+
     fun delete(team: Team)
 
     fun deleteById(id: Long)
