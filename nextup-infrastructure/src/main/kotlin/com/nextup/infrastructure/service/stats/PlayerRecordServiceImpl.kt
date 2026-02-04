@@ -10,6 +10,7 @@ import com.nextup.core.service.stats.dto.PitchingStatsDto
 import com.nextup.core.service.stats.dto.PlayerRecordDto
 import com.nextup.core.service.stats.dto.RecordScope
 import com.nextup.core.service.stats.dto.RecordType
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -23,6 +24,9 @@ class PlayerRecordServiceImpl(
     private val playerRepository: PlayerRepositoryPort,
     private val playerStatsService: PlayerStatsService,
 ) : PlayerRecordService {
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun getPlayerRecord(
         playerId: Long,
         scope: RecordScope,
@@ -76,6 +80,7 @@ class PlayerRecordServiceImpl(
                         ops = stats.ops,
                     )
                 } catch (e: IllegalArgumentException) {
+                    log.debug("선수 시즌 타격 기록 없음: playerId={}, year={}, message={}", playerId, targetYear, e.message)
                     null
                 }
             } else {
@@ -103,6 +108,7 @@ class PlayerRecordServiceImpl(
                         whip = stats.whip,
                     )
                 } catch (e: IllegalArgumentException) {
+                    log.debug("선수 시즌 투수 기록 없음: playerId={}, year={}, message={}", playerId, targetYear, e.message)
                     null
                 }
             } else {
@@ -150,6 +156,7 @@ class PlayerRecordServiceImpl(
                         ops = stats.ops,
                     )
                 } catch (e: IllegalArgumentException) {
+                    log.debug("선수 통산 타격 기록 없음: playerId={}, message={}", playerId, e.message)
                     null
                 }
             } else {
@@ -177,6 +184,7 @@ class PlayerRecordServiceImpl(
                         whip = stats.whip,
                     )
                 } catch (e: IllegalArgumentException) {
+                    log.debug("선수 통산 투수 기록 없음: playerId={}, message={}", playerId, e.message)
                     null
                 }
             } else {

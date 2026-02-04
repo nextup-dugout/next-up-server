@@ -162,4 +162,21 @@ interface BattingRecordRepository :
         @Param("playerId") playerId: Long,
         @Param("year") year: Int,
     ): List<BattingRecord>
+
+    /**
+     * 팀의 여러 경기 타격 기록을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     */
+    @Query(
+        """
+        SELECT br FROM BattingRecord br
+        JOIN br.gamePlayer gp
+        JOIN gp.gameTeam gt
+        WHERE gt.team.id = :teamId
+        AND gp.game.id IN :gameIds
+    """,
+    )
+    override fun findAllByTeamIdAndGameIds(
+        @Param("teamId") teamId: Long,
+        @Param("gameIds") gameIds: List<Long>,
+    ): List<BattingRecord>
 }
