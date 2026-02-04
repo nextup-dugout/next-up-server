@@ -8,4 +8,6 @@ interface GameRepository :
     JpaRepository<Game, Long>,
     GameRepositoryPort {
     override fun findByIdOrNull(id: Long): Game? = findById(id).orElse(null)
+
+    override fun findAllByIds(ids: List<Long>): List<Game> = findAllById(ids)
 }

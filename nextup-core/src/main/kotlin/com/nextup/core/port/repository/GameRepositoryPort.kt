@@ -16,4 +16,9 @@ interface GameRepositoryPort {
     fun delete(game: Game)
 
     fun deleteById(id: Long)
+
+    /**
+     * 여러 ID로 Game을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     */
+    fun findAllByIds(ids: List<Long>): List<Game>
 }

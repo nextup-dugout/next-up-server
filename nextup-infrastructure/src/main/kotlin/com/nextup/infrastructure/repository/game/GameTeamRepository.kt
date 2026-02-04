@@ -52,4 +52,8 @@ interface GameTeamRepository :
     ): List<GameTeam>
 
     fun findByGameId(gameId: Long): List<GameTeam>
+
+    override fun findAllByGameIds(gameIds: List<Long>): List<GameTeam> = findByGameIdIn(gameIds)
+
+    fun findByGameIdIn(gameIds: List<Long>): List<GameTeam>
 }
