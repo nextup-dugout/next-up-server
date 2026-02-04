@@ -15,4 +15,21 @@ interface GameEventRepositoryPort {
     fun findAllByGameIdOrderByEventTimestamp(gameId: Long): List<GameEvent>
 
     fun delete(gameEvent: GameEvent)
+
+    /**
+     * 특정 투수-타자 매치업의 타석 결과를 조회합니다.
+     */
+    fun findPlateAppearancesByPitcherAndBatter(
+        pitcherId: Long,
+        batterId: Long,
+    ): List<GameEvent>
+
+    /**
+     * 특정 연도의 투수-타자 매치업 타석 결과를 조회합니다.
+     */
+    fun findPlateAppearancesByPitcherAndBatterAndYear(
+        pitcherId: Long,
+        batterId: Long,
+        year: Int,
+    ): List<GameEvent>
 }

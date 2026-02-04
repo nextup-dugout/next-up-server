@@ -27,7 +27,7 @@ git push -u origin [branch-name]
 mcp__github__create_pull_request:
   owner: nextup-dugout
   repo: next-up-server
-  title: [브랜치명 그대로]
+  title: [타입(#이슈번호): 간단한 설명]
   body: [PR 템플릿]
   head: [feature-branch]
   base: develop
@@ -35,19 +35,20 @@ mcp__github__create_pull_request:
 
 ## PR Title Rule
 
-**PR 제목 = 브랜치명 그대로**
+**PR 제목 = `타입(#이슈번호): 간단한 설명`**
 
 | 브랜치 | PR 제목 |
 |--------|---------|
-| `feat/#1-user-auth` | `feat/#1-user-auth` |
-| `fix/#2-login-error` | `fix/#2-login-error` |
+| `feat/#1-user-auth` | `feat(#1): 사용자 인증 기능 구현` |
+| `fix/#2-login-error` | `fix(#2): 로그인 오류 수정` |
+| `feat/#54-box-score` | `feat(#54): 박스스코어 자동 계산 및 Exception 개선` |
 
 ## PR Template
 
 ```markdown
 ## Summary
 
->- Close #[이슈번호]
+>- close #[이슈번호]
 
 [변경 사항 요약]
 
@@ -64,6 +65,32 @@ mcp__github__create_pull_request:
 
 (해당 시 스크린샷 첨부)
 ```
+
+### Example
+
+```markdown
+## Summary
+
+>- close #52
+
+Phase 2: 조회/통계 API 고도화 구현
+
+## Tasks
+
+- [x] 경기 타임라인 API 구현
+- [x] 팀 통계 API 구현
+
+## To Reviewer
+
+- 커버리지: 79%
+- 빌드/테스트: ✅ 통과
+
+## Screenshot
+
+N/A (API 전용)
+```
+
+> ⚠️ **주의**: Summary의 `>- close #이슈번호` 형식을 정확히 지켜야 이슈가 자동으로 닫힙니다.
 
 ## 사용 예시
 
@@ -87,7 +114,7 @@ PR 생성을 시작합니다...
 
 ## PR Created Successfully
 
-- **Title**: feat/#5-agent-skill-refactoring
+- **Title**: feat(#5): Agent/Skill 구조 리팩토링
 - **URL**: https://github.com/nextup-dugout/next-up-server/pull/6
 - **Base**: develop
 - **Head**: feat/#5-agent-skill-refactoring

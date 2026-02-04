@@ -113,4 +113,12 @@ interface PitchingRecordRepositoryPort {
         playerId: Long,
         year: Int,
     ): List<PitchingRecord>
+
+    /**
+     * 팀의 여러 경기 투수 기록을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     */
+    fun findAllByTeamIdAndGameIds(
+        teamId: Long,
+        gameIds: List<Long>,
+    ): List<PitchingRecord>
 }
