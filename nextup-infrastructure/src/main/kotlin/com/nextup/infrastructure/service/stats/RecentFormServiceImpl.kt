@@ -3,6 +3,8 @@ package com.nextup.infrastructure.service.stats
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.game.BattingRecord
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
@@ -60,8 +62,13 @@ class RecentFormServiceImpl(
             throw InvalidInputException("NO_BATTING_RECORDS", "타격 기록이 없습니다.")
         }
 
+        // 배치 로드: 모든 gameId를 수집하여 한 번에 조회 (N+1 방지)
+        val gameIds = records.map { it.gamePlayer.gameTeam.game.id }.distinct()
+        val gamesMap = gameRepositoryPort.findAllByIds(gameIds).associateBy { it.id }
+        val gameTeamsMap = gameTeamRepositoryPort.findAllByGameIds(gameIds).groupBy { it.game.id }
+
         val gamesFound = records.size
-        val gameBattingDtos = records.map { it.toGameBattingDto() }
+        val gameBattingDtos = records.map { it.toGameBattingDto(gamesMap, gameTeamsMap) }
 
         val totalAtBats = records.sumOf { it.atBats }
         val totalHits = records.sumOf { it.hits }
@@ -126,8 +133,13 @@ class RecentFormServiceImpl(
             throw InvalidInputException("NO_PITCHING_RECORDS", "투수 기록이 없습니다.")
         }
 
+        // 배치 로드: 모든 gameId를 수집하여 한 번에 조회 (N+1 방지)
+        val gameIds = records.map { it.gamePlayer.gameTeam.game.id }.distinct()
+        val gamesMap = gameRepositoryPort.findAllByIds(gameIds).associateBy { it.id }
+        val gameTeamsMap = gameTeamRepositoryPort.findAllByGameIds(gameIds).groupBy { it.game.id }
+
         val gamesFound = records.size
-        val gamePitchingDtos = records.map { it.toGamePitchingDto() }
+        val gamePitchingDtos = records.map { it.toGamePitchingDto(gamesMap, gameTeamsMap) }
 
         val totalInningsPitchedOuts = records.sumOf { it.inningsPitchedOuts }
         val totalEarnedRuns = records.sumOf { it.earnedRuns }
@@ -311,16 +323,20 @@ class RecentFormServiceImpl(
         return "$completeInnings.$remainingOuts"
     }
 
-    private fun BattingRecord.toGameBattingDto(): GameBattingDto {
-        val game = gameRepositoryPort.findByIdOrNull(this.gamePlayer.gameTeam.game.id)
+    private fun BattingRecord.toGameBattingDto(
+        gamesMap: Map<Long, Game>,
+        gameTeamsMap: Map<Long, List<GameTeam>>,
+    ): GameBattingDto {
+        val gameId = this.gamePlayer.gameTeam.game.id
+        val game = gamesMap[gameId]
         val gameDate = game?.scheduledAt?.toLocalDate()?.toString() ?: "Unknown"
 
-        // 상대팀 정보 가져오기
+        // 상대팀 정보 가져오기 (배치 로드된 데이터 사용)
         val myTeamId = this.gamePlayer.gameTeam.team.id
-        val opponentName = getOpponentTeamName(this.gamePlayer.gameTeam.game.id, myTeamId)
+        val opponentName = getOpponentTeamName(gameTeamsMap[gameId], myTeamId)
 
         return GameBattingDto(
-            gameId = this.gamePlayer.gameTeam.game.id,
+            gameId = gameId,
             gameDate = gameDate,
             opponentName = opponentName,
             atBats = this.atBats,
@@ -333,16 +349,20 @@ class RecentFormServiceImpl(
         )
     }
 
-    private fun PitchingRecord.toGamePitchingDto(): GamePitchingDto {
-        val game = gameRepositoryPort.findByIdOrNull(this.gamePlayer.gameTeam.game.id)
+    private fun PitchingRecord.toGamePitchingDto(
+        gamesMap: Map<Long, Game>,
+        gameTeamsMap: Map<Long, List<GameTeam>>,
+    ): GamePitchingDto {
+        val gameId = this.gamePlayer.gameTeam.game.id
+        val game = gamesMap[gameId]
         val gameDate = game?.scheduledAt?.toLocalDate()?.toString() ?: "Unknown"
 
-        // 상대팀 정보 가져오기
+        // 상대팀 정보 가져오기 (배치 로드된 데이터 사용)
         val myTeamId = this.gamePlayer.gameTeam.team.id
-        val opponentName = getOpponentTeamName(this.gamePlayer.gameTeam.game.id, myTeamId)
+        val opponentName = getOpponentTeamName(gameTeamsMap[gameId], myTeamId)
 
         return GamePitchingDto(
-            gameId = this.gamePlayer.gameTeam.game.id,
+            gameId = gameId,
             gameDate = gameDate,
             opponentName = opponentName,
             inningsPitched = this.inningsPitchedDisplay,
@@ -355,11 +375,10 @@ class RecentFormServiceImpl(
     }
 
     private fun getOpponentTeamName(
-        gameId: Long,
+        gameTeams: List<GameTeam>?,
         myTeamId: Long,
     ): String {
-        val gameTeams = gameTeamRepositoryPort.findAllByGameId(gameId)
-        val opponentTeam = gameTeams.find { it.team.id != myTeamId }
+        val opponentTeam = gameTeams?.find { it.team.id != myTeamId }
         return opponentTeam?.team?.name ?: "상대팀"
     }
 }

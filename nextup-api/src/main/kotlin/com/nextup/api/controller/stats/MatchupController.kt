@@ -4,6 +4,9 @@ import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stats.MatchupResponse
 import com.nextup.api.mapper.stats.toResponse
 import com.nextup.core.service.stats.MatchupService
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
  * 투수와 타자의 대결 기록을 조회합니다.
  * 모든 응답은 ApiResponse로 래핑됩니다.
  */
+@Validated
 @RestController
 @RequestMapping("/api/v1/matchups")
 class MatchupController(
@@ -36,7 +40,7 @@ class MatchupController(
     fun getMatchup(
         @PathVariable pitcherId: Long,
         @PathVariable batterId: Long,
-        @RequestParam(required = false) year: Int?,
+        @RequestParam(required = false) @Min(1900) @Max(2100) year: Int?,
         @RequestParam(required = false) competitionId: Long?,
     ): ApiResponse<MatchupResponse> {
         val matchup = matchupService.getMatchup(pitcherId, batterId, year, competitionId)
