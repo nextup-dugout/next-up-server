@@ -5,6 +5,7 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
 import com.nextup.core.service.competition.CompetitionService
+import com.nextup.core.service.standings.StandingsService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
@@ -22,12 +23,14 @@ import java.time.LocalDate
 class CompetitionControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var competitionService: CompetitionService
+    private lateinit var standingsService: StandingsService
     private lateinit var controller: CompetitionController
 
     @BeforeEach
     fun setUp() {
         competitionService = mockk()
-        controller = CompetitionController(competitionService)
+        standingsService = mockk()
+        controller = CompetitionController(competitionService, standingsService)
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
     }
 

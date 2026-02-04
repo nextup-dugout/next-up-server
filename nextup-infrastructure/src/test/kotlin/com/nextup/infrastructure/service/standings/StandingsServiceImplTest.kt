@@ -314,6 +314,59 @@ class StandingsServiceImplTest {
             assertThat(result.standings[1].runsAllowed).isEqualTo(12)
             assertThat(result.standings[1].runDifferential).isEqualTo(-7)
         }
+
+        @Test
+        fun `아직 경기 결과가 없는 팀도 0승 0패로 순위표에 포함`() {
+            // given
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+            val teamC = createTeam(3L, league, "Bears") // 아직 경기 결과 없음
+
+            val game1 = createGame(1L, competition)
+            val game2 = createGame(2L, competition) // Bears 경기 (예정)
+
+            // Tigers vs Lions 경기 (결과 확정)
+            val teamA1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val teamB1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 3, GameResult.LOSS)
+
+            // Bears 경기 (예정 - UNDECIDED)
+            val teamA2 = createGameTeam(3L, game2, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val teamC1 = createGameTeam(4L, game2, teamC, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+
+            // allGameTeams에는 모든 팀이 포함
+            val allGameTeams = listOf(teamA1, teamB1, teamA2, teamC1)
+            // decidedGameTeams에는 Bears가 없음 (아직 결과 확정 경기 없음)
+            val decidedGameTeams = listOf(teamA1, teamB1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val result = standingsService.getStandings(1L)
+
+            // then
+            assertThat(result.standings).hasSize(3)
+
+            // Bears는 0승 0패 0무로 포함되어야 함
+            val bearsStanding = result.standings.find { it.teamName == "Bears" }
+            assertThat(bearsStanding).isNotNull
+            assertThat(bearsStanding!!.wins).isEqualTo(0)
+            assertThat(bearsStanding.losses).isEqualTo(0)
+            assertThat(bearsStanding.draws).isEqualTo(0)
+            assertThat(bearsStanding.gamesPlayed).isEqualTo(0)
+            assertThat(bearsStanding.remainingGames).isEqualTo(1) // 예정된 경기 1개
+            assertThat(bearsStanding.winningPercentage).isEqualByComparingTo(BigDecimal.ZERO)
+            assertThat(bearsStanding.runsScored).isEqualTo(0)
+            assertThat(bearsStanding.runsAllowed).isEqualTo(0)
+            assertThat(bearsStanding.runDifferential).isEqualTo(0)
+
+            // Bears는 승률 0이지만 득실점차 0으로 Lions(-2)보다 높은 2위
+            // 순위: Tigers(승률 1.0) > Bears(승률 0, 득실 0) > Lions(승률 0, 득실 -2)
+            assertThat(result.standings[0].teamName).isEqualTo("Tigers")
+            assertThat(result.standings[1].teamName).isEqualTo("Bears")
+            assertThat(result.standings[2].teamName).isEqualTo("Lions")
+        }
     }
 
     // Helper methods
