@@ -22,9 +22,8 @@ import org.springframework.transaction.annotation.Transactional
 class GameScorerServiceImpl(
     private val gameRepository: GameRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
-    private val boxScoreService: BoxScoreService
+    private val boxScoreService: BoxScoreService,
 ) : GameScorerService {
-
     @Transactional
     override fun startGame(gameId: Long): Game {
         val game = findGame(gameId)
@@ -36,7 +35,10 @@ class GameScorerServiceImpl(
     }
 
     @Transactional
-    override fun recordPlateAppearance(gameId: Long, request: PlateAppearanceRequest): Game {
+    override fun recordPlateAppearance(
+        gameId: Long,
+        request: PlateAppearanceRequest,
+    ): Game {
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
@@ -45,10 +47,12 @@ class GameScorerServiceImpl(
         }
 
         // 타자와 투수 조회
-        val batter = gamePlayerRepository.findByIdOrNull(request.batterId)
-            ?: throw GamePlayerNotFoundException(request.batterId)
-        val pitcher = gamePlayerRepository.findByIdOrNull(request.pitcherId)
-            ?: throw GamePlayerNotFoundException(request.pitcherId)
+        val batter =
+            gamePlayerRepository.findByIdOrNull(request.batterId)
+                ?: throw GamePlayerNotFoundException(request.batterId)
+        val pitcher =
+            gamePlayerRepository.findByIdOrNull(request.pitcherId)
+                ?: throw GamePlayerNotFoundException(request.pitcherId)
 
         // 주자 이동 처리
         val scoredRunnerIds = mutableListOf<Long>()
@@ -67,17 +71,18 @@ class GameScorerServiceImpl(
 
         // 타자의 출루 처리
         if (request.result.isOnBase) {
-            val advanceToBase = when {
-                request.result.isSingle -> com.nextup.core.domain.game.Base.FIRST
-                request.result.isDouble -> com.nextup.core.domain.game.Base.SECOND
-                request.result.isTriple -> com.nextup.core.domain.game.Base.THIRD
-                request.result.isHomeRun -> {
-                    // 홈런인 경우 타자도 득점
-                    scoredRunnerIds.add(batter.id)
-                    null
+            val advanceToBase =
+                when {
+                    request.result.isSingle -> com.nextup.core.domain.game.Base.FIRST
+                    request.result.isDouble -> com.nextup.core.domain.game.Base.SECOND
+                    request.result.isTriple -> com.nextup.core.domain.game.Base.THIRD
+                    request.result.isHomeRun -> {
+                        // 홈런인 경우 타자도 득점
+                        scoredRunnerIds.add(batter.id)
+                        null
+                    }
+                    else -> com.nextup.core.domain.game.Base.FIRST // 볼넷, 사구 등
                 }
-                else -> com.nextup.core.domain.game.Base.FIRST // 볼넷, 사구 등
-            }
 
             advanceToBase?.let { game.setRunner(it, batter.id) }
         } else if (!request.result.isOnBase) {
@@ -93,7 +98,7 @@ class GameScorerServiceImpl(
             result = request.result,
             rbis = request.getActualRbis(),
             runsScored = scoredRunnerIds,
-            inning = game.currentInning
+            inning = game.currentInning,
         )
 
         // 다음 타자로 진행
@@ -119,7 +124,10 @@ class GameScorerServiceImpl(
     }
 
     @Transactional
-    override fun endGame(gameId: Long, reason: GameEndReason): Game {
+    override fun endGame(
+        gameId: Long,
+        reason: GameEndReason,
+    ): Game {
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
@@ -138,8 +146,7 @@ class GameScorerServiceImpl(
         return gameRepository.save(game)
     }
 
-    private fun findGame(id: Long): Game {
-        return gameRepository.findByIdOrNull(id)
+    private fun findGame(id: Long): Game =
+        gameRepository.findByIdOrNull(id)
             ?: throw GameNotFoundException(id)
-    }
 }

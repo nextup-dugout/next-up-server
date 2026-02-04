@@ -6,77 +6,89 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>, SeasonBattingStatsRepositoryPort {
-
+interface SeasonBattingStatsRepository :
+    JpaRepository<SeasonBattingStats, Long>,
+    SeasonBattingStatsRepositoryPort {
     /**
      * 선수 ID와 연도로 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.player.id = :playerId AND s.year = :year")
     override fun findByPlayerIdAndYear(
         @Param("playerId") playerId: Long,
-        @Param("year") year: Int
+        @Param("year") year: Int,
     ): SeasonBattingStats?
 
     /**
      * 선수 ID로 모든 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.player.id = :playerId ORDER BY s.year DESC")
-    override fun findAllByPlayerId(@Param("playerId") playerId: Long): List<SeasonBattingStats>
+    override fun findAllByPlayerId(
+        @Param("playerId") playerId: Long,
+    ): List<SeasonBattingStats>
 
     /**
      * 특정 연도의 모든 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.year = :year")
-    override fun findAllByYear(@Param("year") year: Int): List<SeasonBattingStats>
+    override fun findAllByYear(
+        @Param("year") year: Int,
+    ): List<SeasonBattingStats>
 
     /**
      * 타율 상위 N명을 조회합니다 (최소 타수 조건).
      */
-    @Query("""
+    @Query(
+        """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         AND s.atBats >= :minAtBats
         ORDER BY (CAST(s.hits AS double) / CAST(s.atBats AS double)) DESC
         LIMIT :limit
-    """)
+    """,
+    )
     override fun findTopByBattingAverage(
         @Param("year") year: Int,
         @Param("minAtBats") minAtBats: Int,
-        @Param("limit") limit: Int
+        @Param("limit") limit: Int,
     ): List<SeasonBattingStats>
 
     /**
      * 홈런 상위 N명을 조회합니다.
      */
-    @Query("""
+    @Query(
+        """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         ORDER BY s.homeRuns DESC
         LIMIT :limit
-    """)
+    """,
+    )
     override fun findTopByHomeRuns(
         @Param("year") year: Int,
-        @Param("limit") limit: Int
+        @Param("limit") limit: Int,
     ): List<SeasonBattingStats>
 
     /**
      * 타점 상위 N명을 조회합니다.
      */
-    @Query("""
+    @Query(
+        """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         ORDER BY s.runsBattedIn DESC
         LIMIT :limit
-    """)
+    """,
+    )
     override fun findTopByRunsBattedIn(
         @Param("year") year: Int,
-        @Param("limit") limit: Int
+        @Param("limit") limit: Int,
     ): List<SeasonBattingStats>
 
     /**
      * OPS 상위 N명을 조회합니다 (최소 타석 조건).
      */
-    @Query("""
+    @Query(
+        """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         AND s.plateAppearances >= :minPlateAppearances
@@ -88,10 +100,11 @@ interface SeasonBattingStatsRepository : JpaRepository<SeasonBattingStats, Long>
              CAST(s.atBats AS double))
         ) DESC
         LIMIT :limit
-    """)
+    """,
+    )
     override fun findTopByOps(
         @Param("year") year: Int,
         @Param("minPlateAppearances") minPlateAppearances: Int,
-        @Param("limit") limit: Int
+        @Param("limit") limit: Int,
     ): List<SeasonBattingStats>
 }

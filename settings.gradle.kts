@@ -6,5 +6,5 @@ include(
     "nextup-infrastructure",
     "nextup-api",
     "nextup-backoffice",
-    "nextup-scorer"
+    "nextup-scorer",
 )

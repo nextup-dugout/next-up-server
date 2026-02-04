@@ -23,9 +23,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/backoffice/leagues")
 class LeagueAdminController(
-    private val leagueService: LeagueService
+    private val leagueService: LeagueService,
 ) {
-
     /**
      * 모든 리그 목록을 조회합니다 (비활성화 포함).
      */
@@ -33,7 +32,7 @@ class LeagueAdminController(
     fun getAllLeagues(): ApiResponse<List<LeagueAdminResponse>> {
         val leagues = leagueService.getAll()
         return ApiResponse.success(
-            leagues.map { LeagueAdminResponse.from(it) }
+            leagues.map { LeagueAdminResponse.from(it) },
         )
     }
 
@@ -42,7 +41,7 @@ class LeagueAdminController(
      */
     @GetMapping("/{id}")
     fun getLeague(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.getById(id)
         return ApiResponse.success(LeagueAdminResponse.from(league))
@@ -54,17 +53,18 @@ class LeagueAdminController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createLeague(
-        @Valid @RequestBody request: CreateLeagueRequest
+        @Valid @RequestBody request: CreateLeagueRequest,
     ): ApiResponse<LeagueAdminResponse> {
-        val league = leagueService.create(
-            associationId = request.associationId,
-            name = request.name,
-            abbreviation = request.abbreviation,
-            foundedYear = request.foundedYear,
-            divisionLevel = request.divisionLevel,
-            description = request.description,
-            logoUrl = request.logoUrl
-        )
+        val league =
+            leagueService.create(
+                associationId = request.associationId,
+                name = request.name,
+                abbreviation = request.abbreviation,
+                foundedYear = request.foundedYear,
+                divisionLevel = request.divisionLevel,
+                description = request.description,
+                logoUrl = request.logoUrl,
+            )
         return ApiResponse.success(LeagueAdminResponse.from(league))
     }
 
@@ -74,13 +74,14 @@ class LeagueAdminController(
     @PutMapping("/{id}")
     fun updateLeague(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateLeagueRequest
+        @Valid @RequestBody request: UpdateLeagueRequest,
     ): ApiResponse<LeagueAdminResponse> {
-        val league = leagueService.update(
-            id = id,
-            description = request.description,
-            logoUrl = request.logoUrl
-        )
+        val league =
+            leagueService.update(
+                id = id,
+                description = request.description,
+                logoUrl = request.logoUrl,
+            )
         return ApiResponse.success(LeagueAdminResponse.from(league))
     }
 
@@ -89,7 +90,7 @@ class LeagueAdminController(
      */
     @DeleteMapping("/{id}")
     fun deactivateLeague(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.deactivate(id)
         return ApiResponse.success(LeagueAdminResponse.from(league))
@@ -100,7 +101,7 @@ class LeagueAdminController(
      */
     @PostMapping("/{id}/activate")
     fun activateLeague(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.activate(id)
         return ApiResponse.success(LeagueAdminResponse.from(league))

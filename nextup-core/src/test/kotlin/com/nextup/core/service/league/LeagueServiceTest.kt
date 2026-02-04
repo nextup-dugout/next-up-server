@@ -16,11 +16,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.util.Optional
 
 @DisplayName("LeagueService")
 class LeagueServiceTest {
-
     private lateinit var leagueRepository: LeagueRepositoryPort
     private lateinit var associationRepository: AssociationRepositoryPort
     private lateinit var leagueService: LeagueService
@@ -35,7 +33,6 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("create")
     inner class Create {
-
         @Test
         fun `should create league successfully`() {
             // given
@@ -49,14 +46,15 @@ class LeagueServiceTest {
             every { leagueRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = leagueService.create(
-                associationId = associationId,
-                name = name,
-                abbreviation = "1부",
-                foundedYear = foundedYear,
-                divisionLevel = 1,
-                description = "서울시야구협회 1부 리그"
-            )
+            val result =
+                leagueService.create(
+                    associationId = associationId,
+                    name = name,
+                    abbreviation = "1부",
+                    foundedYear = foundedYear,
+                    divisionLevel = 1,
+                    description = "서울시야구협회 1부 리그",
+                )
 
             // then
             assertThat(result.name).isEqualTo(name)
@@ -77,7 +75,7 @@ class LeagueServiceTest {
                 leagueService.create(
                     associationId = associationId,
                     name = "1부 리그",
-                    foundedYear = 2020
+                    foundedYear = 2020,
                 )
             }.isInstanceOf(AssociationNotFoundException::class.java)
         }
@@ -97,7 +95,7 @@ class LeagueServiceTest {
                 leagueService.create(
                     associationId = associationId,
                     name = name,
-                    foundedYear = 2020
+                    foundedYear = 2020,
                 )
             }.isInstanceOf(LeagueNameDuplicateException::class.java)
         }
@@ -106,7 +104,6 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("getById")
     inner class GetById {
-
         @Test
         fun `should return league when found`() {
             // given
@@ -139,15 +136,15 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("getAllActive")
     inner class GetAllActive {
-
         @Test
         fun `should return only active leagues`() {
             // given
             val association = createAssociation(1L, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association),
-                createLeague(2L, "2부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association),
+                    createLeague(2L, "2부 리그", association),
+                )
             every { leagueRepository.findAllActive() } returns leagues
 
             // when
@@ -161,16 +158,16 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("getActiveByAssociationId")
     inner class GetActiveByAssociationId {
-
         @Test
         fun `should return active leagues by association`() {
             // given
             val associationId = 1L
             val association = createAssociation(associationId, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association),
-                createLeague(2L, "2부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association),
+                    createLeague(2L, "2부 리그", association),
+                )
             every { leagueRepository.findActiveByAssociationId(associationId) } returns leagues
 
             // when
@@ -185,7 +182,6 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("update")
     inner class Update {
-
         @Test
         fun `should update league info`() {
             // given
@@ -195,11 +191,12 @@ class LeagueServiceTest {
             every { leagueRepository.findByIdOrNull(id) } returns league
 
             // when
-            val result = leagueService.update(
-                id = id,
-                description = "새로운 설명",
-                logoUrl = "https://example.com/logo.png"
-            )
+            val result =
+                leagueService.update(
+                    id = id,
+                    description = "새로운 설명",
+                    logoUrl = "https://example.com/logo.png",
+                )
 
             // then
             assertThat(result.description).isEqualTo("새로운 설명")
@@ -210,7 +207,6 @@ class LeagueServiceTest {
     @Nested
     @DisplayName("deactivate/activate")
     inner class DeactivateActivate {
-
         @Test
         fun `should deactivate league`() {
             // given
@@ -242,34 +238,39 @@ class LeagueServiceTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association =
+        Association(
             name = name,
             abbreviation = null,
             region = "서울",
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
-        return League(
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association,
+    ): League =
+        League(
             association = association,
             name = name,
             abbreviation = null,
             foundedYear = 2020,
             divisionLevel = 1,
             description = null,
-            logoUrl = null
+            logoUrl = null,
         ).apply {
             val idField = League::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

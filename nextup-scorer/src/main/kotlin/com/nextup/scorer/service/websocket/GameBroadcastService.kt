@@ -22,7 +22,10 @@ class GameBroadcastService(
      * @param gameId 경기 ID
      * @param event 이벤트 메시지
      */
-    fun broadcastEvent(gameId: Long, event: GameEventMessage) {
+    fun broadcastEvent(
+        gameId: Long,
+        event: GameEventMessage
+    ) {
         messagingTemplate.convertAndSend(
             "/topic/games/$gameId/events",
             event
@@ -35,7 +38,10 @@ class GameBroadcastService(
      * @param gameId 경기 ID
      * @param scoreboard 스코어보드 메시지
      */
-    fun broadcastScoreboard(gameId: Long, scoreboard: ScoreboardMessage) {
+    fun broadcastScoreboard(
+        gameId: Long,
+        scoreboard: ScoreboardMessage
+    ) {
         messagingTemplate.convertAndSend(
             "/topic/games/$gameId/scoreboard",
             scoreboard
@@ -48,7 +54,10 @@ class GameBroadcastService(
      * @param gameId 경기 ID
      * @param state 상태 메시지
      */
-    fun broadcastState(gameId: Long, state: GameStateMessage) {
+    fun broadcastState(
+        gameId: Long,
+        state: GameStateMessage
+    ) {
         messagingTemplate.convertAndSend(
             "/topic/games/$gameId/state",
             state

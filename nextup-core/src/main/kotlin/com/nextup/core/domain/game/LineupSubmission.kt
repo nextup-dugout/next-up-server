@@ -19,33 +19,29 @@ import java.time.Instant
         Index(name = "idx_lineup_submissions_game", columnList = "game_id"),
         Index(name = "idx_lineup_submissions_team", columnList = "team_id"),
         Index(name = "idx_lineup_submissions_status", columnList = "status"),
-        Index(name = "idx_lineup_submissions_submitted_by", columnList = "submitted_by_id")
+        Index(name = "idx_lineup_submissions_submitted_by", columnList = "submitted_by_id"),
     ],
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_lineup_submissions_game_team",
-            columnNames = ["game_id", "team_id"]
-        )
-    ]
+            columnNames = ["game_id", "team_id"],
+        ),
+    ],
 )
 class LineupSubmission private constructor(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     val game: Game,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
     val team: Team,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submitted_by_id", nullable = false)
     val submittedBy: User,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: LineupSubmissionStatus = LineupSubmissionStatus.DRAFT
@@ -77,7 +73,7 @@ class LineupSubmission private constructor(
         mappedBy = "submission",
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
-        fetch = FetchType.LAZY
+        fetch = FetchType.LAZY,
     )
     private val _entries: MutableList<LineupEntry> = mutableListOf()
 
@@ -112,7 +108,10 @@ class LineupSubmission private constructor(
     /**
      * 기록원이 라인업을 반려합니다.
      */
-    fun reject(scorer: User, reason: String) {
+    fun reject(
+        scorer: User,
+        reason: String,
+    ) {
         require(status.canReject()) {
             "제출된 상태의 라인업만 반려할 수 있습니다. 현재 상태: ${status.displayName}"
         }
@@ -149,11 +148,12 @@ class LineupSubmission private constructor(
         fun create(
             game: Game,
             team: Team,
-            submittedBy: User
-        ): LineupSubmission = LineupSubmission(
-            game = game,
-            team = team,
-            submittedBy = submittedBy
-        )
+            submittedBy: User,
+        ): LineupSubmission =
+            LineupSubmission(
+                game = game,
+                team = team,
+                submittedBy = submittedBy,
+            )
     }
 }

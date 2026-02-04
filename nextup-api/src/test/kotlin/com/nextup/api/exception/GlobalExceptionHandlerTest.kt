@@ -15,7 +15,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 
 @DisplayName("GlobalExceptionHandler 테스트")
 class GlobalExceptionHandlerTest {
-
     private lateinit var handler: GlobalExceptionHandler
 
     @BeforeEach
@@ -86,17 +85,21 @@ class GlobalExceptionHandlerTest {
     @Test
     fun `should handle MethodArgumentNotValidException and return 400`() {
         // given
-        data class TestRequest(val name: String?)
+        data class TestRequest(
+            val name: String?,
+        )
         val target = TestRequest(null)
         val bindingResult = BeanPropertyBindingResult(target, "testRequest")
         bindingResult.addError(FieldError("testRequest", "name", "must not be null"))
 
-        val exception = MethodArgumentNotValidException(
-            org.springframework.core.MethodParameter(
-                TestRequest::class.java.constructors.first(), -1
-            ),
-            bindingResult
-        )
+        val exception =
+            MethodArgumentNotValidException(
+                org.springframework.core.MethodParameter(
+                    TestRequest::class.java.constructors.first(),
+                    -1,
+                ),
+                bindingResult,
+            )
 
         // when
         val response = handler.handleValidationException(exception)

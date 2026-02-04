@@ -8,19 +8,18 @@ import org.junit.jupiter.api.assertThrows
 
 @DisplayName("User 테스트")
 class UserTest {
-
     @Nested
     @DisplayName("LOCAL 사용자 생성")
     inner class CreateLocalUser {
-
         @Test
         fun `should create local user successfully`() {
             // when
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "encoded_password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "encoded_password",
+                    nickname = "테스터",
+                )
 
             // then
             assertThat(user.email).isEqualTo("test@example.com")
@@ -39,7 +38,7 @@ class UserTest {
                 User.createLocalUser(
                     email = "",
                     encodedPassword = "password",
-                    nickname = "테스터"
+                    nickname = "테스터",
                 )
             }
         }
@@ -51,7 +50,7 @@ class UserTest {
                 User.createLocalUser(
                     email = "test@example.com",
                     encodedPassword = "",
-                    nickname = "테스터"
+                    nickname = "테스터",
                 )
             }
         }
@@ -63,7 +62,7 @@ class UserTest {
                 User.createLocalUser(
                     email = "test@example.com",
                     encodedPassword = "password",
-                    nickname = ""
+                    nickname = "",
                 )
             }
         }
@@ -72,17 +71,17 @@ class UserTest {
     @Nested
     @DisplayName("OAuth 사용자 생성")
     inner class CreateOAuthUser {
-
         @Test
         fun `should create oauth user successfully`() {
             // when
-            val user = User.createOAuthUser(
-                email = "oauth@example.com",
-                nickname = "OAuth테스터",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_12345",
-                profileImageUrl = "http://example.com/profile.jpg"
-            )
+            val user =
+                User.createOAuthUser(
+                    email = "oauth@example.com",
+                    nickname = "OAuth테스터",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_12345",
+                    profileImageUrl = "http://example.com/profile.jpg",
+                )
 
             // then
             assertThat(user.email).isEqualTo("oauth@example.com")
@@ -103,7 +102,7 @@ class UserTest {
                     email = "test@example.com",
                     nickname = "테스터",
                     provider = OAuthProvider.LOCAL,
-                    oauthId = "local_123"
+                    oauthId = "local_123",
                 )
             }
         }
@@ -112,15 +111,15 @@ class UserTest {
     @Nested
     @DisplayName("OAuth 계정 연동")
     inner class OAuthAccountLink {
-
         @Test
         fun `should add oauth account to local user`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when
             user.addOAuthAccount(OAuthProvider.GOOGLE, "google_123", "google@example.com")
@@ -134,11 +133,12 @@ class UserTest {
         @Test
         fun `should add multiple oauth accounts`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when
             user.addOAuthAccount(OAuthProvider.KAKAO, "kakao_123")
@@ -153,12 +153,13 @@ class UserTest {
         @Test
         fun `should throw exception when adding duplicate provider`() {
             // given
-            val user = User.createOAuthUser(
-                email = "test@example.com",
-                nickname = "테스터",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_123"
-            )
+            val user =
+                User.createOAuthUser(
+                    email = "test@example.com",
+                    nickname = "테스터",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_123",
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -169,11 +170,12 @@ class UserTest {
         @Test
         fun `should remove oauth account when multiple auth methods exist`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
             user.addOAuthAccount(OAuthProvider.KAKAO, "kakao_123")
             user.addOAuthAccount(OAuthProvider.GOOGLE, "google_123")
 
@@ -189,12 +191,13 @@ class UserTest {
         @Test
         fun `should throw exception when removing last auth method`() {
             // given
-            val user = User.createOAuthUser(
-                email = "test@example.com",
-                nickname = "테스터",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_123"
-            )
+            val user =
+                User.createOAuthUser(
+                    email = "test@example.com",
+                    nickname = "테스터",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_123",
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -206,15 +209,15 @@ class UserTest {
     @Nested
     @DisplayName("인증 수단 관리")
     inner class AuthMethodManagement {
-
         @Test
         fun `should allow removing auth method when multiple exist`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
             user.addOAuthAccount(OAuthProvider.KAKAO, "kakao_123")
 
             // when & then
@@ -224,11 +227,12 @@ class UserTest {
         @Test
         fun `should not allow removing last auth method`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when & then
             assertThat(user.canRemoveAuthMethod()).isFalse()
@@ -237,11 +241,12 @@ class UserTest {
         @Test
         fun `should remove password when oauth account exists`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
             user.addOAuthAccount(OAuthProvider.KAKAO, "kakao_123")
 
             // when
@@ -255,11 +260,12 @@ class UserTest {
         @Test
         fun `should throw exception when removing password without oauth`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -271,15 +277,15 @@ class UserTest {
     @Nested
     @DisplayName("역할 관리")
     inner class RoleManagement {
-
         @Test
         fun `should add role successfully`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when
             user.addRole(Role.ADMIN)
@@ -292,11 +298,12 @@ class UserTest {
         @Test
         fun `should remove role successfully`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
             user.addRole(Role.SCORER)
 
             // when
@@ -309,11 +316,12 @@ class UserTest {
         @Test
         fun `should throw exception when removing USER role`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -325,20 +333,20 @@ class UserTest {
     @Nested
     @DisplayName("프로필 업데이트")
     inner class ProfileUpdate {
-
         @Test
         fun `should update profile successfully`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "원래닉네임"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "원래닉네임",
+                )
 
             // when
             user.updateProfile(
                 nickname = "새닉네임",
-                profileImageUrl = "http://example.com/new-profile.jpg"
+                profileImageUrl = "http://example.com/new-profile.jpg",
             )
 
             // then
@@ -349,11 +357,12 @@ class UserTest {
         @Test
         fun `should change password successfully`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "old_password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "old_password",
+                    nickname = "테스터",
+                )
 
             // when
             user.changePassword("new_password")
@@ -366,15 +375,15 @@ class UserTest {
     @Nested
     @DisplayName("계정 상태 관리")
     inner class AccountStatus {
-
         @Test
         fun `should deactivate account`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
 
             // when
             user.deactivate()
@@ -386,11 +395,12 @@ class UserTest {
         @Test
         fun `should activate account`() {
             // given
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "password",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "password",
+                    nickname = "테스터",
+                )
             user.deactivate()
 
             // when

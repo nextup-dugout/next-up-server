@@ -9,5 +9,5 @@ import jakarta.validation.constraints.NotNull
  */
 data class CreateBattingRecordRequest(
     @field:NotNull(message = "playerId is required")
-    val playerId: Long
+    val playerId: Long,
 )

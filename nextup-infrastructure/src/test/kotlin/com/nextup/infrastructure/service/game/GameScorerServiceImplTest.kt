@@ -1,25 +1,22 @@
 package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
-import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
-import com.nextup.core.domain.player.Player
-import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
-import com.nextup.common.exception.GamePlayerNotFoundException
-import com.nextup.core.domain.game.Base
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.core.service.game.dto.RunnerMovement
@@ -37,7 +34,6 @@ import java.time.LocalDateTime
 
 @DisplayName("GameScorerServiceImpl")
 class GameScorerServiceImplTest {
-
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var boxScoreService: BoxScoreService
@@ -48,17 +44,17 @@ class GameScorerServiceImplTest {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
         boxScoreService = mockk(relaxed = true)
-        gameScorerService = GameScorerServiceImpl(
-            gameRepository,
-            gamePlayerRepository,
-            boxScoreService
-        )
+        gameScorerService =
+            GameScorerServiceImpl(
+                gameRepository,
+                gamePlayerRepository,
+                boxScoreService,
+            )
     }
 
     @Nested
     @DisplayName("startGame")
     inner class StartGame {
-
         @Test
         fun `should start game when status is SCHEDULED`() {
             // given
@@ -90,14 +86,14 @@ class GameScorerServiceImplTest {
     @Nested
     @DisplayName("advanceHalfInning")
     inner class AdvanceHalfInning {
-
         @Test
         fun `should advance to bottom of inning`() {
             // given
-            val game = createGame(1L, GameStatus.IN_PROGRESS).apply {
-                currentInning = 1
-                isTopInning = true
-            }
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 1
+                    isTopInning = true
+                }
             every { gameRepository.findByIdOrNull(1L) } returns game
             every { gameRepository.save(any()) } answers { firstArg() }
 
@@ -124,7 +120,6 @@ class GameScorerServiceImplTest {
     @Nested
     @DisplayName("endGame")
     inner class EndGame {
-
         @Test
         fun `should end game with REGULATION reason`() {
             // given
@@ -212,22 +207,22 @@ class GameScorerServiceImplTest {
     @Nested
     @DisplayName("recordPlateAppearance")
     inner class RecordPlateAppearance {
-
         @Test
         fun `should throw exception when game is not in progress`() {
             // given
             val game = createGame(1L, GameStatus.SCHEDULED)
             every { gameRepository.findByIdOrNull(1L) } returns game
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when & then
             assertThatThrownBy { gameScorerService.recordPlateAppearance(1L, request) }
@@ -241,15 +236,16 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
             every { gamePlayerRepository.findByIdOrNull(10L) } returns null
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when & then
             assertThatThrownBy { gameScorerService.recordPlateAppearance(1L, request) }
@@ -265,15 +261,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
             every { gamePlayerRepository.findByIdOrNull(20L) } returns null
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when & then
             assertThatThrownBy { gameScorerService.recordPlateAppearance(1L, request) }
@@ -291,15 +288,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 2,
-                strikes = 1
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 2,
+                    strikes = 1,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -320,15 +318,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.DOUBLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.DOUBLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -348,15 +347,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.TRIPLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.TRIPLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -376,21 +376,32 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.HOME_RUN,
-                runnerMovements = emptyList(),
-                rbis = 1,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.HOME_RUN,
+                    runnerMovements = emptyList(),
+                    rbis = 1,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            verify { boxScoreService.updateOnPlateAppearance(any(), any(), any(), eq(PlateAppearanceResult.HOME_RUN), any(), any(), any()) }
+            verify {
+                boxScoreService.updateOnPlateAppearance(
+                    any(),
+                    any(),
+                    any(),
+                    eq(PlateAppearanceResult.HOME_RUN),
+                    any(),
+                    any(),
+                    any()
+                )
+            }
         }
 
         @Test
@@ -404,15 +415,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.WALK,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 4,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.WALK,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 4,
+                    strikes = 0,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -432,15 +444,16 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.STRIKEOUT,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 0,
-                strikes = 3
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 3,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -452,9 +465,10 @@ class GameScorerServiceImplTest {
         @Test
         fun `should handle runner movement with score`() {
             // given
-            val game = createGame(1L, GameStatus.IN_PROGRESS).apply {
-                gameState.runnerOnThirdId = 5L
-            }
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    gameState.runnerOnThirdId = 5L
+                }
             val batter = createGamePlayer(10L)
             val pitcher = createGamePlayer(20L)
             every { gameRepository.findByIdOrNull(1L) } returns game
@@ -462,36 +476,51 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = listOf(
-                    RunnerMovement(
-                        runnerId = 5L,
-                        fromBase = Base.THIRD,
-                        toBase = Base.HOME,
-                        isOut = false
-                    )
-                ),
-                rbis = 1,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements =
+                        listOf(
+                            RunnerMovement(
+                                runnerId = 5L,
+                                fromBase = Base.THIRD,
+                                toBase = Base.HOME,
+                                isOut = false,
+                            ),
+                        ),
+                    rbis = 1,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            verify { boxScoreService.updateOnPlateAppearance(any(), any(), any(), any(), any(), match { it.contains(5L) }, any()) }
+            verify {
+                boxScoreService.updateOnPlateAppearance(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    match {
+                        it.contains(5L)
+                    },
+                    any()
+                )
+            }
         }
 
         @Test
         fun `should handle runner movement with out`() {
             // given
-            val game = createGame(1L, GameStatus.IN_PROGRESS).apply {
-                gameState.runnerOnFirstId = 5L
-            }
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    gameState.runnerOnFirstId = 5L
+                }
             val batter = createGamePlayer(10L)
             val pitcher = createGamePlayer(20L)
             every { gameRepository.findByIdOrNull(1L) } returns game
@@ -499,22 +528,24 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.FIELDERS_CHOICE,
-                runnerMovements = listOf(
-                    RunnerMovement(
-                        runnerId = 5L,
-                        fromBase = Base.FIRST,
-                        toBase = Base.SECOND,
-                        isOut = true
-                    )
-                ),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.FIELDERS_CHOICE,
+                    runnerMovements =
+                        listOf(
+                            RunnerMovement(
+                                runnerId = 5L,
+                                fromBase = Base.FIRST,
+                                toBase = Base.SECOND,
+                                isOut = true,
+                            ),
+                        ),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -526,9 +557,10 @@ class GameScorerServiceImplTest {
         @Test
         fun `should handle runner advancement without score or out`() {
             // given
-            val game = createGame(1L, GameStatus.IN_PROGRESS).apply {
-                gameState.runnerOnFirstId = 5L
-            }
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    gameState.runnerOnFirstId = 5L
+                }
             val batter = createGamePlayer(10L)
             val pitcher = createGamePlayer(20L)
             every { gameRepository.findByIdOrNull(1L) } returns game
@@ -536,22 +568,24 @@ class GameScorerServiceImplTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val request = PlateAppearanceRequest(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = listOf(
-                    RunnerMovement(
-                        runnerId = 5L,
-                        fromBase = Base.FIRST,
-                        toBase = Base.THIRD,
-                        isOut = false
-                    )
-                ),
-                rbis = 0,
-                balls = 0,
-                strikes = 0
-            )
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements =
+                        listOf(
+                            RunnerMovement(
+                                runnerId = 5L,
+                                fromBase = Base.FIRST,
+                                toBase = Base.THIRD,
+                                isOut = false,
+                            ),
+                        ),
+                    rbis = 0,
+                    balls = 0,
+                    strikes = 0,
+                )
 
             // when
             val result = gameScorerService.recordPlateAppearance(1L, request)
@@ -568,39 +602,43 @@ class GameScorerServiceImplTest {
         return gamePlayer
     }
 
-    private fun createAssociation(id: Long): Association {
-        return Association(
+    private fun createAssociation(id: Long): Association =
+        Association(
             name = "서울시야구협회",
             abbreviation = null,
             region = "서울",
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createLeague(id: Long, association: Association): League {
-        return League(
+    private fun createLeague(
+        id: Long,
+        association: Association,
+    ): League =
+        League(
             association = association,
             name = "1부 리그",
             abbreviation = null,
             foundedYear = 2020,
             divisionLevel = 1,
             description = null,
-            logoUrl = null
+            logoUrl = null,
         ).apply {
             val idField = League::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createCompetition(id: Long, league: League): Competition {
-        return Competition(
+    private fun createCompetition(
+        id: Long,
+        league: League,
+    ): Competition =
+        Competition(
             league = league,
             name = "2025 춘계대회",
             year = 2025,
@@ -610,15 +648,17 @@ class GameScorerServiceImplTest {
             endDate = LocalDate.of(2025, 6, 30),
             status = CompetitionStatus.IN_PROGRESS,
             description = null,
-            maxTeams = null
+            maxTeams = null,
         ).apply {
             val idField = Competition::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createGame(id: Long, status: GameStatus): Game {
+    private fun createGame(
+        id: Long,
+        status: GameStatus,
+    ): Game {
         val association = createAssociation(1L)
         val league = createLeague(1L, association)
         val competition = createCompetition(1L, league)
@@ -633,7 +673,7 @@ class GameScorerServiceImplTest {
             currentInning = 1,
             isTopInning = true,
             totalInnings = 9,
-            gameState = GameState()
+            gameState = GameState(),
         ).apply {
             val idField = Game::class.java.getDeclaredField("id")
             idField.isAccessible = true

@@ -21,11 +21,9 @@ import java.time.Instant
 
 @DisplayName("OAuth2 Authentication Handlers 테스트")
 class OAuth2AuthenticationHandlersTest {
-
     @Nested
     @DisplayName("OAuth2AuthenticationSuccessHandler")
     inner class SuccessHandlerTest {
-
         private lateinit var jwtTokenProvider: JwtTokenProvider
         private lateinit var refreshTokenRepository: RefreshTokenRepository
         private lateinit var successHandler: OAuth2AuthenticationSuccessHandler
@@ -39,23 +37,28 @@ class OAuth2AuthenticationHandlersTest {
         fun setUp() {
             jwtTokenProvider = mockk()
             refreshTokenRepository = mockk(relaxed = true)
-            successHandler = OAuth2AuthenticationSuccessHandler(
-                jwtTokenProvider,
-                refreshTokenRepository,
-                redirectUri
-            )
+            successHandler =
+                OAuth2AuthenticationSuccessHandler(
+                    jwtTokenProvider,
+                    refreshTokenRepository,
+                    redirectUri,
+                )
             request = mockk(relaxed = true)
             response = mockk(relaxed = true)
             authentication = mockk()
         }
 
-        private fun createPrincipal(userId: Long, isNewUser: Boolean): OAuth2UserPrincipal {
-            val user = User.createOAuthUser(
-                email = "test@example.com",
-                nickname = "테스터",
-                provider = OAuthProvider.KAKAO,
-                oauthId = "kakao_123"
-            )
+        private fun createPrincipal(
+            userId: Long,
+            isNewUser: Boolean,
+        ): OAuth2UserPrincipal {
+            val user =
+                User.createOAuthUser(
+                    email = "test@example.com",
+                    nickname = "테스터",
+                    provider = OAuthProvider.KAKAO,
+                    oauthId = "kakao_123",
+                )
             val idField = User::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(user, userId)
@@ -162,7 +165,6 @@ class OAuth2AuthenticationHandlersTest {
     @Nested
     @DisplayName("OAuth2AuthenticationFailureHandler")
     inner class FailureHandlerTest {
-
         private lateinit var failureHandler: OAuth2AuthenticationFailureHandler
         private lateinit var request: HttpServletRequest
         private lateinit var response: HttpServletResponse
@@ -179,10 +181,11 @@ class OAuth2AuthenticationHandlersTest {
         @Test
         fun `should redirect with error on failure`() {
             // given
-            val exception = OAuth2AuthenticationException(
-                OAuth2Error("invalid_token"),
-                "Token validation failed"
-            )
+            val exception =
+                OAuth2AuthenticationException(
+                    OAuth2Error("invalid_token"),
+                    "Token validation failed",
+                )
             val redirectUrlSlot = slot<String>()
             every { response.sendRedirect(capture(redirectUrlSlot)) } just Runs
 
@@ -197,10 +200,11 @@ class OAuth2AuthenticationHandlersTest {
         @Test
         fun `should URL encode error message`() {
             // given
-            val exception = OAuth2AuthenticationException(
-                OAuth2Error("error"),
-                "Error with special chars: &?="
-            )
+            val exception =
+                OAuth2AuthenticationException(
+                    OAuth2Error("error"),
+                    "Error with special chars: &?=",
+                )
             val redirectUrlSlot = slot<String>()
             every { response.sendRedirect(capture(redirectUrlSlot)) } just Runs
 

@@ -15,11 +15,9 @@ import org.junit.jupiter.params.provider.ValueSource
 
 @DisplayName("OAuth2UserInfoFactory 테스트")
 class OAuth2UserInfoFactoryTest {
-
     @Nested
     @DisplayName("create")
     inner class Create {
-
         @Test
         fun `should create KakaoOAuth2UserInfo for kakao`() {
             // given
@@ -81,7 +79,6 @@ class OAuth2UserInfoFactoryTest {
     @Nested
     @DisplayName("toOAuthProvider")
     inner class ToOAuthProvider {
-
         @Test
         fun `should return KAKAO for kakao`() {
             // when

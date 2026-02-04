@@ -16,37 +16,33 @@ import jakarta.persistence.*
     indexes = [
         Index(name = "idx_game_teams_game", columnList = "game_id"),
         Index(name = "idx_game_teams_team", columnList = "team_id"),
-        Index(name = "idx_game_teams_result", columnList = "result")
+        Index(name = "idx_game_teams_result", columnList = "result"),
     ],
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_game_teams_game_home_away",
-            columnNames = ["game_id", "home_away"]
+            columnNames = ["game_id", "home_away"],
         ),
         UniqueConstraint(
             name = "uk_game_teams_game_team",
-            columnNames = ["game_id", "team_id"]
-        )
-    ]
+            columnNames = ["game_id", "team_id"],
+        ),
+    ],
 )
 class GameTeam(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     val game: Game,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
     val team: Team,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "home_away", nullable = false, length = 10)
     val homeAway: HomeAway,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     @Column(name = "total_score", nullable = false)
     var totalScore: Int = 0
         protected set
@@ -109,7 +105,10 @@ class GameTeam(
     /**
      * 이닝 점수를 기록합니다.
      */
-    fun recordInningScore(inning: Int, runs: Int) {
+    fun recordInningScore(
+        inning: Int,
+        runs: Int,
+    ) {
         require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
         require(runs >= 0) { "점수는 0 이상이어야 합니다." }
 
@@ -127,7 +126,10 @@ class GameTeam(
     /**
      * 특정 이닝에 득점을 추가합니다 (BoxScore 계산용).
      */
-    fun addRunInInning(inning: Int, runs: Int = 1) {
+    fun addRunInInning(
+        inning: Int,
+        runs: Int = 1,
+    ) {
         require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
         require(runs >= 0) { "점수는 0 이상이어야 합니다." }
 
@@ -164,7 +166,11 @@ class GameTeam(
     /**
      * 점수를 업데이트합니다.
      */
-    fun updateScore(totalScore: Int, totalHits: Int, totalErrors: Int) {
+    fun updateScore(
+        totalScore: Int,
+        totalHits: Int,
+        totalErrors: Int,
+    ) {
         require(totalScore >= 0) { "점수는 0 이상이어야 합니다." }
         require(totalHits >= 0) { "안타 수는 0 이상이어야 합니다." }
         require(totalErrors >= 0) { "실책 수는 0 이상이어야 합니다." }
@@ -177,7 +183,5 @@ class GameTeam(
     /**
      * 경기 결과 표시 문자열을 반환합니다 (예: "5 - 3 승").
      */
-    fun getScoreDisplay(opponentScore: Int): String {
-        return "$totalScore - $opponentScore ${result.displayName}"
-    }
+    fun getScoreDisplay(opponentScore: Int): String = "$totalScore - $opponentScore ${result.displayName}"
 }

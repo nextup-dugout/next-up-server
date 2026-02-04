@@ -3,7 +3,10 @@ package com.nextup.core.domain.user
 /**
  * 사용자 권한
  */
-enum class Role(val displayName: String, val description: String) {
+enum class Role(
+    val displayName: String,
+    val description: String,
+) {
     /** 시스템 관리자 - 전체 시스템 관리 */
     ADMIN("관리자", "시스템 전체 관리 권한"),
 
@@ -23,5 +26,5 @@ enum class Role(val displayName: String, val description: String) {
     PLAYER("선수", "본인 기록 조회 및 프로필 관리"),
 
     /** 일반 사용자 - 조회만 가능 */
-    USER("사용자", "기본 조회 권한")
+    USER("사용자", "기본 조회 권한"),
 }

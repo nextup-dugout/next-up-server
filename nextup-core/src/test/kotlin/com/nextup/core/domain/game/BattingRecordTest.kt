@@ -11,7 +11,6 @@ import java.math.BigDecimal
 
 @DisplayName("BattingRecord")
 class BattingRecordTest {
-
     private lateinit var gamePlayer: GamePlayer
     private lateinit var battingRecord: BattingRecord
 
@@ -24,7 +23,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("타석 결과 기록")
     inner class RecordPlateAppearanceTest {
-
         @Test
         fun `단타를 기록하면 타석, 타수, 안타가 증가한다`() {
             // when
@@ -167,7 +165,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("도루 기록")
     inner class StolenBaseTest {
-
         @Test
         fun `도루 성공을 기록할 수 있다`() {
             // when
@@ -190,7 +187,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("득점 기록")
     inner class RunTest {
-
         @Test
         fun `득점을 별도로 기록할 수 있다`() {
             // when
@@ -204,7 +200,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("계산된 속성")
     inner class CalculatedPropertiesTest {
-
         @Test
         fun `singles는 안타에서 장타를 뺀 값이다`() {
             // given
@@ -265,7 +260,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("타율 계산")
     inner class BattingAverageTest {
-
         @Test
         fun `타수가 0이면 타율은 0이다`() {
             // when
@@ -302,7 +296,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("출루율 계산")
     inner class OnBasePercentageTest {
-
         @Test
         fun `분모가 0이면 출루율은 0이다`() {
             // then
@@ -327,7 +320,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("장타율 계산")
     inner class SluggingPercentageTest {
-
         @Test
         fun `타수가 0이면 장타율은 0이다`() {
             // then
@@ -351,7 +343,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("OPS 계산")
     inner class OpsTest {
-
         @Test
         fun `OPS는 출루율 + 장타율이다`() {
             // given: 간단한 예시 - 4타수 2안타(단타 2개)
@@ -370,7 +361,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("도루 성공률 계산")
     inner class StolenBasePercentageTest {
-
         @Test
         fun `도루 시도가 없으면 0이다`() {
             // then
@@ -393,7 +383,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("유효성 검증")
     inner class ValidationTest {
-
         @Test
         fun `정상적인 기록은 검증에 통과한다`() {
             // given
@@ -409,7 +398,6 @@ class BattingRecordTest {
     @Nested
     @DisplayName("applyPlateAppearanceResult - BoxScore 자동 계산")
     inner class ApplyPlateAppearanceResultTest {
-
         @Test
         fun `단타를 적용하면 타석, 타수, 안타가 증가한다`() {
             // when

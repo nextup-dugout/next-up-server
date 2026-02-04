@@ -18,29 +18,29 @@ data class ProfileResponse(
     val linkedOAuthProviders: List<LinkedOAuthProvider>,
     val hasLinkedPlayer: Boolean,
     val playerId: Long?,
-    val createdAt: Instant
+    val createdAt: Instant,
 ) {
     companion object {
-        fun from(user: User): ProfileResponse {
-            return ProfileResponse(
+        fun from(user: User): ProfileResponse =
+            ProfileResponse(
                 id = user.id,
                 email = user.email,
                 nickname = user.nickname,
                 profileImageUrl = user.profileImageUrl,
                 roles = user.roles.map { it.name }.toSet(),
                 isLocalUser = user.isLocalUser,
-                linkedOAuthProviders = user.oauthAccounts.map {
-                    LinkedOAuthProvider(
-                        provider = it.provider.name,
-                        displayName = it.provider.displayName,
-                        connectedAt = it.connectedAt
-                    )
-                },
+                linkedOAuthProviders =
+                    user.oauthAccounts.map {
+                        LinkedOAuthProvider(
+                            provider = it.provider.name,
+                            displayName = it.provider.displayName,
+                            connectedAt = it.connectedAt,
+                        )
+                    },
                 hasLinkedPlayer = user.hasLinkedPlayer,
                 playerId = user.player?.id,
-                createdAt = user.createdAt
+                createdAt = user.createdAt,
             )
-        }
     }
 }
 
@@ -50,7 +50,7 @@ data class ProfileResponse(
 data class LinkedOAuthProvider(
     val provider: String,
     val displayName: String,
-    val connectedAt: Instant
+    val connectedAt: Instant,
 )
 
 /**
@@ -61,17 +61,16 @@ data class PublicProfileResponse(
     val nickname: String,
     val profileImageUrl: String?,
     val hasLinkedPlayer: Boolean,
-    val playerId: Long?
+    val playerId: Long?,
 ) {
     companion object {
-        fun from(user: User): PublicProfileResponse {
-            return PublicProfileResponse(
+        fun from(user: User): PublicProfileResponse =
+            PublicProfileResponse(
                 id = user.id,
                 nickname = user.nickname,
                 profileImageUrl = user.profileImageUrl,
                 hasLinkedPlayer = user.hasLinkedPlayer,
-                playerId = user.player?.id
+                playerId = user.player?.id,
             )
-        }
     }
 }

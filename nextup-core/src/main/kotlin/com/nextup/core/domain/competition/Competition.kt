@@ -18,48 +18,37 @@ import java.time.LocalDate
         Index(name = "idx_competitions_league", columnList = "league_id"),
         Index(name = "idx_competitions_year_season", columnList = "year, season"),
         Index(name = "idx_competitions_dates", columnList = "start_date, end_date"),
-        Index(name = "idx_competitions_status", columnList = "status")
-    ]
+        Index(name = "idx_competitions_status", columnList = "status"),
+    ],
 )
 class Competition(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "league_id", nullable = false)
     val league: League,
-
     @Column(nullable = false, length = 100)
     val name: String,
-
     @Column(nullable = false)
     val year: Int,
-
     @Column(nullable = false)
     val season: Int = 1,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     val type: CompetitionType = CompetitionType.LEAGUE,
-
     @Column(name = "start_date", nullable = false)
     val startDate: LocalDate,
-
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: CompetitionStatus = CompetitionStatus.SCHEDULED,
-
     @Column(length = 500)
     var description: String? = null,
-
     @Column(name = "max_teams")
     val maxTeams: Int? = null,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     /**
      * 대회를 시작합니다.
      */
@@ -107,10 +96,12 @@ class Competition(
 /**
  * 대회 상태
  */
-enum class CompetitionStatus(val displayName: String) {
+enum class CompetitionStatus(
+    val displayName: String,
+) {
     SCHEDULED("예정"),
     IN_PROGRESS("진행 중"),
     COMPLETED("완료"),
     CANCELLED("취소"),
-    POSTPONED("연기")
+    POSTPONED("연기"),
 }

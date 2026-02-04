@@ -10,11 +10,9 @@ import org.junit.jupiter.params.provider.CsvSource
 
 @DisplayName("OrganizationRole 테스트")
 class OrganizationRoleTest {
-
     @Nested
     @DisplayName("enum 값")
     inner class EnumValues {
-
         @Test
         fun `should have correct ADMIN properties`() {
             // given
@@ -52,7 +50,6 @@ class OrganizationRoleTest {
     @Nested
     @DisplayName("isHigherThan 메서드")
     inner class IsHigherThan {
-
         @Test
         fun `ADMIN should be higher than MANAGER`() {
             assertThat(OrganizationRole.ADMIN.isHigherThan(OrganizationRole.MANAGER)).isTrue()
@@ -89,7 +86,6 @@ class OrganizationRoleTest {
     @Nested
     @DisplayName("isHigherOrEqual 메서드")
     inner class IsHigherOrEqual {
-
         @Test
         fun `ADMIN should be higher or equal to all roles`() {
             assertThat(OrganizationRole.ADMIN.isHigherOrEqual(OrganizationRole.ADMIN)).isTrue()
@@ -115,7 +111,6 @@ class OrganizationRoleTest {
     @Nested
     @DisplayName("fromValue 메서드")
     inner class FromValue {
-
         @ParameterizedTest
         @CsvSource(
             "ADMIN, ADMIN",
@@ -124,9 +119,12 @@ class OrganizationRoleTest {
             "MANAGER, MANAGER",
             "manager, MANAGER",
             "SCORER, SCORER",
-            "scorer, SCORER"
+            "scorer, SCORER",
         )
-        fun `should return correct role for valid values`(input: String, expected: OrganizationRole) {
+        fun `should return correct role for valid values`(
+            input: String,
+            expected: OrganizationRole,
+        ) {
             // when
             val result = OrganizationRole.fromValue(input)
 
@@ -137,9 +135,10 @@ class OrganizationRoleTest {
         @Test
         fun `should throw exception for invalid value`() {
             // when & then
-            val exception = assertThrows<IllegalArgumentException> {
-                OrganizationRole.fromValue("INVALID")
-            }
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    OrganizationRole.fromValue("INVALID")
+                }
             assertThat(exception.message).contains("Invalid organization role")
         }
 

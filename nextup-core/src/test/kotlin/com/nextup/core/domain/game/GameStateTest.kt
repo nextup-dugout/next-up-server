@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
 class GameStateTest {
-
     @Test
     fun `should create GameState with default values`() {
         // when
@@ -269,11 +268,12 @@ class GameStateTest {
     @Test
     fun `should clear runner by setting null`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = 200L,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
 
         // when
         gameState.setRunner(Base.FIRST, null)
@@ -302,11 +302,12 @@ class GameStateTest {
     @Test
     fun `should get runner from base`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = 200L,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
 
         // when & then
         assertThat(gameState.getRunner(Base.FIRST)).isEqualTo(100L)
@@ -318,11 +319,12 @@ class GameStateTest {
     @Test
     fun `should clear all bases`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = 200L,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
 
         // when
         gameState.clearBases()
@@ -386,14 +388,15 @@ class GameStateTest {
     @Test
     fun `should reset for new inning`() {
         // given
-        val gameState = GameState(
-            outs = 2,
-            balls = 3,
-            strikes = 2,
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = 200L,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                outs = 2,
+                balls = 3,
+                strikes = 2,
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
 
         // when
         gameState.resetForNewInning()
@@ -410,11 +413,12 @@ class GameStateTest {
     @Test
     fun `should check if runner exists on base`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = null,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = null,
+                runnerOnThirdId = 300L,
+            )
 
         // when & then
         assertThat(gameState.hasRunner(Base.FIRST)).isTrue()
@@ -426,11 +430,12 @@ class GameStateTest {
     @Test
     fun `should check if bases loaded`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = 200L,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
 
         // when & then
         assertThat(gameState.isBasesLoaded()).isTrue()
@@ -439,11 +444,12 @@ class GameStateTest {
     @Test
     fun `should return false when bases not loaded`() {
         // given
-        val gameState = GameState(
-            runnerOnFirstId = 100L,
-            runnerOnSecondId = null,
-            runnerOnThirdId = 300L
-        )
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = null,
+                runnerOnThirdId = 300L,
+            )
 
         // when & then
         assertThat(gameState.isBasesLoaded()).isFalse()

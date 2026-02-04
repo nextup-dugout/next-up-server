@@ -12,7 +12,7 @@ sealed class RecordPitchingEventRequest {
      * 아웃 기록
      */
     data class RecordOut(
-        val isStrikeout: Boolean = false
+        val isStrikeout: Boolean = false,
     ) : RecordPitchingEventRequest()
 
     /**
@@ -23,21 +23,21 @@ sealed class RecordPitchingEventRequest {
         @field:Min(0, message = "실점은 0 이상이어야 합니다.")
         val runsScored: Int = 0,
         @field:Min(0, message = "자책점은 0 이상이어야 합니다.")
-        val earnedRuns: Int = 0
+        val earnedRuns: Int = 0,
     ) : RecordPitchingEventRequest()
 
     /**
      * 볼넷 기록
      */
     data class RecordWalk(
-        val dummy: Boolean = true
+        val dummy: Boolean = true,
     ) : RecordPitchingEventRequest()
 
     /**
      * 사구 기록
      */
     data class RecordHitByPitch(
-        val dummy: Boolean = true
+        val dummy: Boolean = true,
     ) : RecordPitchingEventRequest()
 
     /**
@@ -47,6 +47,6 @@ sealed class RecordPitchingEventRequest {
         @field:Min(1, message = "총 투구 수는 1 이상이어야 합니다.")
         val totalPitches: Int,
         @field:Min(0, message = "스트라이크 수는 0 이상이어야 합니다.")
-        val strikes: Int
+        val strikes: Int,
     ) : RecordPitchingEventRequest()
 }

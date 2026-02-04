@@ -23,7 +23,9 @@ class GameScorerController(
      */
     @PostMapping("/{gameId}/start")
     @ResponseStatus(HttpStatus.OK)
-    fun startGame(@PathVariable gameId: Long): ApiResponse<GameResponse> {
+    fun startGame(
+        @PathVariable gameId: Long
+    ): ApiResponse<GameResponse> {
         val game = gameScorerService.startGame(gameId)
         return ApiResponse.success(game.toResponse())
     }
@@ -46,7 +48,9 @@ class GameScorerController(
      */
     @PostMapping("/{gameId}/half-inning")
     @ResponseStatus(HttpStatus.OK)
-    fun advanceHalfInning(@PathVariable gameId: Long): ApiResponse<GameResponse> {
+    fun advanceHalfInning(
+        @PathVariable gameId: Long
+    ): ApiResponse<GameResponse> {
         val game = gameScorerService.advanceHalfInning(gameId)
         return ApiResponse.success(game.toResponse())
     }

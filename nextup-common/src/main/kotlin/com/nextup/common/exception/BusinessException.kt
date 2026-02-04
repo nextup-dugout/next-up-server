@@ -5,7 +5,7 @@ package com.nextup.common.exception
  */
 open class BusinessException(
     val code: String,
-    override val message: String
+    override val message: String,
 ) : RuntimeException(message)
 
 /**
@@ -13,7 +13,7 @@ open class BusinessException(
  */
 open class NotFoundException(
     code: String,
-    message: String
+    message: String,
 ) : BusinessException(code, message)
 
 /**
@@ -21,7 +21,7 @@ open class NotFoundException(
  */
 open class InvalidStateException(
     code: String,
-    message: String
+    message: String,
 ) : BusinessException(code, message)
 
 /**
@@ -29,5 +29,5 @@ open class InvalidStateException(
  */
 open class InvalidInputException(
     code: String,
-    message: String
+    message: String,
 ) : BusinessException(code, message)

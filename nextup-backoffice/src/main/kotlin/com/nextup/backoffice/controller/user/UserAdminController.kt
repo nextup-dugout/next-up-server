@@ -19,22 +19,22 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/backoffice/users")
 class UserAdminController(
-    private val userService: UserService
+    private val userService: UserService,
 ) {
-
     /**
      * 모든 사용자 목록을 페이징으로 조회합니다.
      */
     @GetMapping
     fun getAllUsers(
         @PageableDefault(size = 20) pageable: Pageable,
-        @RequestParam(required = false) isActive: Boolean?
+        @RequestParam(required = false) isActive: Boolean?,
     ): ApiResponse<Page<UserListResponse>> {
-        val users = if (isActive != null) {
-            userService.getAllByStatus(isActive, pageable)
-        } else {
-            userService.getAll(pageable)
-        }
+        val users =
+            if (isActive != null) {
+                userService.getAllByStatus(isActive, pageable)
+            } else {
+                userService.getAll(pageable)
+            }
         return ApiResponse.success(users.map { UserListResponse.from(it) })
     }
 
@@ -44,7 +44,7 @@ class UserAdminController(
     @GetMapping("/search")
     fun searchUsers(
         @RequestParam keyword: String,
-        @PageableDefault(size = 20) pageable: Pageable
+        @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<UserListResponse>> {
         val users = userService.search(keyword, pageable)
         return ApiResponse.success(users.map { UserListResponse.from(it) })
@@ -56,7 +56,7 @@ class UserAdminController(
     @GetMapping("/by-role/{role}")
     fun getUsersByRole(
         @PathVariable role: String,
-        @PageableDefault(size = 20) pageable: Pageable
+        @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<Page<UserListResponse>> {
         val roleEnum = Role.valueOf(role.uppercase())
         val users = userService.getAllByRole(roleEnum, pageable)
@@ -67,7 +67,9 @@ class UserAdminController(
      * 사용자 상세 정보를 조회합니다.
      */
     @GetMapping("/{id}")
-    fun getUser(@PathVariable id: Long): ApiResponse<UserAdminResponse> {
+    fun getUser(
+        @PathVariable id: Long,
+    ): ApiResponse<UserAdminResponse> {
         val user = userService.getById(id)
         return ApiResponse.success(UserAdminResponse.from(user))
     }
@@ -81,14 +83,15 @@ class UserAdminController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createUser(
-        @Valid @RequestBody request: CreateUserRequest
+        @Valid @RequestBody request: CreateUserRequest,
     ): ApiResponse<UserAdminResponse> {
         // TODO: PasswordEncoder 적용 필요 (Issue #26)
-        val user = userService.createLocalUser(
-            email = request.email,
-            encodedPassword = request.password, // 임시: 실제로는 인코딩 필요
-            nickname = request.nickname
-        )
+        val user =
+            userService.createLocalUser(
+                email = request.email,
+                encodedPassword = request.password, // 임시: 실제로는 인코딩 필요
+                nickname = request.nickname,
+            )
 
         // 추가 역할 부여
         request.roles.forEach { roleName ->
@@ -107,13 +110,14 @@ class UserAdminController(
     @PutMapping("/{id}")
     fun updateUser(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateUserRequest
+        @Valid @RequestBody request: UpdateUserRequest,
     ): ApiResponse<UserAdminResponse> {
-        var user = userService.updateProfile(
-            userId = id,
-            nickname = request.nickname,
-            profileImageUrl = request.profileImageUrl
-        )
+        var user =
+            userService.updateProfile(
+                userId = id,
+                nickname = request.nickname,
+                profileImageUrl = request.profileImageUrl,
+            )
 
         // 역할 변경 처리
         request.roles?.let { newRoles ->
@@ -140,7 +144,7 @@ class UserAdminController(
     @PostMapping("/{id}/roles")
     fun addRole(
         @PathVariable id: Long,
-        @Valid @RequestBody request: RoleChangeRequest
+        @Valid @RequestBody request: RoleChangeRequest,
     ): ApiResponse<UserAdminResponse> {
         val role = Role.valueOf(request.role.uppercase())
         val user = userService.addRole(id, role)
@@ -153,7 +157,7 @@ class UserAdminController(
     @DeleteMapping("/{id}/roles/{role}")
     fun removeRole(
         @PathVariable id: Long,
-        @PathVariable role: String
+        @PathVariable role: String,
     ): ApiResponse<UserAdminResponse> {
         val roleEnum = Role.valueOf(role.uppercase())
         val user = userService.removeRole(id, roleEnum)
@@ -164,7 +168,9 @@ class UserAdminController(
      * 사용자를 비활성화합니다.
      */
     @DeleteMapping("/{id}")
-    fun deactivateUser(@PathVariable id: Long): ApiResponse<UserAdminResponse> {
+    fun deactivateUser(
+        @PathVariable id: Long,
+    ): ApiResponse<UserAdminResponse> {
         val user = userService.deactivate(id)
         return ApiResponse.success(UserAdminResponse.from(user))
     }
@@ -173,7 +179,9 @@ class UserAdminController(
      * 사용자를 활성화합니다.
      */
     @PostMapping("/{id}/activate")
-    fun activateUser(@PathVariable id: Long): ApiResponse<UserAdminResponse> {
+    fun activateUser(
+        @PathVariable id: Long,
+    ): ApiResponse<UserAdminResponse> {
         val user = userService.activate(id)
         return ApiResponse.success(UserAdminResponse.from(user))
     }

@@ -24,7 +24,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("AssociationAdminController")
 class AssociationAdminControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var associationService: AssociationService
     private lateinit var controller: AssociationAdminController
@@ -41,18 +40,19 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/associations")
     inner class GetAllAssociations {
-
         @Test
         fun `should return all associations including inactive`() {
             // given
-            val associations = listOf(
-                createAssociation(1L, "서울시야구협회", true),
-                createAssociation(2L, "경기도야구협회", false)
-            )
+            val associations =
+                listOf(
+                    createAssociation(1L, "서울시야구협회", true),
+                    createAssociation(2L, "경기도야구협회", false),
+                )
             every { associationService.getAll() } returns associations
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/associations"))
+            mockMvc
+                .perform(get("/api/backoffice/associations"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -68,7 +68,6 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("GET /api/backoffice/associations/{id}")
     inner class GetAssociation {
-
         @Test
         fun `should return association when found`() {
             // given
@@ -76,7 +75,8 @@ class AssociationAdminControllerTest {
             every { associationService.getById(1L) } returns association
 
             // when & then
-            mockMvc.perform(get("/api/backoffice/associations/1"))
+            mockMvc
+                .perform(get("/api/backoffice/associations/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -90,18 +90,18 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/associations")
     inner class CreateAssociation {
-
         @Test
         fun `should create association with valid request`() {
             // given
-            val request = CreateAssociationRequest(
-                name = "서울시야구협회",
-                abbreviation = "SBA",
-                region = "서울",
-                description = "서울시 사회인 야구 협회",
-                logoUrl = "https://example.com/logo.png",
-                websiteUrl = "https://example.com"
-            )
+            val request =
+                CreateAssociationRequest(
+                    name = "서울시야구협회",
+                    abbreviation = "SBA",
+                    region = "서울",
+                    description = "서울시 사회인 야구 협회",
+                    logoUrl = "https://example.com/logo.png",
+                    websiteUrl = "https://example.com",
+                )
             val association = createAssociation(1L, "서울시야구협회", true)
 
             every {
@@ -111,17 +111,17 @@ class AssociationAdminControllerTest {
                     region = "서울",
                     description = "서울시 사회인 야구 협회",
                     logoUrl = "https://example.com/logo.png",
-                    websiteUrl = "https://example.com"
+                    websiteUrl = "https://example.com",
                 )
             } returns association
 
             // when & then
-            mockMvc.perform(
-                post("/api/backoffice/associations")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isCreated)
+            mockMvc
+                .perform(
+                    post("/api/backoffice/associations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.name").value("서울시야구협회"))
@@ -133,7 +133,7 @@ class AssociationAdminControllerTest {
                     region = "서울",
                     description = "서울시 사회인 야구 협회",
                     logoUrl = "https://example.com/logo.png",
-                    websiteUrl = "https://example.com"
+                    websiteUrl = "https://example.com",
                 )
             }
         }
@@ -142,15 +142,15 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("PUT /api/backoffice/associations/{id}")
     inner class UpdateAssociation {
-
         @Test
         fun `should update association with valid request`() {
             // given
-            val request = UpdateAssociationRequest(
-                description = "수정된 설명",
-                logoUrl = "https://example.com/new-logo.png",
-                websiteUrl = "https://example.com/new"
-            )
+            val request =
+                UpdateAssociationRequest(
+                    description = "수정된 설명",
+                    logoUrl = "https://example.com/new-logo.png",
+                    websiteUrl = "https://example.com/new",
+                )
             val association = createAssociation(1L, "서울시야구협회", true)
 
             every {
@@ -158,17 +158,17 @@ class AssociationAdminControllerTest {
                     id = 1L,
                     description = "수정된 설명",
                     logoUrl = "https://example.com/new-logo.png",
-                    websiteUrl = "https://example.com/new"
+                    websiteUrl = "https://example.com/new",
                 )
             } returns association
 
             // when & then
-            mockMvc.perform(
-                put("/api/backoffice/associations/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            )
-                .andExpect(status().isOk)
+            mockMvc
+                .perform(
+                    put("/api/backoffice/associations/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
 
@@ -177,7 +177,7 @@ class AssociationAdminControllerTest {
                     id = 1L,
                     description = "수정된 설명",
                     logoUrl = "https://example.com/new-logo.png",
-                    websiteUrl = "https://example.com/new"
+                    websiteUrl = "https://example.com/new",
                 )
             }
         }
@@ -186,7 +186,6 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("DELETE /api/backoffice/associations/{id}")
     inner class DeactivateAssociation {
-
         @Test
         fun `should deactivate association`() {
             // given
@@ -194,7 +193,8 @@ class AssociationAdminControllerTest {
             every { associationService.deactivate(1L) } returns association
 
             // when & then
-            mockMvc.perform(delete("/api/backoffice/associations/1"))
+            mockMvc
+                .perform(delete("/api/backoffice/associations/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -207,7 +207,6 @@ class AssociationAdminControllerTest {
     @Nested
     @DisplayName("POST /api/backoffice/associations/{id}/activate")
     inner class ActivateAssociation {
-
         @Test
         fun `should activate association`() {
             // given
@@ -215,7 +214,8 @@ class AssociationAdminControllerTest {
             every { associationService.activate(1L) } returns association
 
             // when & then
-            mockMvc.perform(post("/api/backoffice/associations/1/activate"))
+            mockMvc
+                .perform(post("/api/backoffice/associations/1/activate"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -225,14 +225,18 @@ class AssociationAdminControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String, isActive: Boolean): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+        isActive: Boolean,
+    ): Association =
+        Association(
             name = name,
             abbreviation = "SBA",
             region = "서울",
             description = "협회 설명",
             logoUrl = "https://example.com/logo.png",
-            websiteUrl = "https://example.com"
+            websiteUrl = "https://example.com",
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
@@ -242,5 +246,4 @@ class AssociationAdminControllerTest {
                 this.deactivate()
             }
         }
-    }
 }

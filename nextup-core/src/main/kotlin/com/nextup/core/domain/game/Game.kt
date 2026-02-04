@@ -19,56 +19,42 @@ import java.time.LocalDateTime
         Index(name = "idx_games_competition", columnList = "competition_id"),
         Index(name = "idx_games_scheduled_at", columnList = "scheduled_at"),
         Index(name = "idx_games_status", columnList = "status"),
-        Index(name = "idx_games_competition_date", columnList = "competition_id, scheduled_at")
-    ]
+        Index(name = "idx_games_competition_date", columnList = "competition_id, scheduled_at"),
+    ],
 )
 class Game(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "competition_id", nullable = false)
     val competition: Competition,
-
     @Column(name = "scheduled_at", nullable = false)
     var scheduledAt: LocalDateTime,
-
     @Column(length = 100)
     var location: String? = null,
-
     @Column(name = "field_name", length = 100)
     var fieldName: String? = null,
-
     @Column(name = "game_number")
     var gameNumber: Int? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: GameStatus = GameStatus.SCHEDULED,
-
     @Column(name = "current_inning")
     var currentInning: Int = 0,
-
     @Column(name = "is_top_inning")
     var isTopInning: Boolean = true,
-
     @Column(name = "total_innings")
     var totalInnings: Int = 9,
-
     @Column(name = "started_at")
     var startedAt: LocalDateTime? = null,
-
     @Column(name = "ended_at")
     var endedAt: LocalDateTime? = null,
-
     @Column(length = 500)
     var note: String? = null,
-
     @Embedded
     var gameState: GameState = GameState(),
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     /**
      * 경기를 시작합니다.
      */
@@ -133,7 +119,10 @@ class Game(
     /**
      * 경기를 연기합니다.
      */
-    fun postpone(newScheduledAt: LocalDateTime, reason: String? = null) {
+    fun postpone(
+        newScheduledAt: LocalDateTime,
+        reason: String? = null,
+    ) {
         require(status == GameStatus.SCHEDULED) { "예정 상태의 경기만 연기할 수 있습니다." }
         status = GameStatus.POSTPONED
         scheduledAt = newScheduledAt
@@ -199,7 +188,10 @@ class Game(
     /**
      * 주자를 설정합니다.
      */
-    fun setRunner(base: Base, playerId: Long?) {
+    fun setRunner(
+        base: Base,
+        playerId: Long?,
+    ) {
         require(status.isOngoing()) { "진행 중인 경기만 주자를 설정할 수 있습니다." }
         gameState.setRunner(base, playerId)
     }

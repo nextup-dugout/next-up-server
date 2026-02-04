@@ -24,12 +24,13 @@ class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException::class)
     fun handleBusinessException(ex: BusinessException): ResponseEntity<ApiResponse<Unit>> {
-        val status = when (ex) {
-            is NotFoundException -> HttpStatus.NOT_FOUND
-            is InvalidStateException -> HttpStatus.BAD_REQUEST
-            is InvalidInputException -> HttpStatus.BAD_REQUEST
-            else -> HttpStatus.INTERNAL_SERVER_ERROR
-        }
+        val status =
+            when (ex) {
+                is NotFoundException -> HttpStatus.NOT_FOUND
+                is InvalidStateException -> HttpStatus.BAD_REQUEST
+                is InvalidInputException -> HttpStatus.BAD_REQUEST
+                else -> HttpStatus.INTERNAL_SERVER_ERROR
+            }
         return ResponseEntity
             .status(status)
             .body(ApiResponse.error(ex.code, ex.message))
@@ -40,8 +41,9 @@ class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
-        val message = ex.bindingResult.fieldErrors
-            .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+        val message =
+            ex.bindingResult.fieldErrors
+                .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error("VALIDATION_ERROR", message))

@@ -18,19 +18,17 @@ import java.math.RoundingMode
 @Table(
     name = "career_batting_stats",
     indexes = [
-        Index(name = "idx_career_batting_stats_player", columnList = "player_id")
-    ]
+        Index(name = "idx_career_batting_stats_player", columnList = "player_id"),
+    ],
 )
 class CareerBattingStats(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false, unique = true)
     val player: Player,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     // 시즌 수
     @Column(name = "seasons_played", nullable = false)
     var seasonsPlayed: Int = 0
@@ -147,11 +145,12 @@ class CareerBattingStats(
      * 타수가 0이면 .000
      */
     val battingAverage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * 출루율 (OBP) = (안타 + 볼넷 + 사구) / (타수 + 볼넷 + 사구 + 희생플라이)
@@ -171,11 +170,12 @@ class CareerBattingStats(
      * 장타율 (SLG) = 총 루타 / 타수
      */
     val sluggingPercentage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * OPS = 출루율 + 장타율

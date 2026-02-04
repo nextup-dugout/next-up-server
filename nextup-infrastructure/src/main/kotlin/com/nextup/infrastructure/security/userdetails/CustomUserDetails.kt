@@ -12,9 +12,8 @@ import org.springframework.security.core.userdetails.UserDetails
  * User 엔티티를 Spring Security가 인식할 수 있는 형태로 래핑합니다.
  */
 class CustomUserDetails(
-    private val user: User
+    private val user: User,
 ) : UserDetails {
-
     val id: Long get() = user.id
 
     val email: String get() = user.email
@@ -23,11 +22,10 @@ class CustomUserDetails(
 
     val roles: Set<Role> get() = user.roles
 
-    override fun getAuthorities(): Collection<GrantedAuthority> {
-        return user.roles.map { role ->
+    override fun getAuthorities(): Collection<GrantedAuthority> =
+        user.roles.map { role ->
             SimpleGrantedAuthority("ROLE_${role.name}")
         }
-    }
 
     override fun getPassword(): String? = user.password
 
@@ -44,9 +42,7 @@ class CustomUserDetails(
     /**
      * 권한 이름 목록을 반환합니다 (ROLE_ 접두사 없음).
      */
-    fun getRoleNames(): Set<String> {
-        return user.roles.map { it.name }.toSet()
-    }
+    fun getRoleNames(): Set<String> = user.roles.map { it.name }.toSet()
 
     companion object {
         /**
@@ -55,8 +51,6 @@ class CustomUserDetails(
          * @param user User 엔티티
          * @return CustomUserDetails
          */
-        fun from(user: User): CustomUserDetails {
-            return CustomUserDetails(user)
-        }
+        fun from(user: User): CustomUserDetails = CustomUserDetails(user)
     }
 }

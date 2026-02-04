@@ -7,8 +7,10 @@ package com.nextup.core.domain.player
  * - INACTIVE: 비활동 상태 (부상, 휴식 등)
  * - TRANSFERRED: 다른 팀으로 이적
  */
-enum class PlayerTeamStatus(val displayName: String) {
+enum class PlayerTeamStatus(
+    val displayName: String,
+) {
     ACTIVE("활동중"),
     INACTIVE("비활동"),
-    TRANSFERRED("이적")
+    TRANSFERRED("이적"),
 }

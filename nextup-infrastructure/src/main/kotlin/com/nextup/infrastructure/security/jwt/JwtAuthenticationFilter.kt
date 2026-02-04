@@ -18,9 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter
  */
 @Component
 class JwtAuthenticationFilter(
-    private val jwtTokenProvider: JwtTokenProvider
+    private val jwtTokenProvider: JwtTokenProvider,
 ) : OncePerRequestFilter() {
-
     companion object {
         private const val AUTHORIZATION_HEADER = "Authorization"
         private const val BEARER_PREFIX = "Bearer "
@@ -29,7 +28,7 @@ class JwtAuthenticationFilter(
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain
+        filterChain: FilterChain,
     ) {
         try {
             val token = resolveToken(request)
@@ -78,7 +77,7 @@ class JwtAuthenticationFilter(
         return UsernamePasswordAuthenticationToken(
             userId,
             null,
-            authorities
+            authorities,
         )
     }
 }

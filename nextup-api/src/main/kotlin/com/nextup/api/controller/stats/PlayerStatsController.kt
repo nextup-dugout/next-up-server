@@ -23,9 +23,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/players/{playerId}/stats")
 class PlayerStatsController(
-    private val playerStatsService: PlayerStatsService
+    private val playerStatsService: PlayerStatsService,
 ) {
-
     /**
      * 시즌 타격 통계 조회
      *
@@ -38,7 +37,7 @@ class PlayerStatsController(
     @GetMapping("/batting/season/{year}")
     fun getSeasonBattingStats(
         @PathVariable playerId: Long,
-        @PathVariable year: Int
+        @PathVariable year: Int,
     ): ApiResponse<SeasonBattingStatsResponse> {
         val stats = playerStatsService.getSeasonBattingStats(playerId, year)
         return ApiResponse.success(stats.toResponse())
@@ -56,7 +55,7 @@ class PlayerStatsController(
     @GetMapping("/pitching/season/{year}")
     fun getSeasonPitchingStats(
         @PathVariable playerId: Long,
-        @PathVariable year: Int
+        @PathVariable year: Int,
     ): ApiResponse<SeasonPitchingStatsResponse> {
         val stats = playerStatsService.getSeasonPitchingStats(playerId, year)
         return ApiResponse.success(stats.toResponse())
@@ -72,7 +71,7 @@ class PlayerStatsController(
      */
     @GetMapping("/batting/career")
     fun getCareerBattingStats(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<CareerBattingStatsResponse> {
         val stats = playerStatsService.getCareerBattingStats(playerId)
         return ApiResponse.success(stats.toResponse())
@@ -88,7 +87,7 @@ class PlayerStatsController(
      */
     @GetMapping("/pitching/career")
     fun getCareerPitchingStats(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<CareerPitchingStatsResponse> {
         val stats = playerStatsService.getCareerPitchingStats(playerId)
         return ApiResponse.success(stats.toResponse())
@@ -104,7 +103,7 @@ class PlayerStatsController(
      */
     @GetMapping("/batting/seasons")
     fun getAllSeasonBattingStats(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<List<SeasonBattingStatsResponse>> {
         val statsList = playerStatsService.getAllSeasonBattingStats(playerId)
         return ApiResponse.success(statsList.toSeasonBattingResponse())
@@ -120,7 +119,7 @@ class PlayerStatsController(
      */
     @GetMapping("/pitching/seasons")
     fun getAllSeasonPitchingStats(
-        @PathVariable playerId: Long
+        @PathVariable playerId: Long,
     ): ApiResponse<List<SeasonPitchingStatsResponse>> {
         val statsList = playerStatsService.getAllSeasonPitchingStats(playerId)
         return ApiResponse.success(statsList.toSeasonPitchingResponse())

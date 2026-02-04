@@ -2,9 +2,7 @@ package com.nextup.core.domain.game
 
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.league.League
-import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.team.Team
-import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -12,7 +10,6 @@ import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
 
 class LineupSubmissionTest {
-
     @Test
     fun `should create lineup submission in DRAFT status`() {
         // given
@@ -52,9 +49,10 @@ class LineupSubmissionTest {
         val submission = createLineupSubmission().apply { submit() }
 
         // when & then
-        val exception = assertThrows<IllegalArgumentException> {
-            submission.submit()
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.submit()
+            }
         assertThat(exception.message).contains("제출 가능한 상태가 아닙니다")
     }
 
@@ -80,9 +78,10 @@ class LineupSubmissionTest {
         val scorer = createScorer()
 
         // when & then
-        val exception = assertThrows<IllegalArgumentException> {
-            submission.confirm(scorer)
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.confirm(scorer)
+            }
         assertThat(exception.message).contains("제출된 상태의 라인업만 확인할 수 있습니다")
     }
 
@@ -109,19 +108,21 @@ class LineupSubmissionTest {
         val scorer = createScorer()
 
         // when & then
-        val exception = assertThrows<IllegalArgumentException> {
-            submission.reject(scorer, "반려 사유")
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.reject(scorer, "반려 사유")
+            }
         assertThat(exception.message).contains("제출된 상태의 라인업만 반려할 수 있습니다")
     }
 
     @Test
     fun `should resubmit lineup when status is REJECTED`() {
         // given
-        val submission = createLineupSubmission().apply {
-            submit()
-            reject(createScorer(), "수정 필요")
-        }
+        val submission =
+            createLineupSubmission().apply {
+                submit()
+                reject(createScorer(), "수정 필요")
+            }
 
         // when
         submission.submit()
@@ -136,15 +137,17 @@ class LineupSubmissionTest {
     @Test
     fun `should not allow editing confirmed lineup`() {
         // given
-        val submission = createLineupSubmission().apply {
-            submit()
-            confirm(createScorer())
-        }
+        val submission =
+            createLineupSubmission().apply {
+                submit()
+                confirm(createScorer())
+            }
 
         // when & then
-        val exception = assertThrows<IllegalArgumentException> {
-            submission.submit()
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.submit()
+            }
         assertThat(exception.message).contains("제출 가능한 상태가 아닙니다")
     }
 
@@ -152,46 +155,57 @@ class LineupSubmissionTest {
         LineupSubmission.create(createGame(), createTeam(), createManager())
 
     private fun createGame(): Game {
-        val association = com.nextup.core.domain.association.Association(
-            name = "서울시야구협회",
-            abbreviation = "서야협",
-            region = "서울"
-        )
-        val league = League(
-            association = association,
-            name = "서울시 리그",
-            foundedYear = 2020
-        )
-        val competition = Competition(
-            league = league,
-            name = "2024 시즌",
-            year = 2024,
-            startDate = java.time.LocalDate.now().minusDays(30),
-            endDate = java.time.LocalDate.now().plusDays(30)
-        )
+        val association =
+            com.nextup.core.domain.association.Association(
+                name = "서울시야구협회",
+                abbreviation = "서야협",
+                region = "서울",
+            )
+        val league =
+            League(
+                association = association,
+                name = "서울시 리그",
+                foundedYear = 2020,
+            )
+        val competition =
+            Competition(
+                league = league,
+                name = "2024 시즌",
+                year = 2024,
+                startDate =
+                    java.time.LocalDate
+                        .now()
+                        .minusDays(30),
+                endDate =
+                    java.time.LocalDate
+                        .now()
+                        .plusDays(30),
+            )
         return Game(
             competition = competition,
             scheduledAt = LocalDateTime.now().plusDays(1),
-            location = "서울야구장"
+            location = "서울야구장",
         )
     }
 
     private fun createTeam(): Team {
-        val association = com.nextup.core.domain.association.Association(
-            name = "서울시야구협회",
-            abbreviation = "서야협",
-            region = "서울"
-        )
-        val league = League(
-            association = association,
-            name = "서울시 리그",
-            foundedYear = 2020
-        )
+        val association =
+            com.nextup.core.domain.association.Association(
+                name = "서울시야구협회",
+                abbreviation = "서야협",
+                region = "서울",
+            )
+        val league =
+            League(
+                association = association,
+                name = "서울시 리그",
+                foundedYear = 2020,
+            )
         return Team(
             league = league,
             name = "Tigers",
             city = "서울",
-            foundedYear = 2020
+            foundedYear = 2020,
         )
     }
 
@@ -199,13 +213,13 @@ class LineupSubmissionTest {
         User.createLocalUser(
             email = "manager@test.com",
             encodedPassword = "encoded",
-            nickname = "감독"
+            nickname = "감독",
         )
 
     private fun createScorer(): User =
         User.createLocalUser(
             email = "scorer@test.com",
             encodedPassword = "encoded",
-            nickname = "기록원"
+            nickname = "기록원",
         )
 }

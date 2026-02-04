@@ -15,9 +15,8 @@ import com.nextup.infrastructure.security.oauth2.OAuth2UserInfo
  * }
  */
 class GoogleOAuth2UserInfo(
-    override val attributes: Map<String, Any>
+    override val attributes: Map<String, Any>,
 ) : OAuth2UserInfo {
-
     override val provider: OAuthProvider = OAuthProvider.GOOGLE
 
     override val id: String

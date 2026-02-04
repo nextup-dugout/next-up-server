@@ -27,35 +27,31 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val customAuthenticationEntryPoint: CustomAuthenticationEntryPoint,
-    private val customAccessDeniedHandler: CustomAccessDeniedHandler
+    private val customAccessDeniedHandler: CustomAccessDeniedHandler,
 ) {
-
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        return http
+    fun filterChain(http: HttpSecurity): SecurityFilterChain =
+        http
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .exceptionHandling {
                 it.authenticationEntryPoint(customAuthenticationEntryPoint)
                 it.accessDeniedHandler(customAccessDeniedHandler)
-            }
-            .authorizeHttpRequests { auth ->
+            }.authorizeHttpRequests { auth ->
                 auth
                     // Health check
-                    .requestMatchers("/actuator/health").permitAll()
-
+                    .requestMatchers("/actuator/health")
+                    .permitAll()
                     // Swagger/OpenAPI
                     .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
-                        "/swagger-resources/**"
+                        "/swagger-resources/**",
                     ).permitAll()
-
                     // All other endpoints require ADMIN role
-                    .anyRequest().hasRole("ADMIN")
-            }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+                    .anyRequest()
+                    .hasRole("ADMIN")
+            }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .build()
-    }
 }

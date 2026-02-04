@@ -8,24 +8,25 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("OAuth2UserInfo 구현체 테스트")
 class OAuth2UserInfoImplTest {
-
     @Nested
     @DisplayName("KakaoOAuth2UserInfo")
     inner class KakaoOAuth2UserInfoTest {
-
         @Test
         fun `should parse kakao user info correctly`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "id" to 123456789L,
-                "kakao_account" to mapOf(
-                    "email" to "user@kakao.com",
-                    "profile" to mapOf(
-                        "nickname" to "홍길동",
-                        "profile_image_url" to "http://example.com/image.jpg"
-                    )
+            val attributes =
+                mapOf<String, Any>(
+                    "id" to 123456789L,
+                    "kakao_account" to
+                        mapOf(
+                            "email" to "user@kakao.com",
+                            "profile" to
+                                mapOf(
+                                    "nickname" to "홍길동",
+                                    "profile_image_url" to "http://example.com/image.jpg",
+                                ),
+                        ),
                 )
-            )
 
             // when
             val userInfo = KakaoOAuth2UserInfo(attributes)
@@ -57,12 +58,14 @@ class OAuth2UserInfoImplTest {
         @Test
         fun `should return null when profile is missing`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "id" to 123456789L,
-                "kakao_account" to mapOf(
-                    "email" to "user@kakao.com"
+            val attributes =
+                mapOf<String, Any>(
+                    "id" to 123456789L,
+                    "kakao_account" to
+                        mapOf(
+                            "email" to "user@kakao.com",
+                        ),
                 )
-            )
 
             // when
             val userInfo = KakaoOAuth2UserInfo(attributes)
@@ -77,16 +80,16 @@ class OAuth2UserInfoImplTest {
     @Nested
     @DisplayName("GoogleOAuth2UserInfo")
     inner class GoogleOAuth2UserInfoTest {
-
         @Test
         fun `should parse google user info correctly`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "sub" to "google_123456789",
-                "email" to "user@gmail.com",
-                "name" to "홍길동",
-                "picture" to "http://example.com/image.jpg"
-            )
+            val attributes =
+                mapOf<String, Any>(
+                    "sub" to "google_123456789",
+                    "email" to "user@gmail.com",
+                    "name" to "홍길동",
+                    "picture" to "http://example.com/image.jpg",
+                )
 
             // when
             val userInfo = GoogleOAuth2UserInfo(attributes)
@@ -132,20 +135,21 @@ class OAuth2UserInfoImplTest {
     @Nested
     @DisplayName("NaverOAuth2UserInfo")
     inner class NaverOAuth2UserInfoTest {
-
         @Test
         fun `should parse naver user info correctly`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "resultcode" to "00",
-                "message" to "success",
-                "response" to mapOf(
-                    "id" to "naver_123456789",
-                    "email" to "user@naver.com",
-                    "name" to "홍길동",
-                    "profile_image" to "http://example.com/image.jpg"
+            val attributes =
+                mapOf<String, Any>(
+                    "resultcode" to "00",
+                    "message" to "success",
+                    "response" to
+                        mapOf(
+                            "id" to "naver_123456789",
+                            "email" to "user@naver.com",
+                            "name" to "홍길동",
+                            "profile_image" to "http://example.com/image.jpg",
+                        ),
                 )
-            )
 
             // when
             val userInfo = NaverOAuth2UserInfo(attributes)
@@ -162,10 +166,11 @@ class OAuth2UserInfoImplTest {
         @Test
         fun `should return empty string when response is missing`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "resultcode" to "00",
-                "message" to "success"
-            )
+            val attributes =
+                mapOf<String, Any>(
+                    "resultcode" to "00",
+                    "message" to "success",
+                )
 
             // when
             val userInfo = NaverOAuth2UserInfo(attributes)
@@ -180,9 +185,10 @@ class OAuth2UserInfoImplTest {
         @Test
         fun `should return null for optional fields when missing in response`() {
             // given
-            val attributes = mapOf<String, Any>(
-                "response" to mapOf("id" to "naver_123")
-            )
+            val attributes =
+                mapOf<String, Any>(
+                    "response" to mapOf("id" to "naver_123"),
+                )
 
             // when
             val userInfo = NaverOAuth2UserInfo(attributes)

@@ -7,21 +7,19 @@ import java.time.Instant
 
 @RestController
 class HealthController {
-
     @GetMapping("/health")
-    fun health(): ResponseEntity<HealthResponse> {
-        return ResponseEntity.ok(
+    fun health(): ResponseEntity<HealthResponse> =
+        ResponseEntity.ok(
             HealthResponse(
                 status = "UP",
                 service = "next-up-backoffice",
-                timestamp = Instant.now().toString()
-            )
+                timestamp = Instant.now().toString(),
+            ),
         )
-    }
 
     data class HealthResponse(
         val status: String,
         val service: String,
-        val timestamp: String
+        val timestamp: String,
     )
 }

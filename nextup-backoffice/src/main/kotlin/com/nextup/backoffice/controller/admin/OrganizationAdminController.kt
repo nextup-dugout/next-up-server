@@ -18,9 +18,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/backoffice/organizations")
 class OrganizationAdminController(
-    private val organizationAdminService: OrganizationAdminService
+    private val organizationAdminService: OrganizationAdminService,
 ) {
-
     /**
      * 관리자를 할당합니다.
      *
@@ -34,17 +33,18 @@ class OrganizationAdminController(
     fun assignAdmin(
         @PathVariable type: String,
         @PathVariable id: Long,
-        @Valid @RequestBody request: AssignAdminRequest
+        @Valid @RequestBody request: AssignAdminRequest,
     ): ApiResponse<OrganizationAdminResponse> {
         val organizationType = OrganizationType.fromValue(type)
 
-        val admin = organizationAdminService.assignAdmin(
-            userId = request.userId,
-            organizationType = organizationType,
-            organizationId = id,
-            role = request.role,
-            assignedBy = null // TODO: 인증된 사용자 ID로 변경
-        )
+        val admin =
+            organizationAdminService.assignAdmin(
+                userId = request.userId,
+                organizationType = organizationType,
+                organizationId = id,
+                role = request.role,
+                assignedBy = null, // TODO: 인증된 사용자 ID로 변경
+            )
 
         return ApiResponse.success(OrganizationAdminResponse.from(admin))
     }
@@ -61,14 +61,14 @@ class OrganizationAdminController(
     fun removeAdmin(
         @PathVariable type: String,
         @PathVariable id: Long,
-        @PathVariable userId: Long
+        @PathVariable userId: Long,
     ): ApiResponse<Unit> {
         val organizationType = OrganizationType.fromValue(type)
 
         organizationAdminService.removeAdmin(
             userId = userId,
             organizationType = organizationType,
-            organizationId = id
+            organizationId = id,
         )
 
         return ApiResponse.success(Unit)
@@ -84,17 +84,18 @@ class OrganizationAdminController(
     @GetMapping("/{type}/{id}/admins")
     fun getAdminsByOrganization(
         @PathVariable type: String,
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<List<OrganizationAdminResponse>> {
         val organizationType = OrganizationType.fromValue(type)
 
-        val admins = organizationAdminService.getAdminsByOrganization(
-            organizationType = organizationType,
-            organizationId = id
-        )
+        val admins =
+            organizationAdminService.getAdminsByOrganization(
+                organizationType = organizationType,
+                organizationId = id,
+            )
 
         return ApiResponse.success(
-            admins.map { OrganizationAdminResponse.from(it) }
+            admins.map { OrganizationAdminResponse.from(it) },
         )
     }
 
@@ -106,12 +107,12 @@ class OrganizationAdminController(
      */
     @GetMapping("/by-user/{userId}")
     fun getOrganizationsByUser(
-        @PathVariable userId: Long
+        @PathVariable userId: Long,
     ): ApiResponse<List<OrganizationAdminResponse>> {
         val admins = organizationAdminService.getOrganizationsByUser(userId)
 
         return ApiResponse.success(
-            admins.map { OrganizationAdminResponse.from(it) }
+            admins.map { OrganizationAdminResponse.from(it) },
         )
     }
 
@@ -129,16 +130,17 @@ class OrganizationAdminController(
         @PathVariable type: String,
         @PathVariable id: Long,
         @PathVariable userId: Long,
-        @Valid @RequestBody request: ChangeRoleRequest
+        @Valid @RequestBody request: ChangeRoleRequest,
     ): ApiResponse<OrganizationAdminResponse> {
         val organizationType = OrganizationType.fromValue(type)
 
-        val admin = organizationAdminService.changeRole(
-            userId = userId,
-            organizationType = organizationType,
-            organizationId = id,
-            newRole = request.role
-        )
+        val admin =
+            organizationAdminService.changeRole(
+                userId = userId,
+                organizationType = organizationType,
+                organizationId = id,
+                newRole = request.role,
+            )
 
         return ApiResponse.success(OrganizationAdminResponse.from(admin))
     }

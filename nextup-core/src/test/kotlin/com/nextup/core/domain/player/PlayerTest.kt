@@ -9,26 +9,23 @@ import java.time.LocalDate
 
 @DisplayName("Player 엔티티 테스트")
 class PlayerTest {
-
     private fun createPlayer(
         name: String = "홍길동",
         birthDate: LocalDate? = LocalDate.of(1995, 5, 15),
         debutYear: Int? = 2018,
-        retirementYear: Int? = null
-    ): Player {
-        return Player(
+        retirementYear: Int? = null,
+    ): Player =
+        Player(
             name = name,
             birthDate = birthDate,
             primaryPosition = Position.SHORTSTOP,
             debutYear = debutYear,
-            retirementYear = retirementYear
+            retirementYear = retirementYear,
         )
-    }
 
     @Nested
     @DisplayName("은퇴 처리")
     inner class Retire {
-
         @Test
         fun `현역 선수를 은퇴 처리할 수 있다`() {
             // given
@@ -68,7 +65,6 @@ class PlayerTest {
     @Nested
     @DisplayName("신체 정보 수정")
     inner class UpdatePhysicalInfo {
-
         @Test
         fun `키와 몸무게를 수정할 수 있다`() {
             // given
@@ -85,9 +81,10 @@ class PlayerTest {
         @Test
         fun `키만 수정할 수 있다`() {
             // given
-            val player = createPlayer().apply {
-                updatePhysicalInfo(height = 180, weight = 75)
-            }
+            val player =
+                createPlayer().apply {
+                    updatePhysicalInfo(height = 180, weight = 75)
+                }
 
             // when
             player.updatePhysicalInfo(height = 183)
@@ -101,7 +98,6 @@ class PlayerTest {
     @Nested
     @DisplayName("프로필 수정")
     inner class UpdateProfile {
-
         @Test
         fun `프로필 이미지 URL을 수정할 수 있다`() {
             // given
@@ -117,9 +113,10 @@ class PlayerTest {
         @Test
         fun `프로필 이미지를 null로 설정할 수 있다`() {
             // given
-            val player = createPlayer().apply {
-                updateProfile("https://example.com/profile.jpg")
-            }
+            val player =
+                createPlayer().apply {
+                    updateProfile("https://example.com/profile.jpg")
+                }
 
             // when
             player.updateProfile(null)
@@ -132,7 +129,6 @@ class PlayerTest {
     @Nested
     @DisplayName("나이 계산")
     inner class CalculateAge {
-
         @Test
         fun `생년월일로 나이를 계산할 수 있다`() {
             // given
@@ -175,7 +171,6 @@ class PlayerTest {
     @Nested
     @DisplayName("활동 상태 확인")
     inner class IsActive {
-
         @Test
         fun `은퇴하지 않은 선수는 현역이다`() {
             // given

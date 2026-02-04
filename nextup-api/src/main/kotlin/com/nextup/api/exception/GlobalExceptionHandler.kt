@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(AuthenticationException::class)
@@ -51,8 +50,9 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Nothing>> {
-        val errors = ex.bindingResult.fieldErrors
-            .joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
+        val errors =
+            ex.bindingResult.fieldErrors
+                .joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
         log.warn("ValidationException: {}", errors)
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)

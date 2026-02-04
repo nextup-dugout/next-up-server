@@ -1,25 +1,20 @@
 package com.nextup.api.controller.user
 
 import com.nextup.api.dto.user.UpdateProfileRequest
-import com.nextup.core.domain.user.OAuthAccount
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
 import com.nextup.core.service.user.UserService
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 @DisplayName("ProfileController 테스트")
 class ProfileControllerTest {
-
     private lateinit var userService: UserService
     private lateinit var profileController: ProfileController
 
@@ -29,12 +24,16 @@ class ProfileControllerTest {
         profileController = ProfileController(userService)
     }
 
-    private fun createTestUser(id: Long = 1L, hasOAuth: Boolean = false): User {
-        val user = User.createLocalUser(
-            email = "test@example.com",
-            encodedPassword = "encoded",
-            nickname = "테스터"
-        )
+    private fun createTestUser(
+        id: Long = 1L,
+        hasOAuth: Boolean = false,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = "test@example.com",
+                encodedPassword = "encoded",
+                nickname = "테스터",
+            )
         // Use reflection to set ID
         val idField = user.javaClass.getDeclaredField("id")
         idField.isAccessible = true
@@ -50,7 +49,6 @@ class ProfileControllerTest {
     @Nested
     @DisplayName("내 프로필 조회")
     inner class GetMyProfile {
-
         @Test
         fun `should return my profile successfully`() {
             // given
@@ -82,14 +80,18 @@ class ProfileControllerTest {
             // then
             assertThat(response.success).isTrue()
             assertThat(response.data?.linkedOAuthProviders).hasSize(1)
-            assertThat(response.data?.linkedOAuthProviders?.first()?.provider).isEqualTo("GOOGLE")
+            assertThat(
+                response.data
+                    ?.linkedOAuthProviders
+                    ?.first()
+                    ?.provider,
+            ).isEqualTo("GOOGLE")
         }
     }
 
     @Nested
     @DisplayName("프로필 수정")
     inner class UpdateMyProfile {
-
         @Test
         fun `should update profile with new nickname`() {
             // given
@@ -128,7 +130,6 @@ class ProfileControllerTest {
     @Nested
     @DisplayName("연동된 OAuth 계정 조회")
     inner class GetLinkedOAuthAccounts {
-
         @Test
         fun `should return empty list when no oauth linked`() {
             // given
@@ -165,7 +166,6 @@ class ProfileControllerTest {
     @Nested
     @DisplayName("회원 탈퇴")
     inner class DeactivateMyAccount {
-
         @Test
         fun `should deactivate account successfully`() {
             // given
@@ -185,7 +185,6 @@ class ProfileControllerTest {
 
 @DisplayName("PublicProfileController 테스트")
 class PublicProfileControllerTest {
-
     private lateinit var userService: UserService
     private lateinit var publicProfileController: PublicProfileController
 
@@ -196,11 +195,12 @@ class PublicProfileControllerTest {
     }
 
     private fun createTestUser(id: Long = 1L): User {
-        val user = User.createLocalUser(
-            email = "test@example.com",
-            encodedPassword = "encoded",
-            nickname = "테스터"
-        )
+        val user =
+            User.createLocalUser(
+                email = "test@example.com",
+                encodedPassword = "encoded",
+                nickname = "테스터",
+            )
         val idField = user.javaClass.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
@@ -210,7 +210,6 @@ class PublicProfileControllerTest {
     @Nested
     @DisplayName("공개 프로필 조회")
     inner class GetPublicProfile {
-
         @Test
         fun `should return public profile successfully`() {
             // given

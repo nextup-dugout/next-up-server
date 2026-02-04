@@ -19,9 +19,8 @@ import org.springframework.web.util.UriComponentsBuilder
 class OAuthController(
     private val oauthLinkService: OAuthLinkService,
     @Value("\${app.oauth2.base-url:http://localhost:8080}")
-    private val baseUrl: String
+    private val baseUrl: String,
 ) {
-
     /**
      * 연동된 소셜 계정 목록 조회
      *
@@ -29,7 +28,7 @@ class OAuthController(
      */
     @GetMapping
     fun getLinkedOAuthAccounts(
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<LinkedOAuthAccountsResponse>> {
         val providers = oauthLinkService.getLinkedProviders(userId)
         val response = LinkedOAuthAccountsResponse(providers = providers)
@@ -47,15 +46,16 @@ class OAuthController(
     @PostMapping("/{provider}/link")
     fun startOAuthLink(
         @PathVariable provider: OAuthProvider,
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<OAuthLinkStartResponse>> {
         // OAuth2 인증 URL 생성
         val authorizationUrl = buildAuthorizationUrl(provider)
 
-        val response = OAuthLinkStartResponse(
-            authorizationUrl = authorizationUrl,
-            provider = provider
-        )
+        val response =
+            OAuthLinkStartResponse(
+                authorizationUrl = authorizationUrl,
+                provider = provider,
+            )
 
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -68,7 +68,7 @@ class OAuthController(
     @DeleteMapping("/{provider}")
     fun unlinkOAuthAccount(
         @PathVariable provider: OAuthProvider,
-        @AuthenticationPrincipal userId: Long
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<Unit>> {
         oauthLinkService.unlinkOAuthAccount(userId, provider)
         return ResponseEntity.ok(ApiResponse.success(Unit))
@@ -83,7 +83,8 @@ class OAuthController(
     private fun buildAuthorizationUrl(provider: OAuthProvider): String {
         val registrationId = provider.name.lowercase()
 
-        return UriComponentsBuilder.fromUriString(baseUrl)
+        return UriComponentsBuilder
+            .fromUriString(baseUrl)
             .path("/oauth2/authorization/$registrationId")
             .build()
             .toUriString()

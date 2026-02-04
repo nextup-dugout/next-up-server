@@ -20,7 +20,6 @@ import java.io.StringWriter
 
 @DisplayName("CustomAccessDeniedHandler 테스트")
 class CustomAccessDeniedHandlerTest {
-
     private lateinit var objectMapper: ObjectMapper
     private lateinit var handler: CustomAccessDeniedHandler
     private lateinit var request: HttpServletRequest
@@ -43,7 +42,6 @@ class CustomAccessDeniedHandlerTest {
     @Nested
     @DisplayName("접근 거부 처리")
     inner class HandleAccessDenied {
-
         @Test
         fun `should return ACCESS_DENIED error`() {
             // given
@@ -77,7 +75,6 @@ class CustomAccessDeniedHandlerTest {
     @Nested
     @DisplayName("응답 형식")
     inner class ResponseFormat {
-
         @Test
         fun `should set correct content type and encoding`() {
             // given
@@ -121,7 +118,6 @@ class CustomAccessDeniedHandlerTest {
     @Nested
     @DisplayName("다양한 시나리오")
     inner class VariousScenarios {
-
         @Test
         fun `should handle exception with custom message`() {
             // given

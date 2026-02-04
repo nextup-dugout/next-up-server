@@ -20,7 +20,7 @@ data class PlateAppearanceRequest(
     val runnerMovements: List<RunnerMovement> = emptyList(),
     val rbis: Int? = null,
     val balls: Int = 0,
-    val strikes: Int = 0
+    val strikes: Int = 0,
 ) {
     init {
         require(balls in 0..4) { "볼 카운트는 0-4 사이여야 합니다: $balls" }
@@ -33,14 +33,10 @@ data class PlateAppearanceRequest(
     /**
      * 득점한 주자 수를 계산합니다.
      */
-    fun calculateRunsScored(): Int {
-        return runnerMovements.count { it.isScored }
-    }
+    fun calculateRunsScored(): Int = runnerMovements.count { it.isScored }
 
     /**
      * 실제 타점을 계산합니다 (rbis가 null이면 자동 계산).
      */
-    fun getActualRbis(): Int {
-        return rbis ?: calculateRunsScored()
-    }
+    fun getActualRbis(): Int = rbis ?: calculateRunsScored()
 }

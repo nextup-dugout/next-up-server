@@ -21,39 +21,42 @@ class OAuth2AuthenticationSuccessHandler(
     private val jwtTokenProvider: JwtTokenProvider,
     private val refreshTokenRepository: RefreshTokenRepository,
     @Value("\${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
-    private val redirectUri: String
+    private val redirectUri: String,
 ) : SimpleUrlAuthenticationSuccessHandler() {
-
     override fun onAuthenticationSuccess(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        authentication: Authentication
+        authentication: Authentication,
     ) {
         val principal = authentication.principal as OAuth2UserPrincipal
 
         val roles = principal.getRoleNames()
-        val accessToken = jwtTokenProvider.createAccessToken(
-            userId = principal.userId,
-            email = principal.email,
-            roles = roles
-        )
+        val accessToken =
+            jwtTokenProvider.createAccessToken(
+                userId = principal.userId,
+                email = principal.email,
+                roles = roles,
+            )
 
         val refreshTokenString = jwtTokenProvider.createRefreshToken(principal.userId)
-        val refreshToken = RefreshToken.create(
-            userId = principal.userId,
-            token = refreshTokenString,
-            expiresAt = jwtTokenProvider.getRefreshTokenExpiration(),
-            deviceInfo = request.getHeader("User-Agent"),
-            ipAddress = getClientIpAddress(request)
-        )
+        val refreshToken =
+            RefreshToken.create(
+                userId = principal.userId,
+                token = refreshTokenString,
+                expiresAt = jwtTokenProvider.getRefreshTokenExpiration(),
+                deviceInfo = request.getHeader("User-Agent"),
+                ipAddress = getClientIpAddress(request),
+            )
         refreshTokenRepository.save(refreshToken)
 
-        val targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-            .queryParam("accessToken", accessToken)
-            .queryParam("refreshToken", refreshTokenString)
-            .queryParam("isNewUser", principal.isNewUser)
-            .build()
-            .toUriString()
+        val targetUrl =
+            UriComponentsBuilder
+                .fromUriString(redirectUri)
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshTokenString)
+                .queryParam("isNewUser", principal.isNewUser)
+                .build()
+                .toUriString()
 
         response.sendRedirect(targetUrl)
     }

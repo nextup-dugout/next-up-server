@@ -22,11 +22,11 @@ data class CompetitionResponse(
     val endDate: LocalDate?,
     val status: CompetitionStatus,
     val description: String?,
-    val maxTeams: Int?
+    val maxTeams: Int?,
 ) {
     companion object {
-        fun from(competition: Competition): CompetitionResponse {
-            return CompetitionResponse(
+        fun from(competition: Competition): CompetitionResponse =
+            CompetitionResponse(
                 id = competition.id,
                 leagueId = competition.league.id,
                 leagueName = competition.league.name,
@@ -38,8 +38,7 @@ data class CompetitionResponse(
                 endDate = competition.endDate,
                 status = competition.status,
                 description = competition.description,
-                maxTeams = competition.maxTeams
+                maxTeams = competition.maxTeams,
             )
-        }
     }
 }

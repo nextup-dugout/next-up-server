@@ -15,9 +15,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api")
 class LeagueController(
-    private val leagueService: LeagueService
+    private val leagueService: LeagueService,
 ) {
-
     /**
      * 활성화된 리그 목록을 조회합니다.
      */
@@ -25,7 +24,7 @@ class LeagueController(
     fun getLeagues(): ApiResponse<List<LeagueSummaryResponse>> {
         val leagues = leagueService.getAllActive()
         return ApiResponse.success(
-            leagues.map { LeagueSummaryResponse.from(it) }
+            leagues.map { LeagueSummaryResponse.from(it) },
         )
     }
 
@@ -34,7 +33,7 @@ class LeagueController(
      */
     @GetMapping("/leagues/{id}")
     fun getLeague(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<LeagueResponse> {
         val league = leagueService.getById(id)
         return ApiResponse.success(LeagueResponse.from(league))
@@ -45,11 +44,11 @@ class LeagueController(
      */
     @GetMapping("/associations/{associationId}/leagues")
     fun getLeaguesByAssociation(
-        @PathVariable associationId: Long
+        @PathVariable associationId: Long,
     ): ApiResponse<List<LeagueSummaryResponse>> {
         val leagues = leagueService.getActiveByAssociationId(associationId)
         return ApiResponse.success(
-            leagues.map { LeagueSummaryResponse.from(it) }
+            leagues.map { LeagueSummaryResponse.from(it) },
         )
     }
 }

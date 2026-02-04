@@ -7,14 +7,14 @@ import com.nextup.core.domain.user.OAuthProvider
  */
 data class OAuthLinkResponse(
     val provider: OAuthProvider,
-    val linkedAt: String
+    val linkedAt: String,
 )
 
 /**
  * 연동된 OAuth 계정 목록 응답 DTO
  */
 data class LinkedOAuthAccountsResponse(
-    val providers: List<OAuthProvider>
+    val providers: List<OAuthProvider>,
 )
 
 /**
@@ -22,5 +22,5 @@ data class LinkedOAuthAccountsResponse(
  */
 data class OAuthLinkStartResponse(
     val authorizationUrl: String,
-    val provider: OAuthProvider
+    val provider: OAuthProvider,
 )

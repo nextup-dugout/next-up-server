@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("LeagueController")
 class LeagueControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var leagueService: LeagueService
     private lateinit var controller: LeagueController
@@ -32,19 +31,20 @@ class LeagueControllerTest {
     @Nested
     @DisplayName("GET /api/leagues")
     inner class GetLeagues {
-
         @Test
         fun `should return all active leagues`() {
             // given
             val association = createAssociation(1L, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association),
-                createLeague(2L, "2부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association),
+                    createLeague(2L, "2부 리그", association),
+                )
             every { leagueService.getAllActive() } returns leagues
 
             // when & then
-            mockMvc.perform(get("/api/leagues"))
+            mockMvc
+                .perform(get("/api/leagues"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -56,7 +56,6 @@ class LeagueControllerTest {
     @Nested
     @DisplayName("GET /api/leagues/{id}")
     inner class GetLeague {
-
         @Test
         fun `should return league when found`() {
             // given
@@ -65,7 +64,8 @@ class LeagueControllerTest {
             every { leagueService.getById(1L) } returns league
 
             // when & then
-            mockMvc.perform(get("/api/leagues/1"))
+            mockMvc
+                .perform(get("/api/leagues/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -78,20 +78,21 @@ class LeagueControllerTest {
     @Nested
     @DisplayName("GET /api/associations/{associationId}/leagues")
     inner class GetLeaguesByAssociation {
-
         @Test
         fun `should return leagues by association`() {
             // given
             val associationId = 1L
             val association = createAssociation(associationId, "서울시야구협회")
-            val leagues = listOf(
-                createLeague(1L, "1부 리그", association),
-                createLeague(2L, "2부 리그", association)
-            )
+            val leagues =
+                listOf(
+                    createLeague(1L, "1부 리그", association),
+                    createLeague(2L, "2부 리그", association),
+                )
             every { leagueService.getActiveByAssociationId(associationId) } returns leagues
 
             // when & then
-            mockMvc.perform(get("/api/associations/$associationId/leagues"))
+            mockMvc
+                .perform(get("/api/associations/$associationId/leagues"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -100,34 +101,39 @@ class LeagueControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association =
+        Association(
             name = name,
             abbreviation = null,
             region = "서울",
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
-        return League(
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association,
+    ): League =
+        League(
             association = association,
             name = name,
             abbreviation = null,
             foundedYear = 2020,
             divisionLevel = 1,
             description = null,
-            logoUrl = null
+            logoUrl = null,
         ).apply {
             val idField = League::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

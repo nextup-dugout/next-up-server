@@ -38,11 +38,12 @@ class LeagueController(
     fun getAllLeagues(
         @RequestParam(required = false) associationId: Long?
     ): ApiResponse<List<LeagueResponse>> {
-        val leagues = if (associationId != null) {
-            leagueService.getByAssociationId(associationId)
-        } else {
-            leagueService.getAll()
-        }
+        val leagues =
+            if (associationId != null) {
+                leagueService.getByAssociationId(associationId)
+            } else {
+                leagueService.getAll()
+            }
 
         return ApiResponse.success(
             leagues.map { LeagueResponse.from(it) }
@@ -69,15 +70,16 @@ class LeagueController(
     fun createLeague(
         @Valid @RequestBody request: CreateLeagueRequest
     ): ApiResponse<LeagueResponse> {
-        val league = leagueService.create(
-            associationId = request.associationId,
-            name = request.name,
-            abbreviation = request.abbreviation,
-            foundedYear = request.foundedYear,
-            divisionLevel = request.divisionLevel,
-            description = request.description,
-            logoUrl = request.logoUrl
-        )
+        val league =
+            leagueService.create(
+                associationId = request.associationId,
+                name = request.name,
+                abbreviation = request.abbreviation,
+                foundedYear = request.foundedYear,
+                divisionLevel = request.divisionLevel,
+                description = request.description,
+                logoUrl = request.logoUrl
+            )
         return ApiResponse.success(LeagueResponse.from(league))
     }
 
@@ -90,11 +92,12 @@ class LeagueController(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateLeagueRequest
     ): ApiResponse<LeagueResponse> {
-        val league = leagueService.update(
-            id = id,
-            description = request.description,
-            logoUrl = request.logoUrl
-        )
+        val league =
+            leagueService.update(
+                id = id,
+                description = request.description,
+                logoUrl = request.logoUrl
+            )
         return ApiResponse.success(LeagueResponse.from(league))
     }
 

@@ -16,7 +16,6 @@ import java.util.*
 
 @DisplayName("JwtTokenProvider")
 class JwtTokenProviderTest {
-
     private lateinit var jwtTokenProvider: JwtTokenProvider
     private lateinit var jwtProperties: JwtProperties
 
@@ -26,19 +25,19 @@ class JwtTokenProviderTest {
 
     @BeforeEach
     fun setUp() {
-        jwtProperties = JwtProperties(
-            secret = testSecret,
-            accessTokenExpiration = 1800000L, // 30 minutes
-            refreshTokenExpiration = 604800000L, // 7 days
-            issuer = testIssuer
-        )
+        jwtProperties =
+            JwtProperties(
+                secret = testSecret,
+                accessTokenExpiration = 1800000L, // 30 minutes
+                refreshTokenExpiration = 604800000L, // 7 days
+                issuer = testIssuer,
+            )
         jwtTokenProvider = JwtTokenProvider(jwtProperties)
     }
 
     @Nested
     @DisplayName("createAccessToken")
     inner class CreateAccessToken {
-
         @Test
         fun `should create valid access token`() {
             // given
@@ -75,7 +74,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("createRefreshToken")
     inner class CreateRefreshToken {
-
         @Test
         fun `should create valid refresh token`() {
             // given
@@ -106,7 +104,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("getUserId")
     inner class GetUserId {
-
         @Test
         fun `should extract user id from access token`() {
             // given
@@ -137,7 +134,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("getRoles")
     inner class GetRoles {
-
         @Test
         fun `should extract roles from access token`() {
             // given
@@ -167,7 +163,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("validateToken")
     inner class ValidateToken {
-
         @Test
         fun `should return true for valid token`() {
             // given
@@ -207,10 +202,12 @@ class JwtTokenProviderTest {
             val differentSecret = "ZGlmZmVyZW50IHNlY3JldCBrZXkgZm9yIHRlc3RpbmcgdGhhdCBpcyBhdCBsZWFzdCAyNTYgYml0cw=="
             val differentKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(differentSecret))
 
-            val tampered = Jwts.builder()
-                .subject("1")
-                .signWith(differentKey, Jwts.SIG.HS256)
-                .compact()
+            val tampered =
+                Jwts
+                    .builder()
+                    .subject("1")
+                    .signWith(differentKey, Jwts.SIG.HS256)
+                    .compact()
 
             // when
             val isValid = jwtTokenProvider.validateToken(tampered)
@@ -223,16 +220,16 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("Token Expiration")
     inner class TokenExpiration {
-
         @Test
         fun `should throw TokenExpiredException for expired token`() {
             // given
-            val expiredProperties = JwtProperties(
-                secret = testSecret,
-                accessTokenExpiration = -1000L, // already expired
-                refreshTokenExpiration = 604800000L,
-                issuer = testIssuer
-            )
+            val expiredProperties =
+                JwtProperties(
+                    secret = testSecret,
+                    accessTokenExpiration = -1000L, // already expired
+                    refreshTokenExpiration = 604800000L,
+                    issuer = testIssuer,
+                )
             val providerWithExpiredToken = JwtTokenProvider(expiredProperties)
             val expiredToken = providerWithExpiredToken.createAccessToken(1L, "test@example.com", setOf("USER"))
 
@@ -246,7 +243,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("Invalid Token Handling")
     inner class InvalidTokenHandling {
-
         @Test
         fun `should throw InvalidTokenException for malformed token`() {
             // given
@@ -270,7 +266,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("isAccessToken / isRefreshToken")
     inner class TokenTypeCheck {
-
         @Test
         fun `should correctly identify access token`() {
             // given
@@ -297,7 +292,6 @@ class JwtTokenProviderTest {
     @Nested
     @DisplayName("getRefreshTokenExpiration")
     inner class GetRefreshTokenExpiration {
-
         @Test
         fun `should return future expiration time`() {
             // when

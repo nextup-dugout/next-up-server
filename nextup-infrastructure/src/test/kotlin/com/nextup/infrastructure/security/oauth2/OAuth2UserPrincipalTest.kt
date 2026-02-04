@@ -11,38 +11,38 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("OAuth2UserPrincipal 테스트")
 class OAuth2UserPrincipalTest {
-
     private fun createTestUser(id: Long = 1L): User {
-        val user = User.createOAuthUser(
-            email = "test@example.com",
-            nickname = "테스터",
-            provider = OAuthProvider.KAKAO,
-            oauthId = "kakao_123"
-        )
+        val user =
+            User.createOAuthUser(
+                email = "test@example.com",
+                nickname = "테스터",
+                provider = OAuthProvider.KAKAO,
+                oauthId = "kakao_123",
+            )
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
         return user
     }
 
-    private fun createOAuth2UserInfo(): OAuth2UserInfo {
-        return KakaoOAuth2UserInfo(
+    private fun createOAuth2UserInfo(): OAuth2UserInfo =
+        KakaoOAuth2UserInfo(
             mapOf(
                 "id" to 123456789L,
-                "kakao_account" to mapOf(
-                    "email" to "test@kakao.com",
-                    "profile" to mapOf(
-                        "nickname" to "카카오유저"
-                    )
-                )
-            )
+                "kakao_account" to
+                    mapOf(
+                        "email" to "test@kakao.com",
+                        "profile" to
+                            mapOf(
+                                "nickname" to "카카오유저",
+                            ),
+                    ),
+            ),
         )
-    }
 
     @Nested
     @DisplayName("기본 속성")
     inner class BasicProperties {
-
         @Test
         fun `should return user id`() {
             // given
@@ -95,7 +95,6 @@ class OAuth2UserPrincipalTest {
     @Nested
     @DisplayName("OAuth2User 인터페이스")
     inner class OAuth2UserInterface {
-
         @Test
         fun `getName should return user id as string`() {
             // given
@@ -144,7 +143,6 @@ class OAuth2UserPrincipalTest {
     @Nested
     @DisplayName("getRoleNames")
     inner class GetRoleNames {
-
         @Test
         fun `should return role names without ROLE_ prefix`() {
             // given

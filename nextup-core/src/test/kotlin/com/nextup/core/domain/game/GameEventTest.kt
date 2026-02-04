@@ -5,9 +5,6 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
-import com.nextup.core.domain.player.Player
-import com.nextup.core.domain.team.Team
-import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -19,7 +16,6 @@ import java.time.LocalDateTime
 
 @DisplayName("GameEvent")
 class GameEventTest {
-
     private lateinit var game: Game
     private lateinit var batter: GamePlayer
     private lateinit var pitcher: GamePlayer
@@ -34,26 +30,26 @@ class GameEventTest {
     @Nested
     @DisplayName("createPlateAppearance")
     inner class CreatePlateAppearance {
-
         @Test
         fun `should create plate appearance event with single`() {
             // given
             val result = PlateAppearanceResult.SINGLE
 
             // when
-            val event = GameEvent.createPlateAppearance(
-                game = game,
-                batter = batter,
-                pitcher = pitcher,
-                result = result,
-                description = "우전 안타",
-                outCountBefore = 0,
-                outCountAfter = 0,
-                runnersBeforeJson = null,
-                runnersAfterJson = """{"first": 1}""",
-                runsScored = 0,
-                rbis = 0
-            )
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = result,
+                    description = "우전 안타",
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = """{"first": 1}""",
+                    runsScored = 0,
+                    rbis = 0,
+                )
 
             // then
             assertThat(event.eventType).isEqualTo(GameEventType.PLATE_APPEARANCE)
@@ -73,19 +69,20 @@ class GameEventTest {
             val result = PlateAppearanceResult.HOME_RUN
 
             // when
-            val event = GameEvent.createPlateAppearance(
-                game = game,
-                batter = batter,
-                pitcher = pitcher,
-                result = result,
-                description = "3점 홈런",
-                outCountBefore = 1,
-                outCountAfter = 1,
-                runnersBeforeJson = """{"first": 1, "second": 2}""",
-                runnersAfterJson = null,
-                runsScored = 3,
-                rbis = 3
-            )
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = result,
+                    description = "3점 홈런",
+                    outCountBefore = 1,
+                    outCountAfter = 1,
+                    runnersBeforeJson = """{"first": 1, "second": 2}""",
+                    runnersAfterJson = null,
+                    runsScored = 3,
+                    rbis = 3,
+                )
 
             // then
             assertThat(event.eventType).isEqualTo(GameEventType.PLATE_APPEARANCE)
@@ -100,19 +97,20 @@ class GameEventTest {
             val result = PlateAppearanceResult.STRIKEOUT
 
             // when
-            val event = GameEvent.createPlateAppearance(
-                game = game,
-                batter = batter,
-                pitcher = pitcher,
-                result = result,
-                description = "헛스윙 삼진",
-                outCountBefore = 1,
-                outCountAfter = 2,
-                runnersBeforeJson = null,
-                runnersAfterJson = null,
-                runsScored = 0,
-                rbis = 0
-            )
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = result,
+                    description = "헛스윙 삼진",
+                    outCountBefore = 1,
+                    outCountAfter = 2,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                    runsScored = 0,
+                    rbis = 0,
+                )
 
             // then
             assertThat(event.outCountBefore).isEqualTo(1)
@@ -123,14 +121,14 @@ class GameEventTest {
     @Nested
     @DisplayName("createInningChange")
     inner class CreateInningChange {
-
         @Test
         fun `should create inning change event`() {
             // when
-            val event = GameEvent.createInningChange(
-                game = game,
-                description = "1회초 종료"
-            )
+            val event =
+                GameEvent.createInningChange(
+                    game = game,
+                    description = "1회초 종료",
+                )
 
             // then
             assertThat(event.eventType).isEqualTo(GameEventType.INNING_CHANGE)
@@ -145,14 +143,14 @@ class GameEventTest {
     @Nested
     @DisplayName("createGameStatus")
     inner class CreateGameStatus {
-
         @Test
         fun `should create game status event for game start`() {
             // when
-            val event = GameEvent.createGameStatus(
-                game = game,
-                description = "경기 시작"
-            )
+            val event =
+                GameEvent.createGameStatus(
+                    game = game,
+                    description = "경기 시작",
+                )
 
             // then
             assertThat(event.eventType).isEqualTo(GameEventType.GAME_STATUS)
@@ -167,10 +165,11 @@ class GameEventTest {
             game.isTopInning = false
 
             // when
-            val event = GameEvent.createGameStatus(
-                game = game,
-                description = "경기 종료"
-            )
+            val event =
+                GameEvent.createGameStatus(
+                    game = game,
+                    description = "경기 종료",
+                )
 
             // then
             assertThat(event.eventType).isEqualTo(GameEventType.GAME_STATUS)
@@ -181,49 +180,52 @@ class GameEventTest {
     }
 
     private fun createGame(): Game {
-        val association = Association(
-            name = "서울시야구협회",
-            abbreviation = null,
-            region = "서울",
-            description = null,
-            logoUrl = null,
-            websiteUrl = null
-        ).apply {
-            val idField = Association::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, 1L)
-        }
+        val association =
+            Association(
+                name = "서울시야구협회",
+                abbreviation = null,
+                region = "서울",
+                description = null,
+                logoUrl = null,
+                websiteUrl = null,
+            ).apply {
+                val idField = Association::class.java.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
 
-        val league = League(
-            association = association,
-            name = "1부 리그",
-            abbreviation = null,
-            foundedYear = 2020,
-            divisionLevel = 1,
-            description = null,
-            logoUrl = null
-        ).apply {
-            val idField = League::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, 1L)
-        }
+        val league =
+            League(
+                association = association,
+                name = "1부 리그",
+                abbreviation = null,
+                foundedYear = 2020,
+                divisionLevel = 1,
+                description = null,
+                logoUrl = null,
+            ).apply {
+                val idField = League::class.java.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
 
-        val competition = Competition(
-            league = league,
-            name = "2025 춘계대회",
-            year = 2025,
-            season = 1,
-            type = CompetitionType.LEAGUE,
-            startDate = LocalDate.of(2025, 3, 1),
-            endDate = LocalDate.of(2025, 6, 30),
-            status = CompetitionStatus.IN_PROGRESS,
-            description = null,
-            maxTeams = null
-        ).apply {
-            val idField = Competition::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, 1L)
-        }
+        val competition =
+            Competition(
+                league = league,
+                name = "2025 춘계대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                endDate = LocalDate.of(2025, 6, 30),
+                status = CompetitionStatus.IN_PROGRESS,
+                description = null,
+                maxTeams = null,
+            ).apply {
+                val idField = Competition::class.java.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
 
         return Game(
             competition = competition,
@@ -235,7 +237,7 @@ class GameEventTest {
             currentInning = 1,
             isTopInning = true,
             totalInnings = 9,
-            gameState = GameState()
+            gameState = GameState(),
         ).apply {
             val idField = Game::class.java.getDeclaredField("id")
             idField.isAccessible = true

@@ -5,8 +5,9 @@ import com.nextup.core.port.repository.TeamRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface TeamRepository : JpaRepository<Team, Long>, TeamRepositoryPort {
-
+interface TeamRepository :
+    JpaRepository<Team, Long>,
+    TeamRepositoryPort {
     override fun findByName(name: String): Team?
 
     override fun findByLeagueId(leagueId: Long): List<Team>

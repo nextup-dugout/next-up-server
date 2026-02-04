@@ -7,5 +7,5 @@ enum class Base {
     FIRST,
     SECOND,
     THIRD,
-    HOME
+    HOME,
 }

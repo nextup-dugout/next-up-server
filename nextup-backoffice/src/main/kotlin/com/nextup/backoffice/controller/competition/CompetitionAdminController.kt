@@ -28,23 +28,23 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/backoffice/competitions")
 class CompetitionAdminController(
-    private val competitionService: CompetitionService
+    private val competitionService: CompetitionService,
 ) {
-
     /**
      * 모든 대회 목록을 조회합니다.
      */
     @GetMapping
     fun getAllCompetitions(
-        @RequestParam(required = false) status: CompetitionStatus?
+        @RequestParam(required = false) status: CompetitionStatus?,
     ): ApiResponse<List<CompetitionAdminResponse>> {
-        val competitions = if (status != null) {
-            competitionService.getByStatus(status)
-        } else {
-            competitionService.getAll()
-        }
+        val competitions =
+            if (status != null) {
+                competitionService.getByStatus(status)
+            } else {
+                competitionService.getAll()
+            }
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) }
+            competitions.map { CompetitionAdminResponse.from(it) },
         )
     }
 
@@ -53,7 +53,7 @@ class CompetitionAdminController(
      */
     @GetMapping("/{id}")
     fun getCompetition(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.getByIdWithLeague(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
@@ -64,11 +64,11 @@ class CompetitionAdminController(
      */
     @GetMapping("/by-league/{leagueId}")
     fun getCompetitionsByLeague(
-        @PathVariable leagueId: Long
+        @PathVariable leagueId: Long,
     ): ApiResponse<List<CompetitionAdminResponse>> {
         val competitions = competitionService.getByLeagueId(leagueId)
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) }
+            competitions.map { CompetitionAdminResponse.from(it) },
         )
     }
 
@@ -78,19 +78,20 @@ class CompetitionAdminController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createCompetition(
-        @Valid @RequestBody request: CreateCompetitionRequest
+        @Valid @RequestBody request: CreateCompetitionRequest,
     ): ApiResponse<CompetitionAdminResponse> {
-        val competition = competitionService.create(
-            leagueId = request.leagueId,
-            name = request.name,
-            year = request.year,
-            season = request.season,
-            type = request.type,
-            startDate = request.startDate,
-            endDate = request.endDate,
-            description = request.description,
-            maxTeams = request.maxTeams
-        )
+        val competition =
+            competitionService.create(
+                leagueId = request.leagueId,
+                name = request.name,
+                year = request.year,
+                season = request.season,
+                type = request.type,
+                startDate = request.startDate,
+                endDate = request.endDate,
+                description = request.description,
+                maxTeams = request.maxTeams,
+            )
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
     }
 
@@ -100,13 +101,14 @@ class CompetitionAdminController(
     @PutMapping("/{id}")
     fun updateCompetition(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateCompetitionRequest
+        @Valid @RequestBody request: UpdateCompetitionRequest,
     ): ApiResponse<CompetitionAdminResponse> {
-        val competition = competitionService.update(
-            id = id,
-            description = request.description,
-            endDate = request.endDate
-        )
+        val competition =
+            competitionService.update(
+                id = id,
+                description = request.description,
+                endDate = request.endDate,
+            )
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
     }
 
@@ -115,7 +117,7 @@ class CompetitionAdminController(
      */
     @PostMapping("/{id}/start")
     fun startCompetition(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.start(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
@@ -127,7 +129,7 @@ class CompetitionAdminController(
     @PostMapping("/{id}/complete")
     fun completeCompetition(
         @PathVariable id: Long,
-        @RequestBody(required = false) endDate: LocalDate?
+        @RequestBody(required = false) endDate: LocalDate?,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.complete(id, endDate ?: LocalDate.now())
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
@@ -138,7 +140,7 @@ class CompetitionAdminController(
      */
     @DeleteMapping("/{id}")
     fun cancelCompetition(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.cancel(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
@@ -149,7 +151,7 @@ class CompetitionAdminController(
      */
     @PostMapping("/{id}/postpone")
     fun postponeCompetition(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.postpone(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))

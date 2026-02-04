@@ -10,21 +10,16 @@ data class CreateAssociationRequest(
     @field:NotBlank(message = "협회 이름은 필수입니다")
     @field:Size(max = 100, message = "협회 이름은 100자를 초과할 수 없습니다")
     val name: String,
-
     @field:Size(max = 20, message = "약어는 20자를 초과할 수 없습니다")
     val abbreviation: String? = null,
-
     @field:Size(max = 50, message = "지역은 50자를 초과할 수 없습니다")
     val region: String? = null,
-
     @field:Size(max = 500, message = "설명은 500자를 초과할 수 없습니다")
     val description: String? = null,
-
     @field:Size(max = 255, message = "로고 URL은 255자를 초과할 수 없습니다")
     val logoUrl: String? = null,
-
     @field:Size(max = 255, message = "웹사이트 URL은 255자를 초과할 수 없습니다")
-    val websiteUrl: String? = null
+    val websiteUrl: String? = null,
 )
 
 /**
@@ -33,10 +28,8 @@ data class CreateAssociationRequest(
 data class UpdateAssociationRequest(
     @field:Size(max = 500, message = "설명은 500자를 초과할 수 없습니다")
     val description: String? = null,
-
     @field:Size(max = 255, message = "로고 URL은 255자를 초과할 수 없습니다")
     val logoUrl: String? = null,
-
     @field:Size(max = 255, message = "웹사이트 URL은 255자를 초과할 수 없습니다")
-    val websiteUrl: String? = null
+    val websiteUrl: String? = null,
 )

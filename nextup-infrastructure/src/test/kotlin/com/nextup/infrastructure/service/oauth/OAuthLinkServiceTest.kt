@@ -6,7 +6,6 @@ import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.user.OAuthAccountRepository
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
-import org.springframework.data.repository.findByIdOrNull
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -14,11 +13,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.data.repository.findByIdOrNull
 import java.util.*
 
 @DisplayName("OAuthLinkService")
 class OAuthLinkServiceTest {
-
     private lateinit var userJpaRepository: UserJpaRepository
     private lateinit var oauthAccountRepository: OAuthAccountRepository
     private lateinit var oauthLinkService: OAuthLinkService
@@ -33,7 +32,6 @@ class OAuthLinkServiceTest {
     @Nested
     @DisplayName("linkOAuthAccount")
     inner class LinkOAuthAccount {
-
         @Test
         fun `should link oauth account to existing user`() {
             // given
@@ -87,7 +85,6 @@ class OAuthLinkServiceTest {
     @Nested
     @DisplayName("unlinkOAuthAccount")
     inner class UnlinkOAuthAccount {
-
         @Test
         fun `should unlink oauth account from user`() {
             // given
@@ -122,7 +119,6 @@ class OAuthLinkServiceTest {
     @Nested
     @DisplayName("getLinkedProviders")
     inner class GetLinkedProviders {
-
         @Test
         fun `should return list of linked providers`() {
             // given
@@ -155,7 +151,6 @@ class OAuthLinkServiceTest {
     @Nested
     @DisplayName("isLinked")
     inner class IsLinked {
-
         @Test
         fun `should return true when oauth account is linked`() {
             // given
@@ -191,7 +186,6 @@ class OAuthLinkServiceTest {
     @Nested
     @DisplayName("findUserByOAuth")
     inner class FindUserByOAuth {
-
         @Test
         fun `should return user when oauth account found`() {
             // given
@@ -228,29 +222,34 @@ class OAuthLinkServiceTest {
 
     // Helper methods
     private fun createLocalUser(id: Long): User {
-        val user = User.createLocalUser(
-            email = "test@example.com",
-            encodedPassword = "encoded_password",
-            nickname = "testuser"
-        )
+        val user =
+            User.createLocalUser(
+                email = "test@example.com",
+                encodedPassword = "encoded_password",
+                nickname = "testuser",
+            )
         setUserId(user, id)
         return user
     }
 
     private fun createOAuthUser(id: Long): User {
-        val user = User.createOAuthUser(
-            email = "test@kakao.com",
-            nickname = "kakao_user",
-            provider = OAuthProvider.KAKAO,
-            oauthId = "kakao_123"
-        )
+        val user =
+            User.createOAuthUser(
+                email = "test@kakao.com",
+                nickname = "kakao_user",
+                provider = OAuthProvider.KAKAO,
+                oauthId = "kakao_123",
+            )
         // Add password so user can remove OAuth account
         user.changePassword("encoded_password")
         setUserId(user, id)
         return user
     }
 
-    private fun setUserId(user: User, id: Long) {
+    private fun setUserId(
+        user: User,
+        id: Long,
+    ) {
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)

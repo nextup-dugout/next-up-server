@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("BoxScoreController 테스트")
 class BoxScoreControllerTest {
-
     private lateinit var mockMvc: MockMvc
     private lateinit var boxScoreService: BoxScoreService
 
@@ -26,107 +25,116 @@ class BoxScoreControllerTest {
         boxScoreService = mockk()
 
         val controller = BoxScoreController(boxScoreService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-            .setControllerAdvice(GlobalExceptionHandler())
-            .build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
+                .build()
     }
 
     @Nested
     @DisplayName("GET /api/games/{gameId}/boxscore")
     inner class GetBoxScore {
-
         @Test
         fun `경기의 박스스코어를 정상적으로 조회한다`() {
             // given
             val gameId = 1L
-            val boxScoreDto = BoxScoreDto(
-                gameId = gameId,
-                homeTeam = TeamBoxScoreDto(
-                    teamId = 10L,
-                    teamName = "홈팀",
-                    inningScores = listOf(1, 0, 2, 0, 0, 0, 3, 0, 0),
-                    runs = 6,
-                    hits = 10,
-                    errors = 1,
-                    batters = listOf(
-                        BatterLineDto(
-                            playerId = 100L,
-                            name = "홈타자1",
-                            position = "1B",
-                            battingOrder = 1,
-                            plateAppearances = 4,
-                            atBats = 3,
+            val boxScoreDto =
+                BoxScoreDto(
+                    gameId = gameId,
+                    homeTeam =
+                        TeamBoxScoreDto(
+                            teamId = 10L,
+                            teamName = "홈팀",
+                            inningScores = listOf(1, 0, 2, 0, 0, 0, 3, 0, 0),
+                            runs = 6,
+                            hits = 10,
+                            errors = 1,
+                            batters =
+                                listOf(
+                                    BatterLineDto(
+                                        playerId = 100L,
+                                        name = "홈타자1",
+                                        position = "1B",
+                                        battingOrder = 1,
+                                        plateAppearances = 4,
+                                        atBats = 3,
+                                        runs = 2,
+                                        hits = 2,
+                                        rbis = 1,
+                                        walks = 1,
+                                        strikeouts = 0,
+                                        avg = ".333",
+                                    ),
+                                ),
+                            pitchers =
+                                listOf(
+                                    PitcherLineDto(
+                                        playerId = 101L,
+                                        name = "홈투수1",
+                                        inningsPitched = "7.0",
+                                        hits = 5,
+                                        runs = 2,
+                                        earnedRuns = 2,
+                                        walks = 2,
+                                        strikeouts = 8,
+                                        homeRuns = 0,
+                                        decision = "W",
+                                        era = "2.57",
+                                    ),
+                                ),
+                        ),
+                    awayTeam =
+                        TeamBoxScoreDto(
+                            teamId = 20L,
+                            teamName = "원정팀",
+                            inningScores = listOf(0, 1, 0, 1, 0, 0, 0, 0, 0),
                             runs = 2,
-                            hits = 2,
-                            rbis = 1,
-                            walks = 1,
-                            strikeouts = 0,
-                            avg = ".333"
-                        )
-                    ),
-                    pitchers = listOf(
-                        PitcherLineDto(
-                            playerId = 101L,
-                            name = "홈투수1",
-                            inningsPitched = "7.0",
                             hits = 5,
-                            runs = 2,
-                            earnedRuns = 2,
-                            walks = 2,
-                            strikeouts = 8,
-                            homeRuns = 0,
-                            decision = "W",
-                            era = "2.57"
-                        )
-                    )
-                ),
-                awayTeam = TeamBoxScoreDto(
-                    teamId = 20L,
-                    teamName = "원정팀",
-                    inningScores = listOf(0, 1, 0, 1, 0, 0, 0, 0, 0),
-                    runs = 2,
-                    hits = 5,
-                    errors = 2,
-                    batters = listOf(
-                        BatterLineDto(
-                            playerId = 200L,
-                            name = "원정타자1",
-                            position = "CF",
-                            battingOrder = 1,
-                            plateAppearances = 4,
-                            atBats = 4,
-                            runs = 1,
-                            hits = 1,
-                            rbis = 0,
-                            walks = 0,
-                            strikeouts = 2,
-                            avg = ".250"
-                        )
-                    ),
-                    pitchers = listOf(
-                        PitcherLineDto(
-                            playerId = 201L,
-                            name = "원정투수1",
-                            inningsPitched = "6.2",
-                            hits = 8,
-                            runs = 5,
-                            earnedRuns = 4,
-                            walks = 3,
-                            strikeouts = 5,
-                            homeRuns = 1,
-                            decision = "L",
-                            era = "5.40"
-                        )
-                    )
-                ),
-                currentInning = "9회말",
-                gameStatus = "경기 종료"
-            )
+                            errors = 2,
+                            batters =
+                                listOf(
+                                    BatterLineDto(
+                                        playerId = 200L,
+                                        name = "원정타자1",
+                                        position = "CF",
+                                        battingOrder = 1,
+                                        plateAppearances = 4,
+                                        atBats = 4,
+                                        runs = 1,
+                                        hits = 1,
+                                        rbis = 0,
+                                        walks = 0,
+                                        strikeouts = 2,
+                                        avg = ".250",
+                                    ),
+                                ),
+                            pitchers =
+                                listOf(
+                                    PitcherLineDto(
+                                        playerId = 201L,
+                                        name = "원정투수1",
+                                        inningsPitched = "6.2",
+                                        hits = 8,
+                                        runs = 5,
+                                        earnedRuns = 4,
+                                        walks = 3,
+                                        strikeouts = 5,
+                                        homeRuns = 1,
+                                        decision = "L",
+                                        era = "5.40",
+                                    ),
+                                ),
+                        ),
+                    currentInning = "9회말",
+                    gameStatus = "경기 종료",
+                )
 
             every { boxScoreService.getBoxScore(gameId) } returns boxScoreDto
 
             // when & then
-            mockMvc.perform(get("/api/games/$gameId/boxscore"))
+            mockMvc
+                .perform(get("/api/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -146,51 +154,56 @@ class BoxScoreControllerTest {
         fun `타자 정보를 정확하게 반환한다`() {
             // given
             val gameId = 1L
-            val boxScoreDto = BoxScoreDto(
-                gameId = gameId,
-                homeTeam = TeamBoxScoreDto(
-                    teamId = 10L,
-                    teamName = "홈팀",
-                    inningScores = emptyList(),
-                    runs = 0,
-                    hits = 0,
-                    errors = 0,
-                    batters = listOf(
-                        BatterLineDto(
-                            playerId = 100L,
-                            name = "타자A",
-                            position = "SS",
-                            battingOrder = 1,
-                            plateAppearances = 5,
-                            atBats = 4,
-                            runs = 2,
-                            hits = 3,
-                            rbis = 2,
-                            walks = 1,
-                            strikeouts = 1,
-                            avg = ".750"
-                        )
-                    ),
-                    pitchers = emptyList()
-                ),
-                awayTeam = TeamBoxScoreDto(
-                    teamId = 20L,
-                    teamName = "원정팀",
-                    inningScores = emptyList(),
-                    runs = 0,
-                    hits = 0,
-                    errors = 0,
-                    batters = emptyList(),
-                    pitchers = emptyList()
-                ),
-                currentInning = "5회초",
-                gameStatus = "경기 중"
-            )
+            val boxScoreDto =
+                BoxScoreDto(
+                    gameId = gameId,
+                    homeTeam =
+                        TeamBoxScoreDto(
+                            teamId = 10L,
+                            teamName = "홈팀",
+                            inningScores = emptyList(),
+                            runs = 0,
+                            hits = 0,
+                            errors = 0,
+                            batters =
+                                listOf(
+                                    BatterLineDto(
+                                        playerId = 100L,
+                                        name = "타자A",
+                                        position = "SS",
+                                        battingOrder = 1,
+                                        plateAppearances = 5,
+                                        atBats = 4,
+                                        runs = 2,
+                                        hits = 3,
+                                        rbis = 2,
+                                        walks = 1,
+                                        strikeouts = 1,
+                                        avg = ".750",
+                                    ),
+                                ),
+                            pitchers = emptyList(),
+                        ),
+                    awayTeam =
+                        TeamBoxScoreDto(
+                            teamId = 20L,
+                            teamName = "원정팀",
+                            inningScores = emptyList(),
+                            runs = 0,
+                            hits = 0,
+                            errors = 0,
+                            batters = emptyList(),
+                            pitchers = emptyList(),
+                        ),
+                    currentInning = "5회초",
+                    gameStatus = "경기 중",
+                )
 
             every { boxScoreService.getBoxScore(gameId) } returns boxScoreDto
 
             // when & then
-            mockMvc.perform(get("/api/games/$gameId/boxscore"))
+            mockMvc
+                .perform(get("/api/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.batters[0].playerId").value(100))
                 .andExpect(jsonPath("$.data.homeTeam.batters[0].name").value("타자A"))
@@ -210,50 +223,55 @@ class BoxScoreControllerTest {
         fun `투수 정보를 정확하게 반환한다`() {
             // given
             val gameId = 1L
-            val boxScoreDto = BoxScoreDto(
-                gameId = gameId,
-                homeTeam = TeamBoxScoreDto(
-                    teamId = 10L,
-                    teamName = "홈팀",
-                    inningScores = emptyList(),
-                    runs = 0,
-                    hits = 0,
-                    errors = 0,
-                    batters = emptyList(),
-                    pitchers = listOf(
-                        PitcherLineDto(
-                            playerId = 101L,
-                            name = "투수B",
-                            inningsPitched = "6.1",
-                            hits = 7,
-                            runs = 3,
-                            earnedRuns = 2,
-                            walks = 2,
-                            strikeouts = 10,
-                            homeRuns = 1,
-                            decision = "W",
-                            era = "2.84"
-                        )
-                    )
-                ),
-                awayTeam = TeamBoxScoreDto(
-                    teamId = 20L,
-                    teamName = "원정팀",
-                    inningScores = emptyList(),
-                    runs = 0,
-                    hits = 0,
-                    errors = 0,
-                    batters = emptyList(),
-                    pitchers = emptyList()
-                ),
-                currentInning = "7회초",
-                gameStatus = "경기 중"
-            )
+            val boxScoreDto =
+                BoxScoreDto(
+                    gameId = gameId,
+                    homeTeam =
+                        TeamBoxScoreDto(
+                            teamId = 10L,
+                            teamName = "홈팀",
+                            inningScores = emptyList(),
+                            runs = 0,
+                            hits = 0,
+                            errors = 0,
+                            batters = emptyList(),
+                            pitchers =
+                                listOf(
+                                    PitcherLineDto(
+                                        playerId = 101L,
+                                        name = "투수B",
+                                        inningsPitched = "6.1",
+                                        hits = 7,
+                                        runs = 3,
+                                        earnedRuns = 2,
+                                        walks = 2,
+                                        strikeouts = 10,
+                                        homeRuns = 1,
+                                        decision = "W",
+                                        era = "2.84",
+                                    ),
+                                ),
+                        ),
+                    awayTeam =
+                        TeamBoxScoreDto(
+                            teamId = 20L,
+                            teamName = "원정팀",
+                            inningScores = emptyList(),
+                            runs = 0,
+                            hits = 0,
+                            errors = 0,
+                            batters = emptyList(),
+                            pitchers = emptyList(),
+                        ),
+                    currentInning = "7회초",
+                    gameStatus = "경기 중",
+                )
 
             every { boxScoreService.getBoxScore(gameId) } returns boxScoreDto
 
             // when & then
-            mockMvc.perform(get("/api/games/$gameId/boxscore"))
+            mockMvc
+                .perform(get("/api/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.pitchers[0].playerId").value(101))
                 .andExpect(jsonPath("$.data.homeTeam.pitchers[0].name").value("투수B"))
@@ -272,36 +290,40 @@ class BoxScoreControllerTest {
         fun `이닝별 점수를 정확하게 반환한다`() {
             // given
             val gameId = 1L
-            val boxScoreDto = BoxScoreDto(
-                gameId = gameId,
-                homeTeam = TeamBoxScoreDto(
-                    teamId = 10L,
-                    teamName = "홈팀",
-                    inningScores = listOf(2, 0, 1, 0, 0, 3, 0, 1, 0),
-                    runs = 7,
-                    hits = 12,
-                    errors = 0,
-                    batters = emptyList(),
-                    pitchers = emptyList()
-                ),
-                awayTeam = TeamBoxScoreDto(
-                    teamId = 20L,
-                    teamName = "원정팀",
-                    inningScores = listOf(0, 1, 0, 0, 2, 0, 0, 0, 1),
-                    runs = 4,
-                    hits = 8,
-                    errors = 1,
-                    batters = emptyList(),
-                    pitchers = emptyList()
-                ),
-                currentInning = "9회말",
-                gameStatus = "경기 종료"
-            )
+            val boxScoreDto =
+                BoxScoreDto(
+                    gameId = gameId,
+                    homeTeam =
+                        TeamBoxScoreDto(
+                            teamId = 10L,
+                            teamName = "홈팀",
+                            inningScores = listOf(2, 0, 1, 0, 0, 3, 0, 1, 0),
+                            runs = 7,
+                            hits = 12,
+                            errors = 0,
+                            batters = emptyList(),
+                            pitchers = emptyList(),
+                        ),
+                    awayTeam =
+                        TeamBoxScoreDto(
+                            teamId = 20L,
+                            teamName = "원정팀",
+                            inningScores = listOf(0, 1, 0, 0, 2, 0, 0, 0, 1),
+                            runs = 4,
+                            hits = 8,
+                            errors = 1,
+                            batters = emptyList(),
+                            pitchers = emptyList(),
+                        ),
+                    currentInning = "9회말",
+                    gameStatus = "경기 종료",
+                )
 
             every { boxScoreService.getBoxScore(gameId) } returns boxScoreDto
 
             // when & then
-            mockMvc.perform(get("/api/games/$gameId/boxscore"))
+            mockMvc
+                .perform(get("/api/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.inningScores").isArray)
                 .andExpect(jsonPath("$.data.homeTeam.inningScores[0]").value(2))
@@ -318,7 +340,8 @@ class BoxScoreControllerTest {
             every { boxScoreService.getBoxScore(gameId) } throws IllegalArgumentException("경기를 찾을 수 없습니다")
 
             // when & then
-            mockMvc.perform(get("/api/games/$gameId/boxscore"))
+            mockMvc
+                .perform(get("/api/games/$gameId/boxscore"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
         }

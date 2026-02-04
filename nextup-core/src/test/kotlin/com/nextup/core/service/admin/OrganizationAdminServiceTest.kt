@@ -8,8 +8,8 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
-import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.OrganizationAdminRepositoryPort
+import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -24,7 +24,6 @@ import java.util.*
 
 @DisplayName("OrganizationAdminService")
 class OrganizationAdminServiceTest {
-
     private lateinit var organizationAdminRepository: OrganizationAdminRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
@@ -35,17 +34,17 @@ class OrganizationAdminServiceTest {
         organizationAdminRepository = mockk()
         userRepository = mockk()
         teamRepository = mockk()
-        organizationAdminService = OrganizationAdminService(
-            organizationAdminRepository,
-            userRepository,
-            teamRepository
-        )
+        organizationAdminService =
+            OrganizationAdminService(
+                organizationAdminRepository,
+                userRepository,
+                teamRepository,
+            )
     }
 
     @Nested
     @DisplayName("assignAdmin")
     inner class AssignAdmin {
-
         @Test
         fun `관리자를 할당할 수 있다`() {
             // given
@@ -58,18 +57,21 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, organizationType, organizationId
+                    userId,
+                    organizationType,
+                    organizationId,
                 )
             } returns null
             every { organizationAdminRepository.save(any()) } answers { firstArg() }
 
             // when
-            val admin = organizationAdminService.assignAdmin(
-                userId = userId,
-                organizationType = organizationType,
-                organizationId = organizationId,
-                role = role
-            )
+            val admin =
+                organizationAdminService.assignAdmin(
+                    userId = userId,
+                    organizationType = organizationType,
+                    organizationId = organizationId,
+                    role = role,
+                )
 
             // then
             assertThat(admin.user.id).isEqualTo(userId)
@@ -92,7 +94,7 @@ class OrganizationAdminServiceTest {
                     userId = userId,
                     organizationType = OrganizationType.ASSOCIATION,
                     organizationId = 1L,
-                    role = OrganizationRole.ADMIN
+                    role = OrganizationRole.ADMIN,
                 )
             }.isInstanceOf(UserNotFoundException::class.java)
         }
@@ -109,7 +111,9 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, organizationType, organizationId
+                    userId,
+                    organizationType,
+                    organizationId,
                 )
             } returns existingAdmin
 
@@ -119,7 +123,7 @@ class OrganizationAdminServiceTest {
                     userId = userId,
                     organizationType = organizationType,
                     organizationId = organizationId,
-                    role = OrganizationRole.MANAGER
+                    role = OrganizationRole.MANAGER,
                 )
             }.isInstanceOf(OrganizationAdminAlreadyExistsException::class.java)
         }
@@ -143,13 +147,16 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.TEAM, team2Id
+                    userId,
+                    OrganizationType.TEAM,
+                    team2Id,
                 )
             } returns null
             every { teamRepository.findByIdWithLeague(team2Id) } returns team2
             every {
                 organizationAdminRepository.findActiveByUserIdAndOrganizationType(
-                    userId, OrganizationType.TEAM
+                    userId,
+                    OrganizationType.TEAM,
                 )
             } returns listOf(existingAdmin)
             every { teamRepository.findByIdWithLeague(team1Id) } returns team1
@@ -160,7 +167,7 @@ class OrganizationAdminServiceTest {
                     userId = userId,
                     organizationType = OrganizationType.TEAM,
                     organizationId = team2Id,
-                    role = OrganizationRole.ADMIN
+                    role = OrganizationRole.ADMIN,
                 )
             }.isInstanceOf(SameLeagueConflictException::class.java)
                 .hasMessageContaining("leagueId=$leagueId")
@@ -189,25 +196,29 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.TEAM, team2Id
+                    userId,
+                    OrganizationType.TEAM,
+                    team2Id,
                 )
             } returns null
             every { teamRepository.findByIdWithLeague(team2Id) } returns team2
             every {
                 organizationAdminRepository.findActiveByUserIdAndOrganizationType(
-                    userId, OrganizationType.TEAM
+                    userId,
+                    OrganizationType.TEAM,
                 )
             } returns listOf(existingAdmin)
             every { teamRepository.findByIdWithLeague(team1Id) } returns team1
             every { organizationAdminRepository.save(any()) } answers { firstArg() }
 
             // when
-            val admin = organizationAdminService.assignAdmin(
-                userId = userId,
-                organizationType = OrganizationType.TEAM,
-                organizationId = team2Id,
-                role = OrganizationRole.ADMIN
-            )
+            val admin =
+                organizationAdminService.assignAdmin(
+                    userId = userId,
+                    organizationType = OrganizationType.TEAM,
+                    organizationId = team2Id,
+                    role = OrganizationRole.ADMIN,
+                )
 
             // then
             assertThat(admin.organizationId).isEqualTo(team2Id)
@@ -218,7 +229,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("removeAdmin")
     inner class RemoveAdmin {
-
         @Test
         fun `관리자 권한을 해제할 수 있다`() {
             // given
@@ -230,7 +240,9 @@ class OrganizationAdminServiceTest {
 
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, organizationType, organizationId
+                    userId,
+                    organizationType,
+                    organizationId,
                 )
             } returns admin
 
@@ -247,7 +259,9 @@ class OrganizationAdminServiceTest {
             val userId = 1L
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.ASSOCIATION, 1L
+                    userId,
+                    OrganizationType.ASSOCIATION,
+                    1L,
                 )
             } returns null
 
@@ -256,7 +270,7 @@ class OrganizationAdminServiceTest {
                 organizationAdminService.removeAdmin(
                     userId = userId,
                     organizationType = OrganizationType.ASSOCIATION,
-                    organizationId = 1L
+                    organizationId = 1L,
                 )
             }.isInstanceOf(OrganizationAdminNotFoundException::class.java)
         }
@@ -265,7 +279,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("getAdminsByOrganization")
     inner class GetAdminsByOrganization {
-
         @Test
         fun `특정 조직의 관리자 목록을 조회할 수 있다`() {
             // given
@@ -278,7 +291,8 @@ class OrganizationAdminServiceTest {
 
             every {
                 organizationAdminRepository.findActiveByOrganizationTypeAndOrganizationId(
-                    organizationType, organizationId
+                    organizationType,
+                    organizationId,
                 )
             } returns listOf(admin1, admin2)
 
@@ -294,7 +308,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("getOrganizationsByUser")
     inner class GetOrganizationsByUser {
-
         @Test
         fun `사용자가 관리하는 모든 조직을 조회할 수 있다`() {
             // given
@@ -312,7 +325,7 @@ class OrganizationAdminServiceTest {
             assertThat(organizations).hasSize(2)
             assertThat(organizations.map { it.organizationType }).containsExactlyInAnyOrder(
                 OrganizationType.ASSOCIATION,
-                OrganizationType.LEAGUE
+                OrganizationType.LEAGUE,
             )
         }
     }
@@ -320,7 +333,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("changeRole")
     inner class ChangeRole {
-
         @Test
         fun `관리자 역할을 변경할 수 있다`() {
             // given
@@ -332,14 +344,20 @@ class OrganizationAdminServiceTest {
 
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, organizationType, organizationId
+                    userId,
+                    organizationType,
+                    organizationId,
                 )
             } returns admin
 
             // when
-            val updated = organizationAdminService.changeRole(
-                userId, organizationType, organizationId, OrganizationRole.MANAGER
-            )
+            val updated =
+                organizationAdminService.changeRole(
+                    userId,
+                    organizationType,
+                    organizationId,
+                    OrganizationRole.MANAGER,
+                )
 
             // then
             assertThat(updated.role).isEqualTo(OrganizationRole.MANAGER)
@@ -357,14 +375,19 @@ class OrganizationAdminServiceTest {
 
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, organizationType, organizationId
+                    userId,
+                    organizationType,
+                    organizationId,
                 )
             } returns admin
 
             // when & then
             assertThatThrownBy {
                 organizationAdminService.changeRole(
-                    userId, organizationType, organizationId, OrganizationRole.MANAGER
+                    userId,
+                    organizationType,
+                    organizationId,
+                    OrganizationRole.MANAGER,
                 )
             }.isInstanceOf(OrganizationAdminDeactivatedException::class.java)
         }
@@ -373,29 +396,38 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("hasPermission")
     inner class HasPermission {
-
         @Test
         fun `사용자가 특정 조직에 대한 권한을 가지고 있는지 확인할 수 있다`() {
             // given
             val userId = 1L
             every {
                 organizationAdminRepository.existsActiveByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.ASSOCIATION, 1L
+                    userId,
+                    OrganizationType.ASSOCIATION,
+                    1L,
                 )
             } returns true
             every {
                 organizationAdminRepository.existsActiveByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.LEAGUE, 2L
+                    userId,
+                    OrganizationType.LEAGUE,
+                    2L,
                 )
             } returns false
 
             // when
-            val hasPermission = organizationAdminService.hasPermission(
-                userId, OrganizationType.ASSOCIATION, 1L
-            )
-            val noPermission = organizationAdminService.hasPermission(
-                userId, OrganizationType.LEAGUE, 2L
-            )
+            val hasPermission =
+                organizationAdminService.hasPermission(
+                    userId,
+                    OrganizationType.ASSOCIATION,
+                    1L,
+                )
+            val noPermission =
+                organizationAdminService.hasPermission(
+                    userId,
+                    OrganizationType.LEAGUE,
+                    2L,
+                )
 
             // then
             assertThat(hasPermission).isTrue()
@@ -406,7 +438,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("getById")
     inner class GetById {
-
         @Test
         fun `ID로 관리자를 조회할 수 있다`() {
             // given
@@ -440,7 +471,6 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("validateSameLeagueConflict edge cases")
     inner class ValidateSameLeagueConflictEdgeCases {
-
         @Test
         fun `새 팀을 찾을 수 없으면 TeamNotFoundException 발생`() {
             // given
@@ -451,7 +481,9 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.TEAM, newTeamId
+                    userId,
+                    OrganizationType.TEAM,
+                    newTeamId,
                 )
             } returns null
             every { teamRepository.findByIdWithLeague(newTeamId) } returns null
@@ -462,7 +494,7 @@ class OrganizationAdminServiceTest {
                     userId = userId,
                     organizationType = OrganizationType.TEAM,
                     organizationId = newTeamId,
-                    role = OrganizationRole.ADMIN
+                    role = OrganizationRole.ADMIN,
                 )
             }.isInstanceOf(TeamNotFoundException::class.java)
         }
@@ -484,25 +516,29 @@ class OrganizationAdminServiceTest {
             every { userRepository.findByIdOrNull(userId) } returns user
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.TEAM, newTeamId
+                    userId,
+                    OrganizationType.TEAM,
+                    newTeamId,
                 )
             } returns null
             every { teamRepository.findByIdWithLeague(newTeamId) } returns newTeam
             every {
                 organizationAdminRepository.findActiveByUserIdAndOrganizationType(
-                    userId, OrganizationType.TEAM
+                    userId,
+                    OrganizationType.TEAM,
                 )
             } returns listOf(existingAdmin)
             every { teamRepository.findByIdWithLeague(existingTeamId) } returns null
             every { organizationAdminRepository.save(any()) } answers { firstArg() }
 
             // when
-            val admin = organizationAdminService.assignAdmin(
-                userId = userId,
-                organizationType = OrganizationType.TEAM,
-                organizationId = newTeamId,
-                role = OrganizationRole.ADMIN
-            )
+            val admin =
+                organizationAdminService.assignAdmin(
+                    userId = userId,
+                    organizationType = OrganizationType.TEAM,
+                    organizationId = newTeamId,
+                    role = OrganizationRole.ADMIN,
+                )
 
             // then
             assertThat(admin.organizationId).isEqualTo(newTeamId)
@@ -513,21 +549,25 @@ class OrganizationAdminServiceTest {
     @Nested
     @DisplayName("changeRole edge cases")
     inner class ChangeRoleEdgeCases {
-
         @Test
         fun `존재하지 않는 관리자의 역할을 변경하면 예외가 발생한다`() {
             // given
             val userId = 1L
             every {
                 organizationAdminRepository.findByUserIdAndOrganizationTypeAndOrganizationId(
-                    userId, OrganizationType.ASSOCIATION, 1L
+                    userId,
+                    OrganizationType.ASSOCIATION,
+                    1L,
                 )
             } returns null
 
             // when & then
             assertThatThrownBy {
                 organizationAdminService.changeRole(
-                    userId, OrganizationType.ASSOCIATION, 1L, OrganizationRole.MANAGER
+                    userId,
+                    OrganizationType.ASSOCIATION,
+                    1L,
+                    OrganizationRole.MANAGER,
                 )
             }.isInstanceOf(OrganizationAdminNotFoundException::class.java)
         }
@@ -535,44 +575,62 @@ class OrganizationAdminServiceTest {
 
     // Helper methods
 
-    private fun createUser(id: Long, email: String): User {
-        val user = User.createLocalUser(
-            email = email,
-            encodedPassword = "password",
-            nickname = "Test User"
-        )
+    private fun createUser(
+        id: Long,
+        email: String,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = email,
+                encodedPassword = "password",
+                nickname = "Test User",
+            )
         setEntityId(user, id)
         return user
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
-        val association = Association(
-            name = name,
-            abbreviation = name.substring(0, 2),
-            region = "Seoul"
-        )
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association {
+        val association =
+            Association(
+                name = name,
+                abbreviation = name.substring(0, 2),
+                region = "Seoul",
+            )
         setEntityId(association, id)
         return association
     }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
-        val league = League(
-            association = association,
-            name = name,
-            abbreviation = name.substring(0, 2),
-            foundedYear = 2020
-        )
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association,
+    ): League {
+        val league =
+            League(
+                association = association,
+                name = name,
+                abbreviation = name.substring(0, 2),
+                foundedYear = 2020,
+            )
         setEntityId(league, id)
         return league
     }
 
-    private fun createTeam(id: Long, name: String, league: League): Team {
-        val team = Team(
-            league = league,
-            name = name,
-            city = "Seoul",
-            foundedYear = 2020
-        )
+    private fun createTeam(
+        id: Long,
+        name: String,
+        league: League,
+    ): Team {
+        val team =
+            Team(
+                league = league,
+                name = name,
+                city = "Seoul",
+                foundedYear = 2020,
+            )
         setEntityId(team, id)
         return team
     }
@@ -582,19 +640,23 @@ class OrganizationAdminServiceTest {
         user: User,
         organizationType: OrganizationType,
         organizationId: Long,
-        role: OrganizationRole = OrganizationRole.ADMIN
+        role: OrganizationRole = OrganizationRole.ADMIN,
     ): OrganizationAdmin {
-        val admin = OrganizationAdmin.create(
-            user = user,
-            organizationType = organizationType,
-            organizationId = organizationId,
-            role = role
-        )
+        val admin =
+            OrganizationAdmin.create(
+                user = user,
+                organizationType = organizationType,
+                organizationId = organizationId,
+                role = role,
+            )
         setEntityId(admin, id)
         return admin
     }
 
-    private fun setEntityId(entity: Any, id: Long) {
+    private fun setEntityId(
+        entity: Any,
+        id: Long,
+    ) {
         val idField = entity::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(entity, id)

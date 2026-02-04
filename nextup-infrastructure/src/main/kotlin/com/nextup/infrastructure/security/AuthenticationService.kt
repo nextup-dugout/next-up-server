@@ -20,9 +20,8 @@ class AuthenticationService(
     private val userJpaRepository: UserJpaRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val jwtTokenProvider: JwtTokenProvider,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
 ) {
-
     /**
      * 로그인 처리
      *
@@ -38,10 +37,11 @@ class AuthenticationService(
         email: String,
         password: String,
         deviceInfo: String? = null,
-        ipAddress: String? = null
+        ipAddress: String? = null,
     ): TokenPair {
-        val user = userJpaRepository.findByEmail(email)
-            ?: throw InvalidCredentialsException()
+        val user =
+            userJpaRepository.findByEmail(email)
+                ?: throw InvalidCredentialsException()
 
         if (!user.isActive) {
             throw UserDeactivatedException(user.id)
@@ -68,10 +68,11 @@ class AuthenticationService(
     fun refresh(
         refreshTokenString: String,
         deviceInfo: String? = null,
-        ipAddress: String? = null
+        ipAddress: String? = null,
     ): TokenPair {
-        val refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
-            ?: throw RefreshTokenNotFoundException()
+        val refreshToken =
+            refreshTokenRepository.findByToken(refreshTokenString)
+                ?: throw RefreshTokenNotFoundException()
 
         if (refreshToken.isExpired) {
             throw RefreshTokenExpiredException()
@@ -85,8 +86,10 @@ class AuthenticationService(
         refreshToken.revoke()
         refreshTokenRepository.save(refreshToken)
 
-        val user = userJpaRepository.findById(refreshToken.userId)
-            .orElseThrow { UserNotFoundException(refreshToken.userId) }
+        val user =
+            userJpaRepository
+                .findById(refreshToken.userId)
+                .orElseThrow { UserNotFoundException(refreshToken.userId) }
 
         if (!user.isActive) {
             throw UserDeactivatedException(user.id)
@@ -124,37 +127,41 @@ class AuthenticationService(
      */
     @Transactional(readOnly = true)
     fun getUserDetails(userId: Long): CustomUserDetails {
-        val user = userJpaRepository.findById(userId)
-            .orElseThrow { UserNotFoundException(userId) }
+        val user =
+            userJpaRepository
+                .findById(userId)
+                .orElseThrow { UserNotFoundException(userId) }
         return CustomUserDetails.from(user)
     }
 
     private fun generateTokenPair(
         user: User,
         deviceInfo: String?,
-        ipAddress: String?
+        ipAddress: String?,
     ): TokenPair {
         val roles = user.roles.map { it.name }.toSet()
 
-        val accessToken = jwtTokenProvider.createAccessToken(
-            userId = user.id,
-            email = user.email,
-            roles = roles
-        )
+        val accessToken =
+            jwtTokenProvider.createAccessToken(
+                userId = user.id,
+                email = user.email,
+                roles = roles,
+            )
 
         val refreshTokenString = jwtTokenProvider.createRefreshToken(user.id)
-        val refreshToken = RefreshToken.create(
-            userId = user.id,
-            token = refreshTokenString,
-            expiresAt = jwtTokenProvider.getRefreshTokenExpiration(),
-            deviceInfo = deviceInfo,
-            ipAddress = ipAddress
-        )
+        val refreshToken =
+            RefreshToken.create(
+                userId = user.id,
+                token = refreshTokenString,
+                expiresAt = jwtTokenProvider.getRefreshTokenExpiration(),
+                deviceInfo = deviceInfo,
+                ipAddress = ipAddress,
+            )
         refreshTokenRepository.save(refreshToken)
 
         return TokenPair(
             accessToken = accessToken,
-            refreshToken = refreshTokenString
+            refreshToken = refreshTokenString,
         )
     }
 }
@@ -164,5 +171,5 @@ class AuthenticationService(
  */
 data class TokenPair(
     val accessToken: String,
-    val refreshToken: String
+    val refreshToken: String,
 )

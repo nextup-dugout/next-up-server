@@ -23,7 +23,7 @@ data class OrganizationAdminResponse(
     val assignedBy: Long?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
         /**
@@ -32,8 +32,8 @@ data class OrganizationAdminResponse(
          * organizationName은 별도 조회가 필요하므로 null로 설정됩니다.
          * 필요한 경우 Service 레이어에서 추가 조회하여 설정해야 합니다.
          */
-        fun from(admin: OrganizationAdmin): OrganizationAdminResponse {
-            return OrganizationAdminResponse(
+        fun from(admin: OrganizationAdmin): OrganizationAdminResponse =
+            OrganizationAdminResponse(
                 id = admin.id,
                 userId = admin.user.id,
                 userName = admin.user.nickname,
@@ -46,15 +46,17 @@ data class OrganizationAdminResponse(
                 assignedBy = admin.assignedBy,
                 isActive = admin.isActive,
                 createdAt = admin.createdAt,
-                updatedAt = admin.updatedAt
+                updatedAt = admin.updatedAt,
             )
-        }
 
         /**
          * OrganizationAdmin Entity와 조직 이름으로부터 응답 DTO를 생성합니다.
          */
-        fun from(admin: OrganizationAdmin, organizationName: String?): OrganizationAdminResponse {
-            return OrganizationAdminResponse(
+        fun from(
+            admin: OrganizationAdmin,
+            organizationName: String?,
+        ): OrganizationAdminResponse =
+            OrganizationAdminResponse(
                 id = admin.id,
                 userId = admin.user.id,
                 userName = admin.user.nickname,
@@ -67,8 +69,7 @@ data class OrganizationAdminResponse(
                 assignedBy = admin.assignedBy,
                 isActive = admin.isActive,
                 createdAt = admin.createdAt,
-                updatedAt = admin.updatedAt
+                updatedAt = admin.updatedAt,
             )
-        }
     }
 }

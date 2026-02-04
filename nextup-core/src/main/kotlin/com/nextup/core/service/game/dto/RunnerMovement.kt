@@ -14,7 +14,7 @@ data class RunnerMovement(
     val runnerId: Long,
     val fromBase: Base,
     val toBase: Base,
-    val isOut: Boolean = false
+    val isOut: Boolean = false,
 ) {
     /**
      * 득점 여부를 확인합니다.

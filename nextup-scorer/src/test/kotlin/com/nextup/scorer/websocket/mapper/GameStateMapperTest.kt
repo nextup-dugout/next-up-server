@@ -21,28 +21,31 @@ class GameStateMapperTest {
         // given
         val association = Association(name = "테스트협회", region = "서울")
         val league = League(association = association, name = "테스트리그", foundedYear = 2020)
-        val competition = Competition(
-            league = league,
-            name = "2024 시즌",
-            year = 2024,
-            startDate = LocalDate.now()
-        )
-        val game = Game(
-            competition = competition,
-            scheduledAt = LocalDateTime.now(),
-            location = "테스트구장"
-        )
+        val competition =
+            Competition(
+                league = league,
+                name = "2024 시즌",
+                year = 2024,
+                startDate = LocalDate.now()
+            )
+        val game =
+            Game(
+                competition = competition,
+                scheduledAt = LocalDateTime.now(),
+                location = "테스트구장"
+            )
 
-        val gameState = GameState(
-            outs = 2,
-            balls = 2,
-            strikes = 1,
-            runnerOnFirstId = 1L,
-            runnerOnSecondId = null,
-            runnerOnThirdId = 3L,
-            currentBatterId = 4L,
-            currentPitcherId = 5L
-        )
+        val gameState =
+            GameState(
+                outs = 2,
+                balls = 2,
+                strikes = 1,
+                runnerOnFirstId = 1L,
+                runnerOnSecondId = null,
+                runnerOnThirdId = 3L,
+                currentBatterId = 4L,
+                currentPitcherId = 5L
+            )
 
         val team = Team(league = league, name = "테스트팀", city = "서울", foundedYear = 2020)
         val gameTeam = GameTeam(game, team, HomeAway.HOME)
@@ -58,15 +61,16 @@ class GameStateMapperTest {
         val runnerOnThird = GamePlayer(gameTeam, runner3, Position.SECOND_BASE, 3, 7)
 
         // when
-        val result = mapper.toGameStateMessage(
-            game,
-            gameState,
-            currentBatter,
-            currentPitcher,
-            runnerOnFirst,
-            null,
-            runnerOnThird
-        )
+        val result =
+            mapper.toGameStateMessage(
+                game,
+                gameState,
+                currentBatter,
+                currentPitcher,
+                runnerOnFirst,
+                null,
+                runnerOnThird
+            )
 
         // then
         assertThat(result.gameId).isEqualTo(game.id)

@@ -11,7 +11,7 @@ data class BoxScoreDto(
     val homeTeam: TeamBoxScoreDto,
     val awayTeam: TeamBoxScoreDto,
     val currentInning: String,
-    val gameStatus: String
+    val gameStatus: String,
 )
 
 /**
@@ -25,7 +25,7 @@ data class TeamBoxScoreDto(
     val hits: Int,
     val errors: Int,
     val batters: List<BatterLineDto>,
-    val pitchers: List<PitcherLineDto>
+    val pitchers: List<PitcherLineDto>,
 )
 
 /**
@@ -43,12 +43,10 @@ data class BatterLineDto(
     val rbis: Int,
     val walks: Int,
     val strikeouts: Int,
-    val avg: String
+    val avg: String,
 ) {
     companion object {
-        fun formatAverage(average: BigDecimal): String {
-            return average.setScale(3, RoundingMode.HALF_UP).toString()
-        }
+        fun formatAverage(average: BigDecimal): String = average.setScale(3, RoundingMode.HALF_UP).toString()
     }
 }
 
@@ -66,11 +64,9 @@ data class PitcherLineDto(
     val strikeouts: Int,
     val homeRuns: Int,
     val decision: String?,
-    val era: String
+    val era: String,
 ) {
     companion object {
-        fun formatERA(era: BigDecimal): String {
-            return era.setScale(2, RoundingMode.HALF_UP).toString()
-        }
+        fun formatERA(era: BigDecimal): String = era.setScale(2, RoundingMode.HALF_UP).toString()
     }
 }

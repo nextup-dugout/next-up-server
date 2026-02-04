@@ -29,9 +29,8 @@ class PlayerStatsService(
     private val careerBattingStatsRepository: CareerBattingStatsRepositoryPort,
     private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
-    private val pitchingRecordRepository: PitchingRecordRepositoryPort
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort,
 ) {
-
     // ========== 조회 메서드 ==========
 
     /**
@@ -39,54 +38,54 @@ class PlayerStatsService(
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
-    fun getSeasonBattingStats(playerId: Long, year: Int): SeasonBattingStats {
-        return seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
+    fun getSeasonBattingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonBattingStats =
+        seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
             ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 타격 통계가 존재하지 않습니다.")
-    }
 
     /**
      * 시즌 투수 통계를 조회합니다.
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
-    fun getSeasonPitchingStats(playerId: Long, year: Int): SeasonPitchingStats {
-        return seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
+    fun getSeasonPitchingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonPitchingStats =
+        seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
             ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 투수 통계가 존재하지 않습니다.")
-    }
 
     /**
      * 통산 타격 통계를 조회합니다.
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
-    fun getCareerBattingStats(playerId: Long): CareerBattingStats {
-        return careerBattingStatsRepository.findByPlayerId(playerId)
+    fun getCareerBattingStats(playerId: Long): CareerBattingStats =
+        careerBattingStatsRepository.findByPlayerId(playerId)
             ?: throw IllegalArgumentException("선수 ID $playerId 의 통산 타격 통계가 존재하지 않습니다.")
-    }
 
     /**
      * 통산 투수 통계를 조회합니다.
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
-    fun getCareerPitchingStats(playerId: Long): CareerPitchingStats {
-        return careerPitchingStatsRepository.findByPlayerId(playerId)
+    fun getCareerPitchingStats(playerId: Long): CareerPitchingStats =
+        careerPitchingStatsRepository.findByPlayerId(playerId)
             ?: throw IllegalArgumentException("선수 ID $playerId 의 통산 투수 통계가 존재하지 않습니다.")
-    }
 
     /**
      * 선수의 모든 시즌 타격 통계를 조회합니다.
      */
-    fun getAllSeasonBattingStats(playerId: Long): List<SeasonBattingStats> {
-        return seasonBattingStatsRepository.findAllByPlayerId(playerId)
-    }
+    fun getAllSeasonBattingStats(playerId: Long): List<SeasonBattingStats> =
+        seasonBattingStatsRepository.findAllByPlayerId(playerId)
 
     /**
      * 선수의 모든 시즌 투수 통계를 조회합니다.
      */
-    fun getAllSeasonPitchingStats(playerId: Long): List<SeasonPitchingStats> {
-        return seasonPitchingStatsRepository.findAllByPlayerId(playerId)
-    }
+    fun getAllSeasonPitchingStats(playerId: Long): List<SeasonPitchingStats> =
+        seasonPitchingStatsRepository.findAllByPlayerId(playerId)
 
     // ========== 통계 갱신 메서드 ==========
 
@@ -97,12 +96,16 @@ class PlayerStatsService(
      * @return 갱신된 시즌 타격 통계
      */
     @Transactional
-    fun updatePlayerBattingStats(playerId: Long, year: Int): SeasonBattingStats {
+    fun updatePlayerBattingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonBattingStats {
         val player = findPlayer(playerId)
 
         // 시즌 통계 조회 또는 생성
-        val seasonStats = seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
-            ?: SeasonBattingStats.create(player, year)
+        val seasonStats =
+            seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
+                ?: SeasonBattingStats.create(player, year)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetSeasonBattingStats(seasonStats)
@@ -128,12 +131,16 @@ class PlayerStatsService(
      * @return 갱신된 시즌 투수 통계
      */
     @Transactional
-    fun updatePlayerPitchingStats(playerId: Long, year: Int): SeasonPitchingStats {
+    fun updatePlayerPitchingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonPitchingStats {
         val player = findPlayer(playerId)
 
         // 시즌 통계 조회 또는 생성
-        val seasonStats = seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
-            ?: SeasonPitchingStats.create(player, year)
+        val seasonStats =
+            seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
+                ?: SeasonPitchingStats.create(player, year)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetSeasonPitchingStats(seasonStats)
@@ -163,8 +170,9 @@ class PlayerStatsService(
         val player = findPlayer(playerId)
 
         // 통산 통계 조회 또는 생성
-        val careerStats = careerBattingStatsRepository.findByPlayerId(playerId)
-            ?: CareerBattingStats.create(player)
+        val careerStats =
+            careerBattingStatsRepository.findByPlayerId(playerId)
+                ?: CareerBattingStats.create(player)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetCareerBattingStats(careerStats)
@@ -178,10 +186,11 @@ class PlayerStatsService(
         }
 
         // 시즌 수 계산 (년도별 그룹핑)
-        val seasons = battingRecords
-            .map { record -> record.gamePlayer.gameTeam.game.scheduledAt.year }
-            .distinct()
-            .size
+        val seasons =
+            battingRecords
+                .map { record -> record.gamePlayer.gameTeam.game.scheduledAt.year }
+                .distinct()
+                .size
 
         // 시즌 수 업데이트
         repeat(seasons - careerStats.seasonsPlayed) {
@@ -205,8 +214,9 @@ class PlayerStatsService(
         val player = findPlayer(playerId)
 
         // 통산 통계 조회 또는 생성
-        val careerStats = careerPitchingStatsRepository.findByPlayerId(playerId)
-            ?: CareerPitchingStats.create(player)
+        val careerStats =
+            careerPitchingStatsRepository.findByPlayerId(playerId)
+                ?: CareerPitchingStats.create(player)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetCareerPitchingStats(careerStats)
@@ -220,10 +230,11 @@ class PlayerStatsService(
         }
 
         // 시즌 수 계산 (년도별 그룹핑)
-        val seasons = pitchingRecords
-            .map { record -> record.gamePlayer.gameTeam.game.scheduledAt.year }
-            .distinct()
-            .size
+        val seasons =
+            pitchingRecords
+                .map { record -> record.gamePlayer.gameTeam.game.scheduledAt.year }
+                .distinct()
+                .size
 
         // 시즌 수 업데이트
         repeat(seasons - careerStats.seasonsPlayed) {
@@ -250,15 +261,14 @@ class PlayerStatsService(
         year: Int,
         category: BattingCategory,
         minAtBats: Int = 50,
-        limit: Int = 10
-    ): List<SeasonBattingStats> {
-        return when (category) {
+        limit: Int = 10,
+    ): List<SeasonBattingStats> =
+        when (category) {
             BattingCategory.AVG -> seasonBattingStatsRepository.findTopByBattingAverage(year, minAtBats, limit)
             BattingCategory.HR -> seasonBattingStatsRepository.findTopByHomeRuns(year, limit)
             BattingCategory.RBI -> seasonBattingStatsRepository.findTopByRunsBattedIn(year, limit)
             BattingCategory.OPS -> seasonBattingStatsRepository.findTopByOps(year, minAtBats, limit)
         }
-    }
 
     /**
      * 시즌 투수 리더보드를 조회합니다.
@@ -272,7 +282,7 @@ class PlayerStatsService(
         year: Int,
         category: PitchingCategory,
         minInnings: Int = 15,
-        limit: Int = 10
+        limit: Int = 10,
     ): List<SeasonPitchingStats> {
         val minInningsPitchedOuts = minInnings * 3
 
@@ -287,10 +297,9 @@ class PlayerStatsService(
 
     // ========== 헬퍼 메서드 ==========
 
-    private fun findPlayer(playerId: Long): Player {
-        return playerRepository.findByIdOrNull(playerId)
+    private fun findPlayer(playerId: Long): Player =
+        playerRepository.findByIdOrNull(playerId)
             ?: throw IllegalArgumentException("선수 ID $playerId 를 찾을 수 없습니다.")
-    }
 
     /**
      * 시즌 타격 통계를 초기화합니다 (Reflection 사용하여 protected setter 접근).
@@ -299,10 +308,24 @@ class PlayerStatsService(
         val clazz = SeasonBattingStats::class.java
 
         listOf(
-            "gamesPlayed", "plateAppearances", "atBats", "hits", "doubles", "triples",
-            "homeRuns", "runs", "runsBattedIn", "walks", "intentionalWalks", "hitByPitch",
-            "strikeouts", "sacrificeBunts", "sacrificeFlies", "stolenBases", "caughtStealing",
-            "groundedIntoDoublePlays"
+            "gamesPlayed",
+            "plateAppearances",
+            "atBats",
+            "hits",
+            "doubles",
+            "triples",
+            "homeRuns",
+            "runs",
+            "runsBattedIn",
+            "walks",
+            "intentionalWalks",
+            "hitByPitch",
+            "strikeouts",
+            "sacrificeBunts",
+            "sacrificeFlies",
+            "stolenBases",
+            "caughtStealing",
+            "groundedIntoDoublePlays",
         ).forEach { fieldName ->
             val field = clazz.getDeclaredField(fieldName)
             field.isAccessible = true
@@ -317,9 +340,24 @@ class PlayerStatsService(
         val clazz = SeasonPitchingStats::class.java
 
         listOf(
-            "gamesPlayed", "gamesStarted", "inningsPitchedOuts", "wins", "losses", "saves",
-            "holds", "blownSaves", "earnedRuns", "runsAllowed", "hitsAllowed", "walksAllowed",
-            "strikeouts", "homeRunsAllowed", "hitBatsmen", "wildPitches", "balks", "battersFaced"
+            "gamesPlayed",
+            "gamesStarted",
+            "inningsPitchedOuts",
+            "wins",
+            "losses",
+            "saves",
+            "holds",
+            "blownSaves",
+            "earnedRuns",
+            "runsAllowed",
+            "hitsAllowed",
+            "walksAllowed",
+            "strikeouts",
+            "homeRunsAllowed",
+            "hitBatsmen",
+            "wildPitches",
+            "balks",
+            "battersFaced",
         ).forEach { fieldName ->
             val field = clazz.getDeclaredField(fieldName)
             field.isAccessible = true
@@ -341,10 +379,25 @@ class PlayerStatsService(
         val clazz = CareerBattingStats::class.java
 
         listOf(
-            "seasonsPlayed", "gamesPlayed", "plateAppearances", "atBats", "hits", "doubles", "triples",
-            "homeRuns", "runs", "runsBattedIn", "walks", "intentionalWalks", "hitByPitch",
-            "strikeouts", "sacrificeBunts", "sacrificeFlies", "stolenBases", "caughtStealing",
-            "groundedIntoDoublePlays"
+            "seasonsPlayed",
+            "gamesPlayed",
+            "plateAppearances",
+            "atBats",
+            "hits",
+            "doubles",
+            "triples",
+            "homeRuns",
+            "runs",
+            "runsBattedIn",
+            "walks",
+            "intentionalWalks",
+            "hitByPitch",
+            "strikeouts",
+            "sacrificeBunts",
+            "sacrificeFlies",
+            "stolenBases",
+            "caughtStealing",
+            "groundedIntoDoublePlays",
         ).forEach { fieldName ->
             val field = clazz.getDeclaredField(fieldName)
             field.isAccessible = true
@@ -359,10 +412,25 @@ class PlayerStatsService(
         val clazz = CareerPitchingStats::class.java
 
         listOf(
-            "seasonsPlayed", "gamesPlayed", "gamesStarted", "inningsPitchedOuts", "wins", "losses",
-            "saves", "holds", "blownSaves", "earnedRuns", "runsAllowed", "hitsAllowed",
-            "walksAllowed", "strikeouts", "homeRunsAllowed", "hitBatsmen", "wildPitches",
-            "balks", "battersFaced"
+            "seasonsPlayed",
+            "gamesPlayed",
+            "gamesStarted",
+            "inningsPitchedOuts",
+            "wins",
+            "losses",
+            "saves",
+            "holds",
+            "blownSaves",
+            "earnedRuns",
+            "runsAllowed",
+            "hitsAllowed",
+            "walksAllowed",
+            "strikeouts",
+            "homeRunsAllowed",
+            "hitBatsmen",
+            "wildPitches",
+            "balks",
+            "battersFaced",
         ).forEach { fieldName ->
             val field = clazz.getDeclaredField(fieldName)
             field.isAccessible = true
@@ -382,19 +450,19 @@ class PlayerStatsService(
  * 타격 통계 카테고리
  */
 enum class BattingCategory {
-    AVG,  // 타율
-    HR,   // 홈런
-    RBI,  // 타점
-    OPS   // OPS
+    AVG, // 타율
+    HR, // 홈런
+    RBI, // 타점
+    OPS, // OPS
 }
 
 /**
  * 투수 통계 카테고리
  */
 enum class PitchingCategory {
-    ERA,        // 자책점
-    WINS,       // 승수
+    ERA, // 자책점
+    WINS, // 승수
     STRIKEOUTS, // 삼진
-    SAVES,      // 세이브
-    WHIP        // WHIP
+    SAVES, // 세이브
+    WHIP, // WHIP
 }

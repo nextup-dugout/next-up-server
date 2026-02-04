@@ -15,65 +15,49 @@ import java.time.Instant
     indexes = [
         Index(name = "idx_game_events_game", columnList = "game_id"),
         Index(name = "idx_game_events_game_inning", columnList = "game_id, inning, is_top_inning"),
-        Index(name = "idx_game_events_timestamp", columnList = "event_timestamp")
-    ]
+        Index(name = "idx_game_events_timestamp", columnList = "event_timestamp"),
+    ],
 )
 class GameEvent(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     val game: Game,
-
     @Column(nullable = false)
     val inning: Int,
-
     @Column(name = "is_top_inning", nullable = false)
     val isTopInning: Boolean,
-
     @Column(name = "out_count_before", nullable = false)
     val outCountBefore: Int,
-
     @Column(name = "out_count_after", nullable = false)
     val outCountAfter: Int,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false, length = 30)
     val eventType: GameEventType,
-
     @Column(nullable = false, length = 500)
     val description: String,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batter_id")
     val batter: GamePlayer? = null,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pitcher_id")
     val pitcher: GamePlayer? = null,
-
     @Column(name = "runners_before_json", columnDefinition = "TEXT")
     val runnersBeforeJson: String? = null,
-
     @Column(name = "runners_after_json", columnDefinition = "TEXT")
     val runnersAfterJson: String? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "plate_appearance_result", length = 30)
     val plateAppearanceResult: PlateAppearanceResult? = null,
-
     @Column(name = "runs_scored", nullable = false)
     val runsScored: Int = 0,
-
     @Column(nullable = false)
     val rbis: Int = 0,
-
     @Column(name = "event_timestamp", nullable = false)
     val eventTimestamp: Instant = Instant.now(),
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     companion object {
         /**
          * 타석 결과 이벤트를 생성합니다.
@@ -89,9 +73,9 @@ class GameEvent(
             runnersBeforeJson: String?,
             runnersAfterJson: String?,
             runsScored: Int = 0,
-            rbis: Int = 0
-        ): GameEvent {
-            return GameEvent(
+            rbis: Int = 0,
+        ): GameEvent =
+            GameEvent(
                 game = game,
                 inning = game.currentInning,
                 isTopInning = game.isTopInning,
@@ -105,44 +89,41 @@ class GameEvent(
                 runnersAfterJson = runnersAfterJson,
                 plateAppearanceResult = result,
                 runsScored = runsScored,
-                rbis = rbis
+                rbis = rbis,
             )
-        }
 
         /**
          * 이닝 전환 이벤트를 생성합니다.
          */
         fun createInningChange(
             game: Game,
-            description: String
-        ): GameEvent {
-            return GameEvent(
+            description: String,
+        ): GameEvent =
+            GameEvent(
                 game = game,
                 inning = game.currentInning,
                 isTopInning = game.isTopInning,
                 outCountBefore = 3,
                 outCountAfter = 0,
                 eventType = GameEventType.INNING_CHANGE,
-                description = description
+                description = description,
             )
-        }
 
         /**
          * 경기 상태 변경 이벤트를 생성합니다.
          */
         fun createGameStatus(
             game: Game,
-            description: String
-        ): GameEvent {
-            return GameEvent(
+            description: String,
+        ): GameEvent =
+            GameEvent(
                 game = game,
                 inning = game.currentInning,
                 isTopInning = game.isTopInning,
                 outCountBefore = game.gameState.outs,
                 outCountAfter = game.gameState.outs,
                 eventType = GameEventType.GAME_STATUS,
-                description = description
+                description = description,
             )
-        }
     }
 }

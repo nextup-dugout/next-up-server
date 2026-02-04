@@ -1,7 +1,5 @@
 package com.nextup.backoffice.dto.user
 
-import com.nextup.core.domain.user.OAuthProvider
-import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import java.time.Instant
 
@@ -22,11 +20,11 @@ data class UserAdminResponse(
     val playerId: Long?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(user: User): UserAdminResponse {
-            return UserAdminResponse(
+        fun from(user: User): UserAdminResponse =
+            UserAdminResponse(
                 id = user.id,
                 email = user.email,
                 nickname = user.nickname,
@@ -38,9 +36,8 @@ data class UserAdminResponse(
                 playerId = user.player?.id,
                 isActive = user.isActive,
                 createdAt = user.createdAt,
-                updatedAt = user.updatedAt
+                updatedAt = user.updatedAt,
             )
-        }
     }
 }
 
@@ -53,19 +50,18 @@ data class UserListResponse(
     val nickname: String,
     val roles: Set<String>,
     val isActive: Boolean,
-    val createdAt: Instant
+    val createdAt: Instant,
 ) {
     companion object {
-        fun from(user: User): UserListResponse {
-            return UserListResponse(
+        fun from(user: User): UserListResponse =
+            UserListResponse(
                 id = user.id,
                 email = user.email,
                 nickname = user.nickname,
                 roles = user.roles.map { it.name }.toSet(),
                 isActive = user.isActive,
-                createdAt = user.createdAt
+                createdAt = user.createdAt,
             )
-        }
     }
 }
 
@@ -76,5 +72,5 @@ data class OAuthAccountResponse(
     val provider: String,
     val providerDisplayName: String,
     val email: String?,
-    val connectedAt: Instant
+    val connectedAt: Instant,
 )

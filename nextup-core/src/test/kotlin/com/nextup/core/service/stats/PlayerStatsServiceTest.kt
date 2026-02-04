@@ -14,11 +14,11 @@ import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
-import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
-import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
@@ -30,12 +30,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.ZonedDateTime
-import java.util.Optional
 
 @DisplayName("PlayerStatsService 테스트")
 class PlayerStatsServiceTest {
-
     private lateinit var playerStatsService: PlayerStatsService
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort
@@ -45,13 +42,14 @@ class PlayerStatsServiceTest {
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
 
-    private val testPlayer = Player(
-        name = "홍길동",
-        primaryPosition = Position.CATCHER,
-        throwingHand = ThrowingHand.RIGHT,
-        battingHand = BattingHand.RIGHT,
-        id = 1L
-    )
+    private val testPlayer =
+        Player(
+            name = "홍길동",
+            primaryPosition = Position.CATCHER,
+            throwingHand = ThrowingHand.RIGHT,
+            battingHand = BattingHand.RIGHT,
+            id = 1L,
+        )
 
     private val playerId = 1L
     private val year = 2024
@@ -66,21 +64,21 @@ class PlayerStatsServiceTest {
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
 
-        playerStatsService = PlayerStatsService(
-            playerRepository,
-            seasonBattingStatsRepository,
-            seasonPitchingStatsRepository,
-            careerBattingStatsRepository,
-            careerPitchingStatsRepository,
-            battingRecordRepository,
-            pitchingRecordRepository
-        )
+        playerStatsService =
+            PlayerStatsService(
+                playerRepository,
+                seasonBattingStatsRepository,
+                seasonPitchingStatsRepository,
+                careerBattingStatsRepository,
+                careerPitchingStatsRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
+            )
     }
 
     @Nested
     @DisplayName("시즌 타격 통계 조회")
     inner class GetSeasonBattingStats {
-
         @Test
         fun `should return season batting stats when exists`() {
             // given
@@ -110,7 +108,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("시즌 투수 통계 조회")
     inner class GetSeasonPitchingStats {
-
         @Test
         fun `should return season pitching stats when exists`() {
             // given
@@ -140,7 +137,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("통산 타격 통계 조회")
     inner class GetCareerBattingStats {
-
         @Test
         fun `should return career batting stats when exists`() {
             // given
@@ -170,7 +166,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("통산 투수 통계 조회")
     inner class GetCareerPitchingStats {
-
         @Test
         fun `should return career pitching stats when exists`() {
             // given
@@ -200,7 +195,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("모든 시즌 통계 조회")
     inner class GetAllSeasonStats {
-
         @Test
         fun `should return all season batting stats`() {
             // given
@@ -247,7 +241,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("시즌 타격 통계 갱신")
     inner class UpdatePlayerBattingStats {
-
         @Test
         fun `should create and return new season batting stats when not exists`() {
             // given
@@ -270,9 +263,10 @@ class PlayerStatsServiceTest {
             // given
             val existingStats = SeasonBattingStats.create(testPlayer, year)
             val gamePlayer = mockk<GamePlayer>()
-            val record = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 4, ab = 4, h = 2)
-            }
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 4, h = 2)
+                }
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
@@ -304,7 +298,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("시즌 투수 통계 갱신")
     inner class UpdatePlayerPitchingStats {
-
         @Test
         fun `should create and return new season pitching stats when not exists`() {
             // given
@@ -327,15 +320,16 @@ class PlayerStatsServiceTest {
             // given
             val existingStats = SeasonPitchingStats.create(testPlayer, year)
             val gamePlayer = mockk<GamePlayer>()
-            val record = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-                setStats(
-                    inningsPitchedOuts = 18,
-                    earnedRuns = 2,
-                    runsAllowed = 2,
-                    strikeouts = 6,
-                    decision = PitchingDecision.WIN
-                )
-            }
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        strikeouts = 6,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
@@ -368,7 +362,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("통산 타격 통계 갱신")
     inner class UpdateCareerBattingStats {
-
         @Test
         fun `should create and return new career batting stats when not exists`() {
             // given
@@ -417,7 +410,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("통산 투수 통계 갱신")
     inner class UpdateCareerPitchingStats {
-
         @Test
         fun `should create and return new career pitching stats when not exists`() {
             // given
@@ -468,7 +460,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("시즌 타격 리더보드")
     inner class GetSeasonBattingLeaders {
-
         @Test
         fun `should return batting average leaders`() {
             // given
@@ -543,7 +534,6 @@ class PlayerStatsServiceTest {
     @Nested
     @DisplayName("시즌 투수 리더보드")
     inner class GetSeasonPitchingLeaders {
-
         @Test
         fun `should return ERA leaders`() {
             // given
@@ -634,14 +624,17 @@ class PlayerStatsServiceTest {
     private fun BattingRecord.setStats(
         pa: Int = 0,
         ab: Int = 0,
-        h: Int = 0
+        h: Int = 0,
     ) {
         setField("plateAppearances", pa)
         setField("atBats", ab)
         setField("hits", h)
     }
 
-    private fun BattingRecord.setField(fieldName: String, value: Int) {
+    private fun BattingRecord.setField(
+        fieldName: String,
+        value: Int,
+    ) {
         val field = BattingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
@@ -652,7 +645,7 @@ class PlayerStatsServiceTest {
         earnedRuns: Int = 0,
         runsAllowed: Int = 0,
         strikeouts: Int = 0,
-        decision: PitchingDecision = PitchingDecision.NONE
+        decision: PitchingDecision = PitchingDecision.NONE,
     ) {
         setField("inningsPitchedOuts", inningsPitchedOuts)
         setField("earnedRuns", earnedRuns)
@@ -661,25 +654,34 @@ class PlayerStatsServiceTest {
         setField("decision", decision)
     }
 
-    private fun PitchingRecord.setField(fieldName: String, value: Any) {
+    private fun PitchingRecord.setField(
+        fieldName: String,
+        value: Any,
+    ) {
         val field = PitchingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
     }
 
-    private fun createMockGame(year: Int): Game {
-        return mockk {
+    private fun createMockGame(year: Int): Game =
+        mockk {
             every { scheduledAt } returns java.time.LocalDateTime.of(year, 6, 1, 14, 0, 0)
         }
-    }
 
-    private fun createMockBattingRecord(game: Game, pa: Int, ab: Int, h: Int): BattingRecord {
-        val gameTeam = mockk<GameTeam> {
-            every { this@mockk.game } returns game
-        }
-        val gamePlayer = mockk<GamePlayer> {
-            every { this@mockk.gameTeam } returns gameTeam
-        }
+    private fun createMockBattingRecord(
+        game: Game,
+        pa: Int,
+        ab: Int,
+        h: Int,
+    ): BattingRecord {
+        val gameTeam =
+            mockk<GameTeam> {
+                every { this@mockk.game } returns game
+            }
+        val gamePlayer =
+            mockk<GamePlayer> {
+                every { this@mockk.gameTeam } returns gameTeam
+            }
         return BattingRecord.create(gamePlayer).apply {
             setStats(pa, ab, h)
         }
@@ -692,14 +694,16 @@ class PlayerStatsServiceTest {
         runsAllowed: Int,
         strikeouts: Int,
         isStartingPitcher: Boolean,
-        decision: PitchingDecision
+        decision: PitchingDecision,
     ): PitchingRecord {
-        val gameTeam = mockk<GameTeam> {
-            every { this@mockk.game } returns game
-        }
-        val gamePlayer = mockk<GamePlayer> {
-            every { this@mockk.gameTeam } returns gameTeam
-        }
+        val gameTeam =
+            mockk<GameTeam> {
+                every { this@mockk.game } returns game
+            }
+        val gamePlayer =
+            mockk<GamePlayer> {
+                every { this@mockk.gameTeam } returns gameTeam
+            }
         return PitchingRecord.create(gamePlayer, isStartingPitcher).apply {
             setStats(inningsPitchedOuts, earnedRuns, runsAllowed, strikeouts, decision)
         }

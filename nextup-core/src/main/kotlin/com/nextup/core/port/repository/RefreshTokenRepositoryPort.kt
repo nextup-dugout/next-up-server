@@ -2,14 +2,12 @@ package com.nextup.core.port.repository
 
 import com.nextup.core.domain.auth.RefreshToken
 import java.time.Instant
-import java.util.Optional
 
 /**
  * RefreshToken Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface RefreshTokenRepositoryPort {
-
     fun save(refreshToken: RefreshToken): RefreshToken
 
     fun findAll(): List<RefreshToken>
@@ -41,7 +39,10 @@ interface RefreshTokenRepositoryPort {
      * @param now 현재 시간
      * @return 유효한 RefreshToken 목록
      */
-    fun findValidTokensByUserId(userId: Long, now: Instant = Instant.now()): List<RefreshToken>
+    fun findValidTokensByUserId(
+        userId: Long,
+        now: Instant = Instant.now(),
+    ): List<RefreshToken>
 
     /**
      * 사용자의 모든 RefreshToken을 폐기합니다.

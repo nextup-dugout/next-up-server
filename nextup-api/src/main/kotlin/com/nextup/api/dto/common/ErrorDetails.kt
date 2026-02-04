@@ -8,5 +8,5 @@ package com.nextup.api.dto.common
  */
 data class ErrorDetails(
     val code: String,
-    val message: String
+    val message: String,
 )

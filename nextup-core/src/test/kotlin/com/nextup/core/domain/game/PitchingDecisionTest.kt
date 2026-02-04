@@ -7,11 +7,9 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("PitchingDecision")
 class PitchingDecisionTest {
-
     @Nested
     @DisplayName("승리 결정")
     inner class WinTest {
-
         @Test
         fun `WIN은 isWin이 true이다`() {
             assertThat(PitchingDecision.WIN.isWin).isTrue()
@@ -31,7 +29,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("패배 결정")
     inner class LossTest {
-
         @Test
         fun `LOSS는 isLoss가 true이다`() {
             assertThat(PitchingDecision.LOSS.isLoss).isTrue()
@@ -46,7 +43,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("세이브 결정")
     inner class SaveTest {
-
         @Test
         fun `SAVE는 isSave가 true이다`() {
             assertThat(PitchingDecision.SAVE.isSave).isTrue()
@@ -61,7 +57,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("홀드 결정")
     inner class HoldTest {
-
         @Test
         fun `HOLD는 isHold가 true이다`() {
             assertThat(PitchingDecision.HOLD.isHold).isTrue()
@@ -76,7 +71,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("블론세이브 결정")
     inner class BlownSaveTest {
-
         @Test
         fun `BLOWN_SAVE는 isBlownSave가 true이다`() {
             assertThat(PitchingDecision.BLOWN_SAVE.isBlownSave).isTrue()
@@ -91,7 +85,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("결정 없음")
     inner class NoneTest {
-
         @Test
         fun `NONE은 hasNoDecision이 true이다`() {
             assertThat(PitchingDecision.NONE.hasNoDecision).isTrue()
@@ -116,7 +109,6 @@ class PitchingDecisionTest {
     @Nested
     @DisplayName("구원 성공")
     inner class ReliefSuccessTest {
-
         @Test
         fun `WIN은 구원 성공이 아니다`() {
             assertThat(PitchingDecision.WIN.isReliefSuccess).isFalse()

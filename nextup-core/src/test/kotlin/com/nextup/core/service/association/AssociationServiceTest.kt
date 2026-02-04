@@ -13,11 +13,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.util.Optional
 
 @DisplayName("AssociationService")
 class AssociationServiceTest {
-
     private lateinit var associationRepository: AssociationRepositoryPort
     private lateinit var associationService: AssociationService
 
@@ -30,7 +28,6 @@ class AssociationServiceTest {
     @Nested
     @DisplayName("create")
     inner class Create {
-
         @Test
         fun `should create association successfully`() {
             // given
@@ -40,12 +37,13 @@ class AssociationServiceTest {
             every { associationRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = associationService.create(
-                name = name,
-                abbreviation = "서야협",
-                region = region,
-                description = "서울시 사회인 야구 협회"
-            )
+            val result =
+                associationService.create(
+                    name = name,
+                    abbreviation = "서야협",
+                    region = region,
+                    description = "서울시 사회인 야구 협회",
+                )
 
             // then
             assertThat(result.name).isEqualTo(name)
@@ -70,7 +68,6 @@ class AssociationServiceTest {
     @Nested
     @DisplayName("getById")
     inner class GetById {
-
         @Test
         fun `should return association when found`() {
             // given
@@ -102,14 +99,14 @@ class AssociationServiceTest {
     @Nested
     @DisplayName("getAllActive")
     inner class GetAllActive {
-
         @Test
         fun `should return only active associations`() {
             // given
-            val associations = listOf(
-                createAssociation(1L, "서울시야구협회"),
-                createAssociation(2L, "경기도야구협회")
-            )
+            val associations =
+                listOf(
+                    createAssociation(1L, "서울시야구협회"),
+                    createAssociation(2L, "경기도야구협회"),
+                )
             every { associationRepository.findAllActive() } returns associations
 
             // when
@@ -123,7 +120,6 @@ class AssociationServiceTest {
     @Nested
     @DisplayName("update")
     inner class Update {
-
         @Test
         fun `should update association info`() {
             // given
@@ -132,11 +128,12 @@ class AssociationServiceTest {
             every { associationRepository.findByIdOrNull(id) } returns association
 
             // when
-            val result = associationService.update(
-                id = id,
-                description = "새로운 설명",
-                logoUrl = "https://example.com/logo.png"
-            )
+            val result =
+                associationService.update(
+                    id = id,
+                    description = "새로운 설명",
+                    logoUrl = "https://example.com/logo.png",
+                )
 
             // then
             assertThat(result.description).isEqualTo("새로운 설명")
@@ -147,7 +144,6 @@ class AssociationServiceTest {
     @Nested
     @DisplayName("deactivate/activate")
     inner class DeactivateActivate {
-
         @Test
         fun `should deactivate association`() {
             // given
@@ -177,19 +173,21 @@ class AssociationServiceTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association =
+        Association(
             name = name,
             abbreviation = null,
             region = "서울",
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             // 테스트용으로 ID를 설정하기 위해 리플렉션 사용
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

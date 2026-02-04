@@ -10,7 +10,6 @@ import com.nextup.core.service.game.dto.PlateAppearanceRequest
  * 실시간 경기 기록 입력을 위한 서비스입니다.
  */
 interface GameScorerService {
-
     /**
      * 경기를 시작합니다.
      *
@@ -26,7 +25,10 @@ interface GameScorerService {
      * @param request 타석 결과 요청
      * @return 업데이트된 경기
      */
-    fun recordPlateAppearance(gameId: Long, request: PlateAppearanceRequest): Game
+    fun recordPlateAppearance(
+        gameId: Long,
+        request: PlateAppearanceRequest,
+    ): Game
 
     /**
      * 반 이닝을 진행합니다 (공수 교대).
@@ -43,5 +45,8 @@ interface GameScorerService {
      * @param reason 종료 사유
      * @return 종료된 경기
      */
-    fun endGame(gameId: Long, reason: GameEndReason): Game
+    fun endGame(
+        gameId: Long,
+        reason: GameEndReason,
+    ): Game
 }

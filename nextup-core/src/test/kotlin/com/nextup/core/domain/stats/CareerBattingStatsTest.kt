@@ -17,19 +17,18 @@ import java.math.BigDecimal
 
 @DisplayName("CareerBattingStats 테스트")
 class CareerBattingStatsTest {
-
-    private val testPlayer = Player(
-        name = "홍길동",
-        primaryPosition = Position.CATCHER,
-        throwingHand = ThrowingHand.RIGHT,
-        battingHand = BattingHand.RIGHT,
-        id = 1L
-    )
+    private val testPlayer =
+        Player(
+            name = "홍길동",
+            primaryPosition = Position.CATCHER,
+            throwingHand = ThrowingHand.RIGHT,
+            battingHand = BattingHand.RIGHT,
+            id = 1L,
+        )
 
     @Nested
     @DisplayName("통산 타격 통계 생성")
     inner class Create {
-
         @Test
         fun `should create career batting stats successfully`() {
             // when
@@ -47,15 +46,15 @@ class CareerBattingStatsTest {
     @Nested
     @DisplayName("경기 기록 누적")
     inner class AddGameRecord {
-
         @Test
         fun `should accumulate single game record correctly`() {
             // given
             val stats = CareerBattingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 5, ab = 4, h = 2, doubles = 1, bb = 1, so = 1, runs = 1, rbi = 1)
-            }
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 4, h = 2, doubles = 1, bb = 1, so = 1, runs = 1, rbi = 1)
+                }
 
             // when
             stats.addGameRecord(record)
@@ -79,19 +78,22 @@ class CareerBattingStatsTest {
             val gamePlayer = mockk<GamePlayer>()
 
             // Game 1: 4타수 2안타 1홈런
-            val record1 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 4, ab = 4, h = 2, hr = 1, runs = 2, rbi = 2)
-            }
+            val record1 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 4, h = 2, hr = 1, runs = 2, rbi = 2)
+                }
 
             // Game 2: 3타수 1안타 1볼넷
-            val record2 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 4, ab = 3, h = 1, bb = 1, runs = 0, rbi = 0)
-            }
+            val record2 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 3, h = 1, bb = 1, runs = 0, rbi = 0)
+                }
 
             // Game 3: 5타수 3안타 (2루타 1개, 3루타 1개)
-            val record3 = BattingRecord.create(gamePlayer).apply {
-                setStats(pa = 5, ab = 5, h = 3, doubles = 1, triples = 1, runs = 1, rbi = 2)
-            }
+            val record3 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 5, h = 3, doubles = 1, triples = 1, runs = 1, rbi = 2)
+                }
 
             // when
             stats.addGameRecord(record1)
@@ -115,7 +117,6 @@ class CareerBattingStatsTest {
     @Nested
     @DisplayName("시즌 추가")
     inner class AddSeason {
-
         @Test
         fun `should increment seasons played`() {
             // given
@@ -133,7 +134,6 @@ class CareerBattingStatsTest {
     @Nested
     @DisplayName("계산 속성 검증")
     inner class CalculatedProperties {
-
         @Test
         fun `should calculate batting average correctly`() {
             // given: 10타수 3안타 = .300
@@ -321,12 +321,19 @@ class CareerBattingStatsTest {
     @Nested
     @DisplayName("유효성 검증")
     inner class Validation {
-
         @Test
         fun `should validate successfully with valid stats`() {
             // given
             val stats = CareerBattingStats.create(testPlayer)
-            setStatsDirectly(stats, seasonsPlayed = 3, gamesPlayed = 100, pa = 400, atBats = 350, hits = 100, doubles = 20)
+            setStatsDirectly(
+                stats,
+                seasonsPlayed = 3,
+                gamesPlayed = 100,
+                pa = 400,
+                atBats = 350,
+                hits = 100,
+                doubles = 20
+            )
 
             // when & then
             stats.validate() // Should not throw
@@ -406,7 +413,7 @@ class CareerBattingStatsTest {
         hbp: Int = 0,
         so: Int = 0,
         runs: Int = 0,
-        rbi: Int = 0
+        rbi: Int = 0,
     ) {
         setField("plateAppearances", pa)
         setField("atBats", ab)
@@ -421,7 +428,10 @@ class CareerBattingStatsTest {
         setField("runsBattedIn", rbi)
     }
 
-    private fun BattingRecord.setField(fieldName: String, value: Int) {
+    private fun BattingRecord.setField(
+        fieldName: String,
+        value: Int,
+    ) {
         val field = BattingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
@@ -443,7 +453,7 @@ class CareerBattingStatsTest {
         sacrificeBunts: Int = 0,
         sacrificeFlies: Int = 0,
         stolenBases: Int = 0,
-        caughtStealing: Int = 0
+        caughtStealing: Int = 0,
     ) {
         val clazz = CareerBattingStats::class.java
         setField(clazz, stats, "seasonsPlayed", seasonsPlayed)
@@ -463,7 +473,12 @@ class CareerBattingStatsTest {
         setField(clazz, stats, "caughtStealing", caughtStealing)
     }
 
-    private fun setField(clazz: Class<*>, obj: Any, fieldName: String, value: Int) {
+    private fun setField(
+        clazz: Class<*>,
+        obj: Any,
+        fieldName: String,
+        value: Int,
+    ) {
         val field = clazz.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(obj, value)

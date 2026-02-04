@@ -15,14 +15,15 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/games/{gameId}/boxscore")
 class BoxScoreController(
-    private val boxScoreService: BoxScoreService
+    private val boxScoreService: BoxScoreService,
 ) {
-
     /**
      * 경기의 박스스코어를 조회합니다.
      */
     @GetMapping
-    fun getBoxScore(@PathVariable gameId: Long): ApiResponse<BoxScoreResponse> {
+    fun getBoxScore(
+        @PathVariable gameId: Long,
+    ): ApiResponse<BoxScoreResponse> {
         val boxScore = boxScoreService.getBoxScore(gameId)
         return ApiResponse.success(boxScore.toResponse())
     }

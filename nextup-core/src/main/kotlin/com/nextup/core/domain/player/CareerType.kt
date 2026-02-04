@@ -5,7 +5,10 @@ package com.nextup.core.domain.player
  *
  * 선출(선수 출신) 여부 판별의 기초 데이터로 사용됩니다.
  */
-enum class CareerType(val displayName: String, val isProfessional: Boolean) {
+enum class CareerType(
+    val displayName: String,
+    val isProfessional: Boolean,
+) {
     /** KBO 프로야구 */
     KBO("KBO 프로", true),
 
@@ -37,5 +40,5 @@ enum class CareerType(val displayName: String, val isProfessional: Boolean) {
     AMATEUR("사회인", false),
 
     /** 군 야구단 */
-    MILITARY("군", false)
+    MILITARY("군", false),
 }

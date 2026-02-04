@@ -20,11 +20,11 @@ data class LeagueAdminResponse(
     val logoUrl: String?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(league: League): LeagueAdminResponse {
-            return LeagueAdminResponse(
+        fun from(league: League): LeagueAdminResponse =
+            LeagueAdminResponse(
                 id = league.id,
                 associationId = league.association.id,
                 associationName = league.association.name,
@@ -36,8 +36,7 @@ data class LeagueAdminResponse(
                 logoUrl = league.logoUrl,
                 isActive = league.isActive,
                 createdAt = league.createdAt,
-                updatedAt = league.updatedAt
+                updatedAt = league.updatedAt,
             )
-        }
     }
 }

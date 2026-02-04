@@ -3,7 +3,6 @@ package com.nextup.api.controller.auth
 import com.nextup.api.dto.auth.LoginRequest
 import com.nextup.api.dto.auth.LogoutRequest
 import com.nextup.api.dto.auth.RefreshTokenRequest
-import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.security.AuthenticationService
 import com.nextup.infrastructure.security.TokenPair
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("AuthController 테스트")
 class AuthControllerTest {
-
     private lateinit var authenticationService: AuthenticationService
     private lateinit var authController: AuthController
     private lateinit var httpServletRequest: HttpServletRequest
@@ -37,15 +35,15 @@ class AuthControllerTest {
     @Nested
     @DisplayName("로그인")
     inner class Login {
-
         @Test
         fun `should return token pair on successful login`() {
             // given
             val request = LoginRequest(email = "test@example.com", password = "password123")
-            val tokenPair = TokenPair(
-                accessToken = "access_token",
-                refreshToken = "refresh_token"
-            )
+            val tokenPair =
+                TokenPair(
+                    accessToken = "access_token",
+                    refreshToken = "refresh_token",
+                )
 
             every { httpServletRequest.getHeader("User-Agent") } returns "Mozilla/5.0"
             every { httpServletRequest.getHeader("X-Forwarded-For") } returns null
@@ -55,7 +53,7 @@ class AuthControllerTest {
                     email = "test@example.com",
                     password = "password123",
                     deviceInfo = "Mozilla/5.0",
-                    ipAddress = "127.0.0.1"
+                    ipAddress = "127.0.0.1",
                 )
             } returns tokenPair
 
@@ -82,7 +80,7 @@ class AuthControllerTest {
                     email = "test@example.com",
                     password = "password123",
                     deviceInfo = "Chrome",
-                    ipAddress = "192.168.1.1"
+                    ipAddress = "192.168.1.1",
                 )
             } returns tokenPair
 
@@ -96,7 +94,7 @@ class AuthControllerTest {
                     email = "test@example.com",
                     password = "password123",
                     deviceInfo = "Chrome",
-                    ipAddress = "192.168.1.1"
+                    ipAddress = "192.168.1.1",
                 )
             }
         }
@@ -105,15 +103,15 @@ class AuthControllerTest {
     @Nested
     @DisplayName("토큰 갱신")
     inner class Refresh {
-
         @Test
         fun `should return new token pair on successful refresh`() {
             // given
             val request = RefreshTokenRequest(refreshToken = "old_refresh_token")
-            val tokenPair = TokenPair(
-                accessToken = "new_access_token",
-                refreshToken = "new_refresh_token"
-            )
+            val tokenPair =
+                TokenPair(
+                    accessToken = "new_access_token",
+                    refreshToken = "new_refresh_token",
+                )
 
             every { httpServletRequest.getHeader("User-Agent") } returns "Safari"
             every { httpServletRequest.getHeader("X-Forwarded-For") } returns null
@@ -122,7 +120,7 @@ class AuthControllerTest {
                 authenticationService.refresh(
                     refreshTokenString = "old_refresh_token",
                     deviceInfo = "Safari",
-                    ipAddress = "10.0.0.1"
+                    ipAddress = "10.0.0.1",
                 )
             } returns tokenPair
 
@@ -139,7 +137,6 @@ class AuthControllerTest {
     @Nested
     @DisplayName("로그아웃")
     inner class Logout {
-
         @Test
         fun `should logout successfully`() {
             // given
@@ -159,7 +156,6 @@ class AuthControllerTest {
     @Nested
     @DisplayName("전체 로그아웃")
     inner class LogoutAll {
-
         @Test
         fun `should logout from all devices`() {
             // given
@@ -179,16 +175,16 @@ class AuthControllerTest {
     @Nested
     @DisplayName("현재 사용자 조회")
     inner class GetCurrentUser {
-
         @Test
         fun `should return current user info`() {
             // given
             val userId = 1L
-            val user = User.createLocalUser(
-                email = "test@example.com",
-                encodedPassword = "encoded",
-                nickname = "테스터"
-            )
+            val user =
+                User.createLocalUser(
+                    email = "test@example.com",
+                    encodedPassword = "encoded",
+                    nickname = "테스터",
+                )
             // Use reflection to set ID
             val idField = user.javaClass.getDeclaredField("id")
             idField.isAccessible = true

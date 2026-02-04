@@ -18,11 +18,11 @@ data class AssociationAdminResponse(
     val websiteUrl: String?,
     val isActive: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(association: Association): AssociationAdminResponse {
-            return AssociationAdminResponse(
+        fun from(association: Association): AssociationAdminResponse =
+            AssociationAdminResponse(
                 id = association.id,
                 name = association.name,
                 abbreviation = association.abbreviation,
@@ -32,8 +32,7 @@ data class AssociationAdminResponse(
                 websiteUrl = association.websiteUrl,
                 isActive = association.isActive,
                 createdAt = association.createdAt,
-                updatedAt = association.updatedAt
+                updatedAt = association.updatedAt,
             )
-        }
     }
 }

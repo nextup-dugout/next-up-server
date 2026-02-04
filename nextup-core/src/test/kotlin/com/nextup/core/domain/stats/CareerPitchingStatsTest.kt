@@ -18,19 +18,18 @@ import java.math.BigDecimal
 
 @DisplayName("CareerPitchingStats 테스트")
 class CareerPitchingStatsTest {
-
-    private val testPlayer = Player(
-        name = "박찬호",
-        primaryPosition = Position.STARTING_PITCHER,
-        throwingHand = ThrowingHand.RIGHT,
-        battingHand = BattingHand.RIGHT,
-        id = 1L
-    )
+    private val testPlayer =
+        Player(
+            name = "박찬호",
+            primaryPosition = Position.STARTING_PITCHER,
+            throwingHand = ThrowingHand.RIGHT,
+            battingHand = BattingHand.RIGHT,
+            id = 1L,
+        )
 
     @Nested
     @DisplayName("통산 투수 통계 생성")
     inner class Create {
-
         @Test
         fun `should create career pitching stats successfully`() {
             // when
@@ -48,24 +47,24 @@ class CareerPitchingStatsTest {
     @Nested
     @DisplayName("경기 기록 누적")
     inner class AddGameRecord {
-
         @Test
         fun `should accumulate single game record for starting pitcher correctly`() {
             // given
             val stats = CareerPitchingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-                setStats(
-                    inningsPitchedOuts = 18,
-                    earnedRuns = 2,
-                    runsAllowed = 2,
-                    hitsAllowed = 5,
-                    walksAllowed = 2,
-                    strikeouts = 7,
-                    battersFaced = 25,
-                    decision = PitchingDecision.WIN
-                )
-            }
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        strikeouts = 7,
+                        battersFaced = 25,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
 
             // when
             stats.addGameRecord(record)
@@ -89,18 +88,19 @@ class CareerPitchingStatsTest {
             // given
             val stats = CareerPitchingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record = PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
-                setStats(
-                    inningsPitchedOuts = 6,
-                    earnedRuns = 0,
-                    runsAllowed = 0,
-                    hitsAllowed = 1,
-                    walksAllowed = 0,
-                    strikeouts = 3,
-                    battersFaced = 7,
-                    decision = PitchingDecision.SAVE
-                )
-            }
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 6,
+                        earnedRuns = 0,
+                        runsAllowed = 0,
+                        hitsAllowed = 1,
+                        walksAllowed = 0,
+                        strikeouts = 3,
+                        battersFaced = 7,
+                        decision = PitchingDecision.SAVE,
+                    )
+                }
 
             // when
             stats.addGameRecord(record)
@@ -119,60 +119,64 @@ class CareerPitchingStatsTest {
             val gamePlayer = mockk<GamePlayer>()
 
             // Game 1: 선발 6이닝 승리
-            val record1 = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-                setStats(
-                    inningsPitchedOuts = 18,
-                    earnedRuns = 2,
-                    runsAllowed = 2,
-                    hitsAllowed = 5,
-                    walksAllowed = 2,
-                    strikeouts = 6,
-                    battersFaced = 24,
-                    decision = PitchingDecision.WIN
-                )
-            }
+            val record1 =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        strikeouts = 6,
+                        battersFaced = 24,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
 
             // Game 2: 선발 7이닝 패배
-            val record2 = PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
-                setStats(
-                    inningsPitchedOuts = 21,
-                    earnedRuns = 4,
-                    runsAllowed = 4,
-                    hitsAllowed = 8,
-                    walksAllowed = 1,
-                    strikeouts = 5,
-                    battersFaced = 28,
-                    decision = PitchingDecision.LOSS
-                )
-            }
+            val record2 =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 21,
+                        earnedRuns = 4,
+                        runsAllowed = 4,
+                        hitsAllowed = 8,
+                        walksAllowed = 1,
+                        strikeouts = 5,
+                        battersFaced = 28,
+                        decision = PitchingDecision.LOSS,
+                    )
+                }
 
             // Game 3: 중계 2이닝 홀드
-            val record3 = PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
-                setStats(
-                    inningsPitchedOuts = 6,
-                    earnedRuns = 0,
-                    runsAllowed = 0,
-                    hitsAllowed = 1,
-                    walksAllowed = 1,
-                    strikeouts = 2,
-                    battersFaced = 7,
-                    decision = PitchingDecision.HOLD
-                )
-            }
+            val record3 =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 6,
+                        earnedRuns = 0,
+                        runsAllowed = 0,
+                        hitsAllowed = 1,
+                        walksAllowed = 1,
+                        strikeouts = 2,
+                        battersFaced = 7,
+                        decision = PitchingDecision.HOLD,
+                    )
+                }
 
             // Game 4: 중계 1이닝 블론세이브
-            val record4 = PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
-                setStats(
-                    inningsPitchedOuts = 3,
-                    earnedRuns = 2,
-                    runsAllowed = 2,
-                    hitsAllowed = 3,
-                    walksAllowed = 1,
-                    strikeouts = 1,
-                    battersFaced = 6,
-                    decision = PitchingDecision.BLOWN_SAVE
-                )
-            }
+            val record4 =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 3,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        hitsAllowed = 3,
+                        walksAllowed = 1,
+                        strikeouts = 1,
+                        battersFaced = 6,
+                        decision = PitchingDecision.BLOWN_SAVE,
+                    )
+                }
 
             // when
             stats.addGameRecord(record1)
@@ -198,20 +202,22 @@ class CareerPitchingStatsTest {
             // given
             val stats = CareerPitchingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record1 = PitchingRecord.create(gamePlayer).apply {
-                setStats(
-                    inningsPitchedOuts = 18,
-                    pitchesThrown = 95,
-                    strikesThrown = 63
-                )
-            }
-            val record2 = PitchingRecord.create(gamePlayer).apply {
-                setStats(
-                    inningsPitchedOuts = 18,
-                    pitchesThrown = 90,
-                    strikesThrown = 60
-                )
-            }
+            val record1 =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        pitchesThrown = 95,
+                        strikesThrown = 63,
+                    )
+                }
+            val record2 =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        pitchesThrown = 90,
+                        strikesThrown = 60,
+                    )
+                }
 
             // when
             stats.addGameRecord(record1)
@@ -227,9 +233,10 @@ class CareerPitchingStatsTest {
             // given
             val stats = CareerPitchingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record = PitchingRecord.create(gamePlayer).apply {
-                setStats(inningsPitchedOuts = 18)
-            }
+            val record =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(inningsPitchedOuts = 18)
+                }
 
             // when
             stats.addGameRecord(record)
@@ -244,12 +251,13 @@ class CareerPitchingStatsTest {
             // given
             val stats = CareerPitchingStats.create(testPlayer)
             val gamePlayer = mockk<GamePlayer>()
-            val record = PitchingRecord.create(gamePlayer).apply {
-                setStats(
-                    inningsPitchedOuts = 6,
-                    decision = PitchingDecision.NONE
-                )
-            }
+            val record =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(
+                        inningsPitchedOuts = 6,
+                        decision = PitchingDecision.NONE,
+                    )
+                }
 
             // when
             stats.addGameRecord(record)
@@ -266,7 +274,6 @@ class CareerPitchingStatsTest {
     @Nested
     @DisplayName("시즌 추가")
     inner class AddSeason {
-
         @Test
         fun `should increment seasons played`() {
             // given
@@ -285,7 +292,6 @@ class CareerPitchingStatsTest {
     @Nested
     @DisplayName("계산 속성 검증")
     inner class CalculatedProperties {
-
         @Test
         fun `should calculate ERA correctly`() {
             // given: 18 outs (6이닝), 3자책 => ERA = (3/6)*9 = 4.50
@@ -557,7 +563,6 @@ class CareerPitchingStatsTest {
     @Nested
     @DisplayName("유효성 검증")
     inner class Validation {
-
         @Test
         fun `should validate successfully with valid stats`() {
             // given
@@ -569,7 +574,7 @@ class CareerPitchingStatsTest {
                 gamesStarted = 30,
                 inningsPitchedOuts = 600,
                 earnedRuns = 50,
-                runsAllowed = 60
+                runsAllowed = 60,
             )
 
             // when & then
@@ -658,7 +663,7 @@ class CareerPitchingStatsTest {
         battersFaced: Int = 0,
         decision: PitchingDecision = PitchingDecision.NONE,
         pitchesThrown: Int? = null,
-        strikesThrown: Int? = null
+        strikesThrown: Int? = null,
     ) {
         setField("inningsPitchedOuts", inningsPitchedOuts)
         setField("earnedRuns", earnedRuns)
@@ -672,7 +677,10 @@ class CareerPitchingStatsTest {
         setField("strikesThrown", strikesThrown)
     }
 
-    private fun PitchingRecord.setField(fieldName: String, value: Any?) {
+    private fun PitchingRecord.setField(
+        fieldName: String,
+        value: Any?,
+    ) {
         val field = PitchingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
@@ -692,7 +700,7 @@ class CareerPitchingStatsTest {
         walksAllowed: Int = 0,
         strikeouts: Int = 0,
         pitchesThrown: Int? = null,
-        strikesThrown: Int? = null
+        strikesThrown: Int? = null,
     ) {
         val clazz = CareerPitchingStats::class.java
         setField(clazz, stats, "seasonsPlayed", seasonsPlayed)
@@ -710,7 +718,12 @@ class CareerPitchingStatsTest {
         setField(clazz, stats, "strikesThrown", strikesThrown)
     }
 
-    private fun setField(clazz: Class<*>, obj: Any, fieldName: String, value: Any?) {
+    private fun setField(
+        clazz: Class<*>,
+        obj: Any,
+        fieldName: String,
+        value: Any?,
+    ) {
         val field = clazz.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(obj, value)

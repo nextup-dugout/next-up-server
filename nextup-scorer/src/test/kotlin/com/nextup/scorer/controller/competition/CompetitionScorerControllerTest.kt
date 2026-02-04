@@ -52,10 +52,11 @@ class CompetitionScorerControllerTest {
             // given
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
-            val competitions = listOf(
-                createCompetition(1L, "2025 춘계대회", league, 2025, 1),
-                createCompetition(2L, "2025 추계대회", league, 2025, 2)
-            )
+            val competitions =
+                listOf(
+                    createCompetition(1L, "2025 춘계대회", league, 2025, 1),
+                    createCompetition(2L, "2025 추계대회", league, 2025, 2)
+                )
             every { competitionService.getAll() } returns competitions
 
             // when & then
@@ -76,9 +77,10 @@ class CompetitionScorerControllerTest {
             val leagueId = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(leagueId, "1부 리그", association)
-            val competitions = listOf(
-                createCompetition(1L, "2025 춘계대회", league, 2025, 1)
-            )
+            val competitions =
+                listOf(
+                    createCompetition(1L, "2025 춘계대회", league, 2025, 1)
+                )
             every { competitionService.getByLeagueId(leagueId) } returns competitions
 
             // when & then
@@ -125,17 +127,18 @@ class CompetitionScorerControllerTest {
         @Test
         fun `should create competition with valid request`() {
             // given
-            val request = CreateCompetitionRequest(
-                leagueId = 1L,
-                name = "2025 춘계대회",
-                year = 2025,
-                season = 1,
-                type = CompetitionType.LEAGUE,
-                startDate = LocalDate.of(2025, 3, 1),
-                endDate = LocalDate.of(2025, 6, 30),
-                description = "2025년 춘계 시즌",
-                maxTeams = 8
-            )
+            val request =
+                CreateCompetitionRequest(
+                    leagueId = 1L,
+                    name = "2025 춘계대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    endDate = LocalDate.of(2025, 6, 30),
+                    description = "2025년 춘계 시즌",
+                    maxTeams = 8
+                )
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(1L, "2025 춘계대회", league, 2025, 1)
@@ -188,10 +191,11 @@ class CompetitionScorerControllerTest {
         @Test
         fun `should update competition with valid request`() {
             // given
-            val request = UpdateCompetitionRequest(
-                description = "수정된 설명",
-                endDate = LocalDate.of(2025, 7, 15)
-            )
+            val request =
+                UpdateCompetitionRequest(
+                    description = "수정된 설명",
+                    endDate = LocalDate.of(2025, 7, 15)
+                )
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
             val competition = createCompetition(1L, "2025 춘계대회", league, 2025, 1)
@@ -233,9 +237,10 @@ class CompetitionScorerControllerTest {
             // given
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
-            val competition = createCompetition(1L, "2025 춘계대회", league, 2025, 1).apply {
-                start()
-            }
+            val competition =
+                createCompetition(1L, "2025 춘계대회", league, 2025, 1).apply {
+                    start()
+                }
             every { competitionService.start(1L) } returns competition
 
             // when & then
@@ -320,7 +325,10 @@ class CompetitionScorerControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
+    private fun createAssociation(
+        id: Long,
+        name: String
+    ): Association {
         return Association(
             name = name,
             abbreviation = null,
@@ -335,7 +343,11 @@ class CompetitionScorerControllerTest {
         }
     }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association
+    ): League {
         return League(
             association = association,
             name = name,

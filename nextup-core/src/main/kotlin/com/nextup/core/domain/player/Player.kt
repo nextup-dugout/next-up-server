@@ -15,54 +15,41 @@ import java.time.LocalDate
     name = "players",
     indexes = [
         Index(name = "idx_players_name", columnList = "name"),
-        Index(name = "idx_players_birth_date", columnList = "birth_date")
-    ]
+        Index(name = "idx_players_birth_date", columnList = "birth_date"),
+    ],
 )
 class Player(
     @Column(nullable = false, length = 50)
     val name: String,
-
     @Column(name = "birth_date")
     val birthDate: LocalDate? = null,
-
     @Column(length = 50)
     val birthPlace: String? = null,
-
     @Column(length = 50)
     val nationality: String? = null,
-
     @Column
     var height: Int? = null,
-
     @Column
     var weight: Int? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "throwing_hand", length = 10)
     var throwingHand: ThrowingHand? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "batting_hand", length = 10)
     var battingHand: BattingHand? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(name = "primary_position", nullable = false, length = 30)
     var primaryPosition: Position,
-
     @Column(name = "debut_year")
     var debutYear: Int? = null,
-
     @Column(name = "retirement_year")
     var retirementYear: Int? = null,
-
     @Column(name = "profile_image_url", length = 255)
     var profileImageUrl: String? = null,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     val isActive: Boolean
         get() = retirementYear == null
 
@@ -74,7 +61,7 @@ class Player(
 
     fun updatePhysicalInfo(
         height: Int? = this.height,
-        weight: Int? = this.weight
+        weight: Int? = this.weight,
     ) {
         this.height = height
         this.weight = weight
@@ -87,13 +74,12 @@ class Player(
     /**
      * 선수의 나이를 계산합니다.
      */
-    fun calculateAge(baseDate: LocalDate = LocalDate.now()): Int? {
-        return birthDate?.let {
+    fun calculateAge(baseDate: LocalDate = LocalDate.now()): Int? =
+        birthDate?.let {
             var age = baseDate.year - it.year
             if (baseDate.dayOfYear < it.dayOfYear) {
                 age--
             }
             age
         }
-    }
 }

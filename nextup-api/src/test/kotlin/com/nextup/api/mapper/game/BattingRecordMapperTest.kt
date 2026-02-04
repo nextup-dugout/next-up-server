@@ -10,17 +10,17 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 
 class BattingRecordMapperTest {
-
     @Test
     fun `should map BattingRecord to BattingRecordResponse`() {
         // given
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 123L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.SINGLE, 1, true)
-            recordPlateAppearance(PlateAppearanceResult.HOME_RUN, 2, true)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.SINGLE, 1, true)
+                recordPlateAppearance(PlateAppearanceResult.HOME_RUN, 2, true)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -34,7 +34,7 @@ class BattingRecordMapperTest {
         assertThat(response.homeRuns).isEqualTo(1)
         assertThat(response.runs).isEqualTo(2)
         assertThat(response.runsBattedIn).isEqualTo(3)
-        assertThat(response.totalBases).isEqualTo(5)  // 1 + 4
+        assertThat(response.totalBases).isEqualTo(5) // 1 + 4
     }
 
     @Test
@@ -43,14 +43,15 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            repeat(3) {
-                recordPlateAppearance(PlateAppearanceResult.SINGLE)
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                repeat(3) {
+                    recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                }
+                repeat(2) {
+                    recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
+                }
             }
-            repeat(2) {
-                recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
-            }
-        }
 
         // when
         val response = battingRecord.toResponse()
@@ -66,9 +67,10 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.WALK)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.WALK)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -84,13 +86,14 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            // 2 hits (1 single, 1 home run) in 3 at-bats, 1 walk
-            recordPlateAppearance(PlateAppearanceResult.SINGLE)
-            recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
-            recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
-            recordPlateAppearance(PlateAppearanceResult.WALK)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                // 2 hits (1 single, 1 home run) in 3 at-bats, 1 walk
+                recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
+                recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
+                recordPlateAppearance(PlateAppearanceResult.WALK)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -112,10 +115,11 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            repeat(3) { recordStolenBase() }
-            repeat(1) { recordCaughtStealing() }
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                repeat(3) { recordStolenBase() }
+                repeat(1) { recordCaughtStealing() }
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -149,12 +153,13 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.SINGLE)
-            recordPlateAppearance(PlateAppearanceResult.DOUBLE)
-            recordPlateAppearance(PlateAppearanceResult.TRIPLE)
-            recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                recordPlateAppearance(PlateAppearanceResult.DOUBLE)
+                recordPlateAppearance(PlateAppearanceResult.TRIPLE)
+                recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -164,8 +169,8 @@ class BattingRecordMapperTest {
         assertThat(response.doubles).isEqualTo(1)
         assertThat(response.triples).isEqualTo(1)
         assertThat(response.homeRuns).isEqualTo(1)
-        assertThat(response.extraBaseHits).isEqualTo(3)  // 2B + 3B + HR
-        assertThat(response.totalBases).isEqualTo(10)    // 1 + 2 + 3 + 4
+        assertThat(response.extraBaseHits).isEqualTo(3) // 2B + 3B + HR
+        assertThat(response.totalBases).isEqualTo(10) // 1 + 2 + 3 + 4
     }
 
     @Test
@@ -174,11 +179,12 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.WALK)
-            recordPlateAppearance(PlateAppearanceResult.WALK)
-            recordPlateAppearance(PlateAppearanceResult.INTENTIONAL_WALK)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.WALK)
+                recordPlateAppearance(PlateAppearanceResult.WALK)
+                recordPlateAppearance(PlateAppearanceResult.INTENTIONAL_WALK)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -195,10 +201,11 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.SACRIFICE_BUNT)
-            recordPlateAppearance(PlateAppearanceResult.SACRIFICE_FLY)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.SACRIFICE_BUNT)
+                recordPlateAppearance(PlateAppearanceResult.SACRIFICE_FLY)
+            }
 
         // when
         val response = battingRecord.toResponse()
@@ -217,14 +224,15 @@ class BattingRecordMapperTest {
         every { gamePlayer1.id } returns 1L
         every { gamePlayer2.id } returns 2L
 
-        val records = listOf(
-            BattingRecord.create(gamePlayer1).apply {
-                recordPlateAppearance(PlateAppearanceResult.SINGLE)
-            },
-            BattingRecord.create(gamePlayer2).apply {
-                recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
-            }
-        )
+        val records =
+            listOf(
+                BattingRecord.create(gamePlayer1).apply {
+                    recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                },
+                BattingRecord.create(gamePlayer2).apply {
+                    recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
+                },
+            )
 
         // when
         val responses = records.toResponse()
@@ -250,7 +258,7 @@ class BattingRecordMapperTest {
         val response = battingRecord.toResponse()
 
         // then
-        assertThat(response.id).isEqualTo(0L)  // Entity not persisted yet
+        assertThat(response.id).isEqualTo(0L) // Entity not persisted yet
         assertThat(response.gamePlayerId).isEqualTo(999L)
         assertThat(response.createdAt).isNotNull
         assertThat(response.updatedAt).isNotNull
@@ -262,11 +270,12 @@ class BattingRecordMapperTest {
         val gamePlayer = mockk<GamePlayer>()
         every { gamePlayer.id } returns 1L
 
-        val battingRecord = BattingRecord.create(gamePlayer).apply {
-            recordPlateAppearance(PlateAppearanceResult.STRIKEOUT)
-            recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
-            recordPlateAppearance(PlateAppearanceResult.DOUBLE_PLAY)
-        }
+        val battingRecord =
+            BattingRecord.create(gamePlayer).apply {
+                recordPlateAppearance(PlateAppearanceResult.STRIKEOUT)
+                recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
+                recordPlateAppearance(PlateAppearanceResult.DOUBLE_PLAY)
+            }
 
         // when
         val response = battingRecord.toResponse()

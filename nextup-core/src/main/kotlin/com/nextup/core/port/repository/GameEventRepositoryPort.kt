@@ -6,7 +6,6 @@ import com.nextup.core.domain.game.GameEvent
  * GameEvent Repository Port
  */
 interface GameEventRepositoryPort {
-
     fun save(gameEvent: GameEvent): GameEvent
 
     fun findByIdOrNull(id: Long): GameEvent?

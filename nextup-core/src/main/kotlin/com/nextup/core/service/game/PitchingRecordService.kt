@@ -18,16 +18,19 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class PitchingRecordService(
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
-    private val gamePlayerRepository: GamePlayerRepositoryPort
+    private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
-
     /**
      * 투수 기록을 생성합니다.
      */
     @Transactional
-    fun createRecord(gamePlayerId: Long, isStartingPitcher: Boolean = false): PitchingRecord {
-        val gamePlayer = gamePlayerRepository.findByIdOrNull(gamePlayerId)
-            ?: throw GamePlayerNotFoundException(gamePlayerId)
+    fun createRecord(
+        gamePlayerId: Long,
+        isStartingPitcher: Boolean = false,
+    ): PitchingRecord {
+        val gamePlayer =
+            gamePlayerRepository.findByIdOrNull(gamePlayerId)
+                ?: throw GamePlayerNotFoundException(gamePlayerId)
 
         // 중복 체크
         pitchingRecordRepository.findByGamePlayer(gamePlayer)?.let {
@@ -41,16 +44,18 @@ class PitchingRecordService(
     /**
      * GamePlayer ID로 투수 기록을 조회합니다.
      */
-    fun getByGamePlayerId(gamePlayerId: Long): PitchingRecord {
-        return pitchingRecordRepository.findByGamePlayerId(gamePlayerId)
+    fun getByGamePlayerId(gamePlayerId: Long): PitchingRecord =
+        pitchingRecordRepository.findByGamePlayerId(gamePlayerId)
             ?: throw PitchingRecordNotFoundException(gamePlayerId)
-    }
 
     /**
      * 아웃을 기록합니다.
      */
     @Transactional
-    fun recordOut(gamePlayerId: Long, isStrikeout: Boolean = false) {
+    fun recordOut(
+        gamePlayerId: Long,
+        isStrikeout: Boolean = false,
+    ) {
         val pitchingRecord = getByGamePlayerId(gamePlayerId)
         pitchingRecord.recordOut(isStrikeout)
     }
@@ -63,7 +68,7 @@ class PitchingRecordService(
         gamePlayerId: Long,
         isHomeRun: Boolean = false,
         runsScored: Int = 0,
-        earnedRuns: Int = 0
+        earnedRuns: Int = 0,
     ) {
         val pitchingRecord = getByGamePlayerId(gamePlayerId)
         pitchingRecord.recordHit(isHomeRun, runsScored, earnedRuns)
@@ -91,7 +96,10 @@ class PitchingRecordService(
      * 실점을 기록합니다 (주루 중 득점 등).
      */
     @Transactional
-    fun recordRun(gamePlayerId: Long, isEarned: Boolean = true) {
+    fun recordRun(
+        gamePlayerId: Long,
+        isEarned: Boolean = true,
+    ) {
         val pitchingRecord = getByGamePlayerId(gamePlayerId)
         pitchingRecord.recordRun(isEarned)
     }
@@ -118,7 +126,11 @@ class PitchingRecordService(
      * 투구 수를 기록합니다.
      */
     @Transactional
-    fun recordPitchCount(gamePlayerId: Long, totalPitches: Int, strikes: Int) {
+    fun recordPitchCount(
+        gamePlayerId: Long,
+        totalPitches: Int,
+        strikes: Int,
+    ) {
         val pitchingRecord = getByGamePlayerId(gamePlayerId)
         pitchingRecord.recordPitchCount(totalPitches, strikes)
     }
@@ -171,28 +183,22 @@ class PitchingRecordService(
     /**
      * 경기의 선발 투수 기록을 조회합니다.
      */
-    fun getStartingPitchersByGameId(gameId: Long): List<PitchingRecord> {
-        return pitchingRecordRepository.findStartingPitchersByGameId(gameId)
-    }
+    fun getStartingPitchersByGameId(gameId: Long): List<PitchingRecord> =
+        pitchingRecordRepository.findStartingPitchersByGameId(gameId)
 
     /**
      * 경기의 구원 투수 기록을 조회합니다.
      */
-    fun getReliefPitchersByGameId(gameId: Long): List<PitchingRecord> {
-        return pitchingRecordRepository.findReliefPitchersByGameId(gameId)
-    }
+    fun getReliefPitchersByGameId(gameId: Long): List<PitchingRecord> =
+        pitchingRecordRepository.findReliefPitchersByGameId(gameId)
 
     /**
      * 경기 ID로 모든 투수 기록을 조회합니다.
      */
-    fun getAllByGameId(gameId: Long): List<PitchingRecord> {
-        return pitchingRecordRepository.findAllByGameId(gameId)
-    }
+    fun getAllByGameId(gameId: Long): List<PitchingRecord> = pitchingRecordRepository.findAllByGameId(gameId)
 
     /**
      * 선수 ID로 모든 투수 기록을 조회합니다.
      */
-    fun getAllByPlayerId(playerId: Long): List<PitchingRecord> {
-        return pitchingRecordRepository.findAllByPlayerId(playerId)
-    }
+    fun getAllByPlayerId(playerId: Long): List<PitchingRecord> = pitchingRecordRepository.findAllByPlayerId(playerId)
 }

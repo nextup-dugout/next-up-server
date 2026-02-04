@@ -22,9 +22,8 @@ import org.springframework.transaction.annotation.Transactional
 class BoxScoreServiceImpl(
     private val gamePlayerRepository: GamePlayerRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
-    private val pitchingRecordRepository: PitchingRecordRepositoryPort
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort,
 ) : BoxScoreService {
-
     override fun getBoxScore(gameId: Long): BoxScoreDto {
         val gamePlayers = gamePlayerRepository.findAllByGameId(gameId)
 
@@ -44,7 +43,7 @@ class BoxScoreServiceImpl(
             homeTeam = buildTeamBoxScore(homeTeam.team.id, homeTeam.team.name, homeTeam, homePlayers),
             awayTeam = buildTeamBoxScore(awayTeam.team.id, awayTeam.team.name, awayTeam, awayPlayers),
             currentInning = game.currentInningDisplay,
-            gameStatus = game.status.displayName
+            gameStatus = game.status.displayName,
         )
     }
 
@@ -56,28 +55,32 @@ class BoxScoreServiceImpl(
         result: PlateAppearanceResult,
         rbis: Int,
         runsScored: List<Long>,
-        inning: Int
+        inning: Int,
     ) {
         // 타자 기록 갱신
-        val battingRecord = battingRecordRepository.findByGamePlayer(batter)
-            ?: throw BattingRecordNotFoundException(batter.id)
+        val battingRecord =
+            battingRecordRepository.findByGamePlayer(batter)
+                ?: throw BattingRecordNotFoundException(batter.id)
 
         battingRecord.applyPlateAppearanceResult(result, rbis)
 
         // 득점한 주자들의 득점 기록
         runsScored.forEach { runnerId ->
-            val runnerGamePlayer = gamePlayerRepository.findByIdOrNull(runnerId)
-                ?: throw GamePlayerNotFoundException(runnerId)
+            val runnerGamePlayer =
+                gamePlayerRepository.findByIdOrNull(runnerId)
+                    ?: throw GamePlayerNotFoundException(runnerId)
 
-            val runnerBattingRecord = battingRecordRepository.findByGamePlayer(runnerGamePlayer)
-                ?: throw BattingRecordNotFoundException(runnerId)
+            val runnerBattingRecord =
+                battingRecordRepository.findByGamePlayer(runnerGamePlayer)
+                    ?: throw BattingRecordNotFoundException(runnerId)
 
             runnerBattingRecord.recordRun()
         }
 
         // 투수 기록 갱신
-        val pitchingRecord = pitchingRecordRepository.findByGamePlayer(pitcher)
-            ?: throw PitchingRecordNotFoundException(pitcher.id)
+        val pitchingRecord =
+            pitchingRecordRepository.findByGamePlayer(pitcher)
+                ?: throw PitchingRecordNotFoundException(pitcher.id)
 
         pitchingRecord.applyBatterFaced(result)
 
@@ -105,18 +108,20 @@ class BoxScoreServiceImpl(
         teamId: Long,
         teamName: String,
         gameTeam: com.nextup.core.domain.game.GameTeam,
-        players: List<GamePlayer>
+        players: List<GamePlayer>,
     ): TeamBoxScoreDto {
         val inningScores = parseInningScores(gameTeam.inningScores)
 
-        val batters = players
-            .filter { it.battingOrder != null || it.isStarter }
-            .map { buildBatterLine(it) }
-            .sortedBy { it.battingOrder ?: 999 }
+        val batters =
+            players
+                .filter { it.battingOrder != null || it.isStarter }
+                .map { buildBatterLine(it) }
+                .sortedBy { it.battingOrder ?: 999 }
 
-        val pitchers = players
-            .filter { it.isPitcher }
-            .map { buildPitcherLine(it) }
+        val pitchers =
+            players
+                .filter { it.isPitcher }
+                .map { buildPitcherLine(it) }
 
         return TeamBoxScoreDto(
             teamId = teamId,
@@ -126,7 +131,7 @@ class BoxScoreServiceImpl(
             hits = gameTeam.totalHits,
             errors = gameTeam.totalErrors,
             batters = batters,
-            pitchers = pitchers
+            pitchers = pitchers,
         )
     }
 
@@ -145,7 +150,7 @@ class BoxScoreServiceImpl(
             rbis = battingRecord?.runsBattedIn ?: 0,
             walks = battingRecord?.walks ?: 0,
             strikeouts = battingRecord?.strikeouts ?: 0,
-            avg = battingRecord?.let { BatterLineDto.formatAverage(it.battingAverage) } ?: ".000"
+            avg = battingRecord?.let { BatterLineDto.formatAverage(it.battingAverage) } ?: ".000",
         )
     }
 
@@ -163,7 +168,7 @@ class BoxScoreServiceImpl(
             strikeouts = pitchingRecord?.strikeouts ?: 0,
             homeRuns = pitchingRecord?.homeRunsAllowed ?: 0,
             decision = pitchingRecord?.decision?.abbreviation,
-            era = pitchingRecord?.let { PitcherLineDto.formatERA(it.earnedRunAverage) } ?: "0.00"
+            era = pitchingRecord?.let { PitcherLineDto.formatERA(it.earnedRunAverage) } ?: "0.00",
         )
     }
 

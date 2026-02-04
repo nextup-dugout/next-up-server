@@ -8,7 +8,7 @@ data class BoxScoreResponse(
     val homeTeam: TeamBoxScoreResponse,
     val awayTeam: TeamBoxScoreResponse,
     val currentInning: String,
-    val gameStatus: String
+    val gameStatus: String,
 )
 
 /**
@@ -22,7 +22,7 @@ data class TeamBoxScoreResponse(
     val hits: Int,
     val errors: Int,
     val batters: List<BatterLineResponse>,
-    val pitchers: List<PitcherLineResponse>
+    val pitchers: List<PitcherLineResponse>,
 )
 
 /**
@@ -40,7 +40,7 @@ data class BatterLineResponse(
     val rbis: Int,
     val walks: Int,
     val strikeouts: Int,
-    val avg: String
+    val avg: String,
 )
 
 /**
@@ -57,5 +57,5 @@ data class PitcherLineResponse(
     val strikeouts: Int,
     val homeRuns: Int,
     val decision: String?,
-    val era: String
+    val era: String,
 )

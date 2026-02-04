@@ -15,33 +15,24 @@ import jakarta.persistence.Embeddable
 class GameState(
     @Column(name = "outs")
     var outs: Int = 0,
-
     @Column(name = "balls")
     var balls: Int = 0,
-
     @Column(name = "strikes")
     var strikes: Int = 0,
-
     @Column(name = "runner_on_first_id")
     var runnerOnFirstId: Long? = null,
-
     @Column(name = "runner_on_second_id")
     var runnerOnSecondId: Long? = null,
-
     @Column(name = "runner_on_third_id")
     var runnerOnThirdId: Long? = null,
-
     @Column(name = "home_batting_order")
     var homeBattingOrder: Int = 1,
-
     @Column(name = "away_batting_order")
     var awayBattingOrder: Int = 1,
-
     @Column(name = "current_pitcher_id")
     var currentPitcherId: Long? = null,
-
     @Column(name = "current_batter_id")
-    var currentBatterId: Long? = null
+    var currentBatterId: Long? = null,
 ) {
     init {
         require(outs in 0..3) { "아웃 카운트는 0-3 사이여야 합니다: $outs" }
@@ -92,7 +83,10 @@ class GameState(
     /**
      * 주자를 설정합니다.
      */
-    fun setRunner(base: Base, playerId: Long?) {
+    fun setRunner(
+        base: Base,
+        playerId: Long?,
+    ) {
         when (base) {
             Base.FIRST -> runnerOnFirstId = playerId
             Base.SECOND -> runnerOnSecondId = playerId
@@ -104,14 +98,13 @@ class GameState(
     /**
      * 특정 베이스의 주자를 반환합니다.
      */
-    fun getRunner(base: Base): Long? {
-        return when (base) {
+    fun getRunner(base: Base): Long? =
+        when (base) {
             Base.FIRST -> runnerOnFirstId
             Base.SECOND -> runnerOnSecondId
             Base.THIRD -> runnerOnThirdId
             Base.HOME -> null
         }
-    }
 
     /**
      * 모든 베이스를 클리어합니다 (3아웃 시).
@@ -147,16 +140,12 @@ class GameState(
     /**
      * 주자가 있는지 확인합니다.
      */
-    fun hasRunner(base: Base): Boolean {
-        return getRunner(base) != null
-    }
+    fun hasRunner(base: Base): Boolean = getRunner(base) != null
 
     /**
      * 만루 상태인지 확인합니다.
      */
-    fun isBasesLoaded(): Boolean {
-        return runnerOnFirstId != null && runnerOnSecondId != null && runnerOnThirdId != null
-    }
+    fun isBasesLoaded(): Boolean = runnerOnFirstId != null && runnerOnSecondId != null && runnerOnThirdId != null
 
     /**
      * 현재 볼카운트 문자열을 반환합니다 (예: "2B-1S").

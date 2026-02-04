@@ -3,7 +3,10 @@ package com.nextup.core.service.game.dto
 /**
  * 경기 종료 사유
  */
-enum class GameEndReason(val displayName: String, val description: String) {
+enum class GameEndReason(
+    val displayName: String,
+    val description: String,
+) {
     /** 정규 이닝 종료 */
     REGULATION("정규 종료", "정규 이닝 완료로 경기 종료"),
 
@@ -17,5 +20,5 @@ enum class GameEndReason(val displayName: String, val description: String) {
     FORFEIT("몰수", "몰수 처리"),
 
     /** 기타 */
-    OTHER("기타", "기타 사유로 경기 종료");
+    OTHER("기타", "기타 사유로 경기 종료"),
 }

@@ -8,7 +8,7 @@ package com.nextup.core.domain.admin
 enum class OrganizationRole(
     val displayName: String,
     val description: String,
-    val level: Int
+    val level: Int,
 ) {
     /**
      * 관리자 - 조직의 모든 권한을 가진 최고 관리자
@@ -23,7 +23,8 @@ enum class OrganizationRole(
     /**
      * 기록원 - 경기 기록 입력 권한만 가진 관리자
      */
-    SCORER("기록원", "경기 기록 입력 권한만 가진 관리자", 10);
+    SCORER("기록원", "경기 기록 입력 권한만 가진 관리자", 10),
+    ;
 
     /**
      * 다른 역할보다 높은 권한인지 확인합니다.
@@ -43,9 +44,8 @@ enum class OrganizationRole(
          * @return OrganizationRole
          * @throws IllegalArgumentException 유효하지 않은 값인 경우
          */
-        fun fromValue(value: String): OrganizationRole {
-            return entries.find { it.name.equals(value, ignoreCase = true) }
+        fun fromValue(value: String): OrganizationRole =
+            entries.find { it.name.equals(value, ignoreCase = true) }
                 ?: throw IllegalArgumentException("Invalid organization role: $value")
-        }
     }
 }

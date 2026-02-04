@@ -47,16 +47,18 @@ tasks.jacocoTestReport {
     }
 
     classDirectories.setFrom(
-        files(classDirectories.files.map {
-            fileTree(it) {
-                exclude(
-                    "**/dto/**",
-                    "**/config/**",
-                    "**/BackofficeApplication*",
-                    "**/HealthController*"
-                )
-            }
-        })
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/dto/**",
+                        "**/config/**",
+                        "**/BackofficeApplication*",
+                        "**/HealthController*",
+                    )
+                }
+            },
+        ),
     )
 }
 
@@ -70,15 +72,17 @@ tasks.jacocoTestCoverageVerification {
     }
 
     classDirectories.setFrom(
-        files(classDirectories.files.map {
-            fileTree(it) {
-                exclude(
-                    "**/dto/**",
-                    "**/config/**",
-                    "**/BackofficeApplication*",
-                    "**/HealthController*"
-                )
-            }
-        })
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/dto/**",
+                        "**/config/**",
+                        "**/BackofficeApplication*",
+                        "**/HealthController*",
+                    )
+                }
+            },
+        ),
     )
 }

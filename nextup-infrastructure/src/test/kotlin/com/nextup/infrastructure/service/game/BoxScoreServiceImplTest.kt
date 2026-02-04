@@ -30,7 +30,6 @@ import java.time.LocalDateTime
 
 @DisplayName("BoxScoreServiceImpl 테스트")
 class BoxScoreServiceImplTest {
-
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
@@ -50,65 +49,68 @@ class BoxScoreServiceImplTest {
         gamePlayerRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
-        boxScoreService = BoxScoreServiceImpl(
-            gamePlayerRepository,
-            battingRecordRepository,
-            pitchingRecordRepository
-        )
+        boxScoreService =
+            BoxScoreServiceImpl(
+                gamePlayerRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
+            )
 
         association = Association(name = "서울시야구협회", region = "서울")
         league = League(association = association, name = "1부 리그", foundedYear = 2020)
-        competition = Competition(
-            league = league,
-            name = "2025 춘계대회",
-            year = 2025,
-            season = 1,
-            type = CompetitionType.LEAGUE,
-            startDate = LocalDate.of(2025, 3, 1),
-            status = CompetitionStatus.IN_PROGRESS
-        )
-        game = Game(
-            competition = competition,
-            scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
-            location = "잠실야구장",
-            status = GameStatus.IN_PROGRESS
-        )
+        competition =
+            Competition(
+                league = league,
+                name = "2025 춘계대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                status = CompetitionStatus.IN_PROGRESS,
+            )
+        game =
+            Game(
+                competition = competition,
+                scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                location = "잠실야구장",
+                status = GameStatus.IN_PROGRESS,
+            )
         homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020)
         awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020)
         homeGameTeam = GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME)
         awayGameTeam = GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY)
     }
 
-    private fun createPlayer(name: String): Player {
-        return Player(
+    private fun createPlayer(name: String): Player =
+        Player(
             name = name,
             birthDate = LocalDate.of(1995, 1, 1),
-            primaryPosition = Position.FIRST_BASE
+            primaryPosition = Position.FIRST_BASE,
         )
-    }
 
     @Nested
     @DisplayName("getBoxScore")
     inner class GetBoxScore {
-
         @Test
         fun `경기의 박스스코어를 조회할 수 있다`() {
             // given
             val player1 = createPlayer("홈선수1")
             val player2 = createPlayer("원정선수1")
 
-            val homeGamePlayer = GamePlayer(
-                gameTeam = homeGameTeam,
-                player = player1,
-                position = Position.FIRST_BASE,
-                battingOrder = 1
-            )
-            val awayGamePlayer = GamePlayer(
-                gameTeam = awayGameTeam,
-                player = player2,
-                position = Position.STARTING_PITCHER,
-                battingOrder = null
-            )
+            val homeGamePlayer =
+                GamePlayer(
+                    gameTeam = homeGameTeam,
+                    player = player1,
+                    position = Position.FIRST_BASE,
+                    battingOrder = 1,
+                )
+            val awayGamePlayer =
+                GamePlayer(
+                    gameTeam = awayGameTeam,
+                    player = player2,
+                    position = Position.STARTING_PITCHER,
+                    battingOrder = null,
+                )
 
             val homeBattingRecord = BattingRecord.create(homeGamePlayer)
             val awayPitchingRecord = PitchingRecord.create(awayGamePlayer, isStartingPitcher = true)
@@ -147,18 +149,20 @@ class BoxScoreServiceImplTest {
             homeGameTeam.addRunInInning(3, 0)
             homeGameTeam.addRunInInning(4, 3)
             val player = createPlayer("홈선수1")
-            val homeGamePlayer = GamePlayer(
-                gameTeam = homeGameTeam,
-                player = player,
-                position = Position.FIRST_BASE,
-                battingOrder = 1
-            )
+            val homeGamePlayer =
+                GamePlayer(
+                    gameTeam = homeGameTeam,
+                    player = player,
+                    position = Position.FIRST_BASE,
+                    battingOrder = 1,
+                )
             val awayPlayer = createPlayer("원정선수1")
-            val awayGamePlayer = GamePlayer(
-                gameTeam = awayGameTeam,
-                player = awayPlayer,
-                position = Position.STARTING_PITCHER
-            )
+            val awayGamePlayer =
+                GamePlayer(
+                    gameTeam = awayGameTeam,
+                    player = awayPlayer,
+                    position = Position.STARTING_PITCHER,
+                )
 
             every { gamePlayerRepository.findAllByGameId(1L) } returns listOf(homeGamePlayer, awayGamePlayer)
             every { battingRecordRepository.findByGamePlayer(any()) } returns null
@@ -202,7 +206,6 @@ class BoxScoreServiceImplTest {
     @Nested
     @DisplayName("updateOnPlateAppearance")
     inner class UpdateOnPlateAppearance {
-
         @Test
         fun `타석 결과를 반영하여 타자와 투수 기록을 갱신한다`() {
             // given
@@ -226,7 +229,7 @@ class BoxScoreServiceImplTest {
                 result = PlateAppearanceResult.SINGLE,
                 rbis = 1,
                 runsScored = emptyList(),
-                inning = 3
+                inning = 3,
             )
 
             // then
@@ -253,10 +256,9 @@ class BoxScoreServiceImplTest {
                     result = PlateAppearanceResult.SINGLE,
                     rbis = 0,
                     runsScored = emptyList(),
-                    inning = 1
+                    inning = 1,
                 )
-            }
-                .isInstanceOf(BattingRecordNotFoundException::class.java)
+            }.isInstanceOf(BattingRecordNotFoundException::class.java)
         }
 
         @Test
@@ -280,10 +282,9 @@ class BoxScoreServiceImplTest {
                     result = PlateAppearanceResult.SINGLE,
                     rbis = 0,
                     runsScored = emptyList(),
-                    inning = 1
+                    inning = 1,
                 )
-            }
-                .isInstanceOf(PitchingRecordNotFoundException::class.java)
+            }.isInstanceOf(PitchingRecordNotFoundException::class.java)
         }
 
         @Test
@@ -314,7 +315,7 @@ class BoxScoreServiceImplTest {
                 result = PlateAppearanceResult.SINGLE,
                 rbis = 1,
                 runsScored = listOf(3L),
-                inning = 3
+                inning = 3,
             )
 
             // then
@@ -348,10 +349,9 @@ class BoxScoreServiceImplTest {
                     result = PlateAppearanceResult.SINGLE,
                     rbis = 1,
                     runsScored = listOf(999L),
-                    inning = 3
+                    inning = 3,
                 )
-            }
-                .isInstanceOf(GamePlayerNotFoundException::class.java)
+            }.isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
         @Test
@@ -382,10 +382,9 @@ class BoxScoreServiceImplTest {
                     result = PlateAppearanceResult.SINGLE,
                     rbis = 1,
                     runsScored = listOf(3L),
-                    inning = 3
+                    inning = 3,
                 )
-            }
-                .isInstanceOf(BattingRecordNotFoundException::class.java)
+            }.isInstanceOf(BattingRecordNotFoundException::class.java)
         }
 
         @Test
@@ -411,7 +410,7 @@ class BoxScoreServiceImplTest {
                 result = PlateAppearanceResult.GROUND_OUT,
                 rbis = 0,
                 runsScored = emptyList(),
-                inning = 1
+                inning = 1,
             )
 
             // then
@@ -441,7 +440,7 @@ class BoxScoreServiceImplTest {
                 result = PlateAppearanceResult.HOME_RUN,
                 rbis = 3,
                 runsScored = listOf(),
-                inning = 5
+                inning = 5,
             )
 
             // then
@@ -473,7 +472,7 @@ class BoxScoreServiceImplTest {
                 result = PlateAppearanceResult.DOUBLE,
                 rbis = 0,
                 runsScored = emptyList(),
-                inning = 2
+                inning = 2,
             )
 
             // then

@@ -31,6 +31,6 @@ interface BoxScoreService {
         result: PlateAppearanceResult,
         rbis: Int,
         runsScored: List<Long>,
-        inning: Int
+        inning: Int,
     )
 }

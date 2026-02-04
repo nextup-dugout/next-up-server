@@ -22,7 +22,6 @@ import java.time.Instant
 
 @DisplayName("CustomOAuth2UserService 테스트")
 class CustomOAuth2UserServiceTest {
-
     private lateinit var userJpaRepository: UserJpaRepository
     private lateinit var oAuthAccountRepository: OAuthAccountRepository
     private lateinit var customOAuth2UserService: TestableCustomOAuth2UserService
@@ -32,21 +31,22 @@ class CustomOAuth2UserServiceTest {
      */
     private class TestableCustomOAuth2UserService(
         userJpaRepository: UserJpaRepository,
-        oAuthAccountRepository: OAuthAccountRepository
+        oAuthAccountRepository: OAuthAccountRepository,
     ) : CustomOAuth2UserService(userJpaRepository, oAuthAccountRepository) {
-
         var mockOAuth2User: OAuth2User? = null
 
         override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
-            val oAuth2User = mockOAuth2User
-                ?: throw IllegalStateException("mockOAuth2User must be set before calling loadUser")
+            val oAuth2User =
+                mockOAuth2User
+                    ?: throw IllegalStateException("mockOAuth2User must be set before calling loadUser")
 
             // processOAuth2User is private, so we need to access it via reflection
-            val method = CustomOAuth2UserService::class.java.getDeclaredMethod(
-                "processOAuth2User",
-                OAuth2UserRequest::class.java,
-                OAuth2User::class.java
-            )
+            val method =
+                CustomOAuth2UserService::class.java.getDeclaredMethod(
+                    "processOAuth2User",
+                    OAuth2UserRequest::class.java,
+                    OAuth2User::class.java,
+                )
             method.isAccessible = true
             return method.invoke(this, userRequest, oAuth2User) as OAuth2User
         }
@@ -60,42 +60,48 @@ class CustomOAuth2UserServiceTest {
     }
 
     private fun createUserRequest(registrationId: String): OAuth2UserRequest {
-        val clientRegistration = ClientRegistration
-            .withRegistrationId(registrationId)
-            .clientId("test-client-id")
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .redirectUri("http://localhost/callback")
-            .authorizationUri("http://auth.example.com/authorize")
-            .tokenUri("http://auth.example.com/token")
-            .userInfoUri("http://auth.example.com/userinfo")
-            .userNameAttributeName("id")
-            .clientName("Test Client")
-            .build()
+        val clientRegistration =
+            ClientRegistration
+                .withRegistrationId(registrationId)
+                .clientId("test-client-id")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("http://localhost/callback")
+                .authorizationUri("http://auth.example.com/authorize")
+                .tokenUri("http://auth.example.com/token")
+                .userInfoUri("http://auth.example.com/userinfo")
+                .userNameAttributeName("id")
+                .clientName("Test Client")
+                .build()
 
-        val accessToken = OAuth2AccessToken(
-            OAuth2AccessToken.TokenType.BEARER,
-            "test-access-token",
-            Instant.now(),
-            Instant.now().plusSeconds(3600)
-        )
+        val accessToken =
+            OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "test-access-token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+            )
 
         return OAuth2UserRequest(clientRegistration, accessToken)
     }
 
-    private fun createOAuth2User(attributes: Map<String, Any>): OAuth2User {
-        return mockk {
+    private fun createOAuth2User(attributes: Map<String, Any>): OAuth2User =
+        mockk {
             every { getAttributes() } returns attributes
             every { getName() } returns "test-user"
         }
-    }
 
-    private fun createUser(id: Long, email: String, nickname: String): User {
-        val user = User.createOAuthUser(
-            email = email,
-            nickname = nickname,
-            provider = OAuthProvider.KAKAO,
-            oauthId = "kakao_$id"
-        )
+    private fun createUser(
+        id: Long,
+        email: String,
+        nickname: String,
+    ): User {
+        val user =
+            User.createOAuthUser(
+                email = email,
+                nickname = nickname,
+                provider = OAuthProvider.KAKAO,
+                oauthId = "kakao_$id",
+            )
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
@@ -105,27 +111,30 @@ class CustomOAuth2UserServiceTest {
     @Nested
     @DisplayName("기존 OAuthAccount 존재 시")
     inner class ExistingOAuthAccountTest {
-
         @Test
         fun `should return existing user when OAuthAccount exists`() {
             // given
             val userRequest = createUserRequest("kakao")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "id" to 123456L,
-                    "kakao_account" to mapOf(
-                        "email" to "existing@kakao.com",
-                        "profile" to mapOf("nickname" to "기존사용자")
-                    )
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "id" to 123456L,
+                        "kakao_account" to
+                            mapOf(
+                                "email" to "existing@kakao.com",
+                                "profile" to mapOf("nickname" to "기존사용자"),
+                            ),
+                    ),
                 )
-            )
 
             val existingUser = createUser(1L, "existing@kakao.com", "기존사용자")
-            val existingOAuthAccount = mockk<OAuthAccount> {
-                every { user } returns existingUser
-            }
+            val existingOAuthAccount =
+                mockk<OAuthAccount> {
+                    every { user } returns existingUser
+                }
 
-            every { oAuthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "123456") } returns existingOAuthAccount
+            every { oAuthAccountRepository.findByProviderAndOauthId(OAuthProvider.KAKAO, "123456") } returns
+                existingOAuthAccount
 
             // when
             val result = customOAuth2UserService.loadUser(userRequest)
@@ -141,18 +150,18 @@ class CustomOAuth2UserServiceTest {
     @Nested
     @DisplayName("이메일로 기존 User 조회")
     inner class ExistingUserByEmailTest {
-
         @Test
         fun `should link OAuthAccount to existing user when email matches`() {
             // given
             val userRequest = createUserRequest("google")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "sub" to "google_123",
-                    "email" to "existing@gmail.com",
-                    "name" to "기존사용자"
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "sub" to "google_123",
+                        "email" to "existing@gmail.com",
+                        "name" to "기존사용자",
+                    ),
                 )
-            )
 
             val existingUser = createUser(2L, "existing@gmail.com", "기존사용자")
 
@@ -175,20 +184,21 @@ class CustomOAuth2UserServiceTest {
     @Nested
     @DisplayName("신규 User 생성")
     inner class NewUserCreationTest {
-
         @Test
         fun `should create new user when no existing account found`() {
             // given
             val userRequest = createUserRequest("naver")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "response" to mapOf(
-                        "id" to "naver_new_123",
-                        "email" to "newuser@naver.com",
-                        "name" to "신규사용자"
-                    )
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "response" to
+                            mapOf(
+                                "id" to "naver_new_123",
+                                "email" to "newuser@naver.com",
+                                "name" to "신규사용자",
+                            ),
+                    ),
                 )
-            )
 
             val savedUserSlot = slot<User>()
 
@@ -210,13 +220,14 @@ class CustomOAuth2UserServiceTest {
         fun `should use email prefix as nickname when name is null`() {
             // given
             val userRequest = createUserRequest("google")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "sub" to "google_456",
-                    "email" to "testuser@gmail.com"
-                    // name is missing
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "sub" to "google_456",
+                        "email" to "testuser@gmail.com",
+                        // name is missing
+                    ),
                 )
-            )
 
             val savedUserSlot = slot<User>()
 
@@ -235,12 +246,13 @@ class CustomOAuth2UserServiceTest {
         fun `should use provider default nickname when both name and email are null`() {
             // given
             val userRequest = createUserRequest("kakao")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "id" to 789L
-                    // No kakao_account, so no email or name
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "id" to 789L,
+                        // No kakao_account, so no email or name
+                    ),
                 )
-            )
 
             val savedUserSlot = slot<User>()
 
@@ -259,17 +271,17 @@ class CustomOAuth2UserServiceTest {
     @Nested
     @DisplayName("예외 처리")
     inner class ExceptionHandlingTest {
-
         @Test
         fun `should throw exception when OAuth2 provider returns blank id`() {
             // given
             val userRequest = createUserRequest("google")
-            customOAuth2UserService.mockOAuth2User = createOAuth2User(
-                mapOf(
-                    "email" to "user@gmail.com"
-                    // sub is missing, so id will be blank
+            customOAuth2UserService.mockOAuth2User =
+                createOAuth2User(
+                    mapOf(
+                        "email" to "user@gmail.com",
+                        // sub is missing, so id will be blank
+                    ),
                 )
-            )
 
             // when & then
             // 리플렉션으로 인해 InvocationTargetException으로 래핑됨

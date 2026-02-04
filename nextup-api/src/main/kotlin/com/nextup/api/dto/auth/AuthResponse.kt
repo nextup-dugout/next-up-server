@@ -8,15 +8,14 @@ import com.nextup.infrastructure.security.TokenPair
 data class TokenResponse(
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String = "Bearer"
+    val tokenType: String = "Bearer",
 ) {
     companion object {
-        fun from(tokenPair: TokenPair): TokenResponse {
-            return TokenResponse(
+        fun from(tokenPair: TokenPair): TokenResponse =
+            TokenResponse(
                 accessToken = tokenPair.accessToken,
-                refreshToken = tokenPair.refreshToken
+                refreshToken = tokenPair.refreshToken,
             )
-        }
     }
 }
 
@@ -28,7 +27,7 @@ data class CurrentUserResponse(
     val email: String,
     val nickname: String,
     val roles: Set<String>,
-    val isActive: Boolean
+    val isActive: Boolean,
 )
 
 /**
@@ -37,5 +36,5 @@ data class CurrentUserResponse(
 data class SignUpResponse(
     val id: Long,
     val email: String,
-    val nickname: String
+    val nickname: String,
 )

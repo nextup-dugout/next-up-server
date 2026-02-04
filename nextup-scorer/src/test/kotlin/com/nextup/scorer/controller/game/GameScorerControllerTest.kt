@@ -14,7 +14,6 @@ import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
-import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
 import com.nextup.scorer.dto.game.RunnerMovementDto
@@ -58,10 +57,11 @@ class GameScorerControllerTest {
         fun `should start game successfully`() {
             // given
             val gameId = 1L
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 1
-                isTopInning = true
-            }
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 1
+                    isTopInning = true
+                }
             every { gameScorerService.startGame(gameId) } returns game
 
             // when & then
@@ -85,20 +85,22 @@ class GameScorerControllerTest {
         fun `should record plate appearance with single hit`() {
             // given
             val gameId = 1L
-            val request = PlateAppearanceRequestDto(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.SINGLE,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 2,
-                strikes = 1
-            )
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 3
-                isTopInning = false
-                gameState.runnerOnFirstId = 10L
-            }
+            val request =
+                PlateAppearanceRequestDto(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 2,
+                    strikes = 1
+                )
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 3
+                    isTopInning = false
+                    gameState.runnerOnFirstId = 10L
+                }
             every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
 
             // when & then
@@ -120,28 +122,31 @@ class GameScorerControllerTest {
         fun `should record plate appearance with runner movements`() {
             // given
             val gameId = 1L
-            val request = PlateAppearanceRequestDto(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.DOUBLE,
-                runnerMovements = listOf(
-                    RunnerMovementDto(
-                        runnerId = 5L,
-                        fromBase = Base.FIRST,
-                        toBase = Base.THIRD,
-                        isOut = false
-                    )
-                ),
-                rbis = 1,
-                balls = 0,
-                strikes = 2
-            )
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 5
-                isTopInning = true
-                gameState.runnerOnSecondId = 10L
-                gameState.runnerOnThirdId = 5L
-            }
+            val request =
+                PlateAppearanceRequestDto(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.DOUBLE,
+                    runnerMovements =
+                        listOf(
+                            RunnerMovementDto(
+                                runnerId = 5L,
+                                fromBase = Base.FIRST,
+                                toBase = Base.THIRD,
+                                isOut = false
+                            )
+                        ),
+                    rbis = 1,
+                    balls = 0,
+                    strikes = 2
+                )
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                    gameState.runnerOnSecondId = 10L
+                    gameState.runnerOnThirdId = 5L
+                }
             every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
 
             // when & then
@@ -163,20 +168,22 @@ class GameScorerControllerTest {
         fun `should record strikeout`() {
             // given
             val gameId = 1L
-            val request = PlateAppearanceRequestDto(
-                batterId = 10L,
-                pitcherId = 20L,
-                result = PlateAppearanceResult.STRIKEOUT,
-                runnerMovements = emptyList(),
-                rbis = 0,
-                balls = 1,
-                strikes = 3
-            )
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 2
-                isTopInning = true
-                gameState.outs = 1
-            }
+            val request =
+                PlateAppearanceRequestDto(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                    balls = 1,
+                    strikes = 3
+                )
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 2
+                    isTopInning = true
+                    gameState.outs = 1
+                }
             every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
 
             // when & then
@@ -201,11 +208,12 @@ class GameScorerControllerTest {
         fun `should advance to next half inning`() {
             // given
             val gameId = 1L
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 1
-                isTopInning = false  // 1회말로 진행
-                gameState.resetForNewInning()
-            }
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 1
+                    isTopInning = false // 1회말로 진행
+                    gameState.resetForNewInning()
+                }
             every { gameScorerService.advanceHalfInning(gameId) } returns game
 
             // when & then
@@ -224,11 +232,12 @@ class GameScorerControllerTest {
         fun `should advance from bottom to next top inning`() {
             // given
             val gameId = 1L
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                currentInning = 2
-                isTopInning = true  // 2회초로 진행
-                gameState.resetForNewInning()
-            }
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 2
+                    isTopInning = true // 2회초로 진행
+                    gameState.resetForNewInning()
+                }
             every { gameScorerService.advanceHalfInning(gameId) } returns game
 
             // when & then
@@ -251,10 +260,11 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val request = GameEndRequestDto(reason = GameEndReason.REGULATION)
-            val game = createGame(gameId, GameStatus.FINISHED).apply {
-                currentInning = 9
-                isTopInning = false
-            }
+            val game =
+                createGame(gameId, GameStatus.FINISHED).apply {
+                    currentInning = 9
+                    isTopInning = false
+                }
             every { gameScorerService.endGame(gameId, GameEndReason.REGULATION) } returns game
 
             // when & then
@@ -276,10 +286,11 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val request = GameEndRequestDto(reason = GameEndReason.MERCY_RULE)
-            val game = createGame(gameId, GameStatus.CALLED).apply {
-                currentInning = 7
-                isTopInning = true
-            }
+            val game =
+                createGame(gameId, GameStatus.CALLED).apply {
+                    currentInning = 7
+                    isTopInning = true
+                }
             every { gameScorerService.endGame(gameId, GameEndReason.MERCY_RULE) } returns game
 
             // when & then
@@ -300,10 +311,11 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val request = GameEndRequestDto(reason = GameEndReason.WEATHER)
-            val game = createGame(gameId, GameStatus.CALLED).apply {
-                currentInning = 5
-                isTopInning = false
-            }
+            val game =
+                createGame(gameId, GameStatus.CALLED).apply {
+                    currentInning = 5
+                    isTopInning = false
+                }
             every { gameScorerService.endGame(gameId, GameEndReason.WEATHER) } returns game
 
             // when & then
@@ -324,10 +336,11 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val request = GameEndRequestDto(reason = GameEndReason.FORFEIT)
-            val game = createGame(gameId, GameStatus.FORFEITED).apply {
-                currentInning = 3
-                isTopInning = true
-            }
+            val game =
+                createGame(gameId, GameStatus.FORFEITED).apply {
+                    currentInning = 3
+                    isTopInning = true
+                }
             every { gameScorerService.endGame(gameId, GameEndReason.FORFEIT) } returns game
 
             // when & then
@@ -344,7 +357,10 @@ class GameScorerControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
+    private fun createAssociation(
+        id: Long,
+        name: String
+    ): Association {
         return Association(
             name = name,
             abbreviation = null,
@@ -359,7 +375,11 @@ class GameScorerControllerTest {
         }
     }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association
+    ): League {
         return League(
             association = association,
             name = name,
@@ -375,7 +395,11 @@ class GameScorerControllerTest {
         }
     }
 
-    private fun createCompetition(id: Long, name: String, league: League): Competition {
+    private fun createCompetition(
+        id: Long,
+        name: String,
+        league: League
+    ): Competition {
         return Competition(
             league = league,
             name = name,
@@ -394,7 +418,10 @@ class GameScorerControllerTest {
         }
     }
 
-    private fun createGame(id: Long, status: GameStatus): Game {
+    private fun createGame(
+        id: Long,
+        status: GameStatus
+    ): Game {
         val association = createAssociation(1L, "서울시야구협회")
         val league = createLeague(1L, "1부 리그", association)
         val competition = createCompetition(1L, "2025 춘계대회", league)

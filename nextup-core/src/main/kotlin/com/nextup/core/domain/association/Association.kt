@@ -14,36 +14,28 @@ import jakarta.persistence.*
     name = "associations",
     indexes = [
         Index(name = "idx_associations_region", columnList = "region"),
-        Index(name = "idx_associations_is_active", columnList = "is_active")
-    ]
+        Index(name = "idx_associations_is_active", columnList = "is_active"),
+    ],
 )
 class Association(
     @Column(nullable = false, length = 100)
     val name: String,
-
     @Column(length = 20)
     val abbreviation: String? = null,
-
     @Column(length = 50)
     val region: String? = null,
-
     @Column(length = 500)
     var description: String? = null,
-
     @Column(length = 255)
     var logoUrl: String? = null,
-
     @Column(length = 255)
     var websiteUrl: String? = null,
-
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     fun deactivate() {
         this.isActive = false
     }
@@ -55,7 +47,7 @@ class Association(
     fun updateInfo(
         description: String? = this.description,
         logoUrl: String? = this.logoUrl,
-        websiteUrl: String? = this.websiteUrl
+        websiteUrl: String? = this.websiteUrl,
     ) {
         this.description = description
         this.logoUrl = logoUrl

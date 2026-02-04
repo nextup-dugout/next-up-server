@@ -20,28 +20,25 @@ import java.math.RoundingMode
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_season_batting_stats_player_year",
-            columnNames = ["player_id", "year"]
-        )
+            columnNames = ["player_id", "year"],
+        ),
     ],
     indexes = [
         Index(name = "idx_season_batting_stats_player", columnList = "player_id"),
         Index(name = "idx_season_batting_stats_year", columnList = "year"),
-        Index(name = "idx_season_batting_stats_games", columnList = "games_played")
-    ]
+        Index(name = "idx_season_batting_stats_games", columnList = "games_played"),
+    ],
 )
 class SeasonBattingStats(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     val player: Player,
-
     @Column(nullable = false)
     val year: Int,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0
@@ -153,11 +150,12 @@ class SeasonBattingStats(
      * 타수가 0이면 .000
      */
     val battingAverage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(hits).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * 출루율 (OBP) = (안타 + 볼넷 + 사구) / (타수 + 볼넷 + 사구 + 희생플라이)
@@ -177,11 +175,12 @@ class SeasonBattingStats(
      * 장타율 (SLG) = 총 루타 / 타수
      */
     val sluggingPercentage: BigDecimal
-        get() = if (atBats == 0) {
-            BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
-        }
+        get() =
+            if (atBats == 0) {
+                BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal(totalBases).divide(BigDecimal(atBats), 3, RoundingMode.HALF_UP)
+            }
 
     /**
      * OPS = 출루율 + 장타율
@@ -250,7 +249,10 @@ class SeasonBattingStats(
         /**
          * 선수의 시즌 타격 통계를 생성합니다.
          */
-        fun create(player: Player, year: Int): SeasonBattingStats {
+        fun create(
+            player: Player,
+            year: Int,
+        ): SeasonBattingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }

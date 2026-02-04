@@ -20,11 +20,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
-import java.util.Optional
 
 @DisplayName("CompetitionService")
 class CompetitionServiceTest {
-
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var leagueRepository: LeagueRepositoryPort
     private lateinit var competitionService: CompetitionService
@@ -39,7 +37,6 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("create")
     inner class Create {
-
         @Test
         fun `should create competition successfully`() {
             // given
@@ -56,15 +53,16 @@ class CompetitionServiceTest {
             every { competitionRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = competitionService.create(
-                leagueId = leagueId,
-                name = name,
-                year = year,
-                season = season,
-                type = CompetitionType.LEAGUE,
-                startDate = startDate,
-                description = "2025년 춘계 정규 리그"
-            )
+            val result =
+                competitionService.create(
+                    leagueId = leagueId,
+                    name = name,
+                    year = year,
+                    season = season,
+                    type = CompetitionType.LEAGUE,
+                    startDate = startDate,
+                    description = "2025년 춘계 정규 리그",
+                )
 
             // then
             assertThat(result.name).isEqualTo(name)
@@ -87,7 +85,7 @@ class CompetitionServiceTest {
                     leagueId = leagueId,
                     name = "2025 춘계대회",
                     year = 2025,
-                    startDate = LocalDate.of(2025, 3, 1)
+                    startDate = LocalDate.of(2025, 3, 1),
                 )
             }.isInstanceOf(LeagueNotFoundException::class.java)
         }
@@ -103,7 +101,8 @@ class CompetitionServiceTest {
             val existingCompetition = createCompetition(1L, league, "2025 춘계대회", year, season)
 
             every { leagueRepository.findByIdOrNull(leagueId) } returns league
-            every { competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season) } returns existingCompetition
+            every { competitionRepository.findByLeagueIdAndYearAndSeason(leagueId, year, season) } returns
+                existingCompetition
 
             // when & then
             assertThatThrownBy {
@@ -112,7 +111,7 @@ class CompetitionServiceTest {
                     name = "2025 춘계대회",
                     year = year,
                     season = season,
-                    startDate = LocalDate.of(2025, 3, 1)
+                    startDate = LocalDate.of(2025, 3, 1),
                 )
             }.isInstanceOf(InvalidCompetitionStateException::class.java)
         }
@@ -121,7 +120,6 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("getById")
     inner class GetById {
-
         @Test
         fun `should return competition when found`() {
             // given
@@ -155,16 +153,16 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("getInProgress")
     inner class GetInProgress {
-
         @Test
         fun `should return only in-progress competitions`() {
             // given
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
-            val competitions = listOf(
-                createCompetition(1L, league, "2025 춘계대회", 2025, 1).apply { start() },
-                createCompetition(2L, league, "2025 하계대회", 2025, 2).apply { start() }
-            )
+            val competitions =
+                listOf(
+                    createCompetition(1L, league, "2025 춘계대회", 2025, 1).apply { start() },
+                    createCompetition(2L, league, "2025 하계대회", 2025, 2).apply { start() },
+                )
             every { competitionRepository.findInProgressCompetitions() } returns competitions
 
             // when
@@ -179,17 +177,17 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("getByLeagueId")
     inner class GetByLeagueId {
-
         @Test
         fun `should return competitions by league`() {
             // given
             val leagueId = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(leagueId, "1부 리그", association)
-            val competitions = listOf(
-                createCompetition(1L, league, "2025 춘계대회", 2025, 1),
-                createCompetition(2L, league, "2025 하계대회", 2025, 2)
-            )
+            val competitions =
+                listOf(
+                    createCompetition(1L, league, "2025 춘계대회", 2025, 1),
+                    createCompetition(2L, league, "2025 하계대회", 2025, 2),
+                )
             every { competitionRepository.findByLeagueId(leagueId) } returns competitions
 
             // when
@@ -204,7 +202,6 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("start")
     inner class Start {
-
         @Test
         fun `should start scheduled competition`() {
             // given
@@ -240,7 +237,6 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("complete")
     inner class Complete {
-
         @Test
         fun `should complete in-progress competition`() {
             // given
@@ -278,7 +274,6 @@ class CompetitionServiceTest {
     @Nested
     @DisplayName("cancel")
     inner class Cancel {
-
         @Test
         fun `should cancel scheduled competition`() {
             // given
@@ -317,10 +312,11 @@ class CompetitionServiceTest {
             val id = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
-            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply {
-                start()
-                complete()
-            }
+            val competition =
+                createCompetition(id, league, "2025 춘계대회", 2025, 1).apply {
+                    start()
+                    complete()
+                }
             every { competitionRepository.findByIdOrNull(id) } returns competition
 
             // when & then
@@ -330,45 +326,50 @@ class CompetitionServiceTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
-        return Association(
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association =
+        Association(
             name = name,
             abbreviation = null,
             region = "서울",
             description = null,
             logoUrl = null,
-            websiteUrl = null
+            websiteUrl = null,
         ).apply {
             val idField = Association::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
-        return League(
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association,
+    ): League =
+        League(
             association = association,
             name = name,
             abbreviation = null,
             foundedYear = 2020,
             divisionLevel = 1,
             description = null,
-            logoUrl = null
+            logoUrl = null,
         ).apply {
             val idField = League::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 
     private fun createCompetition(
         id: Long,
         league: League,
         name: String,
         year: Int,
-        season: Int
-    ): Competition {
-        return Competition(
+        season: Int,
+    ): Competition =
+        Competition(
             league = league,
             name = name,
             year = year,
@@ -377,11 +378,10 @@ class CompetitionServiceTest {
             startDate = LocalDate.of(year, 3, 1),
             endDate = null,
             description = null,
-            maxTeams = null
+            maxTeams = null,
         ).apply {
             val idField = Competition::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }
-    }
 }

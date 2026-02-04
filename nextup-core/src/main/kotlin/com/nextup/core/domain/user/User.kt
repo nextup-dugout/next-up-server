@@ -16,38 +16,31 @@ import jakarta.persistence.*
     name = "users",
     indexes = [
         Index(name = "idx_users_email", columnList = "email", unique = true),
-        Index(name = "idx_users_player", columnList = "player_id")
-    ]
+        Index(name = "idx_users_player", columnList = "player_id"),
+    ],
 )
 class User private constructor(
     @Column(nullable = false, unique = true, length = 100)
     val email: String,
-
     @Column(length = 255)
     var password: String? = null,
-
     @Column(nullable = false, length = 50)
     var nickname: String,
-
     @Column(name = "profile_image_url", length = 255)
     var profileImageUrl: String? = null,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id")
     var player: Player? = null,
-
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L
+    val id: Long = 0L,
 ) : BaseTimeEntity() {
-
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "user_roles",
-        joinColumns = [JoinColumn(name = "user_id")]
+        joinColumns = [JoinColumn(name = "user_id")],
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 30)
@@ -57,7 +50,7 @@ class User private constructor(
         mappedBy = "user",
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
-        fetch = FetchType.LAZY
+        fetch = FetchType.LAZY,
     )
     private val _oauthAccounts: MutableList<OAuthAccount> = mutableListOf()
 
@@ -115,7 +108,7 @@ class User private constructor(
     fun addOAuthAccount(
         provider: OAuthProvider,
         oauthId: String,
-        email: String? = null
+        email: String? = null,
     ): OAuthAccount {
         require(!hasOAuthProvider(provider)) {
             "이미 ${provider.displayName} 계정이 연결되어 있습니다."
@@ -141,14 +134,12 @@ class User private constructor(
     /**
      * 특정 OAuth 제공자가 연동되어 있는지 확인합니다.
      */
-    fun hasOAuthProvider(provider: OAuthProvider): Boolean =
-        _oauthAccounts.any { it.provider == provider }
+    fun hasOAuthProvider(provider: OAuthProvider): Boolean = _oauthAccounts.any { it.provider == provider }
 
     /**
      * 특정 OAuth 제공자의 연동 정보를 조회합니다.
      */
-    fun getOAuthAccount(provider: OAuthProvider): OAuthAccount? =
-        _oauthAccounts.find { it.provider == provider }
+    fun getOAuthAccount(provider: OAuthProvider): OAuthAccount? = _oauthAccounts.find { it.provider == provider }
 
     /**
      * 인증 수단을 제거할 수 있는지 확인합니다.
@@ -181,7 +172,7 @@ class User private constructor(
      */
     fun updateProfile(
         nickname: String = this.nickname,
-        profileImageUrl: String? = this.profileImageUrl
+        profileImageUrl: String? = this.profileImageUrl,
     ) {
         this.nickname = nickname
         this.profileImageUrl = profileImageUrl
@@ -230,8 +221,7 @@ class User private constructor(
 
     override fun hashCode(): Int = id.hashCode()
 
-    override fun toString(): String =
-        "User(id=$id, email=$email, nickname=$nickname, isActive=$isActive)"
+    override fun toString(): String = "User(id=$id, email=$email, nickname=$nickname, isActive=$isActive)"
 
     companion object {
         /**
@@ -240,7 +230,7 @@ class User private constructor(
         fun createLocalUser(
             email: String,
             encodedPassword: String,
-            nickname: String
+            nickname: String,
         ): User {
             require(email.isNotBlank()) { "이메일은 비어있을 수 없습니다." }
             require(encodedPassword.isNotBlank()) { "비밀번호는 비어있을 수 없습니다." }
@@ -249,7 +239,7 @@ class User private constructor(
             return User(
                 email = email,
                 password = encodedPassword,
-                nickname = nickname
+                nickname = nickname,
             )
         }
 
@@ -268,7 +258,7 @@ class User private constructor(
             nickname: String,
             provider: OAuthProvider,
             oauthId: String,
-            profileImageUrl: String? = null
+            profileImageUrl: String? = null,
         ): User {
             require(email.isNotBlank()) { "이메일은 비어있을 수 없습니다." }
             require(nickname.isNotBlank()) { "닉네임은 비어있을 수 없습니다." }
@@ -277,7 +267,7 @@ class User private constructor(
             return User(
                 email = email,
                 nickname = nickname,
-                profileImageUrl = profileImageUrl
+                profileImageUrl = profileImageUrl,
             ).apply {
                 addOAuthAccount(provider, oauthId, email)
             }

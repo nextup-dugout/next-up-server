@@ -7,23 +7,20 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("Association 엔티티 테스트")
 class AssociationTest {
-
-    private fun createAssociation(isActive: Boolean = true): Association {
-        return Association(
+    private fun createAssociation(isActive: Boolean = true): Association =
+        Association(
             name = "서울시야구협회",
             abbreviation = "SBA",
             region = "서울",
             description = "서울 지역 사회인 야구 협회",
             logoUrl = "https://example.com/logo.png",
             websiteUrl = "https://example.com",
-            isActive = isActive
+            isActive = isActive,
         )
-    }
 
     @Nested
     @DisplayName("활성화/비활성화")
     inner class ActivationTests {
-
         @Test
         fun `협회를 비활성화할 수 있다`() {
             // given
@@ -52,7 +49,6 @@ class AssociationTest {
     @Nested
     @DisplayName("정보 업데이트")
     inner class UpdateInfoTests {
-
         @Test
         fun `설명을 업데이트할 수 있다`() {
             // given
@@ -101,7 +97,7 @@ class AssociationTest {
             association.updateInfo(
                 description = "새로운 설명",
                 logoUrl = "https://example.com/updated.png",
-                websiteUrl = "https://updated-website.com"
+                websiteUrl = "https://updated-website.com",
             )
 
             // then
@@ -114,14 +110,14 @@ class AssociationTest {
     @Nested
     @DisplayName("기본 속성")
     inner class PropertyTests {
-
         @Test
         fun `협회 생성 시 기본값으로 활성 상태이다`() {
             // given & when
-            val association = Association(
-                name = "테스트 협회",
-                region = "테스트"
-            )
+            val association =
+                Association(
+                    name = "테스트 협회",
+                    region = "테스트",
+                )
 
             // then
             assertThat(association.isActive).isTrue()

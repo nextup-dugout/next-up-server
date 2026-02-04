@@ -16,24 +16,24 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/associations")
 class AssociationController(
-    private val associationService: AssociationService
+    private val associationService: AssociationService,
 ) {
-
     /**
      * 활성화된 협회 목록을 조회합니다.
      */
     @GetMapping
     fun getAssociations(
-        @RequestParam(required = false) region: String?
+        @RequestParam(required = false) region: String?,
     ): ApiResponse<List<AssociationSummaryResponse>> {
-        val associations = if (region != null) {
-            associationService.getActiveByRegion(region)
-        } else {
-            associationService.getAllActive()
-        }
+        val associations =
+            if (region != null) {
+                associationService.getActiveByRegion(region)
+            } else {
+                associationService.getAllActive()
+            }
 
         return ApiResponse.success(
-            associations.map { AssociationSummaryResponse.from(it) }
+            associations.map { AssociationSummaryResponse.from(it) },
         )
     }
 
@@ -42,7 +42,7 @@ class AssociationController(
      */
     @GetMapping("/{id}")
     fun getAssociation(
-        @PathVariable id: Long
+        @PathVariable id: Long,
     ): ApiResponse<AssociationResponse> {
         val association = associationService.getById(id)
         return ApiResponse.success(AssociationResponse.from(association))

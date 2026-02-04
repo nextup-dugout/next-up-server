@@ -9,20 +9,20 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("League 엔티티 테스트")
 class LeagueTest {
-
     private lateinit var association: Association
 
     @BeforeEach
     fun setUp() {
-        association = Association(
-            name = "서울시야구협회",
-            abbreviation = "SBA",
-            region = "서울"
-        )
+        association =
+            Association(
+                name = "서울시야구협회",
+                abbreviation = "SBA",
+                region = "서울",
+            )
     }
 
-    private fun createLeague(isActive: Boolean = true): League {
-        return League(
+    private fun createLeague(isActive: Boolean = true): League =
+        League(
             association = association,
             name = "1부 리그",
             abbreviation = "1st",
@@ -30,14 +30,12 @@ class LeagueTest {
             divisionLevel = 1,
             description = "최상위 리그",
             logoUrl = "https://example.com/logo.png",
-            isActive = isActive
+            isActive = isActive,
         )
-    }
 
     @Nested
     @DisplayName("활성화/비활성화")
     inner class ActivationTests {
-
         @Test
         fun `리그를 비활성화할 수 있다`() {
             // given
@@ -66,7 +64,6 @@ class LeagueTest {
     @Nested
     @DisplayName("정보 업데이트")
     inner class UpdateInfoTests {
-
         @Test
         fun `설명을 업데이트할 수 있다`() {
             // given
@@ -101,7 +98,7 @@ class LeagueTest {
             // when
             league.updateInfo(
                 description = "새로운 설명",
-                logoUrl = "https://example.com/updated.png"
+                logoUrl = "https://example.com/updated.png",
             )
 
             // then
@@ -113,16 +110,16 @@ class LeagueTest {
     @Nested
     @DisplayName("기본 속성")
     inner class PropertyTests {
-
         @Test
         fun `리그 생성 시 기본값으로 활성 상태이다`() {
             // given & when
-            val league = League(
-                association = association,
-                name = "테스트 리그",
-                foundedYear = 2025,
-                divisionLevel = 1
-            )
+            val league =
+                League(
+                    association = association,
+                    name = "테스트 리그",
+                    foundedYear = 2025,
+                    divisionLevel = 1,
+                )
 
             // then
             assertThat(league.isActive).isTrue()

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 
 @DisplayName("OAuthController 테스트")
 class OAuthControllerTest {
-
     private lateinit var oauthLinkService: OAuthLinkService
     private lateinit var oauthController: OAuthController
 
@@ -40,7 +39,7 @@ class OAuthControllerTest {
         assertThat(response.body?.success).isTrue()
         assertThat(response.body?.data?.providers).containsExactly(
             OAuthProvider.KAKAO,
-            OAuthProvider.GOOGLE
+            OAuthProvider.GOOGLE,
         )
     }
 

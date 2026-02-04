@@ -17,9 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class OAuthLinkService(
     private val userJpaRepository: UserJpaRepository,
-    private val oAuthAccountRepository: OAuthAccountRepository
+    private val oAuthAccountRepository: OAuthAccountRepository,
 ) {
-
     /**     * 기존 사용자에게 OAuth 계정을 연동합니다.
      *
      * @param userId 사용자 ID
@@ -34,10 +33,11 @@ class OAuthLinkService(
         userId: Long,
         provider: OAuthProvider,
         oauthId: String,
-        email: String? = null
+        email: String? = null,
     ): OAuthAccount {
-        val user = userJpaRepository.findByIdOrNull(userId)
-            ?: throw UserNotFoundException(userId)
+        val user =
+            userJpaRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
 
         val oauthAccount = user.addOAuthAccount(provider, oauthId, email)
         userJpaRepository.save(user)
@@ -53,9 +53,13 @@ class OAuthLinkService(
      * @throws UserNotFoundException 사용자를 찾을 수 없는 경우
      * @throws IllegalStateException 최소 1개의 인증 수단이 없는 경우
      */
-    fun unlinkOAuthAccount(userId: Long, provider: OAuthProvider) {
-        val user = userJpaRepository.findByIdOrNull(userId)
-            ?: throw UserNotFoundException(userId)
+    fun unlinkOAuthAccount(
+        userId: Long,
+        provider: OAuthProvider,
+    ) {
+        val user =
+            userJpaRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
 
         user.removeOAuthAccount(provider)
         userJpaRepository.save(user)
@@ -68,9 +72,7 @@ class OAuthLinkService(
      * @return 연동된 OAuth 제공자 목록
      */
     @Transactional(readOnly = true)
-    fun getLinkedProviders(userId: Long): List<OAuthProvider> {
-        return oAuthAccountRepository.findProvidersByUserId(userId)
-    }
+    fun getLinkedProviders(userId: Long): List<OAuthProvider> = oAuthAccountRepository.findProvidersByUserId(userId)
 
     /**
      * 사용자의 연동된 OAuth 계정 목록을 조회합니다.
@@ -79,9 +81,7 @@ class OAuthLinkService(
      * @return 연동된 OAuth 계정 목록
      */
     @Transactional(readOnly = true)
-    fun getLinkedAccounts(userId: Long): List<OAuthAccount> {
-        return oAuthAccountRepository.findAllByUserId(userId)
-    }
+    fun getLinkedAccounts(userId: Long): List<OAuthAccount> = oAuthAccountRepository.findAllByUserId(userId)
 
     /**
      * 특정 OAuth 제공자가 연동되어 있는지 확인합니다.
@@ -91,9 +91,10 @@ class OAuthLinkService(
      * @return 연동 여부
      */
     @Transactional(readOnly = true)
-    fun isLinked(userId: Long, provider: OAuthProvider): Boolean {
-        return oAuthAccountRepository.findByUserIdAndProvider(userId, provider) != null
-    }
+    fun isLinked(
+        userId: Long,
+        provider: OAuthProvider,
+    ): Boolean = oAuthAccountRepository.findByUserIdAndProvider(userId, provider) != null
 
     /**
      * OAuth 정보로 사용자를 조회합니다.
@@ -103,7 +104,8 @@ class OAuthLinkService(
      * @return 사용자 (없으면 null)
      */
     @Transactional(readOnly = true)
-    fun findUserByOAuth(provider: OAuthProvider, oauthId: String): User? {
-        return oAuthAccountRepository.findByProviderAndOauthId(provider, oauthId)?.user
-    }
+    fun findUserByOAuth(
+        provider: OAuthProvider,
+        oauthId: String,
+    ): User? = oAuthAccountRepository.findByProviderAndOauthId(provider, oauthId)?.user
 }
