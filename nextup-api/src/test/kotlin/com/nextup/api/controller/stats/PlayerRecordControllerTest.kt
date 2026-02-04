@@ -74,7 +74,10 @@ class PlayerRecordControllerTest {
                     pitchingStats = null,
                 )
 
-            every { playerRecordService.getPlayerRecord(playerId, RecordScope.CAREER, RecordType.ALL, null, null) } returns recordDto
+            every {
+                playerRecordService.getPlayerRecord(playerId, RecordScope.CAREER, RecordType.ALL, null, null)
+            } returns
+                recordDto
 
             // when & then
             mockMvc
