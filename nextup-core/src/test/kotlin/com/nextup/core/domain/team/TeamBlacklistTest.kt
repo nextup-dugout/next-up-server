@@ -65,6 +65,14 @@ class TeamBlacklistTest {
                 TeamBlacklist.createPermanent(team, user, player, "", registrar)
             }
         }
+
+        @Test
+        fun `should throw exception when reason is whitespace only`() {
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                TeamBlacklist.createPermanent(team, user, player, "   ", registrar)
+            }
+        }
     }
 
     @Nested

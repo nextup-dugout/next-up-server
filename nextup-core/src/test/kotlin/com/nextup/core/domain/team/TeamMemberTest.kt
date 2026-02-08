@@ -288,6 +288,32 @@ class TeamMemberTest {
     }
 
     @Nested
+    @DisplayName("역할 확인")
+    inner class RoleChecks {
+        @Test
+        fun `should check isOwner correctly`() {
+            assertThat(owner.isOwner()).isTrue()
+            assertThat(member.isOwner()).isFalse()
+        }
+
+        @Test
+        fun `should check isManager correctly`() {
+            val manager = TeamMember.create(team, memberUser, memberPlayer, 20, TeamMemberRole.MANAGER)
+            assertThat(manager.isManager()).isTrue()
+            assertThat(owner.isManager()).isFalse()
+            assertThat(member.isManager()).isFalse()
+        }
+
+        @Test
+        fun `should check canManageMembers correctly`() {
+            val manager = TeamMember.create(team, memberUser, memberPlayer, 20, TeamMemberRole.MANAGER)
+            assertThat(owner.canManageMembers()).isTrue()
+            assertThat(manager.canManageMembers()).isTrue()
+            assertThat(member.canManageMembers()).isFalse()
+        }
+    }
+
+    @Nested
     @DisplayName("권한 확인")
     inner class Permissions {
         @Test
