@@ -66,4 +66,26 @@ interface SeasonBattingStatsRepositoryPort {
         minPlateAppearances: Int,
         limit: Int,
     ): List<SeasonBattingStats>
+
+    fun findTopByHits(
+        year: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
+
+    fun findTopByStolenBases(
+        year: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
+
+    fun findTopByOnBasePercentage(
+        year: Int,
+        minPlateAppearances: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
+
+    fun findTopBySlugging(
+        year: Int,
+        minPlateAppearances: Int,
+        limit: Int,
+    ): List<SeasonBattingStats>
 }

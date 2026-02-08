@@ -56,4 +56,11 @@ interface TeamMemberRepositoryPort {
     fun delete(teamMember: TeamMember)
 
     fun deleteById(id: Long)
+
+    fun findByPlayerIdActive(playerId: Long): List<TeamMember>
+
+    fun countByTeamIdAndStatus(
+        teamId: Long,
+        status: TeamMemberStatus,
+    ): Long
 }

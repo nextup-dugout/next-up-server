@@ -243,4 +243,87 @@ class TeamMembershipServiceImpl(
     ): TeamMember? {
         return teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
     }
+
+    @Transactional
+    override fun createTeamWithOwner(
+        userId: Long,
+        team: Team,
+        uniformNumber: Int,
+    ): Team {
+        // 등번호 유효성 검증
+        if (uniformNumber !in 1..99) {
+            throw InvalidUniformNumberException(uniformNumber)
+        }
+
+        val user =
+            userRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
+        val player =
+            user.player
+                ?: throw PlayerNotFoundException(userId)
+
+        // 이미 다른 팀에 소속된 경우 검증
+        val activeMember = teamMemberRepository.findActiveByUserId(userId)
+        if (activeMember != null) {
+            throw AlreadyInTeamException(userId, activeMember.team.id, activeMember.team.name)
+        }
+
+        // 팀 이름 중복 검증
+        val existingTeam = teamRepository.findByName(team.name)
+        if (existingTeam != null) {
+            throw TeamAlreadyExistsException(team.name)
+        }
+
+        // 팀 저장
+        val savedTeam = teamRepository.save(team)
+
+        // OWNER로 멤버 생성
+        val ownerMember =
+            TeamMember.create(
+                team = savedTeam,
+                user = user,
+                player = player,
+                uniformNumber = uniformNumber,
+                role = TeamMemberRole.OWNER,
+            )
+        teamMemberRepository.save(ownerMember)
+
+        return savedTeam
+    }
+
+    @Transactional
+    override fun deleteTeam(
+        teamId: Long,
+        userId: Long,
+    ) {
+        val team =
+            teamRepository.findByIdOrNull(teamId)
+                ?: throw TeamNotFoundException(teamId)
+
+        // OWNER 권한 검증
+        val member =
+            teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                ?: throw InsufficientTeamRoleException("OWNER", "NONE")
+
+        if (!member.isOwner()) {
+            throw InsufficientTeamRoleException("OWNER", member.role.name)
+        }
+
+        // 활성 멤버 수 검증 (1명일 때만 삭제 가능)
+        val activeMemberCount =
+            teamMemberRepository.countByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)
+        if (activeMemberCount > 1) {
+            throw InvalidTeamStateException(
+                "팀 멤버가 ${activeMemberCount}명입니다. 멤버가 1명일 때만 삭제할 수 있습니다.",
+            )
+        }
+
+        // 멤버 삭제 후 팀 삭제
+        teamMemberRepository.delete(member)
+        teamRepository.delete(team)
+    }
+
+    override fun getTeamMemberCount(teamId: Long): Int {
+        return teamMemberRepository.countByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE).toInt()
+    }
 }

@@ -148,6 +148,34 @@ class GameTeam(
     }
 
     /**
+     * 특정 이닝에서 득점을 차감합니다 (Undo용).
+     */
+    fun subtractRunInInning(
+        inning: Int,
+        runs: Int = 1,
+    ) {
+        require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
+        require(runs >= 0) { "점수는 0 이상이어야 합니다." }
+
+        val scores = inningScores?.split(",")?.toMutableList() ?: mutableListOf()
+
+        if (inning <= scores.size) {
+            val currentScore = scores[inning - 1].toIntOrNull() ?: 0
+            scores[inning - 1] = maxOf(0, currentScore - runs).toString()
+            inningScores = scores.joinToString(",")
+        }
+
+        totalScore = maxOf(0, totalScore - runs)
+    }
+
+    /**
+     * 안타를 차감합니다 (Undo용).
+     */
+    fun subtractHit() {
+        totalHits = maxOf(0, totalHits - 1)
+    }
+
+    /**
      * 특정 이닝의 점수를 조회합니다.
      */
     fun getInningScore(inning: Int): Int {

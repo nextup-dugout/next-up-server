@@ -1,12 +1,21 @@
 package com.nextup.infrastructure.service.game
 
+import com.nextup.common.exception.BattingRecordNotFoundException
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.common.exception.NoEventToUndoException
+import com.nextup.common.exception.PitchingRecordNotFoundException
+import com.nextup.common.exception.UndoNotAvailableException
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameEvent
+import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
@@ -23,6 +32,9 @@ class GameScorerServiceImpl(
     private val gameRepository: GameRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
     private val boxScoreService: BoxScoreService,
+    private val gameEventRepository: GameEventRepositoryPort,
+    private val battingRecordRepository: BattingRecordRepositoryPort,
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort,
 ) : GameScorerService {
     @Transactional
     override fun startGame(gameId: Long): Game {
@@ -139,11 +151,125 @@ class GameScorerServiceImpl(
             GameEndReason.REGULATION -> game.finish()
             GameEndReason.MERCY_RULE -> game.callGame("콜드게임 (점수차)")
             GameEndReason.WEATHER -> game.callGame("콜드게임 (기상 조건)")
-            GameEndReason.FORFEIT -> game.forfeit("몰수 처리")
+            GameEndReason.FORFEIT -> throw InvalidGameStateException(
+                "몰수 처리는 전용 API를 사용해주세요.",
+            )
             GameEndReason.OTHER -> game.callGame("기타 사유")
         }
 
         return gameRepository.save(game)
+    }
+
+    @Transactional
+    override fun undoLastEvent(gameId: Long): GameEvent {
+        val game = findGame(gameId)
+
+        // 경기가 진행 중인지 확인
+        if (!game.canUndo()) {
+            throw UndoNotAvailableException(
+                "진행 중인 경기만 Undo할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        // 마지막 활성 이벤트 조회
+        val lastEvent =
+            gameEventRepository.findLastActiveEvent(gameId)
+                ?: throw NoEventToUndoException()
+
+        // 이벤트 타입에 따른 롤백 처리
+        when (lastEvent.eventType) {
+            GameEventType.PLATE_APPEARANCE -> undoPlateAppearance(game, lastEvent)
+            GameEventType.INNING_CHANGE -> undoInningChange(game, lastEvent)
+            else -> {
+                // GAME_STATUS, BASE_RUNNING 등은 단순 마킹만 처리
+            }
+        }
+
+        // 이벤트를 undone으로 마킹
+        lastEvent.markUndone()
+        gameEventRepository.save(lastEvent)
+
+        // 게임 상태 저장
+        gameRepository.save(game)
+
+        return lastEvent
+    }
+
+    private fun undoPlateAppearance(
+        game: Game,
+        event: GameEvent,
+    ) {
+        val result = event.plateAppearanceResult ?: return
+
+        // 1. GameState 복원 - 아웃 카운트와 주자 상태
+        game.restoreInningState(
+            inning = event.inning,
+            isTop = event.isTopInning,
+            outs = event.outCountBefore,
+        )
+        game.gameState.restoreRunners(event.runnersBeforeJson)
+        game.gameState.resetCount()
+
+        // 2. 타순 롤백
+        game.revertBatter()
+
+        // 3. 타격 기록 롤백
+        event.batter?.let { batter ->
+            val battingRecord =
+                battingRecordRepository.findByGamePlayer(batter)
+                    ?: throw BattingRecordNotFoundException(batter.id)
+
+            battingRecord.revertPlateAppearanceResult(result, event.rbis)
+        }
+
+        // 4. 득점한 주자들의 득점 기록 롤백
+        if (event.runsScored > 0) {
+            // 홈런인 경우 타자 자신의 득점도 롤백 (revertPlateAppearanceResult에서 처리됨)
+            // 다른 주자들의 득점 롤백은 runnersBeforeJson/runnersAfterJson 비교로 처리
+            // runsScored 수만큼 팀 점수 차감
+            event.batter?.let { batter ->
+                batter.gameTeam.subtractRunInInning(event.inning, event.runsScored)
+            }
+        }
+
+        // 5. 투수 기록 롤백
+        event.pitcher?.let { pitcher ->
+            val pitchingRecord =
+                pitchingRecordRepository.findByGamePlayer(pitcher)
+                    ?: throw PitchingRecordNotFoundException(pitcher.id)
+
+            pitchingRecord.revertBatterFaced(result)
+
+            // 아웃이었으면 아웃 카운트도 롤백
+            if (!result.isOnBase) {
+                pitchingRecord.revertOut()
+            }
+
+            // 득점이 있었으면 투수 실점도 롤백
+            if (event.runsScored > 0) {
+                pitchingRecord.revertEarnedRun(event.runsScored)
+            }
+        }
+
+        // 6. 안타였으면 팀 안타 수 차감
+        if (result.isHit) {
+            event.batter?.let { batter ->
+                batter.gameTeam.subtractHit()
+            }
+        }
+    }
+
+    private fun undoInningChange(
+        game: Game,
+        event: GameEvent,
+    ) {
+        // 이닝 전환 이벤트 롤백: 이전 이닝/상태로 복원
+        game.restoreInningState(
+            inning = event.inning,
+            isTop = event.isTopInning,
+            outs = event.outCountBefore,
+        )
+        game.gameState.restoreRunners(event.runnersBeforeJson)
     }
 
     private fun findGame(id: Long): Game =

@@ -16,15 +16,26 @@ data class StandingsResponse(
     val totalGamesPerTeam: Int,
     val standings: List<TeamStandingResponse>,
     val lastUpdated: LocalDateTime,
+    val playoffCutoff: Int?,
 ) {
     companion object {
-        fun from(dto: StandingsDto): StandingsResponse =
+        fun from(
+            dto: StandingsDto,
+            playoffCutoff: Int? = null,
+        ): StandingsResponse =
             StandingsResponse(
                 competitionId = dto.competitionId,
                 competitionName = dto.competitionName,
                 totalGamesPerTeam = dto.totalGamesPerTeam,
-                standings = dto.standings.map { TeamStandingResponse.from(it) },
+                standings =
+                    dto.standings.map { standing ->
+                        TeamStandingResponse.from(
+                            dto = standing,
+                            isPlayoffPosition = playoffCutoff != null && standing.rank <= playoffCutoff,
+                        )
+                    },
                 lastUpdated = dto.lastUpdated,
+                playoffCutoff = playoffCutoff,
             )
     }
 }
@@ -46,9 +57,13 @@ data class TeamStandingResponse(
     val runsScored: Int,
     val runsAllowed: Int,
     val runDifferential: Int,
+    val isPlayoffPosition: Boolean,
 ) {
     companion object {
-        fun from(dto: TeamStandingDto): TeamStandingResponse =
+        fun from(
+            dto: TeamStandingDto,
+            isPlayoffPosition: Boolean = false,
+        ): TeamStandingResponse =
             TeamStandingResponse(
                 rank = dto.rank,
                 teamId = dto.teamId,
@@ -63,6 +78,7 @@ data class TeamStandingResponse(
                 runsScored = dto.runsScored,
                 runsAllowed = dto.runsAllowed,
                 runDifferential = dto.runDifferential,
+                isPlayoffPosition = isPlayoffPosition,
             )
     }
 }

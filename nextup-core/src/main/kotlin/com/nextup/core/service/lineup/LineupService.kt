@@ -4,7 +4,6 @@ import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.player.Position
-import com.nextup.core.domain.player.PositionCategory
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
@@ -192,21 +191,21 @@ class LineupService(
 
     /**
      * 라인업을 기록원에게 제출합니다.
+     *
+     * LineupSubmission.submit() 내부에서 LineupValidator를 통해
+     * 포수 필수, 중복 선수, DH 규칙 등을 검증합니다.
      */
     @Transactional
     fun submitLineup(submissionId: Long): LineupSubmission {
         val submission = getLineupSubmission(submissionId)
-        val entries = lineupEntryRepository.findAllBySubmissionId(submissionId)
 
         // 최소 인원 검증 (9명 이상)
-        val starters = entries.filter { it.isStarter }
+        val starters = submission.entries.filter { it.isStarter }
         require(starters.size >= 9) {
             "선발 라인업은 최소 9명이 필요합니다. (현재: ${starters.size}명)"
         }
 
-        // 포지션 검증 (필수 포지션 확인)
-        validateRequiredPositions(starters)
-
+        // 필수 포지션 + 중복 선수 + DH 규칙 검증은 submit() 내부에서 수행
         submission.submit()
         return lineupSubmissionRepository.save(submission)
     }
@@ -269,24 +268,6 @@ class LineupService(
         val uniqueBattingOrders = starterBattingOrders.toSet()
         require(starterBattingOrders.size == uniqueBattingOrders.size) {
             "라인업에 중복된 타순이 있습니다."
-        }
-    }
-
-    /**
-     * 필수 포지션 검증
-     * 야구에서 필수적인 포지션들이 모두 채워졌는지 확인합니다.
-     */
-    private fun validateRequiredPositions(starters: List<LineupEntry>) {
-        val positionCategories = starters.map { it.position.category }.toSet()
-
-        // 투수는 필수
-        require(positionCategories.contains(PositionCategory.PITCHER)) {
-            "투수가 지정되지 않았습니다."
-        }
-
-        // 포수는 필수
-        require(positionCategories.contains(PositionCategory.CATCHER)) {
-            "포수가 지정되지 않았습니다."
         }
     }
 }

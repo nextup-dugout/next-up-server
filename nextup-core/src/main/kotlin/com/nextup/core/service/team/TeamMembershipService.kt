@@ -1,5 +1,6 @@
 package com.nextup.core.service.team
 
+import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamJoinRequest
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
@@ -125,4 +126,40 @@ interface TeamMembershipService {
         teamId: Long,
         userId: Long,
     ): TeamMember?
+
+    /**
+     * 팀을 생성하고 생성자를 OWNER로 등록합니다.
+     *
+     * @param userId 생성자 사용자 ID
+     * @param team 생성할 팀
+     * @param uniformNumber OWNER의 등번호
+     * @return 생성된 Team
+     */
+    fun createTeamWithOwner(
+        userId: Long,
+        team: Team,
+        uniformNumber: Int,
+    ): Team
+
+    /**
+     * 팀을 삭제합니다. OWNER만 가능하며 멤버가 1명일 때만 삭제 가능합니다.
+     *
+     * @param teamId 팀 ID
+     * @param userId 요청자 사용자 ID
+     * @throws TeamNotFoundException 팀을 찾을 수 없는 경우
+     * @throws InsufficientTeamRoleException OWNER가 아닌 경우
+     * @throws InvalidTeamStateException 멤버가 2명 이상인 경우
+     */
+    fun deleteTeam(
+        teamId: Long,
+        userId: Long,
+    )
+
+    /**
+     * 팀의 활성 멤버 수를 반환합니다.
+     *
+     * @param teamId 팀 ID
+     * @return 활성 멤버 수
+     */
+    fun getTeamMemberCount(teamId: Long): Int
 }

@@ -107,4 +107,68 @@ interface SeasonBattingStatsRepository :
         @Param("minPlateAppearances") minPlateAppearances: Int,
         @Param("limit") limit: Int,
     ): List<SeasonBattingStats>
+
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.year = :year
+        ORDER BY s.hits DESC
+        LIMIT :limit
+    """,
+    )
+    override fun findTopByHits(
+        @Param("year") year: Int,
+        @Param("limit") limit: Int,
+    ): List<SeasonBattingStats>
+
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.year = :year
+        ORDER BY s.stolenBases DESC
+        LIMIT :limit
+    """,
+    )
+    override fun findTopByStolenBases(
+        @Param("year") year: Int,
+        @Param("limit") limit: Int,
+    ): List<SeasonBattingStats>
+
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.year = :year
+        AND s.plateAppearances >= :minPlateAppearances
+        ORDER BY (
+            CAST(s.hits + s.walks + s.intentionalWalks + s.hitByPitch AS double) /
+            CAST(s.atBats + s.walks + s.intentionalWalks + s.hitByPitch + s.sacrificeFlies AS double)
+        ) DESC
+        LIMIT :limit
+    """,
+    )
+    override fun findTopByOnBasePercentage(
+        @Param("year") year: Int,
+        @Param("minPlateAppearances") minPlateAppearances: Int,
+        @Param("limit") limit: Int,
+    ): List<SeasonBattingStats>
+
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.year = :year
+        AND s.plateAppearances >= :minPlateAppearances
+        AND s.atBats > 0
+        ORDER BY (
+            CAST(s.hits - s.doubles - s.triples - s.homeRuns +
+                 (2 * s.doubles) + (3 * s.triples) + (4 * s.homeRuns) AS double) /
+            CAST(s.atBats AS double)
+        ) DESC
+        LIMIT :limit
+    """,
+    )
+    override fun findTopBySlugging(
+        @Param("year") year: Int,
+        @Param("minPlateAppearances") minPlateAppearances: Int,
+        @Param("limit") limit: Int,
+    ): List<SeasonBattingStats>
 }

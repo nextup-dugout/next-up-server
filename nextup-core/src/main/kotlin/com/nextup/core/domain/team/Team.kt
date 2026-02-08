@@ -22,11 +22,11 @@ class Team(
     @JoinColumn(name = "league_id", nullable = false)
     val league: League,
     @Column(nullable = false, length = 100)
-    val name: String,
+    var name: String,
     @Column(length = 20)
-    val abbreviation: String? = null,
+    var abbreviation: String? = null,
     @Column(nullable = false, length = 100)
-    val city: String,
+    var city: String,
     @Column(nullable = false)
     val foundedYear: Int,
     @Column(length = 255)
@@ -60,5 +60,17 @@ class Team(
         this.logoUrl = logoUrl
         this.primaryColor = primaryColor
         this.secondaryColor = secondaryColor
+    }
+
+    fun updateBasicInfo(
+        name: String? = null,
+        city: String? = null,
+        abbreviation: String? = null,
+    ) {
+        name?.let { this.name = it }
+        city?.let { this.city = it }
+        if (abbreviation != null) {
+            this.abbreviation = abbreviation
+        }
     }
 }

@@ -17,6 +17,11 @@ interface GameEventRepositoryPort {
     fun delete(gameEvent: GameEvent)
 
     /**
+     * 경기의 마지막 활성 이벤트를 조회합니다 (undone=false 중 가장 최근).
+     */
+    fun findLastActiveEvent(gameId: Long): GameEvent?
+
+    /**
      * 특정 투수-타자 매치업의 타석 결과를 조회합니다.
      */
     fun findPlateAppearancesByPitcherAndBatter(

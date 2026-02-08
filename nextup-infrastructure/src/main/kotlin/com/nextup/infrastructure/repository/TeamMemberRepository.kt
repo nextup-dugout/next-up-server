@@ -76,4 +76,13 @@ interface TeamMemberRepository :
 
     @Query("SELECT COUNT(tm) FROM TeamMember tm WHERE tm.team.id = :teamId AND tm.role = 'OWNER'")
     override fun countOwnersByTeamId(teamId: Long): Long
+
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.team WHERE tm.player.id = :playerId AND tm.status = 'ACTIVE'")
+    override fun findByPlayerIdActive(playerId: Long): List<TeamMember>
+
+    @Query("SELECT COUNT(tm) FROM TeamMember tm WHERE tm.team.id = :teamId AND tm.status = :status")
+    override fun countByTeamIdAndStatus(
+        teamId: Long,
+        status: TeamMemberStatus,
+    ): Long
 }

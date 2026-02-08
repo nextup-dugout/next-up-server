@@ -630,6 +630,195 @@ class TeamMembershipServiceImplTest {
     }
 
     @Nested
+    @DisplayName("createTeamWithOwner")
+    inner class CreateTeamWithOwner {
+        @Test
+        fun `should create team and register owner`() {
+            // given
+            every { userRepository.findByIdOrNull(2L) } returns user
+            every { teamMemberRepository.findActiveByUserId(2L) } returns null
+            every { teamRepository.findByName("뉴팀") } returns null
+            every { teamRepository.save(any()) } answers { firstArg() }
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+
+            val association = Association(name = "서울시야구협회", region = "서울")
+            val league = League(association = association, name = "1부 리그", foundedYear = 2020)
+            val newTeam = Team(league = league, name = "뉴팀", city = "서울", foundedYear = 2026)
+
+            // when
+            val result = service.createTeamWithOwner(2L, newTeam, 7)
+
+            // then
+            assertThat(result.name).isEqualTo("뉴팀")
+            verify { teamRepository.save(any()) }
+            verify { teamMemberRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw when uniform number is invalid`() {
+            // when & then
+            assertThatThrownBy {
+                service.createTeamWithOwner(2L, team, 0)
+            }.isInstanceOf(InvalidUniformNumberException::class.java)
+
+            assertThatThrownBy {
+                service.createTeamWithOwner(2L, team, 100)
+            }.isInstanceOf(InvalidUniformNumberException::class.java)
+        }
+
+        @Test
+        fun `should throw when user not found`() {
+            // given
+            every { userRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.createTeamWithOwner(999L, team, 7)
+            }.isInstanceOf(UserNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw when user has no player`() {
+            // given
+            val userWithoutPlayer = User.createLocalUser("noplayer@example.com", "password", "없음")
+            setUserId(userWithoutPlayer, 50L)
+
+            every { userRepository.findByIdOrNull(50L) } returns userWithoutPlayer
+
+            // when & then
+            assertThatThrownBy {
+                service.createTeamWithOwner(50L, team, 7)
+            }.isInstanceOf(PlayerNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw when user already in team`() {
+            // given
+            val existingMember = TeamMember.create(team, user, player, 10)
+            every { userRepository.findByIdOrNull(2L) } returns user
+            every { teamMemberRepository.findActiveByUserId(2L) } returns existingMember
+
+            // when & then
+            assertThatThrownBy {
+                service.createTeamWithOwner(2L, team, 7)
+            }.isInstanceOf(AlreadyInTeamException::class.java)
+        }
+
+        @Test
+        fun `should throw when team name already exists`() {
+            // given
+            every { userRepository.findByIdOrNull(2L) } returns user
+            every { teamMemberRepository.findActiveByUserId(2L) } returns null
+            every { teamRepository.findByName("타이거즈") } returns team
+
+            // when & then
+            assertThatThrownBy {
+                service.createTeamWithOwner(2L, team, 7)
+            }.isInstanceOf(TeamAlreadyExistsException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteTeam")
+    inner class DeleteTeam {
+        @Test
+        fun `should delete team when owner and single member`() {
+            // given
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 10L) } returns ownerMember
+            every { teamMemberRepository.countByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns 1L
+            every { teamMemberRepository.delete(ownerMember) } returns Unit
+            every { teamRepository.delete(team) } returns Unit
+
+            // when
+            service.deleteTeam(1L, 10L)
+
+            // then
+            verify { teamMemberRepository.delete(ownerMember) }
+            verify { teamRepository.delete(team) }
+        }
+
+        @Test
+        fun `should throw when team not found`() {
+            // given
+            every { teamRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.deleteTeam(999L, 10L)
+            }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw when user is not a member`() {
+            // given
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.deleteTeam(1L, 999L)
+            }.isInstanceOf(InsufficientTeamRoleException::class.java)
+        }
+
+        @Test
+        fun `should throw when user is not owner`() {
+            // given
+            val memberOnly = TeamMember.create(team, user, player, 20, TeamMemberRole.MEMBER)
+            setTeamMemberId(memberOnly, 200L)
+
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 2L) } returns memberOnly
+
+            // when & then
+            assertThatThrownBy {
+                service.deleteTeam(1L, 2L)
+            }.isInstanceOf(InsufficientTeamRoleException::class.java)
+        }
+
+        @Test
+        fun `should throw when team has multiple active members`() {
+            // given
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 10L) } returns ownerMember
+            every { teamMemberRepository.countByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns 3L
+
+            // when & then
+            assertThatThrownBy {
+                service.deleteTeam(1L, 10L)
+            }.isInstanceOf(InvalidTeamStateException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getTeamMemberCount")
+    inner class GetTeamMemberCount {
+        @Test
+        fun `should return active member count`() {
+            // given
+            every { teamMemberRepository.countByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns 5L
+
+            // when
+            val result = service.getTeamMemberCount(1L)
+
+            // then
+            assertThat(result).isEqualTo(5)
+        }
+
+        @Test
+        fun `should return zero when no active members`() {
+            // given
+            every { teamMemberRepository.countByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns 0L
+
+            // when
+            val result = service.getTeamMemberCount(1L)
+
+            // then
+            assertThat(result).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("getMember")
     inner class GetMember {
         @Test
