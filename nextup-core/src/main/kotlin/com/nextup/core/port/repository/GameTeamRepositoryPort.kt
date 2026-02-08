@@ -47,4 +47,14 @@ interface GameTeamRepositoryPort {
      * 여러 경기 ID로 GameTeam을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
      */
     fun findAllByGameIds(gameIds: List<Long>): List<GameTeam>
+
+    /**
+     * 대회 ID로 모든 GameTeam을 조회합니다. (결과 확정된 경기만)
+     */
+    fun findAllByCompetitionIdWithDecidedResult(competitionId: Long): List<GameTeam>
+
+    /**
+     * 대회 ID로 모든 GameTeam을 조회합니다. (전체 - 남은 경기 계산용)
+     */
+    fun findAllByCompetitionId(competitionId: Long): List<GameTeam>
 }
