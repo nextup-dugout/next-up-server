@@ -6,6 +6,8 @@ import com.nextup.api.dto.team.TeamDetailResponse
 import com.nextup.api.dto.team.TeamSummaryResponse
 import com.nextup.api.dto.team.UpdateTeamRequest
 import com.nextup.common.exception.InsufficientTeamRoleException
+import com.nextup.common.exception.InvalidInputException
+import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.LeagueRepositoryPort
@@ -49,11 +51,12 @@ class TeamController(
         @RequestBody @Valid request: CreateTeamRequest,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<TeamDetailResponse> {
+        val leagueId =
+            request.leagueId
+                ?: throw InvalidInputException("INVALID_INPUT", "리그 ID는 필수입니다")
         val league =
-            request.leagueId?.let { leagueId ->
-                leagueRepository.findByIdOrNull(leagueId)
-                    ?: throw IllegalArgumentException("리그를 찾을 수 없습니다: $leagueId")
-            } ?: throw IllegalArgumentException("리그 ID는 필수입니다")
+            leagueRepository.findByIdOrNull(leagueId)
+                ?: throw LeagueNotFoundException(leagueId)
 
         val team =
             Team(

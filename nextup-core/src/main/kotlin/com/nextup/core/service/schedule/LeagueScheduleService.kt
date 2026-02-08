@@ -3,6 +3,7 @@ package com.nextup.core.service.schedule
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidScheduleStateException
 import com.nextup.common.exception.ScheduleNotFoundException
+import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.schedule.LeagueSchedule
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.LeagueScheduleRepositoryPort
@@ -45,11 +46,11 @@ class LeagueScheduleService(
 
         val homeTeam =
             teamRepository.findByIdOrNull(homeTeamId)
-                ?: throw IllegalArgumentException("홈팀 ID $homeTeamId 를 찾을 수 없습니다.")
+                ?: throw TeamNotFoundException(homeTeamId)
 
         val awayTeam =
             teamRepository.findByIdOrNull(awayTeamId)
-                ?: throw IllegalArgumentException("원정팀 ID $awayTeamId 를 찾을 수 없습니다.")
+                ?: throw TeamNotFoundException(awayTeamId)
 
         val isDuplicate =
             scheduleRepository.existsByCompetitionIdAndRoundAndMatchNumber(competitionId, round, matchNumber)

@@ -3,6 +3,7 @@ package com.nextup.core.service.schedule
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidScheduleStateException
 import com.nextup.common.exception.ScheduleNotFoundException
+import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.league.League
@@ -95,7 +96,7 @@ class LeagueScheduleServiceTest {
         every { teamRepository.findByIdOrNull(999L) } returns null
 
         // when & then
-        assertThrows<IllegalArgumentException> {
+        assertThrows<TeamNotFoundException> {
             service.createSchedule(
                 competitionId = 1L,
                 round = 1,
