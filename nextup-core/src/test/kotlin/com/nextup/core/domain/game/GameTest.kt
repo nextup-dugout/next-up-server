@@ -5,6 +5,7 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -17,11 +18,12 @@ import java.time.LocalDateTime
 @DisplayName("Game 엔티티 테스트")
 class GameTest {
     private lateinit var competition: Competition
+    private lateinit var league: League
 
     @BeforeEach
     fun setUp() {
         val association = Association(name = "서울시야구협회", region = "서울")
-        val league = League(association = association, name = "1부 리그", foundedYear = 2020)
+        league = League(association = association, name = "1부 리그", foundedYear = 2020)
         competition =
             Competition(
                 league = league,
@@ -40,6 +42,19 @@ class GameTest {
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실야구장",
             status = status,
+        )
+
+    private fun createTeam(
+        name: String,
+        city: String = "서울",
+        id: Long = 0L,
+    ): Team =
+        Team(
+            league = league,
+            name = name,
+            city = city,
+            foundedYear = 2020,
+            id = id,
         )
 
     @Nested
@@ -213,17 +228,137 @@ class GameTest {
     @Nested
     @DisplayName("몰수패")
     inner class Forfeit {
+        private lateinit var homeTeam: Team
+        private lateinit var awayTeam: Team
+
+        @BeforeEach
+        fun setUpTeams() {
+            homeTeam = createTeam("홈팀", id = 1L)
+            awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+        }
+
+        private fun createGameTeams(game: Game): List<GameTeam> =
+            listOf(
+                GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME),
+                GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY),
+            )
+
         @Test
-        fun `예정된 경기를 몰수 처리할 수 있다`() {
+        fun `예정된 경기를 몰수 처리하면 7대0 점수가 반영된다`() {
             // given
             val game = createGame(status = GameStatus.SCHEDULED)
+            val gameTeams = createGameTeams(game)
 
             // when
-            game.forfeit("상대팀 불참")
+            game.forfeit(
+                winnerTeamId = homeTeam.id,
+                reason = "상대팀 불참",
+                gameTeams = gameTeams,
+            )
 
             // then
             assertThat(game.status).isEqualTo(GameStatus.FORFEITED)
+            assertThat(game.forfeitReason).isEqualTo("상대팀 불참")
             assertThat(game.note).contains("상대팀 불참")
+            assertThat(game.endedAt).isNotNull()
+
+            val winnerGameTeam = gameTeams.first { it.team.id == homeTeam.id }
+            val loserGameTeam = gameTeams.first { it.team.id == awayTeam.id }
+
+            assertThat(winnerGameTeam.totalScore).isEqualTo(7)
+            assertThat(winnerGameTeam.result).isEqualTo(GameResult.WIN)
+            assertThat(loserGameTeam.totalScore).isEqualTo(0)
+            assertThat(loserGameTeam.result).isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `진행 중인 경기도 몰수 처리할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gameTeams = createGameTeams(game)
+
+            // when
+            game.forfeit(
+                winnerTeamId = awayTeam.id,
+                reason = "홈팀 규정 위반",
+                gameTeams = gameTeams,
+            )
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.FORFEITED)
+            val winnerGameTeam = gameTeams.first { it.team.id == awayTeam.id }
+            val loserGameTeam = gameTeams.first { it.team.id == homeTeam.id }
+
+            assertThat(winnerGameTeam.totalScore).isEqualTo(7)
+            assertThat(winnerGameTeam.result).isEqualTo(GameResult.WIN)
+            assertThat(loserGameTeam.totalScore).isEqualTo(0)
+            assertThat(loserGameTeam.result).isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `이미 종료된 경기는 몰수 처리할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.FINISHED)
+            val gameTeams = createGameTeams(game)
+
+            // when & then
+            assertThatThrownBy {
+                game.forfeit(
+                    winnerTeamId = homeTeam.id,
+                    reason = "사유",
+                    gameTeams = gameTeams,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `취소된 경기는 몰수 처리할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.CANCELLED)
+            val gameTeams = createGameTeams(game)
+
+            // when & then
+            assertThatThrownBy {
+                game.forfeit(
+                    winnerTeamId = homeTeam.id,
+                    reason = "사유",
+                    gameTeams = gameTeams,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `참여하지 않는 팀을 승리팀으로 지정하면 예외가 발생한다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            val gameTeams = createGameTeams(game)
+
+            // when & then
+            assertThatThrownBy {
+                game.forfeit(
+                    winnerTeamId = 9999L,
+                    reason = "사유",
+                    gameTeams = gameTeams,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("참여하는 팀이 아닙니다")
+        }
+
+        @Test
+        fun `몰수 사유가 forfeitReason 필드에 기록된다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            val gameTeams = createGameTeams(game)
+
+            // when
+            game.forfeit(
+                winnerTeamId = homeTeam.id,
+                reason = "인원 미달로 경기 불가",
+                gameTeams = gameTeams,
+            )
+
+            // then
+            assertThat(game.forfeitReason).isEqualTo("인원 미달로 경기 불가")
         }
     }
 
