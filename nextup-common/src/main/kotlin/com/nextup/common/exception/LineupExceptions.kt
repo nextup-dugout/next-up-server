@@ -38,6 +38,16 @@ class InvalidDhRuleException(
     )
 
 /**
+ * 참석하지 않는 선수가 라인업에 포함되었을 때 발생하는 예외
+ */
+class NonAttendingPlayerInLineupException(
+    playerIds: Set<Long>,
+) : LineupValidationException(
+        "NON_ATTENDING_PLAYER_IN_LINEUP",
+        "라인업에 참석(ATTENDING)이 아닌 선수가 포함되어 있습니다. 선수 ID: $playerIds",
+    )
+
+/**
  * 대진표를 찾을 수 없을 때 발생하는 예외
  */
 class ScheduleNotFoundException(
