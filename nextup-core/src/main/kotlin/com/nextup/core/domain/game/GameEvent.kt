@@ -54,10 +54,16 @@ class GameEvent(
     val rbis: Int = 0,
     @Column(name = "event_timestamp", nullable = false)
     val eventTimestamp: Instant = Instant.now(),
+    @Column(nullable = false)
+    var undone: Boolean = false,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    fun markUndone() {
+        undone = true
+    }
+
     companion object {
         /**
          * 타석 결과 이벤트를 생성합니다.

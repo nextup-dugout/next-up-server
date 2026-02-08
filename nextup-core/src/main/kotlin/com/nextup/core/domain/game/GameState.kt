@@ -138,6 +138,48 @@ class GameState(
     }
 
     /**
+     * 타순을 한 칸 되돌립니다 (Undo 시 타순 롤백용).
+     * @param isHomeTeam 홈팀 여부
+     */
+    fun revertBatter(isHomeTeam: Boolean) {
+        if (isHomeTeam) {
+            homeBattingOrder = if (homeBattingOrder == 1) 9 else homeBattingOrder - 1
+        } else {
+            awayBattingOrder = if (awayBattingOrder == 1) 9 else awayBattingOrder - 1
+        }
+    }
+
+    /**
+     * 아웃 카운트를 복원합니다 (Undo용).
+     */
+    fun restoreOuts(outs: Int) {
+        require(outs in 0..3) { "아웃 카운트는 0-3 사이여야 합니다: $outs" }
+        this.outs = outs
+    }
+
+    /**
+     * 주자를 JSON 문자열로부터 복원합니다 (Undo용).
+     * JSON 형식: "1루:playerId,2루:playerId,3루:playerId" 또는 null
+     */
+    fun restoreRunners(runnersJson: String?) {
+        clearBases()
+        if (runnersJson.isNullOrBlank()) return
+
+        runnersJson.split(",").forEach { entry ->
+            val parts = entry.split(":")
+            if (parts.size == 2) {
+                val base = parts[0].trim()
+                val playerId = parts[1].trim().toLongOrNull()
+                when (base) {
+                    "1루" -> runnerOnFirstId = playerId
+                    "2루" -> runnerOnSecondId = playerId
+                    "3루" -> runnerOnThirdId = playerId
+                }
+            }
+        }
+    }
+
+    /**
      * 주자가 있는지 확인합니다.
      */
     fun hasRunner(base: Base): Boolean = getRunner(base) != null

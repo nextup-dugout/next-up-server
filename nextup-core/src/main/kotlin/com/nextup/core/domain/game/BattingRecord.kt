@@ -325,6 +325,86 @@ class BattingRecord(
     }
 
     /**
+     * 타석 결과를 역방향으로 롤백합니다 (Undo용).
+     * applyPlateAppearanceResult의 역연산입니다.
+     */
+    fun revertPlateAppearanceResult(
+        result: PlateAppearanceResult,
+        rbis: Int = 0,
+    ) {
+        plateAppearances--
+
+        when (result) {
+            PlateAppearanceResult.SINGLE -> {
+                atBats--
+                hits--
+            }
+            PlateAppearanceResult.DOUBLE -> {
+                atBats--
+                hits--
+                doubles--
+            }
+            PlateAppearanceResult.TRIPLE -> {
+                atBats--
+                hits--
+                triples--
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                atBats--
+                hits--
+                homeRuns--
+                runs--
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                atBats--
+                strikeouts--
+            }
+            PlateAppearanceResult.GROUND_OUT,
+            PlateAppearanceResult.FLY_OUT,
+            PlateAppearanceResult.LINE_OUT,
+            PlateAppearanceResult.FIELDERS_CHOICE,
+            PlateAppearanceResult.ERROR,
+            -> {
+                atBats--
+            }
+            PlateAppearanceResult.WALK -> {
+                walks--
+            }
+            PlateAppearanceResult.INTENTIONAL_WALK -> {
+                intentionalWalks--
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                hitByPitch--
+            }
+            PlateAppearanceResult.SACRIFICE_FLY -> {
+                sacrificeFlies--
+            }
+            PlateAppearanceResult.SACRIFICE_BUNT -> {
+                sacrificeBunts--
+            }
+            PlateAppearanceResult.DOUBLE_PLAY,
+            PlateAppearanceResult.TRIPLE_PLAY,
+            -> {
+                atBats--
+                groundedIntoDoublePlays--
+            }
+            PlateAppearanceResult.INTERFERENCE -> {
+                // 방해는 타수에 포함되지 않음
+            }
+        }
+
+        this.runsBattedIn -= rbis
+    }
+
+    /**
+     * 득점을 취소합니다 (Undo용).
+     */
+    fun revertRun() {
+        require(runs > 0) { "취소할 득점이 없습니다." }
+        runs--
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

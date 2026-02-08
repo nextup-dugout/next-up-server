@@ -56,3 +56,19 @@ class GameNotFoundException(
 class InvalidGameStateException(
     message: String,
 ) : InvalidStateException("INVALID_GAME_STATE", message)
+
+/**
+ * Undo가 불가능한 상태일 때 발생하는 예외
+ */
+class UndoNotAvailableException(
+    reason: String,
+) : InvalidStateException("UNDO_NOT_AVAILABLE", reason)
+
+/**
+ * 되돌릴 이벤트가 없을 때 발생하는 예외
+ */
+class NoEventToUndoException :
+    NotFoundException(
+        "NO_EVENT_TO_UNDO",
+        "되돌릴 이벤트가 없습니다",
+    )
