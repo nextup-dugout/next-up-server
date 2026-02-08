@@ -5,6 +5,8 @@ import com.nextup.common.exception.InvalidScheduleStateException
 import com.nextup.common.exception.ScheduleNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.schedule.LeagueSchedule
+import com.nextup.core.domain.schedule.ScheduleConflict
+import com.nextup.core.domain.schedule.ScheduleConflictDetector
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.LeagueScheduleRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -26,6 +28,8 @@ class LeagueScheduleService(
     private val competitionRepository: CompetitionRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
 ) {
+    private val conflictDetector = ScheduleConflictDetector()
+
     /**
      * 대진표를 생성합니다.
      */
@@ -71,6 +75,19 @@ class LeagueScheduleService(
                 scheduledTime = scheduledTime,
                 venue = venue,
             )
+
+        // 충돌 감지
+        val existingSchedules =
+            scheduleRepository.findByCompetitionIdAndScheduledDate(competitionId, scheduledDate)
+        val conflicts = conflictDetector.detectAllConflicts(schedule, existingSchedules)
+
+        if (conflicts.isNotEmpty()) {
+            val conflictMessages =
+                conflicts.joinToString("\n") { "- ${it.description}" }
+            throw InvalidScheduleStateException(
+                "대진표 생성 시 충돌이 감지되었습니다:\n$conflictMessages",
+            )
+        }
 
         return scheduleRepository.save(schedule)
     }
@@ -138,4 +155,52 @@ class LeagueScheduleService(
         competitionId: Long,
         round: Int,
     ): List<LeagueSchedule> = scheduleRepository.findByCompetitionIdAndRound(competitionId, round)
+
+    /**
+     * 대진표를 검증합니다. (Dry-run)
+     *
+     * 실제로 저장하지 않고 충돌만 확인합니다.
+     *
+     * @return 충돌 목록 (충돌 없으면 빈 리스트)
+     */
+    fun validateSchedule(
+        competitionId: Long,
+        round: Int,
+        matchNumber: Int,
+        homeTeamId: Long,
+        awayTeamId: Long,
+        scheduledDate: LocalDate,
+        scheduledTime: LocalTime? = null,
+        venue: String? = null,
+    ): List<ScheduleConflict> {
+        val competition =
+            competitionRepository.findByIdOrNull(competitionId)
+                ?: throw CompetitionNotFoundException(competitionId)
+
+        val homeTeam =
+            teamRepository.findByIdOrNull(homeTeamId)
+                ?: throw TeamNotFoundException(homeTeamId)
+
+        val awayTeam =
+            teamRepository.findByIdOrNull(awayTeamId)
+                ?: throw TeamNotFoundException(awayTeamId)
+
+        // 임시 스케줄 생성 (저장하지 않음)
+        val schedule =
+            LeagueSchedule.create(
+                competition = competition,
+                round = round,
+                matchNumber = matchNumber,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledDate = scheduledDate,
+                scheduledTime = scheduledTime,
+                venue = venue,
+            )
+
+        // 충돌 감지
+        val existingSchedules =
+            scheduleRepository.findByCompetitionIdAndScheduledDate(competitionId, scheduledDate)
+        return conflictDetector.detectAllConflicts(schedule, existingSchedules)
+    }
 }

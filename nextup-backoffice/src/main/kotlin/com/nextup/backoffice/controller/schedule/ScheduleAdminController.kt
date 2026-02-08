@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.schedule
 import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.schedule.CreateScheduleRequest
 import com.nextup.backoffice.dto.schedule.ScheduleAdminResponse
+import com.nextup.backoffice.dto.schedule.ScheduleConflictResponse
 import com.nextup.backoffice.dto.schedule.UpdateScheduleRequest
 import com.nextup.core.service.schedule.LeagueScheduleService
 import jakarta.validation.Valid
@@ -90,5 +91,29 @@ class ScheduleAdminController(
         @PathVariable id: Long,
     ) {
         scheduleService.deleteSchedule(id)
+    }
+
+    /**
+     * 대진표를 검증합니다. (Dry-run)
+     *
+     * 실제로 생성하지 않고 충돌만 확인합니다.
+     */
+    @PostMapping("/validate")
+    fun validateSchedule(
+        @PathVariable competitionId: Long,
+        @Valid @RequestBody request: CreateScheduleRequest,
+    ): ApiResponse<List<ScheduleConflictResponse>> {
+        val conflicts =
+            scheduleService.validateSchedule(
+                competitionId = competitionId,
+                round = request.round,
+                matchNumber = request.matchNumber,
+                homeTeamId = request.homeTeamId,
+                awayTeamId = request.awayTeamId,
+                scheduledDate = request.scheduledDate,
+                scheduledTime = request.scheduledTime,
+                venue = request.venue,
+            )
+        return ApiResponse.success(conflicts.map { ScheduleConflictResponse.from(it) })
     }
 }

@@ -37,4 +37,9 @@ interface LeagueScheduleRepository :
         round: Int,
         matchNumber: Int,
     ): Boolean
+
+    override fun findByCompetitionIdAndScheduledDate(
+        competitionId: Long,
+        scheduledDate: LocalDate,
+    ): List<LeagueSchedule>
 }

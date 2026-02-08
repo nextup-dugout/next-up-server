@@ -77,4 +77,26 @@ interface GameTeamRepository :
         """,
     )
     override fun findAllByCompetitionId(competitionId: Long): List<GameTeam>
+
+    @Query(
+        """
+        SELECT gt FROM GameTeam gt
+        JOIN FETCH gt.game g
+        JOIN FETCH gt.team t
+        WHERE gt.team.id = :teamId
+        AND g.status IN ('FINISHED', 'CALLED', 'FORFEITED')
+        AND EXISTS (
+            SELECT 1 FROM GameTeam gt2
+            WHERE gt2.game.id = gt.game.id
+            AND gt2.team.id = :opponentId
+        )
+        AND (:competitionId IS NULL OR g.competition.id = :competitionId)
+        ORDER BY g.scheduledAt DESC
+        """,
+    )
+    override fun findCompletedGamesBetweenTeams(
+        teamId: Long,
+        opponentId: Long,
+        competitionId: Long?,
+    ): List<GameTeam>
 }
