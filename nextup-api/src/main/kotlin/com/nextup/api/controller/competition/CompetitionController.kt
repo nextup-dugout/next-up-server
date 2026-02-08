@@ -61,7 +61,13 @@ class CompetitionController(
     fun getStandings(
         @PathVariable id: Long,
     ): ApiResponse<StandingsResponse> {
+        val competition = competitionService.getById(id)
         val standings = standingsService.getStandings(id)
-        return ApiResponse.success(StandingsResponse.from(standings))
+        return ApiResponse.success(
+            StandingsResponse.from(
+                dto = standings,
+                playoffCutoff = competition.playoffTeams,
+            ),
+        )
     }
 }
