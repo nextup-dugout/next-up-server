@@ -57,4 +57,18 @@ interface GameTeamRepositoryPort {
      * 대회 ID로 모든 GameTeam을 조회합니다. (전체 - 남은 경기 계산용)
      */
     fun findAllByCompetitionId(competitionId: Long): List<GameTeam>
+
+    /**
+     * 두 팀 간의 완료된 경기 목록을 조회합니다. (Game과 상대 GameTeam 포함)
+     *
+     * @param teamId 조회 대상 팀 ID
+     * @param opponentId 상대 팀 ID
+     * @param competitionId 대회 ID 필터 (선택사항)
+     * @return 완료된 경기의 GameTeam 목록 (teamId에 해당하는 GameTeam만 반환)
+     */
+    fun findCompletedGamesBetweenTeams(
+        teamId: Long,
+        opponentId: Long,
+        competitionId: Long? = null,
+    ): List<GameTeam>
 }

@@ -7,6 +7,7 @@ import com.nextup.common.exception.NotFoundException
 import com.nextup.scorer.dto.common.ApiResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -48,6 +49,15 @@ class GlobalExceptionHandler {
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error("VALIDATION_ERROR", message))
     }
+
+    /**
+     * JSON 파싱 예외 처리 (잘못된 요청 본문)
+     */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ApiResponse<Unit>> =
+        ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("INVALID_REQUEST_BODY", "요청 본문이 올바르지 않습니다."))
 
     /**
      * IllegalArgumentException 처리 (도메인 로직 검증 실패)

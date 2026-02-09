@@ -87,4 +87,24 @@ class GameScorerController(
             )
         )
     }
+
+    /**
+     * 경기를 몰수 처리합니다.
+     *
+     * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
+     */
+    @PostMapping("/{gameId}/forfeit")
+    @ResponseStatus(HttpStatus.OK)
+    fun forfeitGame(
+        @PathVariable gameId: Long,
+        @RequestBody @Valid request: ForfeitRequestDto
+    ): ApiResponse<GameResponse> {
+        val game =
+            gameScorerService.forfeitGame(
+                gameId = gameId,
+                winnerTeamId = request.winnerTeamId!!,
+                reason = request.reason!!,
+            )
+        return ApiResponse.success(game.toResponse())
+    }
 }

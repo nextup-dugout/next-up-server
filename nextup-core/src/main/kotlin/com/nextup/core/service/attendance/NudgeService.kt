@@ -1,0 +1,87 @@
+package com.nextup.core.service.attendance
+
+import com.nextup.common.exception.GameNotFoundException
+import com.nextup.core.domain.notification.NotificationType
+import com.nextup.core.port.repository.AttendanceVoteRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.service.notification.NotificationService
+import com.nextup.core.service.notification.dto.SendNotificationRequest
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+/**
+ * 출석 재촉 서비스
+ *
+ * 미투표자에게 출석 투표를 독려하는 알림을 전송합니다.
+ */
+@Service
+@Transactional(readOnly = true)
+class NudgeService(
+    private val gameRepository: GameRepositoryPort,
+    private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
+    private val notificationService: NotificationService,
+) {
+    /**
+     * 미투표자에게 출석 투표 독려 알림을 전송합니다.
+     *
+     * @param gameId 경기 ID
+     * @param customMessage 사용자 정의 메시지 (선택)
+     * @return 알림 전송 결과 (전송 수, 미투표자 이름 목록)
+     */
+    @Transactional
+    fun nudgeNonVoters(
+        gameId: Long,
+        customMessage: String? = null,
+    ): NudgeResult {
+        // 1. 경기 조회
+        val game =
+            gameRepository.findByIdOrNull(gameId)
+                ?: throw GameNotFoundException(gameId)
+
+        // 2. 미투표자 조회 (hasResponded == false)
+        val nonVoters = attendanceVoteRepository.findNonVotersByGameId(gameId)
+
+        if (nonVoters.isEmpty()) {
+            return NudgeResult(notifiedCount = 0, nonVoterNames = emptyList())
+        }
+
+        // 3. 각 미투표자에게 알림 전송
+        val nonVoterNames = mutableListOf<String>()
+        var notifiedCount = 0
+
+        nonVoters.forEach { vote ->
+            val userName = vote.member.user.nickname
+            nonVoterNames.add(userName)
+
+            val title = "출석 투표 요청"
+            val body =
+                customMessage
+                    ?: "경기(${game.scheduledAt})에 대한 출석 투표를 진행해주세요."
+
+            val request =
+                SendNotificationRequest(
+                    userId = vote.member.user.id,
+                    type = NotificationType.ATTENDANCE_NUDGE,
+                    title = title,
+                    body = body,
+                    data = "gameId=$gameId",
+                )
+
+            notificationService.sendNotification(request)
+            notifiedCount++
+        }
+
+        return NudgeResult(
+            notifiedCount = notifiedCount,
+            nonVoterNames = nonVoterNames,
+        )
+    }
+}
+
+/**
+ * 출석 재촉 결과
+ */
+data class NudgeResult(
+    val notifiedCount: Int,
+    val nonVoterNames: List<String>,
+)

@@ -1,6 +1,7 @@
 package com.nextup.core.service.lineup
 
 import com.nextup.common.exception.NoCatcherInLineupException
+import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.game.Game
@@ -37,6 +38,7 @@ class LineupServiceTest {
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
+    private lateinit var attendanceVoteRepository: com.nextup.core.port.repository.AttendanceVoteRepositoryPort
     private lateinit var lineupService: LineupService
 
     private lateinit var game: Game
@@ -52,6 +54,7 @@ class LineupServiceTest {
         teamRepository = mockk()
         playerRepository = mockk()
         userRepository = mockk()
+        attendanceVoteRepository = mockk()
 
         lineupService =
             LineupService(
@@ -61,6 +64,7 @@ class LineupServiceTest {
                 teamRepository = teamRepository,
                 playerRepository = playerRepository,
                 userRepository = userRepository,
+                attendanceVoteRepository = attendanceVoteRepository,
             )
 
         // Setup test data
@@ -374,8 +378,15 @@ class LineupServiceTest {
         fun `should submit lineup successfully with 9 starters`() {
             // given
             val submission = createSubmissionWithEntries()
+            val attendingVotes = createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                )
+            } returns attendingVotes
 
             val submissionSlot = slot<LineupSubmission>()
             every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
@@ -410,13 +421,64 @@ class LineupServiceTest {
         fun `should throw exception when no catcher`() {
             // given
             val submission = createSubmissionWithEntriesNoCatcher()
+            val attendingVotes = createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                )
+            } returns attendingVotes
 
             // when & then
             assertThrows<NoCatcherInLineupException> {
                 lineupService.submitLineup(1L)
             }
+        }
+
+        @Test
+        fun `should throw exception when non-attending player in lineup`() {
+            // given
+            val submission = createSubmissionWithEntries()
+            val attendingVotes = createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L))
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                )
+            } returns attendingVotes
+
+            // when & then - player 9 is not attending
+            assertThrows<NonAttendingPlayerInLineupException> {
+                lineupService.submitLineup(1L)
+            }
+        }
+
+        @Test
+        fun `should submit successfully when all players are attending`() {
+            // given
+            val submission = createSubmissionWithEntries()
+            val attendingVotes = createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                )
+            } returns attendingVotes
+
+            val submissionSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
+
+            // when
+            val result = lineupService.submitLineup(1L)
+
+            // then
+            assertThat(result.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
         }
     }
 
@@ -704,4 +766,20 @@ class LineupServiceTest {
             )
         }
     }
+
+    private fun createAttendingVotesForPlayers(
+        playerIds: List<Long>,
+    ): List<com.nextup.core.domain.game.AttendanceVote> =
+        playerIds.map { playerId ->
+            mockk<com.nextup.core.domain.game.AttendanceVote>().apply {
+                every { member } returns
+                    mockk<com.nextup.core.domain.team.TeamMember>().apply {
+                        every { team } returns this@LineupServiceTest.team
+                        every { player } returns
+                            mockk<Player>().apply {
+                                every { id } returns playerId
+                            }
+                    }
+            }
+        }
 }
