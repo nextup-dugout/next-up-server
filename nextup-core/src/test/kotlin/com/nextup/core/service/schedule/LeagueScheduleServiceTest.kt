@@ -533,6 +533,179 @@ class LeagueScheduleServiceTest {
         assertThat(round3Date).isEqualTo(round1Date.plusWeeks(2))
     }
 
+    @Test
+    fun `should update schedule with new date`() {
+        // given
+        val schedule = createLeagueSchedule()
+        val newDate = LocalDate.now().plusDays(14)
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+
+        // when
+        val result = service.updateSchedule(
+            scheduleId = 1L,
+            scheduledDate = newDate,
+            scheduledTime = LocalTime.of(18, 0),
+            venue = "부산야구장",
+        )
+
+        // then
+        assertThat(result.scheduledDate).isEqualTo(newDate)
+        assertThat(result.scheduledTime).isEqualTo(LocalTime.of(18, 0))
+        assertThat(result.venue).isEqualTo("부산야구장")
+    }
+
+    @Test
+    fun `should update schedule with only venue change`() {
+        // given
+        val schedule = createLeagueSchedule()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+
+        // when
+        val result = service.updateSchedule(
+            scheduleId = 1L,
+            venue = "대전야구장",
+        )
+
+        // then
+        assertThat(result.venue).isEqualTo("대전야구장")
+    }
+
+    @Test
+    fun `should update schedule with only time change`() {
+        // given
+        val schedule = createLeagueSchedule()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+
+        // when
+        val result = service.updateSchedule(
+            scheduleId = 1L,
+            scheduledTime = LocalTime.of(19, 0),
+        )
+
+        // then
+        assertThat(result.scheduledTime).isEqualTo(LocalTime.of(19, 0))
+    }
+
+    @Test
+    fun `should throw InvalidScheduleStateException when updating completed schedule date`() {
+        // given
+        val schedule = createLeagueSchedule()
+        // SCHEDULED -> GAME_CREATED -> COMPLETED
+        val game = mockk<com.nextup.core.domain.game.Game>(relaxed = true)
+        schedule.linkGame(game)
+        schedule.complete()
+
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+
+        // when & then
+        assertThrows<InvalidScheduleStateException> {
+            service.updateSchedule(
+                scheduleId = 1L,
+                scheduledDate = LocalDate.now().plusDays(30),
+            )
+        }
+    }
+
+    @Test
+    fun `should postpone games in bulk successfully`() {
+        // given
+        val date = LocalDate.now().plusDays(7)
+        val schedules = listOf(createLeagueSchedule(), createLeagueSchedule())
+        every { scheduleRepository.findByCompetitionIdAndScheduledDate(1L, date) } returns schedules
+
+        // when
+        val result = service.postponeGamesBulk(1L, date, "우천")
+
+        // then
+        assertThat(result).hasSize(2)
+    }
+
+    @Test
+    fun `should throw InvalidScheduleStateException when no games to postpone`() {
+        // given
+        val date = LocalDate.now().plusDays(7)
+        every { scheduleRepository.findByCompetitionIdAndScheduledDate(1L, date) } returns emptyList()
+
+        // when & then
+        val exception = assertThrows<InvalidScheduleStateException> {
+            service.postponeGamesBulk(1L, date, "우천")
+        }
+        assertThat(exception.message).contains("연기할 경기가 없습니다")
+    }
+
+    @Test
+    fun `should reschedule game successfully`() {
+        // given
+        val schedule = createLeagueSchedule()
+        // postpone first
+        schedule.postpone("우천")
+        val newDate = LocalDate.now().plusDays(14)
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every {
+            scheduleRepository.findByCompetitionIdAndScheduledDate(any(), eq(newDate))
+        } returns emptyList()
+
+        // when
+        val result = service.rescheduleGame(1L, newDate, "인천야구장")
+
+        // then
+        assertThat(result.scheduledDate).isEqualTo(newDate)
+        assertThat(result.venue).isEqualTo("인천야구장")
+    }
+
+    @Test
+    fun `should throw InvalidScheduleStateException when reschedule has conflicts`() {
+        // given
+        val competition = createCompetition()
+        val homeTeam = createTeam("팀A", 1L)
+        val awayTeam = createTeam("팀B", 2L)
+        val teamC = createTeam("팀C", 3L)
+        val newDate = LocalDate.now().plusDays(14)
+        val scheduledTime = LocalTime.of(14, 0)
+
+        val schedule = LeagueSchedule.create(
+            competition = competition,
+            round = 1,
+            matchNumber = 1,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            scheduledDate = LocalDate.now().plusDays(7),
+            scheduledTime = scheduledTime,
+            venue = "구장A",
+        ).apply {
+            val idField = LeagueSchedule::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, 1L)
+        }
+        schedule.postpone("우천")
+
+        val conflictingSchedule = LeagueSchedule.create(
+            competition = competition,
+            round = 2,
+            matchNumber = 1,
+            homeTeam = homeTeam,
+            awayTeam = teamC,
+            scheduledDate = newDate,
+            scheduledTime = scheduledTime,
+            venue = "구장B",
+        ).apply {
+            val idField = LeagueSchedule::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, 2L)
+        }
+
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every {
+            scheduleRepository.findByCompetitionIdAndScheduledDate(any(), eq(newDate))
+        } returns listOf(conflictingSchedule)
+
+        // when & then
+        val exception = assertThrows<InvalidScheduleStateException> {
+            service.rescheduleGame(1L, newDate)
+        }
+        assertThat(exception.message).contains("충돌이 감지되었습니다")
+    }
+
     // ========== Helper Methods ==========
 
     private fun createCompetition(): Competition {
