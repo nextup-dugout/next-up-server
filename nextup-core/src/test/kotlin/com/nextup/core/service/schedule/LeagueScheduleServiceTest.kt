@@ -541,12 +541,13 @@ class LeagueScheduleServiceTest {
         every { scheduleRepository.findByIdOrNull(1L) } returns schedule
 
         // when
-        val result = service.updateSchedule(
-            scheduleId = 1L,
-            scheduledDate = newDate,
-            scheduledTime = LocalTime.of(18, 0),
-            venue = "부산야구장",
-        )
+        val result =
+            service.updateSchedule(
+                scheduleId = 1L,
+                scheduledDate = newDate,
+                scheduledTime = LocalTime.of(18, 0),
+                venue = "부산야구장",
+            )
 
         // then
         assertThat(result.scheduledDate).isEqualTo(newDate)
@@ -561,10 +562,11 @@ class LeagueScheduleServiceTest {
         every { scheduleRepository.findByIdOrNull(1L) } returns schedule
 
         // when
-        val result = service.updateSchedule(
-            scheduleId = 1L,
-            venue = "대전야구장",
-        )
+        val result =
+            service.updateSchedule(
+                scheduleId = 1L,
+                venue = "대전야구장",
+            )
 
         // then
         assertThat(result.venue).isEqualTo("대전야구장")
@@ -577,10 +579,11 @@ class LeagueScheduleServiceTest {
         every { scheduleRepository.findByIdOrNull(1L) } returns schedule
 
         // when
-        val result = service.updateSchedule(
-            scheduleId = 1L,
-            scheduledTime = LocalTime.of(19, 0),
-        )
+        val result =
+            service.updateSchedule(
+                scheduleId = 1L,
+                scheduledTime = LocalTime.of(19, 0),
+            )
 
         // then
         assertThat(result.scheduledTime).isEqualTo(LocalTime.of(19, 0))
@@ -627,9 +630,10 @@ class LeagueScheduleServiceTest {
         every { scheduleRepository.findByCompetitionIdAndScheduledDate(1L, date) } returns emptyList()
 
         // when & then
-        val exception = assertThrows<InvalidScheduleStateException> {
-            service.postponeGamesBulk(1L, date, "우천")
-        }
+        val exception =
+            assertThrows<InvalidScheduleStateException> {
+                service.postponeGamesBulk(1L, date, "우천")
+            }
         assertThat(exception.message).contains("연기할 경기가 없습니다")
     }
 
@@ -663,36 +667,38 @@ class LeagueScheduleServiceTest {
         val newDate = LocalDate.now().plusDays(14)
         val scheduledTime = LocalTime.of(14, 0)
 
-        val schedule = LeagueSchedule.create(
-            competition = competition,
-            round = 1,
-            matchNumber = 1,
-            homeTeam = homeTeam,
-            awayTeam = awayTeam,
-            scheduledDate = LocalDate.now().plusDays(7),
-            scheduledTime = scheduledTime,
-            venue = "구장A",
-        ).apply {
-            val idField = LeagueSchedule::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, 1L)
-        }
+        val schedule =
+            LeagueSchedule.create(
+                competition = competition,
+                round = 1,
+                matchNumber = 1,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledDate = LocalDate.now().plusDays(7),
+                scheduledTime = scheduledTime,
+                venue = "구장A",
+            ).apply {
+                val idField = LeagueSchedule::class.java.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
         schedule.postpone("우천")
 
-        val conflictingSchedule = LeagueSchedule.create(
-            competition = competition,
-            round = 2,
-            matchNumber = 1,
-            homeTeam = homeTeam,
-            awayTeam = teamC,
-            scheduledDate = newDate,
-            scheduledTime = scheduledTime,
-            venue = "구장B",
-        ).apply {
-            val idField = LeagueSchedule::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, 2L)
-        }
+        val conflictingSchedule =
+            LeagueSchedule.create(
+                competition = competition,
+                round = 2,
+                matchNumber = 1,
+                homeTeam = homeTeam,
+                awayTeam = teamC,
+                scheduledDate = newDate,
+                scheduledTime = scheduledTime,
+                venue = "구장B",
+            ).apply {
+                val idField = LeagueSchedule::class.java.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 2L)
+            }
 
         every { scheduleRepository.findByIdOrNull(1L) } returns schedule
         every {
@@ -700,9 +706,10 @@ class LeagueScheduleServiceTest {
         } returns listOf(conflictingSchedule)
 
         // when & then
-        val exception = assertThrows<InvalidScheduleStateException> {
-            service.rescheduleGame(1L, newDate)
-        }
+        val exception =
+            assertThrows<InvalidScheduleStateException> {
+                service.rescheduleGame(1L, newDate)
+            }
         assertThat(exception.message).contains("충돌이 감지되었습니다")
     }
 

@@ -2,7 +2,6 @@ package com.nextup.core.domain.game
 
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
-import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -27,13 +26,14 @@ class GamePlayerTest {
     inner class CreateStarterTest {
         @Test
         fun `선발 선수를 생성하면 isStarter가 true이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.SHORTSTOP,
-                battingOrder = 3,
-                backNumber = 6,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 3,
+                    backNumber = 6,
+                )
 
             assertThat(gamePlayer.isStarter).isTrue()
             assertThat(gamePlayer.isCurrentlyPlaying).isTrue()
@@ -45,36 +45,39 @@ class GamePlayerTest {
 
         @Test
         fun `선발 선수는 isStartingLineup이 true이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.CATCHER,
-                battingOrder = 5,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.CATCHER,
+                    battingOrder = 5,
+                )
 
             assertThat(gamePlayer.isStartingLineup).isTrue()
         }
 
         @Test
         fun `타순이 null인 선발 선수는 isStartingLineup이 false이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.STARTING_PITCHER,
-                battingOrder = null,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.STARTING_PITCHER,
+                    battingOrder = null,
+                )
 
             assertThat(gamePlayer.isStartingLineup).isFalse()
         }
 
         @Test
         fun `타순이 있으면 isInBattingOrder가 true이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.FIRST_BASE,
-                battingOrder = 4,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.FIRST_BASE,
+                    battingOrder = 4,
+                )
 
             assertThat(gamePlayer.isInBattingOrder).isTrue()
         }
@@ -85,12 +88,13 @@ class GamePlayerTest {
     inner class CreateBenchTest {
         @Test
         fun `벤치 선수를 생성하면 isStarter가 false이다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.LEFT_FIELD,
-                backNumber = 25,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                    backNumber = 25,
+                )
 
             assertThat(gamePlayer.isStarter).isFalse()
             assertThat(gamePlayer.isCurrentlyPlaying).isFalse()
@@ -100,11 +104,12 @@ class GamePlayerTest {
 
         @Test
         fun `벤치 선수는 isInBattingOrder가 false이다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.RIGHT_FIELD,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.RIGHT_FIELD,
+                )
 
             assertThat(gamePlayer.isInBattingOrder).isFalse()
         }
@@ -115,46 +120,50 @@ class GamePlayerTest {
     inner class IsPitcherTest {
         @Test
         fun `투수 포지션이면 isPitcher가 true이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.STARTING_PITCHER,
-                battingOrder = null,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.STARTING_PITCHER,
+                    battingOrder = null,
+                )
 
             assertThat(gamePlayer.isPitcher).isTrue()
         }
 
         @Test
         fun `야수 포지션이면 isPitcher가 false이다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.CENTER_FIELD,
-                battingOrder = 8,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.CENTER_FIELD,
+                    battingOrder = 8,
+                )
 
             assertThat(gamePlayer.isPitcher).isFalse()
         }
 
         @Test
         fun `중간계투도 isPitcher가 true이다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.RELIEF_PITCHER,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.RELIEF_PITCHER,
+                )
 
             assertThat(gamePlayer.isPitcher).isTrue()
         }
 
         @Test
         fun `마무리투수도 isPitcher가 true이다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.CLOSER,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.CLOSER,
+                )
 
             assertThat(gamePlayer.isPitcher).isTrue()
         }
@@ -165,11 +174,12 @@ class GamePlayerTest {
     inner class EnterAsSubstituteTest {
         @Test
         fun `교체 선수로 출전할 수 있다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.LEFT_FIELD,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                )
 
             gamePlayer.enterAsSubstitute(
                 inning = 5,
@@ -186,11 +196,12 @@ class GamePlayerTest {
 
         @Test
         fun `이닝이 0이면 예외가 발생한다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.LEFT_FIELD,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                )
 
             assertThatThrownBy {
                 gamePlayer.enterAsSubstitute(0, Position.LEFT_FIELD, 1)
@@ -204,12 +215,13 @@ class GamePlayerTest {
     inner class ExitGameTest {
         @Test
         fun `현재 출전 중인 선수가 퇴장할 수 있다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.SECOND_BASE,
-                battingOrder = 6,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SECOND_BASE,
+                    battingOrder = 6,
+                )
 
             gamePlayer.exitGame(7)
 
@@ -219,12 +231,13 @@ class GamePlayerTest {
 
         @Test
         fun `이닝이 0이면 예외가 발생한다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.THIRD_BASE,
-                battingOrder = 5,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.THIRD_BASE,
+                    battingOrder = 5,
+                )
 
             assertThatThrownBy {
                 gamePlayer.exitGame(0)
@@ -234,11 +247,12 @@ class GamePlayerTest {
 
         @Test
         fun `출전 중이 아닌 선수는 퇴장할 수 없다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.LEFT_FIELD,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                )
 
             assertThatThrownBy {
                 gamePlayer.exitGame(5)
@@ -252,12 +266,13 @@ class GamePlayerTest {
     inner class ChangePositionTest {
         @Test
         fun `출전 중인 선수의 포지션을 변경할 수 있다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.SHORTSTOP,
-                battingOrder = 2,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
 
             gamePlayer.changePosition(Position.SECOND_BASE)
 
@@ -266,11 +281,12 @@ class GamePlayerTest {
 
         @Test
         fun `출전 중이 아닌 선수는 포지션을 변경할 수 없다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.SHORTSTOP,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                )
 
             assertThatThrownBy {
                 gamePlayer.changePosition(Position.THIRD_BASE)
@@ -284,12 +300,13 @@ class GamePlayerTest {
     inner class ChangeBattingOrderTest {
         @Test
         fun `출전 중인 선수의 타순을 변경할 수 있다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.FIRST_BASE,
-                battingOrder = 3,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.FIRST_BASE,
+                    battingOrder = 3,
+                )
 
             gamePlayer.changeBattingOrder(5)
 
@@ -298,11 +315,12 @@ class GamePlayerTest {
 
         @Test
         fun `출전 중이 아닌 선수는 타순을 변경할 수 없다`() {
-            val gamePlayer = GamePlayer.createBench(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.CENTER_FIELD,
-            )
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.CENTER_FIELD,
+                )
 
             assertThatThrownBy {
                 gamePlayer.changeBattingOrder(1)
@@ -316,12 +334,13 @@ class GamePlayerTest {
     inner class DesignatedHitterTest {
         @Test
         fun `지명타자 포지션인 선수를 DH로 설정할 수 있다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.DESIGNATED_HITTER,
-                battingOrder = 4,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
 
             gamePlayer.setAsDesignatedHitter(pitcherOrder = 9)
 
@@ -331,12 +350,13 @@ class GamePlayerTest {
 
         @Test
         fun `지명타자 포지션이 아닌 선수는 DH로 설정할 수 없다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.FIRST_BASE,
-                battingOrder = 3,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.FIRST_BASE,
+                    battingOrder = 3,
+                )
 
             assertThatThrownBy {
                 gamePlayer.setAsDesignatedHitter(pitcherOrder = 9)
@@ -346,12 +366,13 @@ class GamePlayerTest {
 
         @Test
         fun `DH를 해제할 수 있다`() {
-            val gamePlayer = GamePlayer.createStarter(
-                gameTeam = gameTeam,
-                player = player,
-                position = Position.DESIGNATED_HITTER,
-                battingOrder = 4,
-            )
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
             gamePlayer.setAsDesignatedHitter(pitcherOrder = 9)
 
             gamePlayer.releaseDH()
