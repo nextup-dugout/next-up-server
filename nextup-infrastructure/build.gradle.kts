@@ -51,6 +51,9 @@ dependencies {
     // Rate Limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
 
+    // Caffeine Cache (for bounded rate limit buckets)
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.assertj:assertj-core:3.27.3")

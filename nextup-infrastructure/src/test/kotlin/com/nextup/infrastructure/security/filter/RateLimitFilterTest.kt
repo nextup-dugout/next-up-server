@@ -151,37 +151,7 @@ class RateLimitFilterTest {
     @DisplayName("Client IP 추출")
     inner class ClientIpExtraction {
         @Test
-        fun `should extract client IP from X-Forwarded-For header`() {
-            // given
-            val request1 = MockHttpServletRequest()
-            request1.requestURI = "/api/auth/login"
-            request1.remoteAddr = "10.0.0.1"
-            request1.addHeader("X-Forwarded-For", "203.0.113.1")
-
-            val request2 = MockHttpServletRequest()
-            request2.requestURI = "/api/auth/login"
-            request2.remoteAddr = "10.0.0.1"
-            request2.addHeader("X-Forwarded-For", "203.0.113.2")
-
-            // when - exhaust limit for first IP
-            repeat(10) {
-                filter.doFilter(request1, response, filterChain)
-            }
-
-            // then - first IP should be limited
-            val limitedResponse = MockHttpServletResponse()
-            filter.doFilter(request1, limitedResponse, filterChain)
-            assertThat(limitedResponse.status).isEqualTo(429)
-
-            // but second IP should still work
-            val successResponse = MockHttpServletResponse()
-            filter.doFilter(request2, successResponse, filterChain)
-            assertThat(successResponse.status).isNotEqualTo(429)
-            verify { filterChain.doFilter(request2, successResponse) }
-        }
-
-        @Test
-        fun `should fall back to remoteAddr when no X-Forwarded-For`() {
+        fun `should use remoteAddr for rate limiting`() {
             // given
             val request1 = MockHttpServletRequest()
             request1.requestURI = "/api/auth/login"
@@ -209,33 +179,41 @@ class RateLimitFilterTest {
         }
 
         @Test
-        fun `should use first IP from X-Forwarded-For when multiple`() {
-            // given
+        fun `should ignore X-Forwarded-For header to prevent spoofing`() {
+            // given - same remoteAddr with different X-Forwarded-For
             val request1 = MockHttpServletRequest()
             request1.requestURI = "/api/auth/login"
-            request1.addHeader("X-Forwarded-For", "1.2.3.4, 5.6.7.8")
             request1.remoteAddr = "10.0.0.1"
+            request1.addHeader("X-Forwarded-For", "203.0.113.1")
 
             val request2 = MockHttpServletRequest()
             request2.requestURI = "/api/auth/login"
-            request2.addHeader("X-Forwarded-For", "5.6.7.8, 1.2.3.4")
             request2.remoteAddr = "10.0.0.1"
+            request2.addHeader("X-Forwarded-For", "203.0.113.2")
 
-            // when - exhaust limit for 1.2.3.4
+            // when - exhaust limit using remoteAddr
             repeat(10) {
                 filter.doFilter(request1, response, filterChain)
             }
 
-            // then - 1.2.3.4 should be limited
+            // then - second request with same remoteAddr should also be limited
             val limitedResponse = MockHttpServletResponse()
-            filter.doFilter(request1, limitedResponse, filterChain)
+            filter.doFilter(request2, limitedResponse, filterChain)
             assertThat(limitedResponse.status).isEqualTo(429)
+        }
 
-            // but 5.6.7.8 should still work
-            val successResponse = MockHttpServletResponse()
-            filter.doFilter(request2, successResponse, filterChain)
-            assertThat(successResponse.status).isNotEqualTo(429)
-            verify { filterChain.doFilter(request2, successResponse) }
+        @Test
+        fun `should return remoteAddr from getClientIp`() {
+            // given
+            val req = MockHttpServletRequest()
+            req.remoteAddr = "1.2.3.4"
+            req.addHeader("X-Forwarded-For", "5.6.7.8")
+
+            // when
+            val ip = filter.getClientIp(req)
+
+            // then
+            assertThat(ip).isEqualTo("1.2.3.4")
         }
     }
 }

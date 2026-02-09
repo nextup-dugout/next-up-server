@@ -36,7 +36,7 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         return http
             .csrf { csrf ->
-                csrf.ignoringRequestMatchers("/api/**")
+                csrf.ignoringRequestMatchers("/api/**", "/ws/**")
             }.headers { headers ->
                 headers.frameOptions { it.deny() }
                 headers.contentTypeOptions { }

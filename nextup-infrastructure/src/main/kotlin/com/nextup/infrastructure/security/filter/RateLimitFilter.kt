@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.security.filter
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.bucket4j.Bandwidth
 import io.github.bucket4j.Bucket
 import jakarta.servlet.FilterChain
@@ -10,11 +11,15 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class RateLimitFilter : OncePerRequestFilter() {
-    private val buckets = ConcurrentHashMap<String, Bucket>()
+    private val buckets =
+        Caffeine
+            .newBuilder()
+            .maximumSize(MAX_BUCKET_SIZE)
+            .expireAfterAccess(BUCKET_EXPIRE_MINUTES)
+            .build<String, Bucket>()
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -25,7 +30,7 @@ class RateLimitFilter : OncePerRequestFilter() {
         val isAuthEndpoint = request.requestURI.startsWith("/api/auth")
 
         val bucket =
-            buckets.computeIfAbsent(clientKey(clientIp, isAuthEndpoint)) {
+            buckets.get(clientKey(clientIp, isAuthEndpoint)) {
                 createBucket(isAuthEndpoint)
             }
 
@@ -58,12 +63,15 @@ class RateLimitFilter : OncePerRequestFilter() {
         return Bucket.builder().addLimit(limit).build()
     }
 
-    private fun getClientIp(request: HttpServletRequest): String =
-        request.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
-            ?: request.remoteAddr
+    internal fun getClientIp(request: HttpServletRequest): String = request.remoteAddr
 
     private fun clientKey(
         ip: String,
         isAuth: Boolean,
     ): String = if (isAuth) "auth:$ip" else "api:$ip"
+
+    companion object {
+        private const val MAX_BUCKET_SIZE = 100_000L
+        private val BUCKET_EXPIRE_MINUTES = Duration.ofMinutes(5)
+    }
 }

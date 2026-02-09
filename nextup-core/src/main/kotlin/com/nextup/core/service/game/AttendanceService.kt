@@ -4,6 +4,7 @@ import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
+import java.time.LocalDateTime
 
 /**
  * 출석 투표 서비스 인터페이스
@@ -93,5 +94,5 @@ interface AttendanceService {
      * @return 경기 예정 시간
      * @throws GameNotFoundException if game not found
      */
-    fun getGameScheduledAt(gameId: Long): java.time.LocalDateTime
+    fun getGameScheduledAt(gameId: Long): LocalDateTime
 }

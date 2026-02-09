@@ -14,6 +14,7 @@ import com.nextup.core.service.game.AttendanceService
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 출석 투표 서비스 구현
@@ -175,7 +176,7 @@ class AttendanceServiceImpl(
             ?: throw IllegalStateException("You are not a member of either team in this game")
     }
 
-    override fun getGameScheduledAt(gameId: Long): java.time.LocalDateTime {
+    override fun getGameScheduledAt(gameId: Long): LocalDateTime {
         val game =
             gameRepository.findByIdOrNull(gameId)
                 ?: throw GameNotFoundException(gameId)
