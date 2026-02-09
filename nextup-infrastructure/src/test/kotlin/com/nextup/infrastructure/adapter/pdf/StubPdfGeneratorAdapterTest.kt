@@ -182,6 +182,7 @@ class StubPdfGeneratorAdapterTest {
                         home = emptyList(),
                         away = emptyList(),
                     ),
+                keyEvents = emptyList(),
             )
 
         // when
