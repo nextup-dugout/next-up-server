@@ -14,6 +14,7 @@ import com.nextup.core.service.game.AttendanceService
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 출석 투표 서비스 구현
@@ -136,5 +137,49 @@ class AttendanceServiceImpl(
             }
 
         return attendanceVoteRepository.saveAll(newVotes)
+    }
+
+    override fun getVotesByGameId(gameId: Long): List<AttendanceVote> {
+        return attendanceVoteRepository.findByGameId(gameId)
+    }
+
+    override fun verifyGameTeamMember(
+        gameId: Long,
+        userId: Long,
+    ) {
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val isMember =
+            gameTeams.any { gameTeam ->
+                val members = teamMemberRepository.findByTeamId(gameTeam.team.id)
+                members.any { it.user.id == userId }
+            }
+        if (!isMember) {
+            throw IllegalStateException("You are not a member of either team in this game")
+        }
+    }
+
+    override fun findMemberInGame(
+        gameId: Long,
+        userId: Long,
+    ): TeamMember {
+        val game =
+            gameRepository.findByIdOrNull(gameId)
+                ?: throw GameNotFoundException(gameId)
+
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+
+        return gameTeams
+            .flatMap { gameTeam ->
+                teamMemberRepository.findByTeamId(gameTeam.team.id)
+            }
+            .firstOrNull { it.user.id == userId }
+            ?: throw IllegalStateException("You are not a member of either team in this game")
+    }
+
+    override fun getGameScheduledAt(gameId: Long): LocalDateTime {
+        val game =
+            gameRepository.findByIdOrNull(gameId)
+                ?: throw GameNotFoundException(gameId)
+        return game.scheduledAt
     }
 }

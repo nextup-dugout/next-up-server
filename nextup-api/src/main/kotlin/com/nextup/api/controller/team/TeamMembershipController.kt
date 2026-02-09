@@ -115,6 +115,8 @@ class TeamMembershipController(
         teamMembershipService.getMember(teamId, kickerUserId)
             ?: throw IllegalStateException("You are not a member of this team")
 
+        validateMemberBelongsToTeam(memberId, teamId)
+
         teamMembershipService.kickMember(
             memberId = memberId,
             kickerUserId = kickerUserId,
@@ -155,6 +157,8 @@ class TeamMembershipController(
         teamMembershipService.getMember(teamId, changerUserId)
             ?: throw IllegalStateException("You are not a member of this team")
 
+        validateMemberBelongsToTeam(memberId, teamId)
+
         val member =
             teamMembershipService.changeRole(
                 memberId = memberId,
@@ -162,5 +166,17 @@ class TeamMembershipController(
                 changerUserId = changerUserId,
             )
         return ApiResponse.success(member.toResponse())
+    }
+
+    private fun validateMemberBelongsToTeam(
+        memberId: Long,
+        teamId: Long,
+    ) {
+        val targetMember =
+            teamMembershipService.getMemberById(memberId)
+                ?: throw IllegalStateException("Member not found: $memberId")
+        if (targetMember.team.id != teamId) {
+            throw IllegalStateException("Member does not belong to this team")
+        }
     }
 }

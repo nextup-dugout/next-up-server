@@ -244,6 +244,10 @@ class TeamMembershipServiceImpl(
         return teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
     }
 
+    override fun getMemberById(memberId: Long): TeamMember? {
+        return teamMemberRepository.findByIdOrNull(memberId)
+    }
+
     @Transactional
     override fun createTeamWithOwner(
         userId: Long,

@@ -4,11 +4,7 @@ import com.nextup.api.dto.attendance.*
 import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.mapper.attendance.toMemberVoteResponse
 import com.nextup.api.mapper.attendance.toResponse
-import com.nextup.core.port.repository.AttendanceVoteRepositoryPort
-import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.service.game.AttendanceService
-import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
@@ -20,10 +16,6 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/games/{gameId}/attendance")
 class AttendanceController(
     private val attendanceService: AttendanceService,
-    private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
-    private val gameRepository: GameRepositoryPort,
-    private val gameTeamRepository: GameTeamRepositoryPort,
-    private val teamMembershipService: TeamMembershipService,
 ) {
     /**
      * 출석 투표를 합니다.
@@ -35,22 +27,7 @@ class AttendanceController(
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceVoteResponse> {
         // 현재 사용자의 멤버 ID 조회
-        val game =
-            gameRepository.findByIdOrNull(gameId)
-                ?: throw IllegalStateException("Game not found: $gameId")
-
-        // GameTeam을 통해 홈팀과 원정팀 조회
-        val gameTeams =
-            gameRepository.findByIdOrNull(gameId)
-                ?.let { gameTeamRepository.findAllByGameId(gameId) }
-                ?: throw IllegalStateException("Game not found: $gameId")
-
-        // 홈팀 또는 원정팀 멤버인지 확인
-        val member =
-            gameTeams
-                .mapNotNull { teamMembershipService.getMember(it.team.id, userId) }
-                .firstOrNull()
-                ?: throw IllegalStateException("You are not a member of either team in this game")
+        val member = attendanceService.findMemberInGame(gameId, userId)
 
         val vote =
             attendanceService.vote(
@@ -85,20 +62,17 @@ class AttendanceController(
         @PathVariable gameId: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceVotesResponse> {
-        val game =
-            gameRepository.findByIdOrNull(gameId)
-                ?: throw IllegalStateException("Game not found: $gameId")
-
         // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        verifyGameTeamMember(gameId, userId)
+        attendanceService.verifyGameTeamMember(gameId, userId)
 
-        val votes = attendanceVoteRepository.findByGameId(gameId)
+        val gameDate = attendanceService.getGameScheduledAt(gameId)
+        val votes = attendanceService.getVotesByGameId(gameId)
         val summary = attendanceService.getVoteSummary(gameId)
 
         val response =
             AttendanceVotesResponse(
                 gameId = gameId,
-                gameDate = game.scheduledAt,
+                gameDate = gameDate,
                 votes = votes.toMemberVoteResponse(),
                 summary = summary.toResponse(),
             )
@@ -116,7 +90,7 @@ class AttendanceController(
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceSummaryResponse> {
         // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        verifyGameTeamMember(gameId, userId)
+        attendanceService.verifyGameTeamMember(gameId, userId)
 
         val summary = attendanceService.getVoteSummary(gameId)
         return ApiResponse.success(summary.toResponse())
@@ -132,7 +106,7 @@ class AttendanceController(
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<MemberSummary>> {
         // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        verifyGameTeamMember(gameId, userId)
+        attendanceService.verifyGameTeamMember(gameId, userId)
 
         val nonVoters = attendanceService.getNonVoters(gameId)
         val response =
@@ -145,20 +119,5 @@ class AttendanceController(
                 )
             }
         return ApiResponse.success(response)
-    }
-
-    /**
-     * 경기에 참가하는 팀의 멤버인지 검증합니다.
-     */
-    private fun verifyGameTeamMember(
-        gameId: Long,
-        userId: Long,
-    ) {
-        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
-        val isMember =
-            gameTeams.any { teamMembershipService.getMember(it.team.id, userId) != null }
-        if (!isMember) {
-            throw IllegalStateException("You are not a member of either team in this game")
-        }
     }
 }

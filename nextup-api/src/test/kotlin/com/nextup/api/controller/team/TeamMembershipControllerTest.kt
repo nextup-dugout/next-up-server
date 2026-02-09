@@ -213,6 +213,7 @@ class TeamMembershipControllerTest {
             val request = KickMemberRequest(reason = "규율 위반", addToBlacklist = false)
             val kickerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
             every { teamMembershipService.getMember(1L, 10L) } returns kickerMember
+            every { teamMembershipService.getMemberById(50L) } returns createMockMember(id = 50L)
             justRun {
                 teamMembershipService.kickMember(
                     memberId = 50L,
@@ -235,6 +236,40 @@ class TeamMembershipControllerTest {
             // given
             val request = KickMemberRequest(reason = "규율 위반")
             every { teamMembershipService.getMember(1L, 10L) } returns null
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                controller.kickMember(teamId = 1L, memberId = 50L, request = request, kickerUserId = 10L)
+            }
+        }
+
+        @Test
+        fun `should throw when target member not found`() {
+            // given
+            val request = KickMemberRequest(reason = "규율 위반")
+            val kickerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
+            every { teamMembershipService.getMember(1L, 10L) } returns kickerMember
+            every { teamMembershipService.getMemberById(50L) } returns null
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                controller.kickMember(teamId = 1L, memberId = 50L, request = request, kickerUserId = 10L)
+            }
+        }
+
+        @Test
+        fun `should throw when target member belongs to different team`() {
+            // given
+            val request = KickMemberRequest(reason = "규율 위반")
+            val kickerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
+            val differentTeam = mockk<Team> { every { id } returns 999L }
+            val wrongTeamMember =
+                mockk<TeamMember> {
+                    every { id } returns 50L
+                    every { team } returns differentTeam
+                }
+            every { teamMembershipService.getMember(1L, 10L) } returns kickerMember
+            every { teamMembershipService.getMemberById(50L) } returns wrongTeamMember
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -283,6 +318,7 @@ class TeamMembershipControllerTest {
             val changerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
             val updatedMember = createMockMember(id = 50L, role = TeamMemberRole.MANAGER)
             every { teamMembershipService.getMember(1L, 10L) } returns changerMember
+            every { teamMembershipService.getMemberById(50L) } returns createMockMember(id = 50L)
             every {
                 teamMembershipService.changeRole(
                     memberId = 50L,
@@ -303,6 +339,40 @@ class TeamMembershipControllerTest {
             // given
             val request = ChangeRoleRequest(newRole = TeamMemberRole.MANAGER)
             every { teamMembershipService.getMember(1L, 10L) } returns null
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                controller.changeRole(teamId = 1L, memberId = 50L, request = request, changerUserId = 10L)
+            }
+        }
+
+        @Test
+        fun `should throw when target member not found for role change`() {
+            // given
+            val request = ChangeRoleRequest(newRole = TeamMemberRole.MANAGER)
+            val changerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
+            every { teamMembershipService.getMember(1L, 10L) } returns changerMember
+            every { teamMembershipService.getMemberById(50L) } returns null
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                controller.changeRole(teamId = 1L, memberId = 50L, request = request, changerUserId = 10L)
+            }
+        }
+
+        @Test
+        fun `should throw when target member belongs to different team for role change`() {
+            // given
+            val request = ChangeRoleRequest(newRole = TeamMemberRole.MANAGER)
+            val changerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
+            val differentTeam = mockk<Team> { every { id } returns 999L }
+            val wrongTeamMember =
+                mockk<TeamMember> {
+                    every { id } returns 50L
+                    every { team } returns differentTeam
+                }
+            every { teamMembershipService.getMember(1L, 10L) } returns changerMember
+            every { teamMembershipService.getMemberById(50L) } returns wrongTeamMember
 
             // when & then
             assertThrows<IllegalStateException> {

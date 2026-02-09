@@ -4,19 +4,15 @@ import com.nextup.api.dto.attendance.AttendanceVoteRequest
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
-import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.user.User
-import com.nextup.core.port.repository.AttendanceVoteRepositoryPort
-import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.service.game.AttendanceService
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
-import com.nextup.core.service.team.TeamMembershipService
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -29,17 +25,8 @@ import java.time.LocalDateTime
 @DisplayName("AttendanceController")
 class AttendanceControllerTest {
     private lateinit var attendanceService: AttendanceService
-    private lateinit var attendanceVoteRepository: AttendanceVoteRepositoryPort
-    private lateinit var gameRepository: GameRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
-    private lateinit var teamMembershipService: TeamMembershipService
     private lateinit var controller: AttendanceController
 
-    private val team =
-        mockk<Team> {
-            every { id } returns 1L
-            every { name } returns "테스트팀"
-        }
     private val position =
         mockk<Position> {
             every { abbreviation } returns "P"
@@ -67,32 +54,11 @@ class AttendanceControllerTest {
             every { id } returns 1L
             every { scheduledAt } returns LocalDateTime.of(2026, 3, 1, 14, 0)
         }
-    private val gameTeam =
-        mockk<GameTeam> {
-            every { this@mockk.team } returns this@AttendanceControllerTest.team
-        }
 
     @BeforeEach
     fun setUp() {
         attendanceService = mockk()
-        attendanceVoteRepository = mockk()
-        gameRepository = mockk()
-        gameTeamRepository = mockk()
-        teamMembershipService = mockk()
-        controller =
-            AttendanceController(
-                attendanceService,
-                attendanceVoteRepository,
-                gameRepository,
-                gameTeamRepository,
-                teamMembershipService,
-            )
-    }
-
-    private fun setupGameAndTeamMember() {
-        every { gameRepository.findByIdOrNull(1L) } returns game
-        every { gameTeamRepository.findAllByGameId(1L) } returns listOf(gameTeam)
-        every { teamMembershipService.getMember(1L, 10L) } returns member
+        controller = AttendanceController(attendanceService)
     }
 
     private fun createMockVote(
@@ -114,9 +80,11 @@ class AttendanceControllerTest {
         @Test
         fun `should vote successfully`() {
             // given
-            setupGameAndTeamMember()
             val request = AttendanceVoteRequest(status = AttendanceStatus.ATTENDING)
             val vote = createMockVote()
+            every {
+                attendanceService.findMemberInGame(1L, 10L)
+            } returns member
             every {
                 attendanceService.vote(
                     gameId = 1L,
@@ -137,10 +105,10 @@ class AttendanceControllerTest {
         @Test
         fun `should throw when user is not a team member`() {
             // given
-            every { gameRepository.findByIdOrNull(1L) } returns game
-            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(gameTeam)
-            every { teamMembershipService.getMember(1L, 10L) } returns null
             val request = AttendanceVoteRequest(status = AttendanceStatus.ATTENDING)
+            every {
+                attendanceService.findMemberInGame(1L, 10L)
+            } throws IllegalStateException("User is not a team member")
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -151,8 +119,10 @@ class AttendanceControllerTest {
         @Test
         fun `should throw when game not found`() {
             // given
-            every { gameRepository.findByIdOrNull(1L) } returns null
             val request = AttendanceVoteRequest(status = AttendanceStatus.ATTENDING)
+            every {
+                attendanceService.findMemberInGame(1L, 10L)
+            } throws IllegalStateException("Game not found")
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -167,11 +137,27 @@ class AttendanceControllerTest {
         @Test
         fun `should return votes for game`() {
             // given
-            setupGameAndTeamMember()
             val votes = listOf(createMockVote())
-            val summary = AttendanceSummaryDto(gameId = 1L, totalMembers = 10, attending = 7, absent = 2, undecided = 1)
-            every { attendanceVoteRepository.findByGameId(1L) } returns votes
-            every { attendanceService.getVoteSummary(1L) } returns summary
+            val summary =
+                AttendanceSummaryDto(
+                    gameId = 1L,
+                    totalMembers = 10,
+                    attending = 7,
+                    absent = 2,
+                    undecided = 1,
+                )
+            every {
+                attendanceService.verifyGameTeamMember(1L, 10L)
+            } just Runs
+            every {
+                attendanceService.getGameScheduledAt(1L)
+            } returns LocalDateTime.of(2026, 3, 1, 14, 0)
+            every {
+                attendanceService.getVotesByGameId(1L)
+            } returns votes
+            every {
+                attendanceService.getVoteSummary(1L)
+            } returns summary
 
             // when
             val response = controller.getVotes(gameId = 1L, userId = 10L)
@@ -185,9 +171,9 @@ class AttendanceControllerTest {
         @Test
         fun `should throw when user is not a game team member`() {
             // given
-            every { gameRepository.findByIdOrNull(1L) } returns game
-            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(gameTeam)
-            every { teamMembershipService.getMember(1L, 10L) } returns null
+            every {
+                attendanceService.verifyGameTeamMember(1L, 10L)
+            } throws IllegalStateException("User is not a game team member")
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -202,10 +188,20 @@ class AttendanceControllerTest {
         @Test
         fun `should return attendance summary`() {
             // given
-            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(gameTeam)
-            every { teamMembershipService.getMember(1L, 10L) } returns member
-            val summary = AttendanceSummaryDto(gameId = 1L, totalMembers = 10, attending = 8, absent = 1, undecided = 1)
-            every { attendanceService.getVoteSummary(1L) } returns summary
+            val summary =
+                AttendanceSummaryDto(
+                    gameId = 1L,
+                    totalMembers = 10,
+                    attending = 8,
+                    absent = 1,
+                    undecided = 1,
+                )
+            every {
+                attendanceService.verifyGameTeamMember(1L, 10L)
+            } just Runs
+            every {
+                attendanceService.getVoteSummary(1L)
+            } returns summary
 
             // when
             val response = controller.getSummary(gameId = 1L, userId = 10L)
@@ -223,9 +219,12 @@ class AttendanceControllerTest {
         @Test
         fun `should return non-voters list`() {
             // given
-            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(gameTeam)
-            every { teamMembershipService.getMember(1L, 10L) } returns member
-            every { attendanceService.getNonVoters(1L) } returns listOf(member)
+            every {
+                attendanceService.verifyGameTeamMember(1L, 10L)
+            } just Runs
+            every {
+                attendanceService.getNonVoters(1L)
+            } returns listOf(member)
 
             // when
             val response = controller.getNonVoters(gameId = 1L, userId = 10L)
