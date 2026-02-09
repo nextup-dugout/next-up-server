@@ -3,6 +3,7 @@ package com.nextup.core.domain.game
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
 import com.nextup.common.exception.NoCatcherInLineupException
+import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.league.League
@@ -116,6 +117,92 @@ class LineupValidatorTest {
         // when & then - same player as starter AND substitute is a duplicate
         assertThrows<DuplicatePlayerInLineupException> {
             LineupValidator.validate(entries)
+        }
+    }
+
+    @Test
+    fun `should pass when all players are attending`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val attendingPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validate(entries, attendingPlayerIds)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should throw NonAttendingPlayerInLineupException when non-attending player in lineup`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val attendingPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L)
+
+        // when & then
+        val exception =
+            assertThrows<NonAttendingPlayerInLineupException> {
+                LineupValidator.validate(entries, attendingPlayerIds)
+            }
+        assertThatCode {
+            exception.message?.contains("9")
+        }
+    }
+
+    @Test
+    fun `should throw NonAttendingPlayerInLineupException when multiple non-attending players`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val attendingPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L)
+
+        // when & then
+        assertThrows<NonAttendingPlayerInLineupException> {
+            LineupValidator.validate(entries, attendingPlayerIds)
+        }
+    }
+
+    @Test
+    fun `should skip attendance validation when attendingPlayerIds is null`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+
+        // when & then - should pass even if we don't provide attendance info
+        assertThatCode {
+            LineupValidator.validate(entries, null)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should validate attendance for both starters and substitutes`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries =
+            listOf(
+                createEntry(
+                    submission,
+                    createPlayer("투수", Position.STARTING_PITCHER, 1L),
+                    Position.STARTING_PITCHER,
+                    1,
+                    true
+                ),
+                createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+                createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 3, true),
+                createEntry(
+                    submission,
+                    createPlayer("대기선수", Position.LEFT_FIELD, 10L),
+                    Position.LEFT_FIELD,
+                    null,
+                    false
+                ),
+            )
+        val attendingPlayerIds = setOf(1L, 2L, 3L)
+
+        // when & then - substitute (player 10) is not attending
+        assertThrows<NonAttendingPlayerInLineupException> {
+            LineupValidator.validate(entries, attendingPlayerIds)
         }
     }
 

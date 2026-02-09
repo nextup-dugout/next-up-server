@@ -105,7 +105,7 @@ class LeagueScheduleTest {
         val schedule = createSchedule()
 
         // when
-        schedule.postpone()
+        schedule.postpone("우천")
 
         // then
         assertThat(schedule.status).isEqualTo(ScheduleStatus.POSTPONED)
@@ -115,11 +115,11 @@ class LeagueScheduleTest {
     fun `should throw when postponing non-scheduled schedule`() {
         // given
         val schedule = createSchedule()
-        schedule.postpone()
+        schedule.postpone("우천")
 
         // when & then
         assertThrows<IllegalArgumentException> {
-            schedule.postpone()
+            schedule.postpone("우천")
         }
     }
 
@@ -193,7 +193,7 @@ class LeagueScheduleTest {
     fun `should reschedule postponed schedule and change status to SCHEDULED`() {
         // given
         val schedule = createSchedule()
-        schedule.postpone()
+        schedule.postpone("우천")
         val newDate = LocalDate.now().plusDays(14)
 
         // when
@@ -220,7 +220,7 @@ class LeagueScheduleTest {
     fun `should link game to postponed schedule`() {
         // given
         val schedule = createSchedule()
-        schedule.postpone()
+        schedule.postpone("우천")
         val game = createGame()
 
         // when

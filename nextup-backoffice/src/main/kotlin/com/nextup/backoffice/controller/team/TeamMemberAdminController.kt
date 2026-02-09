@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.team
 
 import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.team.*
+import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.team.TeamMembershipService
@@ -61,7 +62,7 @@ class TeamMemberAdminController(
     ): ApiResponse<TeamMemberAdminResponse> {
         val member =
             teamMemberRepository.findByIdOrNull(memberId)
-                ?: throw IllegalStateException("Member not found: $memberId")
+                ?: throw TeamMemberNotFoundException(memberId)
 
         // 상태 변경 (관리자 권한으로 직접 변경)
         when (request.status) {

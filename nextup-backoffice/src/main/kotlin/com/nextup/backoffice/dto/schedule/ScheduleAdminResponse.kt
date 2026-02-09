@@ -25,6 +25,8 @@ data class ScheduleAdminResponse(
     val venue: String?,
     val status: ScheduleStatus,
     val gameId: Long?,
+    val postponedReason: String?,
+    val originalDate: LocalDate?,
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
@@ -44,6 +46,8 @@ data class ScheduleAdminResponse(
                 venue = schedule.venue,
                 status = schedule.status,
                 gameId = schedule.game?.id,
+                postponedReason = schedule.postponedReason,
+                originalDate = schedule.originalDate,
                 createdAt = schedule.createdAt,
                 updatedAt = schedule.updatedAt,
             )

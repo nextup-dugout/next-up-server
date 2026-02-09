@@ -2,7 +2,11 @@ package com.nextup.backoffice.controller.schedule
 
 import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.schedule.CreateScheduleRequest
+import com.nextup.backoffice.dto.schedule.PostponeBulkRequest
+import com.nextup.backoffice.dto.schedule.RescheduleRequest
 import com.nextup.backoffice.dto.schedule.ScheduleAdminResponse
+import com.nextup.backoffice.dto.schedule.ScheduleConflictResponse
+import com.nextup.backoffice.dto.schedule.ScheduleGenerateRequest
 import com.nextup.backoffice.dto.schedule.UpdateScheduleRequest
 import com.nextup.core.service.schedule.LeagueScheduleService
 import jakarta.validation.Valid
@@ -90,5 +94,82 @@ class ScheduleAdminController(
         @PathVariable id: Long,
     ) {
         scheduleService.deleteSchedule(id)
+    }
+
+    /**
+     * 대진표를 검증합니다. (Dry-run)
+     *
+     * 실제로 생성하지 않고 충돌만 확인합니다.
+     */
+    @PostMapping("/validate")
+    fun validateSchedule(
+        @PathVariable competitionId: Long,
+        @Valid @RequestBody request: CreateScheduleRequest,
+    ): ApiResponse<List<ScheduleConflictResponse>> {
+        val conflicts =
+            scheduleService.validateSchedule(
+                competitionId = competitionId,
+                round = request.round,
+                matchNumber = request.matchNumber,
+                homeTeamId = request.homeTeamId,
+                awayTeamId = request.awayTeamId,
+                scheduledDate = request.scheduledDate,
+                scheduledTime = request.scheduledTime,
+                venue = request.venue,
+            )
+        return ApiResponse.success(conflicts.map { ScheduleConflictResponse.from(it) })
+    }
+
+    /**
+     * 라운드 로빈 방식으로 대진표를 자동 생성합니다.
+     */
+    @PostMapping("/generate")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun generateSchedule(
+        @PathVariable competitionId: Long,
+        @Valid @RequestBody request: ScheduleGenerateRequest,
+    ): ApiResponse<List<ScheduleAdminResponse>> {
+        val schedules =
+            scheduleService.generateRoundRobinSchedule(
+                competitionId = competitionId,
+                teamIds = request.teamIds,
+                doubleRoundRobin = request.doubleRoundRobin,
+            )
+        return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+    }
+
+    /**
+     * 특정 날짜의 경기를 일괄 연기합니다. (우천 순연)
+     */
+    @PostMapping("/postpone-bulk")
+    fun postponeGamesBulk(
+        @PathVariable competitionId: Long,
+        @Valid @RequestBody request: PostponeBulkRequest,
+    ): ApiResponse<List<ScheduleAdminResponse>> {
+        val schedules =
+            scheduleService.postponeGamesBulk(
+                competitionId = competitionId,
+                date = request.date,
+                reason = request.reason,
+            )
+        return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+    }
+
+    /**
+     * 연기된 경기의 일정을 재조정합니다.
+     */
+    @PutMapping("/{id}/reschedule")
+    fun rescheduleGame(
+        @PathVariable competitionId: Long,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: RescheduleRequest,
+    ): ApiResponse<ScheduleAdminResponse> {
+        val schedule =
+            scheduleService.rescheduleGame(
+                scheduleId = id,
+                newDate = request.newDate,
+                newVenue = request.newVenue,
+            )
+        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
     }
 }

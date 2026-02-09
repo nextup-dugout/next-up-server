@@ -62,6 +62,14 @@ class LeagueSchedule private constructor(
     var game: Game? = null
         protected set
 
+    @Column(name = "postponed_reason", length = 500)
+    var postponedReason: String? = null
+        protected set
+
+    @Column(name = "original_date")
+    var originalDate: LocalDate? = null
+        protected set
+
     /**
      * 경기를 연결합니다.
      */
@@ -76,10 +84,17 @@ class LeagueSchedule private constructor(
     /**
      * 대진표를 연기합니다.
      */
-    fun postpone() {
+    fun postpone(reason: String) {
         require(status == ScheduleStatus.SCHEDULED) {
             "예정 상태의 대진표만 연기할 수 있습니다. 현재 상태: ${status.displayName}"
         }
+        require(reason.isNotBlank()) {
+            "연기 사유는 필수입니다."
+        }
+        if (this.originalDate == null) {
+            this.originalDate = this.scheduledDate
+        }
+        this.postponedReason = reason
         this.status = ScheduleStatus.POSTPONED
     }
 
@@ -119,6 +134,7 @@ class LeagueSchedule private constructor(
         this.venue = newVenue
         if (status == ScheduleStatus.POSTPONED) {
             this.status = ScheduleStatus.SCHEDULED
+            this.postponedReason = null
         }
     }
 

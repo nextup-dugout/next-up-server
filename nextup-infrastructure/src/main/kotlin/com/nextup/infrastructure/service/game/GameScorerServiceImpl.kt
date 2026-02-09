@@ -15,6 +15,7 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameScorerService
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional
 class GameScorerServiceImpl(
     private val gameRepository: GameRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
+    private val gameTeamRepository: GameTeamRepositoryPort,
     private val boxScoreService: BoxScoreService,
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
@@ -270,6 +272,40 @@ class GameScorerServiceImpl(
             outs = event.outCountBefore,
         )
         game.gameState.restoreRunners(event.runnersBeforeJson)
+    }
+
+    @Transactional
+    override fun forfeitGame(
+        gameId: Long,
+        winnerTeamId: Long,
+        reason: String,
+    ): Game {
+        val game = findGame(gameId)
+
+        // 경기 상태 확인 (예정 또는 진행 중인 경기만 몰수 처리 가능)
+        if (game.status != GameStatus.SCHEDULED && game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "예정 또는 진행 중인 경기만 몰수 처리할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        // 해당 경기에 참여하는 GameTeam 조회
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+
+        if (gameTeams.size != 2) {
+            throw InvalidGameStateException(
+                "몰수 처리를 위해서는 정확히 2개의 팀이 필요합니다. 현재 팀 수: ${gameTeams.size}",
+            )
+        }
+
+        // 몰수 처리 (7:0 점수 자동 반영)
+        game.forfeit(
+            winnerTeamId = winnerTeamId,
+            reason = reason,
+            gameTeams = gameTeams,
+        )
+
+        return gameRepository.save(game)
     }
 
     private fun findGame(id: Long): Game =

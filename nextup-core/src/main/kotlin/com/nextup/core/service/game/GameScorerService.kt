@@ -58,4 +58,20 @@ interface GameScorerService {
      * @return 되돌려진 이벤트
      */
     fun undoLastEvent(gameId: Long): GameEvent
+
+    /**
+     * 경기를 몰수 처리합니다.
+     *
+     * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
+     *
+     * @param gameId 경기 ID
+     * @param winnerTeamId 몰수승 팀 ID
+     * @param reason 몰수 사유
+     * @return 몰수 처리된 경기
+     */
+    fun forfeitGame(
+        gameId: Long,
+        winnerTeamId: Long,
+        reason: String,
+    ): Game
 }

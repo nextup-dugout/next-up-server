@@ -53,4 +53,12 @@ interface LeagueScheduleRepositoryPort {
         round: Int,
         matchNumber: Int,
     ): Boolean
+
+    /**
+     * 대회별 + 날짜별 대진표 조회 (충돌 감지용)
+     */
+    fun findByCompetitionIdAndScheduledDate(
+        competitionId: Long,
+        scheduledDate: java.time.LocalDate,
+    ): List<LeagueSchedule>
 }
