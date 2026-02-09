@@ -8,7 +8,9 @@ import com.nextup.common.exception.NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -46,6 +48,26 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error(ex.code, ex.message))
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(
+        ex: HttpMessageNotReadableException,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("HttpMessageNotReadableException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("INVALID_REQUEST", "요청 본문을 읽을 수 없습니다"))
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingServletRequestParameterException(
+        ex: MissingServletRequestParameterException,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("MissingServletRequestParameterException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("MISSING_PARAMETER", ex.message))
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
