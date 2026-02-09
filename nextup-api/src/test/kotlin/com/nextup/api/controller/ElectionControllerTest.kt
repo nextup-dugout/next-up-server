@@ -1,0 +1,475 @@
+package com.nextup.api.controller
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.nextup.api.dto.election.CastVoteApiRequest
+import com.nextup.api.dto.election.CreateElectionApiRequest
+import com.nextup.api.dto.election.RegisterCandidateApiRequest
+import com.nextup.api.exception.GlobalExceptionHandler
+import com.nextup.common.exception.CandidateNotFoundException
+import com.nextup.common.exception.DuplicateVoteException
+import com.nextup.common.exception.ElectionNotFoundException
+import com.nextup.common.exception.InvalidStateException
+import com.nextup.core.domain.election.ElectionStatus
+import com.nextup.core.domain.election.ElectionType
+import com.nextup.core.service.election.ElectionService
+import com.nextup.core.service.election.dto.CandidateResponse
+import com.nextup.core.service.election.dto.ElectionResponse
+import com.nextup.core.service.election.dto.ElectionResultResponse
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+class ElectionControllerTest {
+    private lateinit var mockMvc: MockMvc
+    private lateinit var electionService: ElectionService
+    private lateinit var objectMapper: ObjectMapper
+
+    @BeforeEach
+    fun setup() {
+        electionService = mockk()
+        val controller = ElectionController(electionService)
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(GlobalExceptionHandler()).build()
+        objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
+    }
+
+    @Test
+    fun `should create election`() {
+        // given
+        val teamId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val request =
+            CreateElectionApiRequest(
+                title = "구단주 선출",
+                description = "2024년 구단주 선출",
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        val response =
+            ElectionResponse(
+                id = 1L,
+                teamId = teamId,
+                title = request.title,
+                description = request.description,
+                electionType = request.electionType,
+                startAt = request.startAt,
+                endAt = request.endAt,
+                status = ElectionStatus.SCHEDULED,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.createElection(any()) } returns response
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.teamId").value(teamId))
+            .andExpect(jsonPath("$.data.title").value(request.title))
+            .andExpect(jsonPath("$.data.electionType").value("OWNER_ELECTION"))
+            .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
+
+        verify(exactly = 1) { electionService.createElection(any()) }
+    }
+
+    @Test
+    fun `should get elections by team`() {
+        // given
+        val teamId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val elections =
+            listOf(
+                ElectionResponse(
+                    id = 1L,
+                    teamId = teamId,
+                    title = "구단주 선출",
+                    description = null,
+                    electionType = ElectionType.OWNER_ELECTION,
+                    startAt = startAt,
+                    endAt = endAt,
+                    status = ElectionStatus.SCHEDULED,
+                    isVotingOpen = false,
+                    createdAt = Instant.now(),
+                ),
+            )
+
+        every { electionService.getElectionsByTeam(teamId) } returns elections
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/teams/$teamId/elections"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[0].teamId").value(teamId))
+
+        verify(exactly = 1) { electionService.getElectionsByTeam(teamId) }
+    }
+
+    @Test
+    fun `should get election by id`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val response =
+            ElectionResponse(
+                id = electionId,
+                teamId = teamId,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+                status = ElectionStatus.SCHEDULED,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.getElectionById(electionId) } returns response
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/teams/$teamId/elections/$electionId"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(electionId))
+
+        verify(exactly = 1) { electionService.getElectionById(electionId) }
+    }
+
+    @Test
+    fun `should return 404 when election not found`() {
+        // given
+        val teamId = 1L
+        val electionId = 999L
+
+        every { electionService.getElectionById(electionId) } throws ElectionNotFoundException(electionId)
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/teams/$teamId/elections/$electionId"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("ELECTION_NOT_FOUND"))
+
+        verify(exactly = 1) { electionService.getElectionById(electionId) }
+    }
+
+    @Test
+    fun `should start election`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val response =
+            ElectionResponse(
+                id = electionId,
+                teamId = teamId,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+                status = ElectionStatus.IN_PROGRESS,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.startElection(electionId) } returns response
+
+        // when & then
+        mockMvc
+            .perform(put("/api/v1/teams/$teamId/elections/$electionId/start"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+
+        verify(exactly = 1) { electionService.startElection(electionId) }
+    }
+
+    @Test
+    fun `should complete election`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val response =
+            ElectionResponse(
+                id = electionId,
+                teamId = teamId,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+                status = ElectionStatus.COMPLETED,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.completeElection(electionId) } returns response
+
+        // when & then
+        mockMvc
+            .perform(put("/api/v1/teams/$teamId/elections/$electionId/complete"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.status").value("COMPLETED"))
+
+        verify(exactly = 1) { electionService.completeElection(electionId) }
+    }
+
+    @Test
+    fun `should cancel election`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+        val response =
+            ElectionResponse(
+                id = electionId,
+                teamId = teamId,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+                status = ElectionStatus.CANCELLED,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.cancelElection(electionId) } returns response
+
+        // when & then
+        mockMvc
+            .perform(put("/api/v1/teams/$teamId/elections/$electionId/cancel"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+
+        verify(exactly = 1) { electionService.cancelElection(electionId) }
+    }
+
+    @Test
+    fun `should register candidate`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val request =
+            RegisterCandidateApiRequest(
+                memberId = 100L,
+                memberName = "홍길동",
+                statement = "열심히 하겠습니다",
+            )
+        val response =
+            CandidateResponse(
+                id = 1L,
+                electionId = electionId,
+                memberId = request.memberId,
+                memberName = request.memberName,
+                statement = request.statement,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.registerCandidate(any()) } returns response
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections/$electionId/candidates")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.memberId").value(request.memberId))
+            .andExpect(jsonPath("$.data.memberName").value(request.memberName))
+
+        verify(exactly = 1) { electionService.registerCandidate(any()) }
+    }
+
+    @Test
+    fun `should return 400 when registering candidate to non-scheduled election`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val request =
+            RegisterCandidateApiRequest(
+                memberId = 100L,
+                memberName = "홍길동",
+                statement = null,
+            )
+
+        every { electionService.registerCandidate(any()) } throws
+            InvalidStateException(
+                code = "CANNOT_REGISTER_CANDIDATE",
+                message = "Cannot register candidate: election status is IN_PROGRESS",
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections/$electionId/candidates")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("CANNOT_REGISTER_CANDIDATE"))
+
+        verify(exactly = 1) { electionService.registerCandidate(any()) }
+    }
+
+    @Test
+    fun `should cast vote`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val request =
+            CastVoteApiRequest(
+                voterId = 100L,
+                candidateId = 10L,
+            )
+        val response =
+            CandidateResponse(
+                id = request.candidateId,
+                electionId = electionId,
+                memberId = 200L,
+                memberName = "홍길동",
+                statement = null,
+                createdAt = Instant.now(),
+            )
+
+        every { electionService.vote(any()) } returns response
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections/$electionId/votes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(request.candidateId))
+
+        verify(exactly = 1) { electionService.vote(any()) }
+    }
+
+    @Test
+    fun `should return 400 when voting twice`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val request =
+            CastVoteApiRequest(
+                voterId = 100L,
+                candidateId = 10L,
+            )
+
+        every { electionService.vote(any()) } throws DuplicateVoteException()
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections/$electionId/votes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("DUPLICATE_VOTE"))
+
+        verify(exactly = 1) { electionService.vote(any()) }
+    }
+
+    @Test
+    fun `should return 404 when voting for non-existent candidate`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val candidateId = 999L
+        val request =
+            CastVoteApiRequest(
+                voterId = 100L,
+                candidateId = candidateId,
+            )
+
+        every { electionService.vote(any()) } throws CandidateNotFoundException(candidateId)
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/teams/$teamId/elections/$electionId/votes")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("CANDIDATE_NOT_FOUND"))
+
+        verify(exactly = 1) { electionService.vote(any()) }
+    }
+
+    @Test
+    fun `should get election results`() {
+        // given
+        val teamId = 1L
+        val electionId = 1L
+        val startAt = Instant.now().minus(2, ChronoUnit.DAYS)
+        val endAt = Instant.now().minus(1, ChronoUnit.DAYS)
+        val electionResponse =
+            ElectionResponse(
+                id = electionId,
+                teamId = teamId,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+                status = ElectionStatus.COMPLETED,
+                isVotingOpen = false,
+                createdAt = Instant.now(),
+            )
+        val response =
+            ElectionResultResponse(
+                election = electionResponse,
+                candidates = emptyList(),
+                totalVotes = 0,
+            )
+
+        every { electionService.getResults(electionId) } returns response
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/teams/$teamId/elections/$electionId/results"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.election.id").value(electionId))
+            .andExpect(jsonPath("$.data.totalVotes").value(0))
+
+        verify(exactly = 1) { electionService.getResults(electionId) }
+    }
+}
