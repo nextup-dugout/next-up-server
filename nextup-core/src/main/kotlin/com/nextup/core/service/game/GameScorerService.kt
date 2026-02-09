@@ -1,6 +1,7 @@
 package com.nextup.core.service.game
 
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 
@@ -49,4 +50,12 @@ interface GameScorerService {
         gameId: Long,
         reason: GameEndReason,
     ): Game
+
+    /**
+     * 마지막 이벤트를 되돌립니다.
+     *
+     * @param gameId 경기 ID
+     * @return 되돌려진 이벤트
+     */
+    fun undoLastEvent(gameId: Long): GameEvent
 }

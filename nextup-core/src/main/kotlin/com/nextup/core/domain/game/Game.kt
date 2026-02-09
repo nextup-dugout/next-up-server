@@ -49,6 +49,8 @@ class Game(
     var endedAt: LocalDateTime? = null,
     @Column(length = 500)
     var note: String? = null,
+    @Column(name = "forfeit_reason", length = 500)
+    var forfeitReason: String? = null,
     @Embedded
     var gameState: GameState = GameState(),
     @Id
@@ -133,14 +135,49 @@ class Game(
 
     /**
      * 몰수패 처리합니다.
+     *
+     * 승리팀에 7점, 패배팀에 0점을 자동 반영하고,
+     * 각 GameTeam의 결과(WIN/LOSS)를 설정합니다.
+     *
+     * @param winnerTeamId 몰수승 팀 ID
+     * @param reason 몰수 사유
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
      */
-    fun forfeit(reason: String) {
+    fun forfeit(
+        winnerTeamId: Long,
+        reason: String,
+        gameTeams: List<GameTeam>,
+    ) {
         require(status == GameStatus.SCHEDULED || status.isOngoing()) {
             "예정 또는 진행 중인 경기만 몰수 처리할 수 있습니다."
         }
+        require(gameTeams.size == 2) {
+            "몰수 처리를 위해서는 정확히 2개의 GameTeam이 필요합니다."
+        }
+        require(gameTeams.any { it.team.id == winnerTeamId }) {
+            "승리팀 ID($winnerTeamId)가 해당 경기에 참여하는 팀이 아닙니다."
+        }
+
         status = GameStatus.FORFEITED
         endedAt = LocalDateTime.now()
+        forfeitReason = reason
         note = (note?.let { "$it\n" } ?: "") + "몰수 사유: $reason"
+
+        // 승리팀 7:0 점수 반영
+        gameTeams.forEach { gameTeam ->
+            if (gameTeam.team.id == winnerTeamId) {
+                gameTeam.updateScore(totalScore = FORFEIT_WIN_SCORE, totalHits = 0, totalErrors = 0)
+                gameTeam.updateResult(GameResult.WIN)
+            } else {
+                gameTeam.updateScore(totalScore = 0, totalHits = 0, totalErrors = 0)
+                gameTeam.updateResult(GameResult.LOSS)
+            }
+        }
+    }
+
+    companion object {
+        /** 몰수승 점수 */
+        const val FORFEIT_WIN_SCORE = 7
     }
 
     /**
@@ -154,6 +191,33 @@ class Game(
             status = GameStatus.SCHEDULED
         }
         scheduledAt = newScheduledAt
+    }
+
+    /**
+     * Undo가 가능한 상태인지 확인합니다.
+     */
+    fun canUndo(): Boolean = status == GameStatus.IN_PROGRESS
+
+    /**
+     * 이전 이닝 상태로 복원합니다 (Undo 시 이닝/아웃 카운트 롤백용).
+     */
+    fun restoreInningState(
+        inning: Int,
+        isTop: Boolean,
+        outs: Int,
+    ) {
+        require(status.isOngoing()) { "진행 중인 경기만 상태를 복원할 수 있습니다." }
+        this.currentInning = inning
+        this.isTopInning = isTop
+        gameState.restoreOuts(outs)
+    }
+
+    /**
+     * 타순을 되돌립니다 (Undo 시 타순 롤백용).
+     */
+    fun revertBatter() {
+        require(status.isOngoing()) { "진행 중인 경기만 타순을 되돌릴 수 있습니다." }
+        gameState.revertBatter(isHomeTeam = !isTopInning)
     }
 
     /**

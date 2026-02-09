@@ -2,6 +2,8 @@ package com.nextup.core.domain.game
 
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
 import org.assertj.core.api.Assertions.assertThat
@@ -33,7 +35,7 @@ class LineupSubmissionTest {
     @Test
     fun `should submit lineup when status is DRAFT`() {
         // given
-        val submission = createLineupSubmission()
+        val submission = createLineupSubmissionWithEntries()
 
         // when
         submission.submit()
@@ -46,7 +48,7 @@ class LineupSubmissionTest {
     @Test
     fun `should throw exception when submitting already submitted lineup`() {
         // given
-        val submission = createLineupSubmission().apply { submit() }
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
 
         // when & then
         val exception =
@@ -59,7 +61,7 @@ class LineupSubmissionTest {
     @Test
     fun `should confirm lineup when status is SUBMITTED`() {
         // given
-        val submission = createLineupSubmission().apply { submit() }
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
         val scorer = createScorer()
 
         // when
@@ -88,7 +90,7 @@ class LineupSubmissionTest {
     @Test
     fun `should reject lineup with reason when status is SUBMITTED`() {
         // given
-        val submission = createLineupSubmission().apply { submit() }
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
         val scorer = createScorer()
         val reason = "선수 등록번호 확인 필요"
 
@@ -119,7 +121,7 @@ class LineupSubmissionTest {
     fun `should resubmit lineup when status is REJECTED`() {
         // given
         val submission =
-            createLineupSubmission().apply {
+            createLineupSubmissionWithEntries().apply {
                 submit()
                 reject(createScorer(), "수정 필요")
             }
@@ -138,7 +140,7 @@ class LineupSubmissionTest {
     fun `should not allow editing confirmed lineup`() {
         // given
         val submission =
-            createLineupSubmission().apply {
+            createLineupSubmissionWithEntries().apply {
                 submit()
                 confirm(createScorer())
             }
@@ -149,6 +151,45 @@ class LineupSubmissionTest {
                 submission.submit()
             }
         assertThat(exception.message).contains("제출 가능한 상태가 아닙니다")
+    }
+
+    private fun createLineupSubmissionWithEntries(): LineupSubmission {
+        val submission = createLineupSubmission()
+        addValidEntries(submission)
+        return submission
+    }
+
+    private fun addValidEntries(submission: LineupSubmission) {
+        val positions =
+            listOf(
+                Position.STARTING_PITCHER,
+                Position.CATCHER,
+                Position.FIRST_BASE,
+                Position.SECOND_BASE,
+                Position.THIRD_BASE,
+                Position.SHORTSTOP,
+                Position.LEFT_FIELD,
+                Position.CENTER_FIELD,
+                Position.RIGHT_FIELD,
+            )
+        positions.forEachIndexed { index, position ->
+            val player =
+                Player(
+                    name = "선수${index + 1}",
+                    primaryPosition = position,
+                    id = (index + 1).toLong(),
+                )
+            submission.addEntry(
+                LineupEntry(
+                    submission = submission,
+                    player = player,
+                    position = position,
+                    battingOrder = index + 1,
+                    backNumber = index + 1,
+                    isStarter = true,
+                ),
+            )
+        }
     }
 
     private fun createLineupSubmission(): LineupSubmission =

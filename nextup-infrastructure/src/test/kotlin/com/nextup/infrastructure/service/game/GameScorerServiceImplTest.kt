@@ -14,8 +14,11 @@ import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
@@ -37,6 +40,9 @@ class GameScorerServiceImplTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var boxScoreService: BoxScoreService
+    private lateinit var gameEventRepository: GameEventRepositoryPort
+    private lateinit var battingRecordRepository: BattingRecordRepositoryPort
+    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
     private lateinit var gameScorerService: GameScorerServiceImpl
 
     @BeforeEach
@@ -44,11 +50,17 @@ class GameScorerServiceImplTest {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
         boxScoreService = mockk(relaxed = true)
+        gameEventRepository = mockk()
+        battingRecordRepository = mockk()
+        pitchingRecordRepository = mockk()
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
                 boxScoreService,
+                gameEventRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
             )
     }
 
@@ -165,17 +177,15 @@ class GameScorerServiceImplTest {
         }
 
         @Test
-        fun `should end game with FORFEIT reason`() {
+        fun `should throw exception for FORFEIT reason requiring dedicated API`() {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
             every { gameRepository.findByIdOrNull(1L) } returns game
-            every { gameRepository.save(any()) } answers { firstArg() }
 
-            // when
-            val result = gameScorerService.endGame(1L, GameEndReason.FORFEIT)
-
-            // then
-            assertThat(result.status).isEqualTo(GameStatus.FORFEITED)
+            // when & then
+            assertThatThrownBy { gameScorerService.endGame(1L, GameEndReason.FORFEIT) }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("몰수 처리는 전용 API를 사용해주세요")
         }
 
         @Test

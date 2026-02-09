@@ -45,6 +45,8 @@ class Competition(
     var description: String? = null,
     @Column(name = "max_teams")
     val maxTeams: Int? = null,
+    @Column(name = "playoff_teams")
+    var playoffTeams: Int? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,

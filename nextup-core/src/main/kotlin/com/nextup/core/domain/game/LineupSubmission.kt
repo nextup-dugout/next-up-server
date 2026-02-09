@@ -81,11 +81,22 @@ class LineupSubmission private constructor(
 
     /**
      * 라인업을 기록원에게 제출합니다.
+     *
+     * 제출 전 라인업 검증을 수행합니다:
+     * - 동일 선수 중복 등록 검증
+     * - 포수(C) 필수 검증
+     * - DH 규칙 검증
+     *
+     * @throws com.nextup.common.exception.DuplicatePlayerInLineupException 동일 선수 중복 시
+     * @throws com.nextup.common.exception.NoCatcherInLineupException 포수 미지정 시
+     * @throws com.nextup.common.exception.InvalidDhRuleException DH 규칙 위반 시
      */
     fun submit() {
         require(status.canSubmit()) {
             "제출 가능한 상태가 아닙니다. 현재 상태: ${status.displayName}"
         }
+        // 라인업 비즈니스 규칙 검증
+        LineupValidator.validate(_entries)
         this.status = LineupSubmissionStatus.SUBMITTED
         this.submittedAt = Instant.now()
         // 재제출 시 이전 반려 정보 초기화

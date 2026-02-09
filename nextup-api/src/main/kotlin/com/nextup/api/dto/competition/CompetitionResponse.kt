@@ -23,6 +23,7 @@ data class CompetitionResponse(
     val status: CompetitionStatus,
     val description: String?,
     val maxTeams: Int?,
+    val playoffTeams: Int?,
 ) {
     companion object {
         fun from(competition: Competition): CompetitionResponse =
@@ -39,6 +40,7 @@ data class CompetitionResponse(
                 status = competition.status,
                 description = competition.description,
                 maxTeams = competition.maxTeams,
+                playoffTeams = competition.playoffTeams,
             )
     }
 }

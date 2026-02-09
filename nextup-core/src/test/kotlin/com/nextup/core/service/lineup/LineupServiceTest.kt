@@ -1,5 +1,6 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.game.Game
@@ -372,11 +373,9 @@ class LineupServiceTest {
         @Test
         fun `should submit lineup successfully with 9 starters`() {
             // given
-            val submission = LineupSubmission.create(game, team, user)
-            val entries = createMinimalLineup(submission)
+            val submission = createSubmissionWithEntries()
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
-            every { lineupEntryRepository.findAllBySubmissionId(any()) } returns entries
 
             val submissionSlot = slot<LineupSubmission>()
             every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
@@ -392,14 +391,12 @@ class LineupServiceTest {
         fun `should throw exception when less than 9 starters`() {
             // given
             val submission = LineupSubmission.create(game, team, user)
-            val entries =
-                listOf(
-                    createMockEntry(submission, Position.STARTING_PITCHER, 1),
-                    createMockEntry(submission, Position.CATCHER, 2),
-                )
+            addEntriesToSubmission(
+                submission,
+                listOf(Position.STARTING_PITCHER, Position.CATCHER),
+            )
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
-            every { lineupEntryRepository.findAllBySubmissionId(any()) } returns entries
 
             // when & then
             val exception =
@@ -410,37 +407,16 @@ class LineupServiceTest {
         }
 
         @Test
-        fun `should throw exception when no pitcher`() {
-            // given
-            val submission = LineupSubmission.create(game, team, user)
-            val entries = createMinimalLineupWithoutPitcher(submission)
-
-            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
-            every { lineupEntryRepository.findAllBySubmissionId(any()) } returns entries
-
-            // when & then
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    lineupService.submitLineup(1L)
-                }
-            assertThat(exception.message).contains("투수가 지정되지 않았습니다")
-        }
-
-        @Test
         fun `should throw exception when no catcher`() {
             // given
-            val submission = LineupSubmission.create(game, team, user)
-            val entries = createMinimalLineupWithoutCatcher(submission)
+            val submission = createSubmissionWithEntriesNoCatcher()
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
-            every { lineupEntryRepository.findAllBySubmissionId(any()) } returns entries
 
             // when & then
-            val exception =
-                assertThrows<IllegalArgumentException> {
-                    lineupService.submitLineup(1L)
-                }
-            assertThat(exception.message).contains("포수가 지정되지 않았습니다")
+            assertThrows<NoCatcherInLineupException> {
+                lineupService.submitLineup(1L)
+            }
         }
     }
 
@@ -449,7 +425,7 @@ class LineupServiceTest {
         @Test
         fun `should confirm lineup successfully`() {
             // given
-            val submission = LineupSubmission.create(game, team, user).apply { submit() }
+            val submission = createSubmissionWithEntries().apply { submit() }
             val scorer = User.createLocalUser(email = "scorer@test.com", encodedPassword = "encoded", nickname = "기록원")
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
@@ -468,7 +444,7 @@ class LineupServiceTest {
         @Test
         fun `should throw exception when scorer not found`() {
             // given
-            val submission = LineupSubmission.create(game, team, user).apply { submit() }
+            val submission = createSubmissionWithEntries().apply { submit() }
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every { userRepository.findByIdOrNull(any()) } returns null
@@ -487,7 +463,7 @@ class LineupServiceTest {
         @Test
         fun `should reject lineup successfully`() {
             // given
-            val submission = LineupSubmission.create(game, team, user).apply { submit() }
+            val submission = createSubmissionWithEntries().apply { submit() }
             val scorer = User.createLocalUser(email = "scorer@test.com", encodedPassword = "encoded", nickname = "기록원")
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
@@ -548,7 +524,7 @@ class LineupServiceTest {
         @Test
         fun `should get submitted lineups by game`() {
             // given
-            val submission = LineupSubmission.create(game, team, user).apply { submit() }
+            val submission = createSubmissionWithEntries().apply { submit() }
             every {
                 lineupSubmissionRepository.findAllByGameIdAndStatus(any(), LineupSubmissionStatus.SUBMITTED)
             } returns
@@ -667,4 +643,65 @@ class LineupServiceTest {
             createMockEntry(submission, Position.RIGHT_FIELD, 8),
             createMockEntry(submission, Position.DESIGNATED_HITTER, 9),
         )
+
+    private fun createSubmissionWithEntries(): LineupSubmission {
+        val submission = LineupSubmission.create(game, team, user)
+        addEntriesToSubmission(
+            submission,
+            listOf(
+                Position.STARTING_PITCHER,
+                Position.CATCHER,
+                Position.FIRST_BASE,
+                Position.SECOND_BASE,
+                Position.THIRD_BASE,
+                Position.SHORTSTOP,
+                Position.LEFT_FIELD,
+                Position.CENTER_FIELD,
+                Position.RIGHT_FIELD,
+            ),
+        )
+        return submission
+    }
+
+    private fun createSubmissionWithEntriesNoCatcher(): LineupSubmission {
+        val submission = LineupSubmission.create(game, team, user)
+        addEntriesToSubmission(
+            submission,
+            listOf(
+                Position.STARTING_PITCHER,
+                Position.FIRST_BASE,
+                Position.SECOND_BASE,
+                Position.THIRD_BASE,
+                Position.SHORTSTOP,
+                Position.LEFT_FIELD,
+                Position.CENTER_FIELD,
+                Position.RIGHT_FIELD,
+                Position.DESIGNATED_HITTER,
+            ),
+        )
+        return submission
+    }
+
+    private fun addEntriesToSubmission(
+        submission: LineupSubmission,
+        positions: List<Position>,
+    ) {
+        positions.forEachIndexed { index, position ->
+            val mockPlayer =
+                mockk<Player>().apply {
+                    every { id } returns (index + 1).toLong()
+                    every { name } returns "선수${index + 1}"
+                }
+            submission.addEntry(
+                LineupEntry(
+                    submission = submission,
+                    player = mockPlayer,
+                    position = position,
+                    battingOrder = index + 1,
+                    backNumber = index + 1,
+                    isStarter = true,
+                ),
+            )
+        }
+    }
 }

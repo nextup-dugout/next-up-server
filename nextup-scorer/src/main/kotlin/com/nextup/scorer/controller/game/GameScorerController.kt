@@ -67,4 +67,24 @@ class GameScorerController(
         val game = gameScorerService.endGame(gameId, request.reason!!)
         return ApiResponse.success(game.toResponse())
     }
+
+    /**
+     * 마지막 이벤트를 되돌립니다 (Undo).
+     */
+    @PostMapping("/{gameId}/undo")
+    @ResponseStatus(HttpStatus.OK)
+    fun undoLastEvent(
+        @PathVariable gameId: Long
+    ): ApiResponse<UndoResponse> {
+        val undoneEvent = gameScorerService.undoLastEvent(gameId)
+        val game = undoneEvent.game
+        return ApiResponse.success(
+            UndoResponse(
+                undoneEventId = undoneEvent.id,
+                eventType = undoneEvent.eventType.displayName,
+                restoredState = game.gameState.toResponse(),
+                message = "${undoneEvent.eventType.displayName} 이벤트가 되돌려졌습니다.",
+            )
+        )
+    }
 }

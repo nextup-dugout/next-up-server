@@ -77,7 +77,10 @@ class TeamMemberAdminController(
                 member.memo = request.reason
             }
             else -> {
-                throw IllegalArgumentException("Cannot change to status: ${request.status}")
+                throw com.nextup.common.exception.InvalidInputException(
+                    "INVALID_STATUS",
+                    "Cannot change to status: ${request.status}",
+                )
             }
         }
 

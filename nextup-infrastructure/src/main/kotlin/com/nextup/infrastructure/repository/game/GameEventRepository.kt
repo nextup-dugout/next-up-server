@@ -14,6 +14,18 @@ interface GameEventRepository :
         """
         SELECT ge FROM GameEvent ge
         JOIN FETCH ge.game g
+        WHERE g.id = :gameId
+          AND ge.undone = false
+        ORDER BY ge.eventTimestamp DESC
+        LIMIT 1
+        """,
+    )
+    override fun findLastActiveEvent(gameId: Long): GameEvent?
+
+    @Query(
+        """
+        SELECT ge FROM GameEvent ge
+        JOIN FETCH ge.game g
         WHERE ge.pitcher.player.id = :pitcherId
           AND ge.batter.player.id = :batterId
           AND ge.eventType = 'PLATE_APPEARANCE'
