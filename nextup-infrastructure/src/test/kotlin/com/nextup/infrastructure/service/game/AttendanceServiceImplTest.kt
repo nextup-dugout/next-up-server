@@ -273,6 +273,163 @@ class AttendanceServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("getVotesByGameId")
+    inner class GetVotesByGameId {
+        @Test
+        fun `should return votes for game`() {
+            // given
+            val votes =
+                listOf(
+                    AttendanceVote.createForGame(game, member).apply { vote(AttendanceStatus.ATTENDING) },
+                    AttendanceVote.createForGame(game, member).apply { vote(AttendanceStatus.ABSENT) },
+                )
+            every { attendanceVoteRepository.findByGameId(100L) } returns votes
+
+            // when
+            val result = service.getVotesByGameId(100L)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result).isEqualTo(votes)
+            verify { attendanceVoteRepository.findByGameId(100L) }
+        }
+    }
+
+    @Nested
+    @DisplayName("verifyGameTeamMember")
+    inner class VerifyGameTeamMember {
+        @Test
+        fun `should pass when user is a member of a game team`() {
+            // given
+            val user = User.createLocalUser("user@example.com", "password", "사용자")
+            setUserId(user, 10L)
+            val player = Player(name = "사용자", primaryPosition = Position.STARTING_PITCHER)
+            val teamMember = TeamMember.create(team, user, player, 5, TeamMemberRole.MEMBER)
+
+            val gameTeam = mockk<com.nextup.core.domain.game.GameTeam>()
+            every { gameTeam.team } returns team
+
+            every { gameTeamRepository.findAllByGameId(100L) } returns listOf(gameTeam)
+            every { teamMemberRepository.findByTeamId(1L) } returns listOf(teamMember)
+
+            // when & then
+            service.verifyGameTeamMember(100L, 10L)
+
+            verify { gameTeamRepository.findAllByGameId(100L) }
+            verify { teamMemberRepository.findByTeamId(1L) }
+        }
+
+        @Test
+        fun `should throw when user is not a member of any game team`() {
+            // given
+            val gameTeam = mockk<com.nextup.core.domain.game.GameTeam>()
+            every { gameTeam.team } returns team
+
+            every { gameTeamRepository.findAllByGameId(100L) } returns listOf(gameTeam)
+            every { teamMemberRepository.findByTeamId(1L) } returns emptyList()
+
+            // when & then
+            assertThatThrownBy {
+                service.verifyGameTeamMember(100L, 999L)
+            }.isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("You are not a member of either team in this game")
+        }
+    }
+
+    @Nested
+    @DisplayName("findMemberInGame")
+    inner class FindMemberInGame {
+        @Test
+        fun `should return member when found in game team`() {
+            // given
+            val user = User.createLocalUser("user@example.com", "password", "사용자")
+            setUserId(user, 10L)
+            val player = Player(name = "사용자", primaryPosition = Position.STARTING_PITCHER)
+            val teamMember = TeamMember.create(team, user, player, 5, TeamMemberRole.MEMBER)
+
+            val gameTeam = mockk<com.nextup.core.domain.game.GameTeam>()
+            every { gameTeam.team } returns team
+
+            every { gameRepository.findByIdOrNull(100L) } returns game
+            every { gameTeamRepository.findAllByGameId(100L) } returns listOf(gameTeam)
+            every { teamMemberRepository.findByTeamId(1L) } returns listOf(teamMember)
+
+            // when
+            val result = service.findMemberInGame(100L, 10L)
+
+            // then
+            assertThat(result).isEqualTo(teamMember)
+            verify { gameRepository.findByIdOrNull(100L) }
+            verify { gameTeamRepository.findAllByGameId(100L) }
+            verify { teamMemberRepository.findByTeamId(1L) }
+        }
+
+        @Test
+        fun `should throw GameNotFoundException when game not found`() {
+            // given
+            every { gameRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.findMemberInGame(999L, 10L)
+            }.isInstanceOf(GameNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw IllegalStateException when user not in any team`() {
+            // given
+            val gameTeam = mockk<com.nextup.core.domain.game.GameTeam>()
+            every { gameTeam.team } returns team
+
+            every { gameRepository.findByIdOrNull(100L) } returns game
+            every { gameTeamRepository.findAllByGameId(100L) } returns listOf(gameTeam)
+            every { teamMemberRepository.findByTeamId(1L) } returns emptyList()
+
+            // when & then
+            assertThatThrownBy {
+                service.findMemberInGame(100L, 999L)
+            }.isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("You are not a member of either team in this game")
+        }
+    }
+
+    @Nested
+    @DisplayName("getGameScheduledAt")
+    inner class GetGameScheduledAt {
+        @Test
+        fun `should return game scheduled time`() {
+            // given
+            val scheduledTime = LocalDateTime.of(2026, 3, 15, 14, 0)
+            val futureGame =
+                Game(
+                    competition = mockk<com.nextup.core.domain.competition.Competition>(),
+                    scheduledAt = scheduledTime,
+                )
+            setGameId(futureGame, 100L)
+
+            every { gameRepository.findByIdOrNull(100L) } returns futureGame
+
+            // when
+            val result = service.getGameScheduledAt(100L)
+
+            // then
+            assertThat(result).isEqualTo(scheduledTime)
+            verify { gameRepository.findByIdOrNull(100L) }
+        }
+
+        @Test
+        fun `should throw GameNotFoundException when game not found`() {
+            // given
+            every { gameRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.getGameScheduledAt(999L)
+            }.isInstanceOf(GameNotFoundException::class.java)
+        }
+    }
+
     private fun setTeamId(
         team: Team,
         id: Long,
