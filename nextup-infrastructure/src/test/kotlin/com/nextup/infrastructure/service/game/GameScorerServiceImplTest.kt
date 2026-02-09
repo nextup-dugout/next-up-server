@@ -18,6 +18,7 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.GameEndReason
@@ -39,6 +40,7 @@ import java.time.LocalDateTime
 class GameScorerServiceImplTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
+    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
@@ -49,6 +51,7 @@ class GameScorerServiceImplTest {
     fun setUp() {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
+        gameTeamRepository = mockk()
         boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
@@ -57,6 +60,7 @@ class GameScorerServiceImplTest {
             GameScorerServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
+                gameTeamRepository,
                 boxScoreService,
                 gameEventRepository,
                 battingRecordRepository,
@@ -606,10 +610,169 @@ class GameScorerServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("forfeitGame")
+    inner class ForfeitGame {
+        @Test
+        fun `should forfeit game when status is SCHEDULED`() {
+            // given
+            val game = createGame(1L, GameStatus.SCHEDULED)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+            val gameTeams = listOf(homeGameTeam, awayGameTeam)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns gameTeams
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result =
+                gameScorerService.forfeitGame(
+                    gameId = 1L,
+                    winnerTeamId = 10L,
+                    reason = "상대팀 불참",
+                )
+
+            // then
+            assertThat(result.status).isEqualTo(GameStatus.FORFEITED)
+            assertThat(result.forfeitReason).isEqualTo("상대팀 불참")
+            assertThat(result.endedAt).isNotNull()
+            verify { gameRepository.save(any()) }
+            verify { homeGameTeam.updateScore(7, 0, 0) }
+            verify { homeGameTeam.updateResult(any()) }
+            verify { awayGameTeam.updateScore(0, 0, 0) }
+            verify { awayGameTeam.updateResult(any()) }
+        }
+
+        @Test
+        fun `should forfeit game when status is IN_PROGRESS`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+            val gameTeams = listOf(homeGameTeam, awayGameTeam)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns gameTeams
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result =
+                gameScorerService.forfeitGame(
+                    gameId = 1L,
+                    winnerTeamId = 20L,
+                    reason = "홈팀 규정 위반",
+                )
+
+            // then
+            assertThat(result.status).isEqualTo(GameStatus.FORFEITED)
+            assertThat(result.forfeitReason).isEqualTo("홈팀 규정 위반")
+            verify { gameRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw exception when game is already finished`() {
+            // given
+            val game = createGame(1L, GameStatus.FINISHED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+
+            // when & then
+            assertThatThrownBy {
+                gameScorerService.forfeitGame(
+                    gameId = 1L,
+                    winnerTeamId = 10L,
+                    reason = "사유",
+                )
+            }.isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("예정 또는 진행 중인 경기만 몰수 처리할 수 있습니다")
+        }
+
+        @Test
+        fun `should throw exception when game is cancelled`() {
+            // given
+            val game = createGame(1L, GameStatus.CANCELLED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+
+            // when & then
+            assertThatThrownBy {
+                gameScorerService.forfeitGame(
+                    gameId = 1L,
+                    winnerTeamId = 10L,
+                    reason = "사유",
+                )
+            }.isInstanceOf(InvalidGameStateException::class.java)
+        }
+
+        @Test
+        fun `should throw exception when game not found`() {
+            // given
+            every { gameRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                gameScorerService.forfeitGame(
+                    gameId = 999L,
+                    winnerTeamId = 10L,
+                    reason = "사유",
+                )
+            }.isInstanceOf(GameNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw exception when GameTeams count is not 2`() {
+            // given
+            val game = createGame(1L, GameStatus.SCHEDULED)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val gameTeams = listOf(homeGameTeam) // Only 1 team
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns gameTeams
+
+            // when & then
+            assertThatThrownBy {
+                gameScorerService.forfeitGame(
+                    gameId = 1L,
+                    winnerTeamId = 10L,
+                    reason = "사유",
+                )
+            }.isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("정확히 2개의 팀이 필요합니다")
+        }
+    }
+
     private fun createGamePlayer(id: Long): GamePlayer {
         val gamePlayer = mockk<GamePlayer>(relaxed = true)
         every { gamePlayer.id } returns id
         return gamePlayer
+    }
+
+    private fun createMockTeam(
+        id: Long,
+        name: String,
+    ): com.nextup.core.domain.team.Team {
+        val team = mockk<com.nextup.core.domain.team.Team>(relaxed = true)
+        every { team.id } returns id
+        every { team.name } returns name
+        return team
+    }
+
+    private fun createMockGameTeam(
+        id: Long,
+        game: Game,
+        team: com.nextup.core.domain.team.Team,
+    ): com.nextup.core.domain.game.GameTeam {
+        val gameTeam = mockk<com.nextup.core.domain.game.GameTeam>(relaxed = true)
+        every { gameTeam.id } returns id
+        every { gameTeam.game } returns game
+        every { gameTeam.team } returns team
+        every { gameTeam.updateScore(any(), any(), any()) } returns Unit
+        every { gameTeam.updateResult(any()) } returns Unit
+        return gameTeam
     }
 
     private fun createAssociation(id: Long): Association =

@@ -20,6 +20,7 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import io.mockk.every
@@ -38,6 +39,7 @@ import java.time.LocalDateTime
 class GameScorerServiceUndoTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
+    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
@@ -48,6 +50,7 @@ class GameScorerServiceUndoTest {
     fun setUp() {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
+        gameTeamRepository = mockk()
         boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
@@ -56,6 +59,7 @@ class GameScorerServiceUndoTest {
             GameScorerServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
+                gameTeamRepository,
                 boxScoreService,
                 gameEventRepository,
                 battingRecordRepository,
