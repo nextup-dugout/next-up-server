@@ -213,6 +213,7 @@ class TeamMembershipControllerTest {
             val request = KickMemberRequest(reason = "규율 위반", addToBlacklist = false)
             val kickerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
             every { teamMembershipService.getMember(1L, 10L) } returns kickerMember
+            every { teamMembershipService.getMemberById(50L) } returns createMockMember(id = 50L)
             justRun {
                 teamMembershipService.kickMember(
                     memberId = 50L,
@@ -283,6 +284,7 @@ class TeamMembershipControllerTest {
             val changerMember = createMockMember(id = 99L, role = TeamMemberRole.OWNER)
             val updatedMember = createMockMember(id = 50L, role = TeamMemberRole.MANAGER)
             every { teamMembershipService.getMember(1L, 10L) } returns changerMember
+            every { teamMembershipService.getMemberById(50L) } returns createMockMember(id = 50L)
             every {
                 teamMembershipService.changeRole(
                     memberId = 50L,

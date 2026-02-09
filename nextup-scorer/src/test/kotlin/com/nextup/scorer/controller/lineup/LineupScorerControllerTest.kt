@@ -33,7 +33,24 @@ class LineupScorerControllerTest {
         objectMapper = ObjectMapper()
 
         val controller = LineupScorerController(lineupService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                    object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+                        override fun supportsParameter(parameter: org.springframework.core.MethodParameter,): Boolean =
+                            parameter.hasParameterAnnotation(
+                                org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+                            )
+
+                        override fun resolveArgument(
+                            parameter: org.springframework.core.MethodParameter,
+                            mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+                            webRequest: org.springframework.web.context.request.NativeWebRequest,
+                            binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+                        ): Any = 2L
+                    },
+                ).build()
 
         // Mock submission
         mockSubmission =
@@ -160,8 +177,7 @@ class LineupScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/v1/scorer/lineups/1/confirm")
-                        .header("X-User-Id", 2L),
+                    post("/api/v1/scorer/lineups/1/confirm"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
@@ -200,7 +216,6 @@ class LineupScorerControllerTest {
                 .perform(
                     post("/api/v1/scorer/lineups/1/reject")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", 2L)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))

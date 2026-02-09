@@ -34,7 +34,24 @@ class LineupControllerTest {
         objectMapper = ObjectMapper()
 
         val controller = LineupController(lineupService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                    object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+                        override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+                            parameter.hasParameterAnnotation(
+                                org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+                            )
+
+                        override fun resolveArgument(
+                            parameter: org.springframework.core.MethodParameter,
+                            mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+                            webRequest: org.springframework.web.context.request.NativeWebRequest,
+                            binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+                        ): Any = 1L
+                    },
+                ).build()
 
         // Mock submission
         mockSubmission =
@@ -91,7 +108,6 @@ class LineupControllerTest {
                 .perform(
                     post("/api/v1/lineups")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", 1L)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))

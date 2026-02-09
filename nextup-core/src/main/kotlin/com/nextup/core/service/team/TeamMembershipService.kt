@@ -128,6 +128,14 @@ interface TeamMembershipService {
     ): TeamMember?
 
     /**
+     * 멤버 ID로 팀 멤버를 조회합니다.
+     *
+     * @param memberId 멤버 ID
+     * @return TeamMember (없으면 null)
+     */
+    fun getMemberById(memberId: Long): TeamMember?
+
+    /**
      * 팀을 생성하고 생성자를 OWNER로 등록합니다.
      *
      * @param userId 생성자 사용자 ID

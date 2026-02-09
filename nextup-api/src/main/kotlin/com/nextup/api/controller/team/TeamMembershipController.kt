@@ -115,6 +115,14 @@ class TeamMembershipController(
         teamMembershipService.getMember(teamId, kickerUserId)
             ?: throw IllegalStateException("You are not a member of this team")
 
+        // IDOR 방지: 대상 멤버가 해당 팀에 속하는지 검증
+        val targetMember =
+            teamMembershipService.getMemberById(memberId)
+                ?: throw IllegalStateException("Member not found: $memberId")
+        if (targetMember.team.id != teamId) {
+            throw IllegalStateException("Member does not belong to this team")
+        }
+
         teamMembershipService.kickMember(
             memberId = memberId,
             kickerUserId = kickerUserId,
@@ -154,6 +162,14 @@ class TeamMembershipController(
         // IDOR 방지: 요청자가 해당 팀의 멤버인지 검증
         teamMembershipService.getMember(teamId, changerUserId)
             ?: throw IllegalStateException("You are not a member of this team")
+
+        // IDOR 방지: 대상 멤버가 해당 팀에 속하는지 검증
+        val targetMember =
+            teamMembershipService.getMemberById(memberId)
+                ?: throw IllegalStateException("Member not found: $memberId")
+        if (targetMember.team.id != teamId) {
+            throw IllegalStateException("Member does not belong to this team")
+        }
 
         val member =
             teamMembershipService.changeRole(

@@ -7,11 +7,11 @@ import com.nextup.scorer.dto.lineup.LineupSubmissionResponse
 import com.nextup.scorer.dto.lineup.RejectLineupRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -75,7 +75,7 @@ class LineupScorerController(
     @PostMapping("/{submissionId}/confirm")
     fun confirmLineup(
         @PathVariable submissionId: Long,
-        @RequestHeader("X-User-Id") scorerUserId: Long,
+        @AuthenticationPrincipal scorerUserId: Long,
     ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
         val submission = lineupService.confirmLineup(submissionId, scorerUserId)
         val entries = lineupService.getLineupEntries(submissionId)
@@ -89,7 +89,7 @@ class LineupScorerController(
     @PostMapping("/{submissionId}/reject")
     fun rejectLineup(
         @PathVariable submissionId: Long,
-        @RequestHeader("X-User-Id") scorerUserId: Long,
+        @AuthenticationPrincipal scorerUserId: Long,
         @Valid @RequestBody request: RejectLineupRequest,
     ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
         val submission = lineupService.rejectLineup(submissionId, scorerUserId, request.reason)

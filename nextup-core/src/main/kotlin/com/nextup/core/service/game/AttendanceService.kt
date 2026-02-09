@@ -52,4 +52,46 @@ interface AttendanceService {
      * @return 생성된 투표 목록
      */
     fun createVotesForGame(gameId: Long): List<AttendanceVote>
+
+    /**
+     * 경기의 출석 투표 목록을 조회합니다.
+     *
+     * @param gameId 경기 ID
+     * @return 출석 투표 목록
+     */
+    fun getVotesByGameId(gameId: Long): List<AttendanceVote>
+
+    /**
+     * 경기 참가 팀의 멤버인지 검증합니다.
+     *
+     * @param gameId 경기 ID
+     * @param userId 사용자 ID
+     * @throws IllegalStateException if user is not a member of either team
+     */
+    fun verifyGameTeamMember(
+        gameId: Long,
+        userId: Long,
+    )
+
+    /**
+     * 경기에 참가하는 팀에서 사용자의 멤버를 찾습니다.
+     *
+     * @param gameId 경기 ID
+     * @param userId 사용자 ID
+     * @return 팀 멤버
+     * @throws IllegalStateException if game or member not found
+     */
+    fun findMemberInGame(
+        gameId: Long,
+        userId: Long,
+    ): TeamMember
+
+    /**
+     * 경기의 예정 시간을 조회합니다.
+     *
+     * @param gameId 경기 ID
+     * @return 경기 예정 시간
+     * @throws GameNotFoundException if game not found
+     */
+    fun getGameScheduledAt(gameId: Long): java.time.LocalDateTime
 }
