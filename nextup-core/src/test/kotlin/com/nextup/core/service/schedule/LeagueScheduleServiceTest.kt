@@ -385,6 +385,154 @@ class LeagueScheduleServiceTest {
         assertThat(conflicts).isEmpty()
     }
 
+    @Test
+    fun `should generate round robin schedule for 4 teams`() {
+        // given
+        val competition = createCompetition()
+        val teams =
+            listOf(
+                createTeam("팀A", 1L),
+                createTeam("팀B", 2L),
+                createTeam("팀C", 3L),
+                createTeam("팀D", 4L),
+            )
+
+        every { competitionRepository.findByIdOrNull(1L) } returns competition
+        teams.forEach { team ->
+            every { teamRepository.findByIdOrNull(team.id) } returns team
+        }
+        every { scheduleRepository.save(any<LeagueSchedule>()) } answers { firstArg() }
+
+        // when
+        val result =
+            service.generateRoundRobinSchedule(
+                competitionId = 1L,
+                teamIds = listOf(1L, 2L, 3L, 4L),
+                doubleRoundRobin = false,
+            )
+
+        // then
+        assertThat(result).hasSize(6) // 4C2 = 6 matches
+        assertThat(result.map { it.round }.distinct()).containsExactlyInAnyOrder(1, 2, 3)
+
+        // 각 팀이 정확히 3번씩 경기
+        val teamMatchCounts = mutableMapOf<Long, Int>()
+        result.forEach { schedule ->
+            teamMatchCounts[schedule.homeTeam.id] =
+                teamMatchCounts.getOrDefault(schedule.homeTeam.id, 0) + 1
+            teamMatchCounts[schedule.awayTeam.id] =
+                teamMatchCounts.getOrDefault(schedule.awayTeam.id, 0) + 1
+        }
+        assertThat(teamMatchCounts.values).allMatch { it == 3 }
+
+        verify(exactly = 6) { scheduleRepository.save(any<LeagueSchedule>()) }
+    }
+
+    @Test
+    fun `should generate double round robin schedule`() {
+        // given
+        val competition = createCompetition()
+        val teams =
+            listOf(
+                createTeam("팀A", 1L),
+                createTeam("팀B", 2L),
+                createTeam("팀C", 3L),
+            )
+
+        every { competitionRepository.findByIdOrNull(1L) } returns competition
+        teams.forEach { team ->
+            every { teamRepository.findByIdOrNull(team.id) } returns team
+        }
+        every { scheduleRepository.save(any<LeagueSchedule>()) } answers { firstArg() }
+
+        // when
+        val result =
+            service.generateRoundRobinSchedule(
+                competitionId = 1L,
+                teamIds = listOf(1L, 2L, 3L),
+                doubleRoundRobin = true,
+            )
+
+        // then
+        assertThat(result).hasSize(6) // 3C2 * 2 = 6 matches
+
+        // 각 팀이 정확히 4번씩 경기 (모든 상대와 2번씩)
+        val teamMatchCounts = mutableMapOf<Long, Int>()
+        result.forEach { schedule ->
+            teamMatchCounts[schedule.homeTeam.id] =
+                teamMatchCounts.getOrDefault(schedule.homeTeam.id, 0) + 1
+            teamMatchCounts[schedule.awayTeam.id] =
+                teamMatchCounts.getOrDefault(schedule.awayTeam.id, 0) + 1
+        }
+        assertThat(teamMatchCounts.values).allMatch { it == 4 }
+
+        verify(exactly = 6) { scheduleRepository.save(any<LeagueSchedule>()) }
+    }
+
+    @Test
+    fun `should throw CompetitionNotFoundException when generating schedule for non-existent competition`() {
+        // given
+        every { competitionRepository.findByIdOrNull(999L) } returns null
+
+        // when & then
+        assertThrows<CompetitionNotFoundException> {
+            service.generateRoundRobinSchedule(
+                competitionId = 999L,
+                teamIds = listOf(1L, 2L, 3L),
+            )
+        }
+    }
+
+    @Test
+    fun `should throw TeamNotFoundException when generating schedule with non-existent team`() {
+        // given
+        val competition = createCompetition()
+        every { competitionRepository.findByIdOrNull(1L) } returns competition
+        every { teamRepository.findByIdOrNull(1L) } returns createTeam("팀A", 1L)
+        every { teamRepository.findByIdOrNull(999L) } returns null
+
+        // when & then
+        assertThrows<TeamNotFoundException> {
+            service.generateRoundRobinSchedule(
+                competitionId = 1L,
+                teamIds = listOf(1L, 999L),
+            )
+        }
+    }
+
+    @Test
+    fun `should assign temporary dates with weekly intervals`() {
+        // given
+        val competition = createCompetition()
+        val teams =
+            listOf(
+                createTeam("팀A", 1L),
+                createTeam("팀B", 2L),
+                createTeam("팀C", 3L),
+            )
+
+        every { competitionRepository.findByIdOrNull(1L) } returns competition
+        teams.forEach { team ->
+            every { teamRepository.findByIdOrNull(team.id) } returns team
+        }
+        every { scheduleRepository.save(any<LeagueSchedule>()) } answers { firstArg() }
+
+        // when
+        val result =
+            service.generateRoundRobinSchedule(
+                competitionId = 1L,
+                teamIds = listOf(1L, 2L, 3L),
+            )
+
+        // then
+        val round1Date = result.first { it.round == 1 }.scheduledDate
+        val round2Date = result.first { it.round == 2 }.scheduledDate
+        val round3Date = result.first { it.round == 3 }.scheduledDate
+
+        assertThat(round2Date).isEqualTo(round1Date.plusWeeks(1))
+        assertThat(round3Date).isEqualTo(round1Date.plusWeeks(2))
+    }
+
     // ========== Helper Methods ==========
 
     private fun createCompetition(): Competition {
