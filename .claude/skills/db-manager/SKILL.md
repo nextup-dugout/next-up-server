@@ -3,13 +3,16 @@ name: db-manager
 description: |
   PostgreSQL/PostGIS 쿼리 검증 및 Flyway 마이그레이션 DDL 자동 생성을 수행하는 실행 스킬.
   GIS 쿼리 유효성 검사와 스키마 변경 관리를 담당한다.
+disable-model-invocation: true
+context: fork
+allowed-tools: Read, Bash, Glob, Grep
 ---
 
 # DB-Manager Skill - 데이터베이스 관리 스킬
 
 ## 개요
 
-이 스킬은 PostgreSQL/PostGIS 데이터베이스 관련 물리적 조작을 수행합니다. 판단(Agent)과 실행(Skill)의 분리 원칙에 따라, 이 스킬은 **실행만** 담당하며 스키마 설계 결정은 `modeler` 및 `logic-broker` 에이전트가 수행합니다.
+이 스킬은 PostgreSQL/PostGIS 데이터베이스 관련 물리적 조작을 수행합니다. 판단(Agent)과 실행(Skill)의 분리 원칙에 따라, 이 스킬은 **실행만** 담당하며 스키마 설계 결정은 `architect` 에이전트가 수행합니다.
 
 ## 사전 조건
 
@@ -142,27 +145,27 @@ def main():
     else:
         query = ' '.join(sys.argv[1:])
 
-    print("🔍 Validating PostGIS Query...")
+    print("Validating PostGIS Query...")
     print(f"Query: {query[:100]}..." if len(query) > 100 else f"Query: {query}")
     print()
 
     result = validate_postgis_query(query)
 
-    print(f"📊 Validation Result: {'✅ VALID' if result['valid'] else '❌ INVALID'}")
+    print(f"Validation Result: {'VALID' if result['valid'] else 'INVALID'}")
 
     if result['detected_functions']:
-        print(f"\n📌 Detected Functions: {', '.join(set(result['detected_functions']))}")
+        print(f"\nDetected Functions: {', '.join(set(result['detected_functions']))}")
 
     if result['detected_srids']:
-        print(f"📌 Detected SRIDs: {', '.join(map(str, set(result['detected_srids'])))}")
+        print(f"Detected SRIDs: {', '.join(map(str, set(result['detected_srids'])))}")
 
     if result['warnings']:
-        print(f"\n⚠️ Warnings ({len(result['warnings'])}):")
+        print(f"\nWarnings ({len(result['warnings'])}):")
         for i, warning in enumerate(result['warnings'], 1):
             print(f"  {i}. {warning}")
 
     if result['errors']:
-        print(f"\n❌ Errors ({len(result['errors'])}):")
+        print(f"\nErrors ({len(result['errors'])}):")
         for i, error in enumerate(result['errors'], 1):
             print(f"  {i}. {error}")
 
@@ -198,7 +201,7 @@ VERSION=$(date +%Y%m%d%H%M%S)
 FILENAME="V${VERSION}__${MIGRATION_NAME}.sql"
 FILEPATH="${MIGRATION_DIR}/${FILENAME}"
 
-echo "📝 Generating Flyway migration..."
+echo "Generating Flyway migration..."
 echo "  Name: $MIGRATION_NAME"
 echo "  File: $FILEPATH"
 
@@ -254,7 +257,7 @@ sed -i "s/\${MIGRATION_NAME}/${MIGRATION_NAME}/g" "$FILEPATH"
 sed -i '' "s/\${VERSION}/${VERSION}/g" "$FILEPATH" 2>/dev/null || \
 sed -i "s/\${VERSION}/${VERSION}/g" "$FILEPATH"
 
-echo "✅ Migration file created: $FILEPATH"
+echo "Migration file created: $FILEPATH"
 echo ""
 echo "Next steps:"
 echo "  1. Edit the migration file with your DDL statements"
@@ -319,6 +322,5 @@ bash .claude/skills/db-manager/scripts/generate_ddl.sh add_location_to_stadium
 
 ## 호출 에이전트
 
-- `logic-broker`: Repository 구현 시 DB 스키마 검증
-- `modeler`: Entity 설계 시 DDL 생성 요청
-- `scenario-tester`: 테스트용 DB 스키마 검증
+- `architect`: Repository 구현 시 DB 스키마 검증, Entity 설계 시 DDL 생성 요청
+- `reviewer`: 테스트용 DB 스키마 검증

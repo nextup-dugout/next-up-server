@@ -1,3 +1,13 @@
+---
+name: security-audit
+description: |
+  OWASP Top 10 기반 보안 취약점 검사 및 Zero Entity Leak 검증 체크리스트.
+  보안 심각도(CRITICAL/HIGH/MEDIUM/LOW) 분류 및 대응 가이드를 제공한다.
+user-invocable: false
+context: fork
+allowed-tools: Read, Glob, Grep
+---
+
 # Security Audit - OWASP & Code Security
 
 > OWASP Top 10 기반 보안 취약점 검사 및 코드 보안 체크리스트

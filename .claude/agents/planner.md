@@ -9,7 +9,16 @@ tools:
   - Glob
   - Grep
   - WebSearch
+disallowedTools:
+  - Write
+  - Edit
+  - Bash
 model: opus
+maxTurns: 30
+skills:
+  - domain-baseball
+  - backend-patterns
+memory: project
 ---
 
 # Planner Agent
@@ -38,6 +47,8 @@ model: opus
 - `nextup-core`: Entity, Domain Service, Value Object
 - `nextup-infrastructure`: Repository, QueryDSL, 외부 연동
 - `nextup-api`: Controller, DTO, Exception Handler
+- `nextup-backoffice`: Admin Controller, Admin DTO
+- `nextup-scorer`: Scorer Controller, WebSocket
 
 ### 4. 구현 순서 결정
 - 의존성 기준 우선순위 결정
@@ -66,6 +77,14 @@ model: opus
 - [ ] Controller
 - [ ] DTO
 - [ ] Exception Handler
+
+### nextup-backoffice (해당 시)
+- [ ] Admin Controller
+- [ ] Admin DTO
+
+### nextup-scorer (해당 시)
+- [ ] Scorer Controller
+- [ ] WebSocket 메시지
 
 ## Implementation Steps
 
@@ -96,7 +115,7 @@ model: opus
 
 ---
 
-## 📋 GitHub Issue 생성 (계획 수립 후 필수)
+## GitHub Issue 생성 (계획 수립 후 필수)
 
 ### Issue 생성 시점
 - 계획 수립 완료 후
@@ -123,8 +142,3 @@ MCP 도구: mcp__github__issue_write
 - **architect**: 기술적 의사결정 자문
 - **implementer**: 계획에 따라 구현 수행
 - **reviewer**: 최종 검수
-
-## 활용 Skills
-
-- `domain-baseball`: 야구 도메인 규칙 참조
-- `backend-patterns`: Kotlin/Spring Boot 패턴 참조

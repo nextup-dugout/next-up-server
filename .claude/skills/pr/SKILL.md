@@ -1,13 +1,33 @@
+---
+name: pr
+description: |
+  GitHub PR 생성 워크플로우. 브랜치 푸시, PR 제목/본문 작성, 이슈 자동 연결을 수행한다.
+  /review 통과 후 PR 생성을 권장한다.
+user-invocable: true
+argument-hint: "[issue-number] e.g. 42"
+allowed-tools: Bash, Read, Glob, Grep
+---
+
 # /pr - Create Pull Request
 
 GitHub PR을 생성합니다.
 
+## Arguments
+
+`$ARGUMENTS`를 통해 이슈 번호를 지정할 수 있습니다.
+
+| 사용법 | 설명 |
+|--------|------|
+| `/pr` | 브랜치명에서 이슈 번호 자동 추출 |
+| `/pr 123` | #123 이슈에 연결된 PR 생성 |
+| `/pr --skip-review` | review 검증 건너뛰기 (비권장) |
+
 ## Prerequisites
 
 PR 생성 전 필수 확인:
-1. ✅ `/review` 통과 (APPROVED)
-2. ✅ 모든 변경사항 커밋 완료
-3. ✅ 원격 브랜치에 푸시 완료
+1. `/review` 통과 (APPROVED)
+2. 모든 변경사항 커밋 완료
+3. 원격 브랜치에 푸시 완료
 
 ## PR Creation Process
 
@@ -83,64 +103,23 @@ Phase 2: 조회/통계 API 고도화 구현
 ## To Reviewer
 
 - 커버리지: 79%
-- 빌드/테스트: ✅ 통과
+- 빌드/테스트: 통과
 
 ## Screenshot
 
 N/A (API 전용)
 ```
 
-> ⚠️ **주의**: Summary의 `>- close #이슈번호` 형식을 정확히 지켜야 이슈가 자동으로 닫힙니다.
-
-## 사용 예시
-
-```
-User: /pr
-Assistant:
-PR 생성을 시작합니다...
-
-1. 현재 상태 확인...
-   Branch: feat/#5-agent-skill-refactoring
-   Commits: 8 ahead of develop
-
-2. 변경사항 확인...
-   - 15 files changed
-   - +1,234 / -567 lines
-
-3. /review 상태 확인...
-   ✅ APPROVED
-
-4. PR 생성 중...
-
-## PR Created Successfully
-
-- **Title**: feat(#5): Agent/Skill 구조 리팩토링
-- **URL**: https://github.com/nextup-dugout/next-up-server/pull/6
-- **Base**: develop
-- **Head**: feat/#5-agent-skill-refactoring
-
-다음 단계:
-- 리뷰어 지정
-- CI 통과 확인
-- 머지
-```
+> **주의**: Summary의 `>- close #이슈번호` 형식을 정확히 지켜야 이슈가 자동으로 닫힙니다.
 
 ## PR without Review (비권장)
 
 ```
 User: /pr --skip-review
 Assistant:
-⚠️ 경고: /review를 건너뜁니다.
+경고: /review를 건너뜁니다.
 
 빌드 실패, 테스트 실패, 보안 취약점이 있을 수 있습니다.
 계속하시겠습니까? (y/n)
 ```
 
-## 활용 Skills
-
-- `git-workflow`: GitHub 자동화
-
-## 활용 Agents
-
-- `devops`: PR 생성 및 관리
-- `reviewer`: PR 생성 전 검수

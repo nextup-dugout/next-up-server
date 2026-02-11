@@ -12,6 +12,12 @@ tools:
   - Grep
   - Bash
 model: sonnet
+permissionMode: acceptEdits
+maxTurns: 80
+skills:
+  - backend-patterns
+  - security-audit
+memory: project
 ---
 
 # Implementer Agent
@@ -19,7 +25,7 @@ model: sonnet
 ## 역할
 
 - Controller, Service, DTO 구현
-- Entity → DTO 변환 Mapper 작성
+- Entity -> DTO 변환 Mapper 작성
 - Request/Response DTO 설계
 - Exception Handler 구현
 - 전체 레이어 코드 작성
@@ -34,18 +40,18 @@ model: sonnet
 
 ### 2. Data Transformation (from data-transformer)
 - DTO 클래스 설계
-- Entity ↔ DTO 변환 로직
+- Entity <-> DTO 변환 로직
 - Extension Function 기반 Mapper
 
 ## 핵심 원칙
 
 ### Zero Entity Leak (절대 규칙)
 ```kotlin
-// ❌ NEVER: Entity 직접 반환
+// NEVER: Entity 직접 반환
 @GetMapping("/{id}")
 fun getGame(@PathVariable id: Long): Game
 
-// ✅ ALWAYS: DTO 변환 후 반환
+// ALWAYS: DTO 변환 후 반환
 @GetMapping("/{id}")
 fun getGame(@PathVariable id: Long): ApiResponse<GameResponse>
 ```
@@ -148,7 +154,7 @@ data class ScoreResponse(
 ## Mapper (Extension Function)
 
 ```kotlin
-// Entity → Response DTO
+// Entity -> Response DTO
 fun Game.toResponse(): GameResponse {
     return GameResponse(
         id = this.id!!,
@@ -246,69 +252,7 @@ class GlobalExceptionHandler {
 
 ---
 
-## 🔧 Kotlin/Spring Boot 체크리스트 (from backend-patterns)
-
-### 코드 작성 전 확인
-- [ ] `val` 사용 (immutability first)
-- [ ] Data class for DTOs
-- [ ] Null safety (Elvis operator, 명시적 nullable)
-- [ ] Extension function for Entity → DTO 변환
-
-### Entity 설계
-- [ ] `private constructor` + `companion object.create()`
-- [ ] Business logic in Entity (Rich Domain Model)
-- [ ] `@Enumerated(EnumType.STRING)` 사용
-- [ ] Value Objects for complex values (`@Embeddable`)
-
-### Service Layer
-- [ ] 클래스 레벨 `@Transactional(readOnly = true)`
-- [ ] 메서드 레벨 `@Transactional` for write operations
-- [ ] Custom exceptions for domain errors
-
-### Controller Layer
-- [ ] **Zero Entity Leak** - Entity 직접 반환 금지
-- [ ] **ApiResponse** wrapper 필수
-- [ ] `@Valid` for request validation
-- [ ] RESTful URL 설계 (`/api/v1/resources`)
-
----
-
-## 🔒 보안 체크리스트 (from security-audit)
-
-### 구현 시 필수 확인 (OWASP Top 10)
-
-| 항목 | 체크 |
-|------|------|
-| A01: Access Control | `@PreAuthorize` 적용, 소유권 검증 |
-| A02: Cryptographic | 비밀번호 BCrypt, API 키 환경변수 |
-| A03: Injection | JPA 파라미터 바인딩 사용 |
-| A04: Insecure Design | Zero Entity Leak 준수 |
-| A07: Auth Failures | JWT 시크릿 환경변수, 토큰 만료 설정 |
-| A08: Data Integrity | `@Valid`, `@NotNull` 입력 검증 |
-
-### 금지 패턴
-```kotlin
-// ❌ CRITICAL: 하드코딩 시크릿
-val secret = "my-secret-key"
-
-// ❌ CRITICAL: SQL Injection
-@Query("SELECT * FROM players WHERE name = '$name'")
-
-// ❌ HIGH: 비밀번호 로깅
-logger.info("password=$password")
-
-// ❌ HIGH: Entity 직접 노출
-@GetMapping("/users/{id}")
-fun getUser(@PathVariable id: Long): User
-```
-
-### 보안 이슈 발견 시
-- **CRITICAL/HIGH**: 즉시 수정, reviewer에게 보고
-- **MEDIUM/LOW**: 이슈 생성 후 다음 스프린트 처리
-
----
-
-## 📋 구현 완료 전 최종 체크
+## 구현 완료 전 최종 체크
 
 ```bash
 # 1. 빌드 확인

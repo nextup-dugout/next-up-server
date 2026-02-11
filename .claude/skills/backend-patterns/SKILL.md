@@ -1,3 +1,12 @@
+---
+name: backend-patterns
+description: |
+  Kotlin/Spring Boot 컨벤션 및 패턴 가이드. Entity 설계(Rich Domain Model),
+  Controller/Service 패턴, JPA 매핑, DTO 변환 규칙을 제공한다.
+user-invocable: false
+allowed-tools: Read, Glob, Grep
+---
+
 # Backend Patterns - Kotlin/Spring Boot
 
 > Kotlin + Spring Boot + JPA 기반 백엔드 개발 컨벤션 및 패턴
@@ -400,10 +409,9 @@ fun getGame(@PathVariable id: Long): Game  // ❌ Zero Entity Leak violation
 fun getGame(@PathVariable id: Long): ApiResponse<GameResponse>  // ✅ DTO
 ```
 
-## Agent Collaboration
+## Agent 협업
 
 이 Skill을 활용하는 Agent:
-- **modeler**: Entity 설계 및 비즈니스 로직 구현
-- **api-specialist**: Controller/Service/DTO 구현
-- **scenario-tester**: 테스트 코드 작성
-- **reviewer**: 코드 품질 검증 시 컨벤션 준수 확인
+- **architect**: Entity 설계 및 비즈니스 로직 구현
+- **implementer**: Controller/Service/DTO 구현
+- **reviewer**: 테스트 코드 작성 및 코드 품질 검증 시 컨벤션 준수 확인

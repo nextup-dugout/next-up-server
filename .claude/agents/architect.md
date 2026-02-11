@@ -12,6 +12,11 @@ tools:
   - Grep
   - WebSearch
 model: opus
+maxTurns: 50
+skills:
+  - backend-patterns
+  - domain-baseball
+memory: project
 ---
 
 # Architect Agent
@@ -45,7 +50,7 @@ model: opus
 
 ### Rich Domain Model
 ```kotlin
-// ✅ 비즈니스 로직은 Entity 내부에
+// 비즈니스 로직은 Entity 내부에
 @Entity
 class Game private constructor(...) {
     fun start() {
@@ -54,7 +59,7 @@ class Game private constructor(...) {
     }
 }
 
-// ❌ Service에 로직 두지 않음
+// Service에 로직 두지 않음
 class GameService {
     fun startGame(id: Long) {
         val game = findGame(id)
@@ -74,6 +79,7 @@ api → infrastructure → core → common
 - 비즈니스 로직은 Entity 메서드로 캡슐화
 - `@Enumerated(EnumType.STRING)` 필수
 - `var` 최소화, `val` 선호
+- `BaseTimeEntity` 상속 (createdAt, updatedAt - Instant 타입)
 
 ## Entity 템플릿
 
@@ -93,7 +99,7 @@ class Game private constructor(
 
     @Embedded
     var score: Score = Score()
-) : BaseEntity() {
+) : BaseTimeEntity() {
 
     companion object {
         fun create(homeTeamId: Long, awayTeamId: Long): Game {
@@ -183,82 +189,7 @@ Accepted / Proposed / Deprecated
 
 ---
 
-## 🏗️ Entity 설계 체크리스트 (from backend-patterns)
-
-### 필수 패턴
-- [ ] `private constructor` + `companion object.create()` 팩토리
-- [ ] Business logic in Entity (Rich Domain Model)
-- [ ] `@Enumerated(EnumType.STRING)` 사용
-- [ ] `var` 최소화, `val` 선호
-- [ ] `BaseEntity` 상속 (createdAt, updatedAt)
-
-### Value Objects
-```kotlin
-@Embeddable
-data class Score(
-    @Column(name = "home_score") val home: Int = 0,
-    @Column(name = "away_score") val away: Int = 0
-) {
-    init {
-        require(home >= 0 && away >= 0) { "Score must be non-negative" }
-    }
-}
-```
-
-### 관계 매핑
-```kotlin
-// ✅ 단방향 선호
-@ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "team_id", nullable = false)
-val team: Team
-
-// ❌ 양방향은 필요할 때만
-```
-
-### 금지 패턴
-```kotlin
-// ❌ Anemic Domain Model - 로직이 Service에 있음
-class Game {
-    var status: GameStatus = GameStatus.SCHEDULED
-}
-// Service에서 game.status = IN_PROGRESS 직접 변경
-
-// ✅ Rich Domain Model - 로직이 Entity에 있음
-class Game {
-    fun start() {
-        require(status == GameStatus.SCHEDULED)
-        status = GameStatus.IN_PROGRESS
-    }
-}
-```
-
----
-
-## 🗃️ Repository 체크리스트
-
-### 기본 구조
-- [ ] Core 모듈: interface 정의
-- [ ] Infrastructure 모듈: JPA + QueryDSL 구현
-- [ ] 비즈니스 로직 없음 (조회/저장만)
-
-### QueryDSL 패턴
-```kotlin
-// 복잡한 조건 쿼리
-fun findActiveByCondition(condition: SearchCondition): List<Entity> {
-    return queryFactory
-        .selectFrom(entity)
-        .where(
-            condition.status?.let { entity.status.eq(it) },
-            condition.dateFrom?.let { entity.createdAt.goe(it) }
-        )
-        .orderBy(entity.createdAt.desc())
-        .fetch()
-}
-```
-
----
-
-## 📋 설계 완료 전 최종 체크
+## 설계 완료 전 최종 체크
 
 - [ ] 의존성 방향 준수 (api → infra → core → common)
 - [ ] Entity에 비즈니스 로직 캡슐화

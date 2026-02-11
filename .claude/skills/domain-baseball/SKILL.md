@@ -1,3 +1,12 @@
+---
+name: domain-baseball
+description: |
+  야구 규칙 검증 체크리스트. DH 규칙, 기록 규칙, 특수 상황 판정 기준을 제공한다.
+  야구 도메인 엔티티(Game, BattingRecord, PitchingRecord 등) 작업 시 자동 호출된다.
+user-invocable: false
+allowed-tools: Read, Glob, Grep
+---
+
 # Baseball Domain Knowledge
 
 > 야구 도메인 로직 검증을 위한 규칙 및 체크리스트
@@ -149,6 +158,6 @@ DH 해제 트리거:
 ## Agent 협업
 
 이 Skill을 활용하는 Agent:
-- **baseball-expert**: 도메인 로직 검증 시 이 Skill의 체크리스트 활용
-- **modeler**: Entity 비즈니스 로직 구현 시 규칙 참조
+- **reviewer**: 도메인 로직 검증 시 이 Skill의 체크리스트 활용
+- **architect**: Entity 비즈니스 로직 구현 시 규칙 참조
 - **reviewer**: 최종 검수 시 야구 규칙 준수 여부 확인

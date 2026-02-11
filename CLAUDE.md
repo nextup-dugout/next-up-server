@@ -223,6 +223,7 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-02-11 | .claude/ 설정 리라이트: 스펙 활용도 35%→100%, Agent Memory 전체 적용, MCP 3서버, Hooks 4개, 커버리지 다층 기준 문서화 |
 | 2026-02-03 | Agent 협업 워크플로우 추가, Skill 내용 Agent에 merge |
 | 2026-02-01 | 모듈 구조 확장 (4개→6개): backoffice, scorer 모듈 추가 |
 | 2026-01-23 | Agent/Skill 구조 개선 (13개→5개 Agent, 4개→6개 Skill) |

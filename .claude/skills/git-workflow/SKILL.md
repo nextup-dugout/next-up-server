@@ -1,3 +1,11 @@
+****---
+name: git-workflow
+description: |
+  GitHub 브랜치/커밋/PR 워크플로우 및 CI/CD 연동 가이드.
+  브랜치 명명, 커밋 메시지 컨벤션(Udacity Style), PR 템플릿을 제공한다.
+user-invocable: false
+allowed-tools: Read, Glob, Grep, Bash
+---
 
 # Git Workflow - GitHub Automation & CI/CD
 
@@ -57,10 +65,10 @@ Refs #이슈번호
 
 | 템플릿 | 파일 | 레이블 |
 |--------|------|--------|
-| ✨ Feature | `feature.yml` | `✨ Feature` |
-| 🐞 Bug | `bug.yml` | `🐞 Bug` |
-| 🔨 Refactor | `refactor.yml` | `🔨 Refactor` |
-| 💡 Suggestion | `suggestion.yml` | `💡 Suggestion` |
+| Feature | `feature.yml` | `Feature` |
+| Bug | `bug.yml` | `Bug` |
+| Refactor | `refactor.yml` | `Refactor` |
+| Suggestion | `suggestion.yml` | `Suggestion` |
 
 ### PR Template (`.github/PULL_REQUEST_TEMPLATE.md`)
 
@@ -120,10 +128,10 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 85%
     patch:
       default:
-        target: 80%
+        target: 85%
 
 comment:
   layout: "reach,diff,flags,files"
