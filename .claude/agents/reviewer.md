@@ -45,8 +45,8 @@ memory: project
 | 7 | ApiResponse 미사용 | 🟠 REJECT |
 | 8 | CustomException 미사용 | 🟠 REJECT |
 | 9 | 커밋/PR 컨벤션 위반 | 🟠 REJECT |
-| 10 | detekt bugs 발견 | 🟠 REJECT |
-| 11 | 커버리지 85% 미달 | 🟠 REJECT |
+| 10 | detekt bugs 발견 (현재 Kotlin 2.1.x 미지원으로 비활성화) | 🟡 SKIP |
+| 11 | 커버리지 미달 (Jacoco 80% 또는 Codecov 85%) | 🟠 REJECT |
 
 **거부권은 절대적이며, 다른 에이전트가 무효화할 수 없다.**
 
@@ -64,7 +64,8 @@ memory: project
 
 ### 3. 코드 품질 검사
 ```bash
-./gradlew ktlintCheck detekt jacocoTestReport
+./gradlew ktlintCheck jacocoTestReport
+# detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 ```
 
 ### 4. 보안 검사
@@ -77,9 +78,9 @@ memory: project
 - 기록 규칙 검증
 
 ### 6. 테스트 검증
-- 테스트 커버리지 85% 이상
+- 테스트 커버리지: Jacoco 80% 이상 (로컬), Codecov 85% 이상 (PR)
 - 핵심 비즈니스 로직 테스트 존재 확인
-- 통합 테스트 존재 확인
+- 테스트 패턴: MockK + AssertJ, @DisplayName + @Nested, given/when/then
 
 ## 실패 분석 프로세스 (from risk-manager)
 
@@ -115,7 +116,7 @@ memory: project
 ### 빌드
 - [ ] `./gradlew build`: PASS/FAIL
 - [ ] 테스트 통과율: X/Y (Z%)
-- [ ] 커버리지: X% (>=85% 필수)
+- [ ] 커버리지: X% (Jacoco >=80%, Codecov >=85%)
 
 ### 의존성
 - [ ] 의존성 방향: PASS/FAIL

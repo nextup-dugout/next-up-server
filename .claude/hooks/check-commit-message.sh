@@ -6,7 +6,11 @@
 INPUT=$(cat)
 
 # tool_input.command에서 실행된 명령 추출
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
+if command -v jq &>/dev/null; then
+  COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
+else
+  COMMAND=$(echo "$INPUT" | grep -oP '"command"\s*:\s*"[^"]*"' | head -1 | grep -oP ':\s*"\K[^"]+' || true)
+fi
 
 # git commit 명령이 아니면 무시
 if ! echo "$COMMAND" | grep -qE 'git commit'; then

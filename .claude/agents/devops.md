@@ -52,16 +52,19 @@ memory: project
 
 ### Issue 생성
 ```
-MCP 도구: mcp__github__issue_write
-- method: "create"
+MCP 도구: mcp__github__create_issue
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - title: "[이슈 제목]"
 - body: "[본문]"
-- labels: ["✨ Feature" | "🐞 Bug" | "🔨 Refactor"]
+- labels: ["Feature" | "Bug" | "Refactor"]
 ```
 
 ### Branch 생성
 ```
 MCP 도구: mcp__github__create_branch
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - branch: "feat/#1-feature-name"
 - from_branch: "develop"
 ```
@@ -69,7 +72,9 @@ MCP 도구: mcp__github__create_branch
 ### PR 생성
 ```
 MCP 도구: mcp__github__create_pull_request
-- title: "[브랜치명 그대로]"
+- owner: "nextup-dugout"
+- repo: "next-up-server"
+- title: "타입(#이슈번호): 설명"
 - body: "[PR 템플릿 준수]"
 - head: "[feature-branch]"
 - base: "develop"
@@ -86,7 +91,12 @@ MCP 도구: mcp__github__create_pull_request
 
 ## PR 제목 규칙
 
-**PR 제목 = 브랜치명 그대로 사용**
+**`타입(#이슈번호): 설명` 형식 사용**
+
+| 브랜치 | PR 제목 |
+|--------|---------|
+| `feat/#1-user-auth` | `feat(#1): 사용자 인증 기능 구현` |
+| `fix/#2-login-error` | `fix(#2): 로그인 오류 수정` |
 
 ## PR 템플릿
 
@@ -149,7 +159,8 @@ jobs:
         run: ./gradlew build
 
       - name: Code Quality
-        run: ./gradlew ktlintCheck detekt
+        run: ./gradlew ktlintCheck
+        # detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 
       - name: Coverage Report
         run: ./gradlew jacocoTestReport

@@ -139,12 +139,13 @@ bugs - UnusedPrivateMember - Player.kt:45:5 - Private member 'backup' is unused
 
 ### 전체 품질 검사 (권장)
 ```bash
-./gradlew clean build ktlintCheck detekt jacocoTestReport
+./gradlew clean build ktlintCheck jacocoTestReport
+# detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 ```
 
 ### 빠른 검사 (테스트 제외)
 ```bash
-./gradlew ktlintCheck detekt --no-build-cache
+./gradlew ktlintCheck --no-build-cache
 ```
 
 ## 품질 검사 체크리스트
@@ -152,9 +153,9 @@ bugs - UnusedPrivateMember - Player.kt:45:5 - Private member 'backup' is unused
 ### PR 제출 전 필수 확인
 - [ ] `./gradlew build` 성공
 - [ ] 모든 테스트 통과
-- [ ] `./gradlew jacocoTestReport` - 커버리지 80% 이상
+- [ ] `./gradlew jacocoTestReport` - 커버리지 80% 이상 (Codecov 85%)
 - [ ] `./gradlew ktlintCheck` - 위반 0건
-- [ ] `./gradlew detekt` - bugs 0건
+- [ ] detekt - 비활성화 상태 (Kotlin 2.1.x 미지원)
 
 ### 실패 시 대응
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # NEXT-UP Zero Entity Leak Hook
 # Enforces: Controllers must never return domain entities directly

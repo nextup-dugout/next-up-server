@@ -30,11 +30,11 @@ Coverage target applies to:
 6. Verify coverage (80%+)
 ```
 
-## Test Types (ALL required)
+## Test Types
 
-1. **Unit Tests** - Entity business logic, Service layer, Utilities
-2. **Integration Tests** - Repository queries, API endpoints, Database operations
-3. **E2E Tests** - Critical user flows (REST Assured or WebTestClient)
+1. **Unit Tests** (필수) - Entity business logic, Service layer, Utilities
+2. **Integration Tests** (권장) - Repository queries, Database operations
+3. **E2E Tests** (선택) - Critical user flows (현재 프로젝트에서는 미사용)
 
 ## Mandatory TDD Layers
 
@@ -46,7 +46,7 @@ Coverage target applies to:
 
 **Optional (AI decides based on complexity):**
 - Controller (mostly integration tests)
-- Repository (QueryDSL tests)
+- Repository (JPA query tests)
 - DTO/Mapper (simple transformations)
 - Configuration classes
 

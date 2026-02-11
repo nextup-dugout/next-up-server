@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # NEXT-UP Dangerous Git Command Hook
 # Blocks: force push, hard reset, clean -f, and other destructive operations

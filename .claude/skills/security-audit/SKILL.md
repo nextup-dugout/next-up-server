@@ -197,17 +197,30 @@ logger.info("Login attempt: user=$username")
 - [ ] 내부 네트워크 접근 차단
 - [ ] URL 파라미터 검증
 
-## 보안 검사 명령어
+## 프로젝트 보안 컴포넌트 (검증 대상)
 
-### 의존성 취약점 스캔
-```bash
-./gradlew dependencyCheckAnalyze
+| 컴포넌트 | 위치 | 검증 포인트 |
+|----------|------|-------------|
+| `JwtTokenProvider` | `infrastructure/security/jwt/` | 시크릿 환경변수, 토큰 만료시간 |
+| `JwtAuthenticationFilter` | `infrastructure/security/jwt/` | 필터 체인 순서 |
+| `RateLimitFilter` | `infrastructure/security/filter/` | Bucket4j + Caffeine 설정 |
+| `CustomOAuth2UserService` | `infrastructure/security/oauth2/` | Kakao, Google, Naver 프로바이더 |
+| `CustomAccessDeniedHandler` | `infrastructure/security/handler/` | 에러 응답 형식 |
+| `AuthenticationService` | `infrastructure/security/` | 인증 로직 |
+
+### Security Filter Chain
 ```
+Request → RateLimitFilter → JwtAuthenticationFilter → UsernamePasswordAuthenticationFilter → ...
+```
+
+## 보안 검사 명령어
 
 ### 시크릿 스캔 (git-secrets)
 ```bash
 git secrets --scan
 ```
+
+> **Note**: OWASP Dependency Check 플러그인은 현재 미설정. 향후 추가 권장.
 
 ## 보안 이슈 발견 시 대응
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # NEXT-UP Dependency Direction Hook
 # Enforces: Core → Common ONLY, Common → NONE

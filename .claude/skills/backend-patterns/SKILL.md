@@ -19,6 +19,13 @@ allowed-tools: Read, Glob, Grep
 - **Database**: PostgreSQL + PostGIS
 - **Build**: Gradle 8.12 (Kotlin DSL)
 
+## Architecture
+
+이 프로젝트는 **Hexagonal Architecture (Ports & Adapters)** 기반입니다.
+- **Port** (core): Service 인터페이스, RepositoryPort 인터페이스
+- **Adapter** (infrastructure): ServiceImpl, JpaRepository, External API Client
+- **Inbound Adapter** (api/backoffice/scorer): Controller
+
 ## Kotlin Code Conventions
 
 ### Immutability First
@@ -139,39 +146,57 @@ data class Score(
 var status: GameStatus
 ```
 
-## Service Layer Patterns
+## Service Layer Patterns (Interface + Impl 분리)
 
-### Transaction Management
+### Core 모듈: Service 인터페이스
 ```kotlin
+// nextup-core/service/game/GameScheduleService.kt
+interface GameScheduleService {
+    fun createGame(homeTeamId: Long, awayTeamId: Long): Game
+    fun getGame(id: Long): Game
+}
+```
+
+### Infrastructure 모듈: ServiceImpl 구현체
+```kotlin
+// nextup-infrastructure/service/game/GameScheduleServiceImpl.kt
 @Service
 @Transactional(readOnly = true)
-class GameService(
-    private val gameRepository: GameRepository
-) {
+class GameScheduleServiceImpl(
+    private val gameRepository: GameRepositoryPort
+) : GameScheduleService {
     @Transactional  // Write operation
-    fun createGame(request: CreateGameRequest): GameResponse {
+    override fun createGame(homeTeamId: Long, awayTeamId: Long): Game {
         val game = Game.create(
-            homeTeamId = request.homeTeamId,
-            awayTeamId = request.awayTeamId
+            homeTeamId = homeTeamId,
+            awayTeamId = awayTeamId
         )
-        return gameRepository.save(game).toResponse()
+        return gameRepository.save(game)
     }
 
     // Read operation (no @Transactional override needed)
-    fun getGame(id: Long): GameResponse {
-        val game = gameRepository.findById(id)
+    override fun getGame(id: Long): Game {
+        return gameRepository.findById(id)
             .orElseThrow { GameNotFoundException(id) }
-        return game.toResponse()
     }
 }
 ```
 
-### Custom Exceptions
+### Custom Exceptions (3단계 계층)
 ```kotlin
-// Domain exception
-class GameNotFoundException(id: Long) : RuntimeException("Game not found: $id")
+// nextup-common의 Exception 계층:
+// RuntimeException
+//   └── BusinessException(code: String, message: String)
+//       ├── NotFoundException
+//       ├── InvalidStateException
+//       └── InvalidInputException
 
-class InvalidGameStateException(message: String) : IllegalStateException(message)
+// 도메인별 구체 예외 (nextup-common에 정의)
+class GameNotFoundException(id: Long) :
+    NotFoundException("GAME_NOT_FOUND", "Game not found: $id")
+
+class InvalidGameStateException(message: String) :
+    InvalidStateException("INVALID_GAME_STATE", message)
 ```
 
 ## Controller Patterns
@@ -228,59 +253,104 @@ data class ApiResponse<T>(
 }
 ```
 
-### Global Exception Handler
+### Global Exception Handler (각 API 모듈에 독립 정의)
 ```kotlin
 @RestControllerAdvice
 class GlobalExceptionHandler {
-    @ExceptionHandler(GameNotFoundException::class)
-    fun handleNotFound(ex: GameNotFoundException): ResponseEntity<ApiResponse<Unit>> {
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ResponseEntity<ApiResponse<Unit>> {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
-            .body(ApiResponse.error("GAME_NOT_FOUND", ex.message ?: "Game not found"))
+            .body(ApiResponse.error(ex.code, ex.message ?: "Not found"))
     }
 
-    @ExceptionHandler(InvalidGameStateException::class)
-    fun handleInvalidState(ex: InvalidGameStateException): ResponseEntity<ApiResponse<Unit>> {
+    @ExceptionHandler(InvalidStateException::class)
+    fun handleInvalidState(ex: InvalidStateException): ResponseEntity<ApiResponse<Unit>> {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("INVALID_GAME_STATE", ex.message ?: "Invalid game state"))
+            .body(ApiResponse.error(ex.code, ex.message ?: "Invalid state"))
+    }
+
+    @ExceptionHandler(BusinessException::class)
+    fun handleBusiness(ex: BusinessException): ResponseEntity<ApiResponse<Unit>> {
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiResponse.error(ex.code, ex.message ?: "Error"))
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
+        val message = ex.bindingResult.fieldErrors
+            .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("VALIDATION_ERROR", message))
     }
 }
 ```
 
-## Repository Patterns
+## Repository Patterns (2가지 전략 혼용)
 
-### Basic Repository
+### 전략 1: Direct JPA + Port (대부분의 repository)
 ```kotlin
-interface GameRepository : JpaRepository<Game, Long>
-```
-
-### QueryDSL for Complex Queries
-```kotlin
-interface GameRepositoryCustom {
-    fun findScheduledGames(teamId: Long): List<Game>
+// Core 모듈: Port 인터페이스
+interface GameRepositoryPort {
+    fun save(game: Game): Game
+    fun findById(id: Long): Optional<Game>
 }
 
+// Infrastructure 모듈: JPA가 직접 Port 구현
+interface GameRepository : JpaRepository<Game, Long>, GameRepositoryPort
+```
+
+### 전략 2: Adapter wrapping (복잡한 쿼리가 필요한 repository)
+```kotlin
+// Infrastructure 모듈: 내부 JPA Repository
+interface BracketEntryJpaRepository : JpaRepository<BracketEntry, Long> {
+    fun findByCompetitionId(competitionId: Long): List<BracketEntry>
+}
+
+// Adapter가 Port를 구현하며 JPA를 래핑
 @Repository
-class GameRepositoryImpl(
-    private val queryFactory: JPAQueryFactory
-) : GameRepositoryCustom {
-    override fun findScheduledGames(teamId: Long): List<Game> {
-        val game = QGame.game
-        return queryFactory
-            .selectFrom(game)
-            .where(
-                game.status.eq(GameStatus.SCHEDULED)
-                    .and(
-                        game.homeTeamId.eq(teamId)
-                            .or(game.awayTeamId.eq(teamId))
-                    )
-            )
-            .orderBy(game.scheduledDate.asc())
-            .fetch()
+class BracketEntryRepositoryAdapter(
+    private val jpaRepository: BracketEntryJpaRepository
+) : BracketEntryRepositoryPort {
+    override fun findByCompetitionId(competitionId: Long): List<BracketEntry> {
+        return jpaRepository.findByCompetitionId(competitionId)
     }
 }
 ```
+
+### 전략 선택 기준
+| 조건 | 전략 | 위치 |
+|------|------|------|
+| 기본 CRUD + 단순 쿼리 메서드 | Direct JPA + Port | `infrastructure/repository/` |
+| 복잡한 조합/변환 로직 | Adapter wrapping | `infrastructure/persistence/{domain}/` |
+
+## DTO 변환 패턴 (3가지 혼용)
+
+| 패턴 | 위치 | 예시 |
+|------|------|------|
+| Extension Function (Controller 내부) | Controller 파일 | `Team.toDetailResponse()` |
+| Dedicated Mapper class | `api/mapper/` | `BattingRecordMapper`, `StatsMapper` |
+| DTO companion `from()` / `toDomain()` | DTO 클래스 내부 | `PlateAppearanceRequestDto.toDomain()` |
+
+## JSON & Application 컨벤션
+
+```yaml
+# 모든 API 모듈 공통 설정
+spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE   # 필수
+    default-property-inclusion: non_null   # null 필드 제외
+  jpa:
+    open-in-view: false                    # 필수
+    properties:
+      hibernate.default_batch_fetch_size: 100
+```
+
+- **타임스탬프**: `Instant` 타입 사용 (UTC 기준), `LocalDateTime` 사용 금지
+- **JSON**: SNAKE_CASE 직렬화 (Jackson 전역 설정)
 
 ## Configuration Patterns
 
@@ -372,8 +442,8 @@ class GameRepositoryTest {
 - [ ] Global exception handler for consistency
 
 ### Repository Layer
-- [ ] Extend `JpaRepository` for basic CRUD
-- [ ] QueryDSL for complex queries
+- [ ] Extend `JpaRepository` for basic CRUD (Direct JPA+Port)
+- [ ] Adapter wrapping for complex queries
 - [ ] No business logic in Repository
 
 ## Anti-Patterns to Avoid

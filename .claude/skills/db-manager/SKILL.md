@@ -179,7 +179,10 @@ if __name__ == '__main__':
     main()
 ```
 
-### 2. generate_ddl.sh
+### 2. generate_ddl.sh (향후 Flyway 도입 시 사용)
+
+> **현재 상태**: 프로젝트는 Flyway/Liquibase 미사용 (ddl-auto: validate/create-drop).
+> 이 스크립트는 향후 Flyway 도입 시 활용 가능.
 
 Flyway 마이그레이션 DDL을 생성합니다.
 
@@ -296,7 +299,9 @@ python3 .claude/skills/db-manager/scripts/check_postgis.py \
 python3 .claude/skills/db-manager/scripts/check_postgis.py --file query.sql
 ```
 
-### Flyway 마이그레이션 생성
+### Flyway 마이그레이션 생성 (향후 도입 시)
+
+> 현재 ddl-auto 기반. Flyway 도입 후 사용 가능.
 
 ```bash
 bash .claude/skills/db-manager/scripts/generate_ddl.sh create_player_table

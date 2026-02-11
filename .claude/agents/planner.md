@@ -45,7 +45,7 @@ memory: project
 
 ### 3. 모듈별 영향도 분석
 - `nextup-core`: Entity, Domain Service, Value Object
-- `nextup-infrastructure`: Repository, QueryDSL, 외부 연동
+- `nextup-infrastructure`: Repository 구현, ServiceImpl, 외부 연동
 - `nextup-api`: Controller, DTO, Exception Handler
 - `nextup-backoffice`: Admin Controller, Admin DTO
 - `nextup-scorer`: Scorer Controller, WebSocket
@@ -70,8 +70,8 @@ memory: project
 - [ ] Value Object
 
 ### nextup-infrastructure
-- [ ] Repository 구현
-- [ ] QueryDSL 쿼리
+- [ ] Repository 구현 (Direct JPA+Port 또는 Adapter)
+- [ ] ServiceImpl 구현
 
 ### nextup-api
 - [ ] Controller
@@ -106,6 +106,28 @@ memory: project
   - Mitigation: [대응]
 ```
 
+## 서브도메인 목록 (17개, 영향 범위 파악용)
+
+admin, appeal, association, attendance, auth, certificate, competition,
+discipline, election, game, league, match, notification, player,
+recruitment, schedule, stadium, stats, team, user
+
+## 네이밍 컨벤션 참조
+
+| Layer | Pattern | Example |
+|-------|---------|---------|
+| Entity | `{Domain}` (단수) | `Game`, `Team`, `Player` |
+| Service Interface | `{Domain}Service` | `GameScheduleService` |
+| Service Impl | `{Domain}ServiceImpl` | `GameScheduleServiceImpl` |
+| Repository Port | `{Domain}RepositoryPort` | `GameRepositoryPort` |
+| Controller (API) | `{Domain}Controller` | `TeamController` |
+| Controller (Backoffice) | `{Domain}AdminController` | `LeagueAdminController` |
+| Controller (Scorer) | `{Domain}ScorerController` | `GameScorerController` |
+| DTO Request | `{Action}{Domain}Request` | `CreateGameRequest` |
+| DTO Response | `{Domain}Response` | `GameResponse` |
+| Exception | `{Domain}{Reason}Exception` | `GameNotFoundException` |
+| Test | `{ClassName}Test` | `TeamControllerTest` |
+
 ## Best Practices
 
 1. **구체적으로**: 정확한 파일 경로, 함수명 사용
@@ -121,13 +143,14 @@ memory: project
 - 계획 수립 완료 후
 - architect/implementer에게 전달하기 전
 
-### Issue 템플릿 사용
+### Issue 생성 (MCP)
 ```
-MCP 도구: mcp__github__issue_write
-- method: "create"
+MCP 도구: mcp__github__create_issue
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - title: "[기능명]"
 - body: "[계획 내용 요약]"
-- labels: ["✨ Feature"]
+- labels: ["Feature"]
 ```
 
 ### Issue 내용 포함 사항

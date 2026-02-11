@@ -30,7 +30,6 @@
     ]
   },
   "env": {
-    "JAVA_HOME": "${JAVA_HOME}",
     "GRADLE_OPTS": "-Dorg.gradle.daemon=true -Dorg.gradle.parallel=true"
   },
   "enableAllProjectMcpServers": true,
@@ -42,8 +41,7 @@
           {
             "type": "command",
             "command": ".claude/hooks/check-dependency-direction.sh",
-            "timeout": 10,
-            "statusMessage": "의존성 방향 검증 중..."
+            "timeout": 10
           }
         ]
       },
@@ -53,8 +51,7 @@
           {
             "type": "command",
             "command": ".claude/hooks/check-force-push.sh",
-            "timeout": 5,
-            "statusMessage": "위험 명령 검증 중..."
+            "timeout": 5
           }
         ]
       }
@@ -66,8 +63,7 @@
           {
             "type": "command",
             "command": ".claude/hooks/check-entity-leak.sh",
-            "timeout": 10,
-            "statusMessage": "Zero Entity Leak 검증 중..."
+            "timeout": 10
           }
         ]
       },
@@ -77,8 +73,7 @@
           {
             "type": "command",
             "command": ".claude/hooks/check-commit-message.sh",
-            "timeout": 5,
-            "statusMessage": "커밋 메시지 컨벤션 검증 중..."
+            "timeout": 5
           }
         ]
       }

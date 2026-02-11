@@ -72,14 +72,21 @@ data class ApiResponse<T>(
 }
 ```
 
-### CustomException 필수 사용
+### CustomException 필수 사용 (3단계 계층)
 ```kotlin
-// 도메인 예외 정의
+// nextup-common의 Exception 계층:
+// RuntimeException
+//   └── BusinessException(code: String, message: String)
+//       ├── NotFoundException
+//       ├── InvalidStateException
+//       └── InvalidInputException
+
+// 도메인별 구체 예외 (nextup-common에 정의)
 class GameNotFoundException(id: Long) :
-    BusinessException("GAME_NOT_FOUND", "Game not found: $id")
+    NotFoundException("GAME_NOT_FOUND", "Game not found: $id")
 
 class InvalidGameStateException(message: String) :
-    BusinessException("INVALID_GAME_STATE", message)
+    InvalidStateException("INVALID_GAME_STATE", message)
 ```
 
 ## Controller 템플릿
@@ -131,7 +138,7 @@ data class CreateGameRequest(
 
     @field:NotNull
     @field:Future
-    val scheduledAt: LocalDateTime
+    val scheduledAt: Instant
 )
 
 // Response DTO
@@ -141,7 +148,7 @@ data class GameResponse(
     val awayTeamId: Long,
     val status: GameStatus,
     val score: ScoreResponse,
-    val scheduledAt: LocalDateTime
+    val scheduledAt: Instant
 )
 
 // Nested DTO
@@ -179,30 +186,44 @@ fun List<Game>.toResponse(): List<GameResponse> {
 }
 ```
 
-## Service 템플릿
+## Service 계층 구조 (Interface + Impl 분리)
 
+> **Rich Domain Model 원칙**: Service는 Entity의 비즈니스 메서드를 **호출**만 한다.
+> 상태 변경 로직을 Service에 직접 작성하지 않는다 (예: `game.status = ...` 금지, `game.start()` 사용).
+
+### Core 모듈: Service 인터페이스
 ```kotlin
+// nextup-core/service/game/GameScheduleService.kt
+interface GameScheduleService {
+    fun createGame(request: CreateGameRequest): GameResponse
+    fun getGame(id: Long): GameResponse
+    fun startGame(id: Long): GameResponse
+}
+```
+
+### Infrastructure 모듈: ServiceImpl 구현체
+```kotlin
+// nextup-infrastructure/service/game/GameScheduleServiceImpl.kt
 @Service
 @Transactional(readOnly = true)
-class GameService(
-    private val gameRepository: GameRepository
-) {
+class GameScheduleServiceImpl(
+    private val gameRepository: GameRepositoryPort
+) : GameScheduleService {
     @Transactional
-    fun createGame(request: CreateGameRequest): GameResponse {
+    override fun createGame(request: CreateGameRequest): GameResponse {
         val game = Game.create(
             homeTeamId = request.homeTeamId,
-            awayTeamId = request.awayTeamId,
-            scheduledAt = request.scheduledAt
+            awayTeamId = request.awayTeamId
         )
         return gameRepository.save(game).toResponse()
     }
 
-    fun getGame(id: Long): GameResponse {
+    override fun getGame(id: Long): GameResponse {
         return findGame(id).toResponse()
     }
 
     @Transactional
-    fun startGame(id: Long): GameResponse {
+    override fun startGame(id: Long): GameResponse {
         val game = findGame(id)
         game.start()  // Business logic in Entity
         return game.toResponse()
@@ -210,26 +231,45 @@ class GameService(
 
     private fun findGame(id: Long): Game {
         return gameRepository.findById(id)
-            ?: throw GameNotFoundException(id)
+            .orElseThrow { GameNotFoundException(id) }
     }
 }
 ```
 
+## DTO 변환 패턴 (3가지 혼용)
+
+| 패턴 | 위치 | 예시 |
+|------|------|------|
+| Extension Function | Controller 또는 별도 파일 | `Team.toDetailResponse()` |
+| Dedicated Mapper class | `api/mapper/` | `BattingRecordMapper`, `StatsMapper` |
+| DTO companion `from()` | DTO 클래스 내부 | `PlateAppearanceRequestDto.toDomain()` |
+
 ## Global Exception Handler
+
+각 API 모듈(api, backoffice, scorer)이 독립적으로 정의:
 
 ```kotlin
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ResponseEntity<ApiResponse<Unit>> {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error(ex.code, ex.message ?: "Not found"))
+    }
+
+    @ExceptionHandler(InvalidStateException::class)
+    fun handleInvalidState(ex: InvalidStateException): ResponseEntity<ApiResponse<Unit>> {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error(ex.code, ex.message ?: "Invalid state"))
+    }
+
     @ExceptionHandler(BusinessException::class)
     fun handleBusiness(ex: BusinessException): ResponseEntity<ApiResponse<Unit>> {
-        val status = when (ex) {
-            is NotFoundException -> HttpStatus.NOT_FOUND
-            is InvalidStateException -> HttpStatus.BAD_REQUEST
-            else -> HttpStatus.INTERNAL_SERVER_ERROR
-        }
         return ResponseEntity
-            .status(status)
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ApiResponse.error(ex.code, ex.message ?: "Error"))
     }
 

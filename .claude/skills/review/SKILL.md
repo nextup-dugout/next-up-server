@@ -32,17 +32,14 @@ allowed-tools: Bash, Read, Glob, Grep
 
 ### 2. Code Quality
 ```bash
-# ktlint (active)
 ./gradlew ktlintCheck
-
-# detekt (현재 비활성화 - Kotlin 2.1.x 미지원)
-# ./gradlew detekt
+# detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 ```
 
 ### 3. Coverage Check
 ```bash
 ./gradlew jacocoTestReport
-# Target: 80%+
+# Jacoco: 80%+ (로컬), Codecov: 85%+ (PR 머지)
 ```
 
 ### 4. Security Scan
@@ -65,8 +62,8 @@ allowed-tools: Bash, Read, Glob, Grep
 | 의존성 규칙 위반 | CRITICAL |
 | 보안 취약점 (CRITICAL/HIGH) | CRITICAL |
 | Zero Entity Leak 위반 | CRITICAL |
-| 커버리지 80% 미달 | HIGH |
-| detekt bugs 발견 | HIGH |
+| 커버리지 미달 (Jacoco 80% 또는 Codecov 85%) | HIGH |
+| detekt bugs 발견 (현재 비활성화) | SKIP |
 | ktlint 에러 | MEDIUM |
 
 ## Review Report Template

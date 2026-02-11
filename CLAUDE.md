@@ -180,8 +180,8 @@ nextup-scorer     ─┘
 | 7 | ApiResponse 미사용 | 🟠 REJECT |
 | 8 | CustomException 미사용 | 🟠 REJECT |
 | 9 | 커밋/PR 컨벤션 위반 | 🟠 REJECT |
-| 10 | detekt bugs 발견 | 🟠 REJECT |
-| 11 | 커버리지 80% 미달 | 🟠 REJECT |
+| 10 | detekt bugs 발견 | 🟡 SKIP (Kotlin 2.1.x 미지원으로 비활성화) |
+| 11 | 커버리지 미달 (Jacoco 80% 또는 Codecov 85%) | 🟠 REJECT |
 
 **거부권은 절대적이며, 다른 에이전트가 무효화할 수 없습니다.**
 
