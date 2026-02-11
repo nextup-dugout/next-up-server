@@ -17,7 +17,10 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# Block force push variants
+# Block force push variants (allow --force-with-lease as safer alternative)
+if echo "$COMMAND" | grep -qE 'git\s+push\s+.*--force-with-lease'; then
+  exit 0
+fi
 if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f|--force)'; then
   echo "BLOCKED: Force push is forbidden. It can overwrite remote history." >&2
   echo "Use 'git push --force-with-lease' if absolutely necessary (requires user approval)." >&2
