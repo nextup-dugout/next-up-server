@@ -1,3 +1,10 @@
+---
+paths:
+  - "**/*Test.kt"
+  - "**/test/**/*.kt"
+  - "nextup-core/src/main/**/*.kt"
+---
+
 # TDD Requirements
 
 ## Minimum Test Coverage: 80%
@@ -23,25 +30,25 @@ Coverage target applies to:
 6. Verify coverage (80%+)
 ```
 
-## Test Types (ALL required)
+## Test Types
 
-1. **Unit Tests** - Entity business logic, Service layer, Utilities
-2. **Integration Tests** - Repository queries, API endpoints, Database operations
-3. **E2E Tests** - Critical user flows (REST Assured or WebTestClient)
+1. **Unit Tests** (필수) - Entity business logic, Service layer, Utilities
+2. **Integration Tests** (권장) - Repository queries, Database operations
+3. **E2E Tests** (선택) - Critical user flows (현재 프로젝트에서는 미사용)
 
 ## Mandatory TDD Layers
 
 **MUST apply TDD:**
-- ✅ `nextup-core/Entity` business logic (Rich Domain Model)
-- ✅ `nextup-core/Service` layer
-- ✅ `nextup-core/Domain Events`
-- ✅ `nextup-core/Value Objects`
+- nextup-core/Entity business logic (Rich Domain Model)
+- nextup-core/Service layer
+- nextup-core/Domain Events
+- nextup-core/Value Objects
 
 **Optional (AI decides based on complexity):**
-- 🟡 Controller (mostly integration tests)
-- 🟡 Repository (QueryDSL tests)
-- 🟡 DTO/Mapper (simple transformations)
-- 🟡 Configuration classes
+- Controller (mostly integration tests)
+- Repository (JPA query tests)
+- DTO/Mapper (simple transformations)
+- Configuration classes
 
 ## Test Naming Convention
 
@@ -87,17 +94,16 @@ class GameServiceTest {
 
 Before ANY commit:
 - [ ] Run `./gradlew test jacocoTestReport`
-- [ ] Verify coverage ≥ 80% in Core/Service layers
+- [ ] Verify coverage >= 80% in Core/Service layers
 - [ ] All tests PASS
 - [ ] No ignored tests without valid reason
 
 ## Troubleshooting Test Failures
 
-1. Use **scenario-tester** agent for test design
-2. Check test isolation (no shared state)
-3. Verify mocks are correct (prefer real objects in integration tests)
-4. Fix implementation, not tests (unless tests are wrong)
-5. If stuck, use **risk-manager** agent for analysis
+1. Check test isolation (no shared state)
+2. Verify mocks are correct (prefer real objects in integration tests)
+3. Fix implementation, not tests (unless tests are wrong)
+4. If stuck, analyze root cause before retrying
 
 ## When to Skip TDD
 
@@ -108,9 +114,3 @@ TDD is NOT required for:
 - Trivial getters/setters
 
 **Use AI judgment for borderline cases.**
-
-## Agent Support
-
-- **scenario-tester** - Use PROACTIVELY for test design and implementation
-- **risk-manager** - Use when tests fail to analyze root cause
-- **reviewer** - Enforces 80% coverage, auto-REJECT if below threshold

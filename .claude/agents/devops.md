@@ -12,6 +12,13 @@ tools:
   - Glob
   - Grep
 model: sonnet
+maxTurns: 30
+skills:
+  - git-workflow
+  - quality-metrics
+mcpServers:
+  - github
+memory: project
 ---
 
 # DevOps Agent
@@ -45,16 +52,19 @@ model: sonnet
 
 ### Issue 생성
 ```
-MCP 도구: mcp__github__issue_write
-- method: "create"
+MCP 도구: mcp__github__create_issue
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - title: "[이슈 제목]"
 - body: "[본문]"
-- labels: ["✨ Feature" | "🐞 Bug" | "🔨 Refactor"]
+- labels: ["Feature" | "Bug" | "Refactor"]
 ```
 
 ### Branch 생성
 ```
 MCP 도구: mcp__github__create_branch
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - branch: "feat/#1-feature-name"
 - from_branch: "develop"
 ```
@@ -62,7 +72,9 @@ MCP 도구: mcp__github__create_branch
 ### PR 생성
 ```
 MCP 도구: mcp__github__create_pull_request
-- title: "[브랜치명 그대로]"
+- owner: "nextup-dugout"
+- repo: "next-up-server"
+- title: "타입(#이슈번호): 설명"
 - body: "[PR 템플릿 준수]"
 - head: "[feature-branch]"
 - base: "develop"
@@ -79,7 +91,12 @@ MCP 도구: mcp__github__create_pull_request
 
 ## PR 제목 규칙
 
-**PR 제목 = 브랜치명 그대로 사용**
+**`타입(#이슈번호): 설명` 형식 사용**
+
+| 브랜치 | PR 제목 |
+|--------|---------|
+| `feat/#1-user-auth` | `feat(#1): 사용자 인증 기능 구현` |
+| `fix/#2-login-error` | `fix(#2): 로그인 오류 수정` |
 
 ## PR 템플릿
 
@@ -142,7 +159,8 @@ jobs:
         run: ./gradlew build
 
       - name: Code Quality
-        run: ./gradlew ktlintCheck detekt
+        run: ./gradlew ktlintCheck
+        # detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 
       - name: Coverage Report
         run: ./gradlew jacocoTestReport
@@ -161,10 +179,11 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 85%
+        threshold: 2%
     patch:
       default:
-        target: 80%
+        target: 85%
 
 comment:
   layout: "reach,diff,flags,files"
@@ -173,31 +192,7 @@ comment:
 
 ---
 
-## 📝 커밋 메시지 컨벤션 (from git-workflow)
-
-### 형식
-```
-type(#이슈번호): subject (50자 이내)
-
-body (선택, 72자 줄바꿈)
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-```
-
-### Type 종류
-
-| Type | 설명 | 예시 |
-|------|------|------|
-| `feat` | 새로운 기능 | `feat(#1): 선수 등록 API 구현` |
-| `fix` | 버그 수정 | `fix(#2): 로그인 오류 수정` |
-| `refactor` | 리팩토링 | `refactor(#3): GameService 분리` |
-| `test` | 테스트 | `test(#4): PlayerRepository 테스트 추가` |
-| `docs` | 문서화 | `docs(#5): API 문서 업데이트` |
-| `chore` | 기타 | `chore: Gradle 설정 변경` |
-
----
-
-## 🔄 PR 워크플로우
+## PR 워크플로우
 
 ### reviewer APPROVED 후 머지 순서
 1. reviewer로부터 APPROVED 받음
@@ -219,8 +214,3 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - **architect**: 설계 문서 업데이트 요청
 - **implementer**: 구현 완료 후 PR 생성 요청
 - **reviewer**: PR 승인 후 머지 진행
-
-## 활용 Skills
-
-- `git-workflow`: GitHub 자동화 워크플로우
-- `quality-metrics`: CI 파이프라인 품질 검사

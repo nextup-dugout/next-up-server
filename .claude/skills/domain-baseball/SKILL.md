@@ -1,3 +1,12 @@
+---
+name: domain-baseball
+description: |
+  야구 규칙 검증 체크리스트. DH 규칙, 기록 규칙, 특수 상황 판정 기준을 제공한다.
+  야구 도메인 엔티티(Game, BattingRecord, PitchingRecord 등) 작업 시 자동 호출된다.
+user-invocable: false
+allowed-tools: Read, Glob, Grep
+---
+
 # Baseball Domain Knowledge
 
 > 야구 도메인 로직 검증을 위한 규칙 및 체크리스트
@@ -139,6 +148,28 @@ DH 해제 트리거:
 - [ ] 인필드 플라이 조건이 정확한가?
 - [ ] 보크 상황 및 처리가 올바른가?
 
+## 프로젝트 Entity 매핑
+
+검증 시 아래 Entity 메서드가 이 문서의 규칙과 일치하는지 확인:
+
+### Game Entity (경기 진행)
+- `Game.start()`, `Game.finish()` — 경기 시작/종료
+- `Game.cancel(reason)`, `Game.callGame(reason)` — 취소/콜드게임
+- `Game.forfeit(winnerTeamId, reason, teams)` — 몰수패
+- `Game.postpone(newScheduledAt, reason)`, `Game.reschedule(newScheduledAt)` — 연기/일정변경
+- `Game.recordOut(): Boolean` — 아웃 기록, `Game.advanceBatter()` — 타순 진행
+- `Game.setRunner(base, playerId)` — 주자 설정
+- `Game.addBall(): Boolean`, `Game.addStrike(): Boolean` — 볼/스트라이크 카운트
+- Computed: `currentInningDisplay`, `isExtraInning`
+
+### BattingRecord / PitchingRecord (기록)
+- `PlateAppearanceResult` enum — 타석 결과 (안타, 삼진, 볼넷 등)
+- `PitchResult` enum — 투구 결과
+- `PitchingDecision` enum — 승/패/세이브/홀드
+
+### LineupEntry / LineupSubmission (라인업)
+- `LineupValidator` — DH 규칙 포함 라인업 검증
+
 ## 규칙 참조
 
 **주의**: 이 문서의 규칙은 일반적인 야구 규칙입니다. 상세한 조항은 다음을 참조:
@@ -149,6 +180,6 @@ DH 해제 트리거:
 ## Agent 협업
 
 이 Skill을 활용하는 Agent:
-- **baseball-expert**: 도메인 로직 검증 시 이 Skill의 체크리스트 활용
-- **modeler**: Entity 비즈니스 로직 구현 시 규칙 참조
+- **reviewer**: 도메인 로직 검증 시 이 Skill의 체크리스트 활용
+- **architect**: Entity 비즈니스 로직 구현 시 규칙 참조
 - **reviewer**: 최종 검수 시 야구 규칙 준수 여부 확인

@@ -1,3 +1,12 @@
+---
+name: quality-metrics
+description: |
+  Gradle 빌드, JUnit 테스트, Jacoco 커버리지(80%+), ktlint 1.5.0 정적분석 통합 품질 관리.
+  코드 품질 검증 및 CI/CD 파이프라인 연동을 담당한다.
+user-invocable: false
+allowed-tools: Read, Bash, Glob, Grep
+---
+
 # Quality Metrics - Build, Test & Code Analysis
 
 > Gradle 빌드, JUnit 테스트, Jacoco 커버리지, ktlint, detekt 통합 품질 관리
@@ -62,6 +71,15 @@ but expected minimum is 0.80
 
 **해결:** 테스트 추가하여 80% 이상 달성
 
+### 커버리지 다층 기준
+| 기준 | 타겟 | 용도 |
+|------|------|------|
+| **Jacoco minimum** | **80%** | 로컬 빌드 최소 기준 (`build.gradle.kts`) |
+| **Codecov project/patch** | **85%** | CI/CD PR 머지 기준 (`codecov.yml`) |
+| **Reviewer VETO** | **85%** | Reviewer 에이전트 자동 REJECT 기준 |
+
+> Jacoco 80%는 개발 중 최소 기준이며, PR 머지 시에는 Codecov 85%를 통과해야 합니다.
+
 ## ktlint (코드 스타일)
 
 ### 검사 실행
@@ -78,7 +96,7 @@ but expected minimum is 0.80
 - 들여쓰기: 4 spaces
 - 최대 줄 길이: 120자
 - import 정렬: 알파벳순
-- trailing comma 필수
+- trailing comma 비활성화 (`.editorconfig`에서 disabled)
 
 ### 위반 시 출력 예시
 ```
@@ -87,6 +105,9 @@ but expected minimum is 0.80
 ```
 
 ## detekt (정적 분석)
+
+> **Note**: detekt는 현재 Kotlin 2.1.x 미지원으로 전체 비활성화 상태입니다 (`enabled = false`).
+> CI에서 `./gradlew detekt || true`로 실행되며, 결과는 참고용입니다.
 
 ### 검사 실행
 ```bash
@@ -118,12 +139,13 @@ bugs - UnusedPrivateMember - Player.kt:45:5 - Private member 'backup' is unused
 
 ### 전체 품질 검사 (권장)
 ```bash
-./gradlew clean build ktlintCheck detekt jacocoTestReport
+./gradlew clean build ktlintCheck jacocoTestReport
+# detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
 ```
 
 ### 빠른 검사 (테스트 제외)
 ```bash
-./gradlew ktlintCheck detekt --no-build-cache
+./gradlew ktlintCheck --no-build-cache
 ```
 
 ## 품질 검사 체크리스트
@@ -131,9 +153,9 @@ bugs - UnusedPrivateMember - Player.kt:45:5 - Private member 'backup' is unused
 ### PR 제출 전 필수 확인
 - [ ] `./gradlew build` 성공
 - [ ] 모든 테스트 통과
-- [ ] `./gradlew jacocoTestReport` - 커버리지 80% 이상
+- [ ] `./gradlew jacocoTestReport` - 커버리지 80% 이상 (Codecov 85%)
 - [ ] `./gradlew ktlintCheck` - 위반 0건
-- [ ] `./gradlew detekt` - bugs 0건
+- [ ] detekt - 비활성화 상태 (Kotlin 2.1.x 미지원)
 
 ### 실패 시 대응
 
@@ -182,7 +204,7 @@ plugins {
 }
 
 ktlint {
-    version = "1.1.1"
+    version = "1.5.0"
     android = false
     ignoreFailures = false
 }
@@ -191,12 +213,13 @@ ktlint {
 ### detekt 설정
 ```kotlin
 plugins {
-    id("io.gitlab.arturbosch.detekt") version "1.23.4"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
+    // enabled = false  // Kotlin 2.1.x 미지원으로 비활성화
 }
 ```
 

@@ -1,3 +1,11 @@
+---
+name: git-workflow
+description: |
+  GitHub 브랜치/커밋/PR 워크플로우 및 CI/CD 연동 가이드.
+  브랜치 명명, 커밋 메시지 컨벤션(Udacity Style), PR 템플릿을 제공한다.
+user-invocable: false
+allowed-tools: Read, Glob, Grep, Bash
+---
 
 # Git Workflow - GitHub Automation & CI/CD
 
@@ -25,12 +33,12 @@
 
 ## PR 제목 규칙
 
-**`type: 설명 (#이슈번호)` 형식을 사용합니다.**
+**`타입(#이슈번호): 설명` 형식을 사용합니다.**
 
 | 브랜치명 | PR 제목 |
 |---------|---------|
-| `feat/#1-agent-skill-architecture` | `feat: Agent Skill 아키텍처 구축 (#1)` |
-| `fix/#2-build-failure` | `fix: 빌드 실패 수정 (#2)` |
+| `feat/#1-agent-skill-architecture` | `feat(#1): Agent Skill 아키텍처 구축` |
+| `fix/#2-build-failure` | `fix(#2): 빌드 실패 수정` |
 
 ## 커밋 메시지 컨벤션 (Udacity Style)
 
@@ -57,10 +65,10 @@ Refs #이슈번호
 
 | 템플릿 | 파일 | 레이블 |
 |--------|------|--------|
-| ✨ Feature | `feature.yml` | `✨ Feature` |
-| 🐞 Bug | `bug.yml` | `🐞 Bug` |
-| 🔨 Refactor | `refactor.yml` | `🔨 Refactor` |
-| 💡 Suggestion | `suggestion.yml` | `💡 Suggestion` |
+| Feature | `feature.yml` | `Feature` |
+| Bug | `bug.yml` | `Bug` |
+| Refactor | `refactor.yml` | `Refactor` |
+| Suggestion | `suggestion.yml` | `Suggestion` |
 
 ### PR Template (`.github/PULL_REQUEST_TEMPLATE.md`)
 
@@ -120,10 +128,10 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 85%
     patch:
       default:
-        target: 80%
+        target: 85%
 
 comment:
   layout: "reach,diff,flags,files"
@@ -135,20 +143,21 @@ comment:
 ### 이슈 관리
 ```
 mcp__github__list_issues: owner, repo, state
-mcp__github__issue_read: method="get", owner, repo, issue_number
-mcp__github__issue_write: method="create", owner, repo, title, body, labels
+mcp__github__get_issue: owner, repo, issue_number
+mcp__github__create_issue: owner, repo, title, body, labels
+mcp__github__update_issue: owner, repo, issue_number, state, title, body
 ```
 
 ### PR 관리
 ```
 mcp__github__create_pull_request: owner, repo, title, body, head, base
-mcp__github__pull_request_read: method="get"|"get_diff", owner, repo, pullNumber
-mcp__github__merge_pull_request: owner, repo, pullNumber, merge_method
+mcp__github__get_pull_request: owner, repo, pull_number
+mcp__github__get_pull_request_files: owner, repo, pull_number
+mcp__github__merge_pull_request: owner, repo, pull_number, merge_method
 ```
 
 ### 브랜치 관리
 ```
-mcp__github__list_branches: owner, repo
 mcp__github__create_branch: owner, repo, branch, from_branch
 ```
 

@@ -9,7 +9,16 @@ tools:
   - Glob
   - Grep
   - WebSearch
+disallowedTools:
+  - Write
+  - Edit
+  - Bash
 model: opus
+maxTurns: 30
+skills:
+  - domain-baseball
+  - backend-patterns
+memory: project
 ---
 
 # Planner Agent
@@ -36,8 +45,10 @@ model: opus
 
 ### 3. 모듈별 영향도 분석
 - `nextup-core`: Entity, Domain Service, Value Object
-- `nextup-infrastructure`: Repository, QueryDSL, 외부 연동
+- `nextup-infrastructure`: Repository 구현, ServiceImpl, 외부 연동
 - `nextup-api`: Controller, DTO, Exception Handler
+- `nextup-backoffice`: Admin Controller, Admin DTO
+- `nextup-scorer`: Scorer Controller, WebSocket
 
 ### 4. 구현 순서 결정
 - 의존성 기준 우선순위 결정
@@ -59,13 +70,21 @@ model: opus
 - [ ] Value Object
 
 ### nextup-infrastructure
-- [ ] Repository 구현
-- [ ] QueryDSL 쿼리
+- [ ] Repository 구현 (Direct JPA+Port 또는 Adapter)
+- [ ] ServiceImpl 구현
 
 ### nextup-api
 - [ ] Controller
 - [ ] DTO
 - [ ] Exception Handler
+
+### nextup-backoffice (해당 시)
+- [ ] Admin Controller
+- [ ] Admin DTO
+
+### nextup-scorer (해당 시)
+- [ ] Scorer Controller
+- [ ] WebSocket 메시지
 
 ## Implementation Steps
 
@@ -87,6 +106,28 @@ model: opus
   - Mitigation: [대응]
 ```
 
+## 서브도메인 목록 (17개, 영향 범위 파악용)
+
+admin, appeal, association, attendance, auth, certificate, competition,
+discipline, election, game, league, match, notification, player,
+recruitment, schedule, stadium, stats, team, user
+
+## 네이밍 컨벤션 참조
+
+| Layer | Pattern | Example |
+|-------|---------|---------|
+| Entity | `{Domain}` (단수) | `Game`, `Team`, `Player` |
+| Service Interface | `{Domain}Service` | `GameScheduleService` |
+| Service Impl | `{Domain}ServiceImpl` | `GameScheduleServiceImpl` |
+| Repository Port | `{Domain}RepositoryPort` | `GameRepositoryPort` |
+| Controller (API) | `{Domain}Controller` | `TeamController` |
+| Controller (Backoffice) | `{Domain}AdminController` | `LeagueAdminController` |
+| Controller (Scorer) | `{Domain}ScorerController` | `GameScorerController` |
+| DTO Request | `{Action}{Domain}Request` | `CreateGameRequest` |
+| DTO Response | `{Domain}Response` | `GameResponse` |
+| Exception | `{Domain}{Reason}Exception` | `GameNotFoundException` |
+| Test | `{ClassName}Test` | `TeamControllerTest` |
+
 ## Best Practices
 
 1. **구체적으로**: 정확한 파일 경로, 함수명 사용
@@ -96,19 +137,20 @@ model: opus
 
 ---
 
-## 📋 GitHub Issue 생성 (계획 수립 후 필수)
+## GitHub Issue 생성 (계획 수립 후 필수)
 
 ### Issue 생성 시점
 - 계획 수립 완료 후
 - architect/implementer에게 전달하기 전
 
-### Issue 템플릿 사용
+### Issue 생성 (MCP)
 ```
-MCP 도구: mcp__github__issue_write
-- method: "create"
+MCP 도구: mcp__github__create_issue
+- owner: "nextup-dugout"
+- repo: "next-up-server"
 - title: "[기능명]"
 - body: "[계획 내용 요약]"
-- labels: ["✨ Feature"]
+- labels: ["Feature"]
 ```
 
 ### Issue 내용 포함 사항
@@ -123,8 +165,3 @@ MCP 도구: mcp__github__issue_write
 - **architect**: 기술적 의사결정 자문
 - **implementer**: 계획에 따라 구현 수행
 - **reviewer**: 최종 검수
-
-## 활용 Skills
-
-- `domain-baseball`: 야구 도메인 규칙 참조
-- `backend-patterns`: Kotlin/Spring Boot 패턴 참조

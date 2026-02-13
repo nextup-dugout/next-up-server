@@ -45,3 +45,5 @@ out/
 .omc/
 /docs
 /outputs
+/_analysis
+/_output

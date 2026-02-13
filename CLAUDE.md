@@ -180,8 +180,8 @@ nextup-scorer     ─┘
 | 7 | ApiResponse 미사용 | 🟠 REJECT |
 | 8 | CustomException 미사용 | 🟠 REJECT |
 | 9 | 커밋/PR 컨벤션 위반 | 🟠 REJECT |
-| 10 | detekt bugs 발견 | 🟠 REJECT |
-| 11 | 커버리지 80% 미달 | 🟠 REJECT |
+| 10 | detekt bugs 발견 | 🟡 SKIP (Kotlin 2.1.x 미지원으로 비활성화) |
+| 11 | 커버리지 미달 (Jacoco 80% 또는 Codecov 85%) | 🟠 REJECT |
 
 **거부권은 절대적이며, 다른 에이전트가 무효화할 수 없습니다.**
 
@@ -223,6 +223,7 @@ outputs/
 
 | 날짜 | 변경 내용 |
 |------|-----------|
+| 2026-02-11 | .claude/ 설정 리라이트: 스펙 활용도 35%→100%, Agent Memory 전체 적용, MCP 3서버, Hooks 4개, 커버리지 다층 기준 문서화 |
 | 2026-02-03 | Agent 협업 워크플로우 추가, Skill 내용 Agent에 merge |
 | 2026-02-01 | 모듈 구조 확장 (4개→6개): backoffice, scorer 모듈 추가 |
 | 2026-01-23 | Agent/Skill 구조 개선 (13개→5개 Agent, 4개→6개 Skill) |
