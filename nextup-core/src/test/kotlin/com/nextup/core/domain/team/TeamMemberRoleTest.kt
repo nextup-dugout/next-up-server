@@ -26,10 +26,16 @@ class TeamMemberRoleTest {
         }
 
         @Test
+        fun `should GUEST not have approve join permission`() {
+            assertThat(TeamMemberRole.GUEST.canApproveJoin()).isFalse()
+        }
+
+        @Test
         fun `should only OWNER have kick permission`() {
             assertThat(TeamMemberRole.OWNER.canKickMember()).isTrue()
             assertThat(TeamMemberRole.MANAGER.canKickMember()).isFalse()
             assertThat(TeamMemberRole.MEMBER.canKickMember()).isFalse()
+            assertThat(TeamMemberRole.GUEST.canKickMember()).isFalse()
         }
 
         @Test
@@ -37,6 +43,23 @@ class TeamMemberRoleTest {
             assertThat(TeamMemberRole.OWNER.canChangeRole()).isTrue()
             assertThat(TeamMemberRole.MANAGER.canChangeRole()).isFalse()
             assertThat(TeamMemberRole.MEMBER.canChangeRole()).isFalse()
+            assertThat(TeamMemberRole.GUEST.canChangeRole()).isFalse()
+        }
+
+        @Test
+        fun `should GUEST not be able to vote in poll`() {
+            assertThat(TeamMemberRole.GUEST.canVoteInPoll()).isFalse()
+            assertThat(TeamMemberRole.MEMBER.canVoteInPoll()).isTrue()
+            assertThat(TeamMemberRole.MANAGER.canVoteInPoll()).isTrue()
+            assertThat(TeamMemberRole.OWNER.canVoteInPoll()).isTrue()
+        }
+
+        @Test
+        fun `should GUEST not be able to participate in election`() {
+            assertThat(TeamMemberRole.GUEST.canParticipateInElection()).isFalse()
+            assertThat(TeamMemberRole.MEMBER.canParticipateInElection()).isTrue()
+            assertThat(TeamMemberRole.MANAGER.canParticipateInElection()).isTrue()
+            assertThat(TeamMemberRole.OWNER.canParticipateInElection()).isTrue()
         }
     }
 
@@ -74,6 +97,9 @@ class TeamMemberRoleTest {
             assertThat(TeamMemberRole.OWNER.isHigherOrEqual(TeamMemberRole.MANAGER)).isTrue()
             assertThat(TeamMemberRole.MANAGER.isHigherOrEqual(TeamMemberRole.MANAGER)).isTrue()
             assertThat(TeamMemberRole.MEMBER.isHigherOrEqual(TeamMemberRole.MANAGER)).isFalse()
+            assertThat(TeamMemberRole.MEMBER.isHigherThan(TeamMemberRole.GUEST)).isTrue()
+            assertThat(TeamMemberRole.GUEST.isHigherOrEqual(TeamMemberRole.GUEST)).isTrue()
+            assertThat(TeamMemberRole.GUEST.isHigherOrEqual(TeamMemberRole.MEMBER)).isFalse()
         }
     }
 
@@ -85,6 +111,7 @@ class TeamMemberRoleTest {
             assertThat(TeamMemberRole.OWNER.displayName).isEqualTo("감독")
             assertThat(TeamMemberRole.MANAGER.displayName).isEqualTo("운영진")
             assertThat(TeamMemberRole.MEMBER.displayName).isEqualTo("일반 회원")
+            assertThat(TeamMemberRole.GUEST.displayName).isEqualTo("게스트")
         }
 
         @Test
@@ -92,6 +119,7 @@ class TeamMemberRoleTest {
             assertThat(TeamMemberRole.OWNER.level).isEqualTo(100)
             assertThat(TeamMemberRole.MANAGER.level).isEqualTo(50)
             assertThat(TeamMemberRole.MEMBER.level).isEqualTo(10)
+            assertThat(TeamMemberRole.GUEST.level).isEqualTo(1)
         }
     }
 }
