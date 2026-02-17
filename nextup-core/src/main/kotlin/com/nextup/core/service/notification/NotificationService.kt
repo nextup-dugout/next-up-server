@@ -1,6 +1,7 @@
 package com.nextup.core.service.notification
 
 import com.nextup.common.exception.DeviceTokenNotFoundException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.NotificationNotFoundException
 import com.nextup.core.domain.notification.DeviceToken
 import com.nextup.core.domain.notification.Notification
@@ -61,6 +62,21 @@ class NotificationService(
 
     /**
      * 알림을 읽음 처리합니다.
+     * 소유권 검증: 인증된 사용자만 자신의 알림을 읽음 처리할 수 있습니다.
+     */
+    @Transactional
+    fun markAsRead(
+        notificationId: Long,
+        authenticatedUserId: Long,
+    ): Notification {
+        val notification = getById(notificationId)
+        verifyNotificationOwnership(notification, authenticatedUserId)
+        notification.markAsRead()
+        return notification
+    }
+
+    /**
+     * 알림을 읽음 처리합니다 (내부 호출용).
      */
     @Transactional
     fun markAsRead(notificationId: Long): Notification {
@@ -98,6 +114,23 @@ class NotificationService(
 
     /**
      * 디바이스 토큰을 삭제합니다.
+     * 소유권 검증: 인증된 사용자만 자신의 디바이스 토큰을 삭제할 수 있습니다.
+     */
+    @Transactional
+    fun removeDevice(
+        tokenId: Long,
+        authenticatedUserId: Long,
+    ) {
+        val deviceToken =
+            deviceTokenRepository.findByIdOrNull(tokenId)
+                ?: throw DeviceTokenNotFoundException(tokenId)
+
+        verifyDeviceTokenOwnership(deviceToken, authenticatedUserId)
+        deviceTokenRepository.deleteByToken(deviceToken.token)
+    }
+
+    /**
+     * 디바이스 토큰을 삭제합니다 (내부 호출용).
      */
     @Transactional
     fun removeDevice(tokenId: Long) {
@@ -139,4 +172,28 @@ class NotificationService(
      * 사용자의 알림 설정 목록을 조회합니다.
      */
     fun getUserPreferences(userId: Long): List<NotificationPreference> = preferenceRepository.findByUserId(userId)
+
+    private fun verifyNotificationOwnership(
+        notification: Notification,
+        authenticatedUserId: Long,
+    ) {
+        if (notification.userId != authenticatedUserId) {
+            throw ForbiddenException(
+                "NOTIFICATION_ACCESS_DENIED",
+                "해당 알림에 접근 권한이 없습니다",
+            )
+        }
+    }
+
+    private fun verifyDeviceTokenOwnership(
+        deviceToken: DeviceToken,
+        authenticatedUserId: Long,
+    ) {
+        if (deviceToken.userId != authenticatedUserId) {
+            throw ForbiddenException(
+                "DEVICE_TOKEN_ACCESS_DENIED",
+                "해당 디바이스 토큰에 접근 권한이 없습니다",
+            )
+        }
+    }
 }

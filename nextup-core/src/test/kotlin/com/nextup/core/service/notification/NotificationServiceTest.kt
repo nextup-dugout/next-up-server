@@ -1,6 +1,7 @@
 package com.nextup.core.service.notification
 
 import com.nextup.common.exception.DeviceTokenNotFoundException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.NotificationNotFoundException
 import com.nextup.core.domain.notification.DevicePlatform
 import com.nextup.core.domain.notification.DeviceToken
@@ -243,6 +244,72 @@ class NotificationServiceTest {
         assertThat(exception.message).contains("999")
     }
 
+    // ========== markAsRead with ownership verification Tests ==========
+
+    @Test
+    fun `인증된 사용자가 자신의 알림을 읽음 처리할 수 있다`() {
+        // given
+        val notificationId = 1L
+        val authenticatedUserId = 1L
+        val notification =
+            Notification.create(
+                userId = authenticatedUserId,
+                type = NotificationType.GAME_START,
+                title = "알림",
+                body = "내용",
+            )
+
+        every { notificationRepository.findByIdOrNull(notificationId) } returns notification
+
+        // when
+        val result = notificationService.markAsRead(notificationId, authenticatedUserId)
+
+        // then
+        assertThat(result.isRead()).isTrue()
+        assertThat(result.readAt).isNotNull()
+
+        verify(exactly = 1) { notificationRepository.findByIdOrNull(notificationId) }
+    }
+
+    @Test
+    fun `다른 사용자의 알림을 읽음 처리하면 ForbiddenException이 발생한다`() {
+        // given
+        val notificationId = 1L
+        val ownerUserId = 1L
+        val otherUserId = 999L
+        val notification =
+            Notification.create(
+                userId = ownerUserId,
+                type = NotificationType.GAME_START,
+                title = "알림",
+                body = "내용",
+            )
+
+        every { notificationRepository.findByIdOrNull(notificationId) } returns notification
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                notificationService.markAsRead(notificationId, otherUserId)
+            }
+
+        assertThat(exception.code).isEqualTo("NOTIFICATION_ACCESS_DENIED")
+    }
+
+    @Test
+    fun `존재하지 않는 알림을 소유권 검증으로 읽음 처리하면 NotificationNotFoundException이 발생한다`() {
+        // given
+        val notificationId = 999L
+        val authenticatedUserId = 1L
+
+        every { notificationRepository.findByIdOrNull(notificationId) } returns null
+
+        // when & then
+        assertThrows<NotificationNotFoundException> {
+            notificationService.markAsRead(notificationId, authenticatedUserId)
+        }
+    }
+
     // ========== getById Tests ==========
 
     @Test
@@ -386,6 +453,72 @@ class NotificationServiceTest {
         assertThat(exception.message).contains("999")
 
         verify(exactly = 1) { deviceTokenRepository.findByIdOrNull(tokenId) }
+        verify(exactly = 0) { deviceTokenRepository.deleteByToken(any()) }
+    }
+
+    // ========== removeDevice with ownership verification Tests ==========
+
+    @Test
+    fun `인증된 사용자가 자신의 디바이스 토큰을 삭제할 수 있다`() {
+        // given
+        val tokenId = 1L
+        val authenticatedUserId = 1L
+        val deviceToken =
+            DeviceToken.create(
+                userId = authenticatedUserId,
+                token = "fcm-token-12345",
+                platform = DevicePlatform.ANDROID,
+            )
+
+        every { deviceTokenRepository.findByIdOrNull(tokenId) } returns deviceToken
+        every { deviceTokenRepository.deleteByToken(deviceToken.token) } returns Unit
+
+        // when
+        notificationService.removeDevice(tokenId, authenticatedUserId)
+
+        // then
+        verify(exactly = 1) { deviceTokenRepository.findByIdOrNull(tokenId) }
+        verify(exactly = 1) { deviceTokenRepository.deleteByToken(deviceToken.token) }
+    }
+
+    @Test
+    fun `다른 사용자의 디바이스 토큰을 삭제하면 ForbiddenException이 발생한다`() {
+        // given
+        val tokenId = 1L
+        val ownerUserId = 1L
+        val otherUserId = 999L
+        val deviceToken =
+            DeviceToken.create(
+                userId = ownerUserId,
+                token = "fcm-token-12345",
+                platform = DevicePlatform.ANDROID,
+            )
+
+        every { deviceTokenRepository.findByIdOrNull(tokenId) } returns deviceToken
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                notificationService.removeDevice(tokenId, otherUserId)
+            }
+
+        assertThat(exception.code).isEqualTo("DEVICE_TOKEN_ACCESS_DENIED")
+        verify(exactly = 0) { deviceTokenRepository.deleteByToken(any()) }
+    }
+
+    @Test
+    fun `존재하지 않는 디바이스 토큰을 소유권 검증으로 삭제하면 DeviceTokenNotFoundException이 발생한다`() {
+        // given
+        val tokenId = 999L
+        val authenticatedUserId = 1L
+
+        every { deviceTokenRepository.findByIdOrNull(tokenId) } returns null
+
+        // when & then
+        assertThrows<DeviceTokenNotFoundException> {
+            notificationService.removeDevice(tokenId, authenticatedUserId)
+        }
+
         verify(exactly = 0) { deviceTokenRepository.deleteByToken(any()) }
     }
 
