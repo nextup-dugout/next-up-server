@@ -34,16 +34,32 @@ class AttendanceVote private constructor(
     @Enumerated(EnumType.STRING)
     @Column(name = "vote_type", nullable = false, length = 20)
     var voteType: VoteType,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "absence_reason", length = 20)
+    var absenceReason: AbsenceReason? = null,
+    @Column(name = "reason_detail", length = 500)
+    var reasonDetail: String? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
     /**
      * 투표를 변경합니다.
+     *
+     * @param newVoteType 새로운 투표 유형
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
      */
-    fun changeVote(newVoteType: VoteType) {
+    fun changeVote(
+        newVoteType: VoteType,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
+    ) {
         check(poll.canVote()) { "투표를 변경할 수 없습니다. 마감되었거나 기한이 지났습니다." }
+        validateAbsenceReason(newVoteType, absenceReason, reasonDetail)
         this.voteType = newVoteType
+        this.absenceReason = absenceReason
+        this.reasonDetail = reasonDetail
     }
 
     /**
@@ -63,20 +79,43 @@ class AttendanceVote private constructor(
          * @param poll 출석 투표
          * @param player 선수
          * @param voteType 투표 유형
+         * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+         * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
          * @return 생성된 AttendanceVote
          */
         fun create(
             poll: AttendancePoll,
             player: Player,
             voteType: VoteType,
+            absenceReason: AbsenceReason? = null,
+            reasonDetail: String? = null,
         ): AttendanceVote {
             check(poll.canVote()) { "투표가 마감되었거나 기한이 지났습니다." }
+            validateAbsenceReason(voteType, absenceReason, reasonDetail)
 
             return AttendanceVote(
                 poll = poll,
                 player = player,
                 voteType = voteType,
+                absenceReason = absenceReason,
+                reasonDetail = reasonDetail,
             )
+        }
+
+        private fun validateAbsenceReason(
+            voteType: VoteType,
+            absenceReason: AbsenceReason?,
+            reasonDetail: String?,
+        ) {
+            if (voteType == VoteType.ATTEND) {
+                require(absenceReason == null) { "참석 투표 시 불참 사유를 입력할 수 없습니다." }
+                require(reasonDetail == null) { "참석 투표 시 상세 사유를 입력할 수 없습니다." }
+            }
+            if (reasonDetail != null) {
+                require(absenceReason == AbsenceReason.OTHER) {
+                    "상세 사유는 기타(OTHER) 사유 선택 시에만 입력할 수 있습니다."
+                }
+            }
         }
     }
 }

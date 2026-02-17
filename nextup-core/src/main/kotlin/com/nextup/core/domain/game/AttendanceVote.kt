@@ -1,6 +1,7 @@
 package com.nextup.core.domain.game
 
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.team.TeamMember
 import jakarta.persistence.*
 import java.time.LocalDateTime
@@ -32,8 +33,11 @@ class AttendanceVote private constructor(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: AttendanceStatus = AttendanceStatus.UNDECIDED,
-    @Column(length = 500)
-    var reason: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "absence_reason", length = 20)
+    var absenceReason: AbsenceReason? = null,
+    @Column(name = "reason_detail", length = 500)
+    var reasonDetail: String? = null,
     @Column(name = "responded_at")
     var respondedAt: LocalDateTime? = null,
     @Id
@@ -56,18 +60,22 @@ class AttendanceVote private constructor(
      * 투표합니다.
      *
      * @param newStatus 투표 상태
-     * @param reason 사유
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
      * @throws IllegalStateException 투표 권한이 없는 경우
      */
     fun vote(
         newStatus: AttendanceStatus,
-        reason: String? = null,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
     ) {
         check(this.member.canVote) {
             "투표 권한이 없는 회원입니다."
         }
+        validateAbsenceReason(newStatus, absenceReason, reasonDetail)
         this.status = newStatus
-        this.reason = reason
+        this.absenceReason = absenceReason
+        this.reasonDetail = reasonDetail
         this.respondedAt = LocalDateTime.now()
     }
 
@@ -75,19 +83,39 @@ class AttendanceVote private constructor(
      * 투표를 변경합니다.
      *
      * @param newStatus 새로운 투표 상태
-     * @param reason 사유
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
      * @throws IllegalStateException 아직 투표하지 않은 경우
      */
     fun changeVote(
         newStatus: AttendanceStatus,
-        reason: String? = null,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
     ) {
         check(this.hasResponded) {
             "아직 투표하지 않았습니다."
         }
+        validateAbsenceReason(newStatus, absenceReason, reasonDetail)
         this.status = newStatus
-        this.reason = reason
+        this.absenceReason = absenceReason
+        this.reasonDetail = reasonDetail
         this.respondedAt = LocalDateTime.now()
+    }
+
+    private fun validateAbsenceReason(
+        status: AttendanceStatus,
+        absenceReason: AbsenceReason?,
+        reasonDetail: String?,
+    ) {
+        if (status == AttendanceStatus.ATTENDING) {
+            require(absenceReason == null) { "참석 투표 시 불참 사유를 입력할 수 없습니다." }
+            require(reasonDetail == null) { "참석 투표 시 상세 사유를 입력할 수 없습니다." }
+        }
+        if (reasonDetail != null) {
+            require(absenceReason == AbsenceReason.OTHER) {
+                "상세 사유는 기타(OTHER) 사유 선택 시에만 입력할 수 있습니다."
+            }
+        }
     }
 
     companion object {

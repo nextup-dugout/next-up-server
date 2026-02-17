@@ -4,6 +4,7 @@ import com.nextup.common.exception.AttendancePollClosedException
 import com.nextup.common.exception.AttendancePollNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
@@ -59,6 +60,8 @@ class AttendanceServiceImpl(
         pollId: Long,
         playerId: Long,
         voteType: VoteType,
+        absenceReason: AbsenceReason?,
+        reasonDetail: String?,
     ): AttendanceVote {
         val poll =
             attendancePollRepository.findById(pollId)
@@ -76,7 +79,7 @@ class AttendanceServiceImpl(
         val existingVote = attendanceVoteRepository.findByPollIdAndPlayerId(pollId, playerId)
         if (existingVote != null) {
             // Update existing vote
-            existingVote.changeVote(voteType)
+            existingVote.changeVote(voteType, absenceReason, reasonDetail)
             return attendanceVoteRepository.save(existingVote)
         }
 
@@ -85,6 +88,8 @@ class AttendanceServiceImpl(
                 poll = poll,
                 player = player,
                 voteType = voteType,
+                absenceReason = absenceReason,
+                reasonDetail = reasonDetail,
             )
 
         return attendanceVoteRepository.save(vote)

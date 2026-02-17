@@ -1,5 +1,6 @@
 package com.nextup.api.dto.attendance
 
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
 import java.time.LocalDateTime
 
@@ -11,7 +12,8 @@ data class AttendanceVoteResponse(
     val gameId: Long,
     val memberId: Long,
     val status: AttendanceStatus,
-    val reason: String?,
+    val absenceReason: AbsenceReason?,
+    val reasonDetail: String?,
     val respondedAt: LocalDateTime?,
 )
 
@@ -34,7 +36,8 @@ data class MemberVoteResponse(
     val voteId: Long,
     val member: MemberSummary,
     val status: AttendanceStatus,
-    val reason: String?,
+    val absenceReason: AbsenceReason?,
+    val reasonDetail: String?,
     val respondedAt: LocalDateTime?,
 )
 

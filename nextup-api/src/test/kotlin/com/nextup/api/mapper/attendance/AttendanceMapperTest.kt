@@ -1,5 +1,6 @@
 package com.nextup.api.mapper.attendance
 
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
@@ -46,7 +47,8 @@ class AttendanceMapperTest {
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.ATTENDING
-                every { reason } returns null
+                every { absenceReason } returns null
+                every { reasonDetail } returns null
                 every { this@mockk.respondedAt } returns respondedAt
             }
 
@@ -58,8 +60,32 @@ class AttendanceMapperTest {
         assertThat(response.gameId).isEqualTo(1L)
         assertThat(response.memberId).isEqualTo(50L)
         assertThat(response.status).isEqualTo(AttendanceStatus.ATTENDING)
-        assertThat(response.reason).isNull()
+        assertThat(response.absenceReason).isNull()
+        assertThat(response.reasonDetail).isNull()
         assertThat(response.respondedAt).isEqualTo(respondedAt)
+    }
+
+    @Test
+    fun `should map AttendanceVote with absence reason to response`() {
+        // given
+        val respondedAt = LocalDateTime.of(2026, 2, 1, 10, 0)
+        val vote =
+            mockk<AttendanceVote> {
+                every { id } returns 2L
+                every { this@mockk.game } returns this@AttendanceMapperTest.game
+                every { this@mockk.member } returns this@AttendanceMapperTest.member
+                every { status } returns AttendanceStatus.ABSENT
+                every { absenceReason } returns AbsenceReason.INJURY
+                every { reasonDetail } returns null
+                every { this@mockk.respondedAt } returns respondedAt
+            }
+
+        // when
+        val response = vote.toResponse()
+
+        // then
+        assertThat(response.absenceReason).isEqualTo(AbsenceReason.INJURY)
+        assertThat(response.reasonDetail).isNull()
     }
 
     @Test
@@ -71,7 +97,8 @@ class AttendanceMapperTest {
                 every { id } returns 2L
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.ABSENT
-                every { reason } returns "부상"
+                every { absenceReason } returns AbsenceReason.OTHER
+                every { reasonDetail } returns "부상"
                 every { this@mockk.respondedAt } returns respondedAt
             }
 
@@ -85,7 +112,8 @@ class AttendanceMapperTest {
         assertThat(response.member.uniformNumber).isEqualTo(18)
         assertThat(response.member.position).isEqualTo("P")
         assertThat(response.status).isEqualTo(AttendanceStatus.ABSENT)
-        assertThat(response.reason).isEqualTo("부상")
+        assertThat(response.absenceReason).isEqualTo(AbsenceReason.OTHER)
+        assertThat(response.reasonDetail).isEqualTo("부상")
     }
 
     @Test
@@ -121,7 +149,8 @@ class AttendanceMapperTest {
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.ATTENDING
-                every { reason } returns null
+                every { absenceReason } returns null
+                every { reasonDetail } returns null
                 every { respondedAt } returns LocalDateTime.now()
             }
         val vote2 =
@@ -130,7 +159,8 @@ class AttendanceMapperTest {
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.ABSENT
-                every { reason } returns "개인 사유"
+                every { absenceReason } returns AbsenceReason.WORK
+                every { reasonDetail } returns null
                 every { respondedAt } returns LocalDateTime.now()
             }
 
@@ -151,7 +181,8 @@ class AttendanceMapperTest {
                 every { id } returns 1L
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.UNDECIDED
-                every { reason } returns null
+                every { absenceReason } returns null
+                every { reasonDetail } returns null
                 every { respondedAt } returns null
             }
 
