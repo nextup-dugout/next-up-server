@@ -38,3 +38,13 @@ data class SignUpResponse(
     val email: String,
     val nickname: String,
 )
+
+/**
+ * OAuth2 토큰 교환 응답 DTO
+ */
+data class OAuth2TokenResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String = "Bearer",
+    val isNewUser: Boolean,
+)

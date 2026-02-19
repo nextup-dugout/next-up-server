@@ -5,6 +5,7 @@ import com.nextup.core.domain.auth.RefreshToken
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
+import com.nextup.infrastructure.security.oauth2.AuthCodeStore
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -21,6 +22,7 @@ class AuthenticationService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
+    private val authCodeStore: AuthCodeStore,
 ) {
     /**
      * 로그인 처리
@@ -134,6 +136,38 @@ class AuthenticationService(
         return CustomUserDetails.from(user)
     }
 
+    /**
+     * OAuth2 인가 코드를 JWT 토큰으로 교환합니다.
+     *
+     * @param code 일회용 인가 코드
+     * @param deviceInfo 디바이스 정보 (선택)
+     * @param ipAddress IP 주소 (선택)
+     * @return OAuth2TokenResult (accessToken, refreshToken, isNewUser)
+     * @throws InvalidInputException 유효하지 않거나 만료된 인가 코드인 경우
+     */
+    fun exchangeOAuth2Code(
+        code: String,
+        deviceInfo: String? = null,
+        ipAddress: String? = null,
+    ): OAuth2TokenResult {
+        val authCodeResult =
+            authCodeStore.consume(code)
+                ?: throw InvalidInputException("INVALID_AUTH_CODE", "유효하지 않거나 만료된 인가 코드입니다")
+
+        val user =
+            userJpaRepository
+                .findById(authCodeResult.userId)
+                .orElseThrow { UserNotFoundException(authCodeResult.userId) }
+
+        val tokenPair = generateTokenPair(user, deviceInfo, ipAddress)
+
+        return OAuth2TokenResult(
+            accessToken = tokenPair.accessToken,
+            refreshToken = tokenPair.refreshToken,
+            isNewUser = authCodeResult.isNewUser,
+        )
+    }
+
     private fun generateTokenPair(
         user: User,
         deviceInfo: String?,
@@ -172,4 +206,13 @@ class AuthenticationService(
 data class TokenPair(
     val accessToken: String,
     val refreshToken: String,
+)
+
+/**
+ * OAuth2 토큰 교환 결과
+ */
+data class OAuth2TokenResult(
+    val accessToken: String,
+    val refreshToken: String,
+    val isNewUser: Boolean,
 )

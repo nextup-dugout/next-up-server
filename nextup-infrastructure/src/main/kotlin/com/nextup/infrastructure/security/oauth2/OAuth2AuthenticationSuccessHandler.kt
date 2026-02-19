@@ -1,8 +1,5 @@
 package com.nextup.infrastructure.security.oauth2
 
-import com.nextup.core.domain.auth.RefreshToken
-import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
-import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
@@ -14,12 +11,14 @@ import org.springframework.web.util.UriComponentsBuilder
 /**
  * OAuth2 인증 성공 핸들러
  *
- * 인증 성공 시 JWT 토큰을 발급하고 프론트엔드로 리다이렉트합니다.
+ * 인증 성공 시 일회용 인가 코드를 생성하고 프론트엔드로 리다이렉트합니다.
+ * 프론트엔드는 인가 코드로 POST /api/auth/oauth2/token 요청하여 JWT 토큰을 수신합니다.
+ *
+ * 보안: accessToken/refreshToken을 URL query parameter에 직접 노출하지 않습니다.
  */
 @Component
 class OAuth2AuthenticationSuccessHandler(
-    private val jwtTokenProvider: JwtTokenProvider,
-    private val refreshTokenRepository: RefreshTokenRepository,
+    private val authCodeStore: AuthCodeStore,
     @Value("\${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
     private val redirectUri: String,
 ) : SimpleUrlAuthenticationSuccessHandler() {
@@ -30,43 +29,19 @@ class OAuth2AuthenticationSuccessHandler(
     ) {
         val principal = authentication.principal as OAuth2UserPrincipal
 
-        val roles = principal.getRoleNames()
-        val accessToken =
-            jwtTokenProvider.createAccessToken(
+        val authCode =
+            authCodeStore.generate(
                 userId = principal.userId,
-                email = principal.email,
-                roles = roles,
+                isNewUser = principal.isNewUser,
             )
-
-        val refreshTokenString = jwtTokenProvider.createRefreshToken(principal.userId)
-        val refreshToken =
-            RefreshToken.create(
-                userId = principal.userId,
-                token = refreshTokenString,
-                expiresAt = jwtTokenProvider.getRefreshTokenExpiration(),
-                deviceInfo = request.getHeader("User-Agent"),
-                ipAddress = getClientIpAddress(request),
-            )
-        refreshTokenRepository.save(refreshToken)
 
         val targetUrl =
             UriComponentsBuilder
                 .fromUriString(redirectUri)
-                .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshTokenString)
-                .queryParam("isNewUser", principal.isNewUser)
+                .queryParam("code", authCode)
                 .build()
                 .toUriString()
 
         response.sendRedirect(targetUrl)
-    }
-
-    private fun getClientIpAddress(request: HttpServletRequest): String {
-        val xForwardedFor = request.getHeader("X-Forwarded-For")
-        return if (!xForwardedFor.isNullOrBlank()) {
-            xForwardedFor.split(",").first().trim()
-        } else {
-            request.remoteAddr
-        }
     }
 }

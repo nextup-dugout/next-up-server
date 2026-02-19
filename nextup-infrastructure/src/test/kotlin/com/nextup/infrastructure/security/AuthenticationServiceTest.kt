@@ -5,6 +5,8 @@ import com.nextup.core.domain.auth.RefreshToken
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
+import com.nextup.infrastructure.security.oauth2.AuthCodeResult
+import com.nextup.infrastructure.security.oauth2.AuthCodeStore
 import com.nextup.infrastructure.security.userdetails.UserJpaRepository
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
@@ -23,6 +25,7 @@ class AuthenticationServiceTest {
     private lateinit var refreshTokenRepository: RefreshTokenRepository
     private lateinit var jwtTokenProvider: JwtTokenProvider
     private lateinit var passwordEncoder: PasswordEncoder
+    private lateinit var authCodeStore: AuthCodeStore
     private lateinit var authenticationService: AuthenticationService
 
     @BeforeEach
@@ -31,12 +34,14 @@ class AuthenticationServiceTest {
         refreshTokenRepository = mockk()
         jwtTokenProvider = mockk()
         passwordEncoder = mockk()
+        authCodeStore = mockk()
         authenticationService =
             AuthenticationService(
                 userJpaRepository,
                 refreshTokenRepository,
                 jwtTokenProvider,
                 passwordEncoder,
+                authCodeStore,
             )
     }
 
@@ -276,6 +281,76 @@ class AuthenticationServiceTest {
             // when & then
             assertThatThrownBy {
                 authenticationService.getUserDetails(999L)
+            }.isInstanceOf(UserNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("exchangeOAuth2Code")
+    inner class ExchangeOAuth2Code {
+        @Test
+        fun `should return OAuth2TokenResult on valid code`() {
+            // given
+            val code = "valid-auth-code"
+            val user = createTestUser(1L, "test@example.com", "password")
+
+            every { authCodeStore.consume(code) } returns AuthCodeResult(userId = 1L, isNewUser = false)
+            every { userJpaRepository.findById(1L) } returns Optional.of(user)
+            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access_token"
+            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh_token"
+            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(3600)
+            every { refreshTokenRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = authenticationService.exchangeOAuth2Code(code)
+
+            // then
+            assertThat(result.accessToken).isEqualTo("access_token")
+            assertThat(result.refreshToken).isEqualTo("refresh_token")
+            assertThat(result.isNewUser).isFalse()
+        }
+
+        @Test
+        fun `should return isNewUser true for new users`() {
+            // given
+            val code = "new-user-code"
+            val user = createTestUser(1L, "new@example.com", "password")
+
+            every { authCodeStore.consume(code) } returns AuthCodeResult(userId = 1L, isNewUser = true)
+            every { userJpaRepository.findById(1L) } returns Optional.of(user)
+            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access_token"
+            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh_token"
+            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(3600)
+            every { refreshTokenRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = authenticationService.exchangeOAuth2Code(code)
+
+            // then
+            assertThat(result.isNewUser).isTrue()
+        }
+
+        @Test
+        fun `should throw InvalidInputException on invalid code`() {
+            // given
+            every { authCodeStore.consume("invalid-code") } returns null
+
+            // when & then
+            assertThatThrownBy {
+                authenticationService.exchangeOAuth2Code("invalid-code")
+            }.isInstanceOf(InvalidInputException::class.java)
+                .hasMessageContaining("유효하지 않거나 만료된 인가 코드입니다")
+        }
+
+        @Test
+        fun `should throw UserNotFoundException when user not found`() {
+            // given
+            every { authCodeStore.consume("valid-code") } returns AuthCodeResult(userId = 999L, isNewUser = false)
+            every { userJpaRepository.findById(999L) } returns Optional.empty()
+
+            // when & then
+            assertThatThrownBy {
+                authenticationService.exchangeOAuth2Code("valid-code")
             }.isInstanceOf(UserNotFoundException::class.java)
         }
     }
