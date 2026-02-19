@@ -74,19 +74,19 @@ class SecurityConfig(
                     .permitAll()
                     .requestMatchers("/login/oauth2/**")
                     .permitAll()
-
-                // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
-                if (swaggerEnabled) {
-                    auth
-                        .requestMatchers(
-                            "/swagger-ui/**",
-                            "/swagger-ui.html",
-                            "/v3/api-docs/**",
-                            "/swagger-resources/**",
-                        ).permitAll()
-                }
-
-                auth
+                    // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
+                    .let { registry ->
+                        if (swaggerEnabled) {
+                            registry.requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                            ).permitAll()
+                        } else {
+                            registry
+                        }
+                    }
                     // Actuator endpoints
                     .requestMatchers("/actuator/health")
                     .permitAll()

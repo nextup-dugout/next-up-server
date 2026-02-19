@@ -59,19 +59,19 @@ class SecurityConfig(
                     // Health check
                     .requestMatchers("/actuator/health")
                     .permitAll()
-
-                // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
-                if (swaggerEnabled) {
-                    auth
-                        .requestMatchers(
-                            "/swagger-ui/**",
-                            "/swagger-ui.html",
-                            "/v3/api-docs/**",
-                            "/swagger-resources/**",
-                        ).permitAll()
-                }
-
-                auth
+                    // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
+                    .let { registry ->
+                        if (swaggerEnabled) {
+                            registry.requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                            ).permitAll()
+                        } else {
+                            registry
+                        }
+                    }
                     // All other endpoints require ADMIN role
                     .anyRequest()
                     .hasRole("ADMIN")
