@@ -29,7 +29,7 @@ app:
     allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000}
 
 jwt:
-  secret: ${JWT_SECRET:dGhpcyBpcyBhIHNhbXBsZSBiYXNlNjQgZW5jb2RlZCBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5}
+  secret: ${JWT_SECRET}
   access-token-expiration: ${JWT_ACCESS_EXPIRATION:1800000}
   refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
   issuer: nextup
