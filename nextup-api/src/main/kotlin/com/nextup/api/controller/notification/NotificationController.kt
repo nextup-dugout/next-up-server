@@ -13,12 +13,14 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
  * 알림 API Controller
  *
  * 사용자의 알림 조회, 디바이스 관리, 알림 설정 관리
+ * 모든 엔드포인트에서 JWT 인증된 사용자 ID를 사용합니다.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -31,7 +33,7 @@ class NotificationController(
     @PostMapping("/devices")
     @ResponseStatus(HttpStatus.CREATED)
     fun registerDevice(
-        @RequestParam userId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: RegisterDeviceApiRequest,
     ): ApiResponse<DeviceTokenResponse> {
         val deviceToken =
@@ -51,9 +53,10 @@ class NotificationController(
      */
     @DeleteMapping("/devices/{tokenId}")
     fun removeDevice(
+        @AuthenticationPrincipal userId: Long,
         @PathVariable tokenId: Long,
     ): ApiResponse<Unit> {
-        notificationService.removeDevice(tokenId)
+        notificationService.removeDevice(tokenId, userId)
         return ApiResponse.success(Unit)
     }
 
@@ -62,7 +65,7 @@ class NotificationController(
      */
     @GetMapping("/notifications")
     fun getNotifications(
-        @RequestParam userId: Long,
+        @AuthenticationPrincipal userId: Long,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<List<NotificationResponse>> {
         val notifications = notificationService.getUserNotifications(userId, pageable)
@@ -74,9 +77,10 @@ class NotificationController(
      */
     @PutMapping("/notifications/{id}/read")
     fun markAsRead(
+        @AuthenticationPrincipal userId: Long,
         @PathVariable id: Long,
     ): ApiResponse<NotificationResponse> {
-        val notification = notificationService.markAsRead(id)
+        val notification = notificationService.markAsRead(id, userId)
         return ApiResponse.success(NotificationResponse.from(notification))
     }
 
@@ -85,7 +89,7 @@ class NotificationController(
      */
     @PutMapping("/notifications/preferences")
     fun updatePreference(
-        @RequestParam userId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: UpdatePreferenceApiRequest,
     ): ApiResponse<NotificationPreferenceResponse> {
         val preference =
@@ -105,7 +109,7 @@ class NotificationController(
      */
     @GetMapping("/notifications/preferences")
     fun getPreferences(
-        @RequestParam userId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<NotificationPreferenceResponse>> {
         val preferences = notificationService.getUserPreferences(userId)
         return ApiResponse.success(preferences.map { NotificationPreferenceResponse.from(it) })
