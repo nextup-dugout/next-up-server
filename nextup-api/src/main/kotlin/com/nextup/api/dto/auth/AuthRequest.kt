@@ -56,3 +56,11 @@ data class ChangePasswordRequest(
     @field:Size(min = 8, max = 100, message = "Password must be 8-100 characters")
     val newPassword: String,
 )
+
+/**
+ * OAuth2 인가 코드로 토큰 교환 요청 DTO
+ */
+data class OAuth2TokenExchangeRequest(
+    @field:NotBlank(message = "Authorization code is required")
+    val code: String,
+)

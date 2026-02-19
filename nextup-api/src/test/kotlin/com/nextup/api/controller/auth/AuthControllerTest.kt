@@ -2,9 +2,11 @@ package com.nextup.api.controller.auth
 
 import com.nextup.api.dto.auth.LoginRequest
 import com.nextup.api.dto.auth.LogoutRequest
+import com.nextup.api.dto.auth.OAuth2TokenExchangeRequest
 import com.nextup.api.dto.auth.RefreshTokenRequest
 import com.nextup.core.domain.user.User
 import com.nextup.infrastructure.security.AuthenticationService
+import com.nextup.infrastructure.security.OAuth2TokenResult
 import com.nextup.infrastructure.security.TokenPair
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import io.mockk.every
@@ -169,6 +171,71 @@ class AuthControllerTest {
             assertThat(response.statusCode.value()).isEqualTo(200)
             assertThat(response.body?.success).isTrue()
             verify { authenticationService.logoutAll(userId) }
+        }
+    }
+
+    @Nested
+    @DisplayName("OAuth2 토큰 교환")
+    inner class ExchangeOAuth2Token {
+        @Test
+        fun `should return tokens on valid auth code`() {
+            // given
+            val request = OAuth2TokenExchangeRequest(code = "valid-auth-code")
+            val result =
+                OAuth2TokenResult(
+                    accessToken = "access_token",
+                    refreshToken = "refresh_token",
+                    isNewUser = false,
+                )
+
+            every { httpServletRequest.getHeader("User-Agent") } returns "Mozilla/5.0"
+            every { httpServletRequest.getHeader("X-Forwarded-For") } returns null
+            every { httpServletRequest.remoteAddr } returns "127.0.0.1"
+            every {
+                authenticationService.exchangeOAuth2Code(
+                    code = "valid-auth-code",
+                    deviceInfo = "Mozilla/5.0",
+                    ipAddress = "127.0.0.1",
+                )
+            } returns result
+
+            // when
+            val response = authController.exchangeOAuth2Token(request, httpServletRequest)
+
+            // then
+            assertThat(response.statusCode.value()).isEqualTo(200)
+            assertThat(response.body?.data?.accessToken).isEqualTo("access_token")
+            assertThat(response.body?.data?.refreshToken).isEqualTo("refresh_token")
+            assertThat(response.body?.data?.isNewUser).isFalse()
+            assertThat(response.body?.data?.tokenType).isEqualTo("Bearer")
+        }
+
+        @Test
+        fun `should return isNewUser true for new users`() {
+            // given
+            val request = OAuth2TokenExchangeRequest(code = "new-user-code")
+            val result =
+                OAuth2TokenResult(
+                    accessToken = "access_token",
+                    refreshToken = "refresh_token",
+                    isNewUser = true,
+                )
+
+            every { httpServletRequest.getHeader("User-Agent") } returns "Chrome"
+            every { httpServletRequest.getHeader("X-Forwarded-For") } returns "10.0.0.1"
+            every {
+                authenticationService.exchangeOAuth2Code(
+                    code = "new-user-code",
+                    deviceInfo = "Chrome",
+                    ipAddress = "10.0.0.1",
+                )
+            } returns result
+
+            // when
+            val response = authController.exchangeOAuth2Token(request, httpServletRequest)
+
+            // then
+            assertThat(response.body?.data?.isNewUser).isTrue()
         }
     }
 

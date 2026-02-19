@@ -1,10 +1,7 @@
 package com.nextup.infrastructure.security.oauth2
 
-import com.nextup.core.domain.auth.RefreshToken
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
-import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
-import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import com.nextup.infrastructure.security.oauth2.impl.KakaoOAuth2UserInfo
 import io.mockk.*
 import jakarta.servlet.http.HttpServletRequest
@@ -17,15 +14,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException
 import org.springframework.security.oauth2.core.OAuth2Error
-import java.time.Instant
 
 @DisplayName("OAuth2 Authentication Handlers 테스트")
 class OAuth2AuthenticationHandlersTest {
     @Nested
     @DisplayName("OAuth2AuthenticationSuccessHandler")
     inner class SuccessHandlerTest {
-        private lateinit var jwtTokenProvider: JwtTokenProvider
-        private lateinit var refreshTokenRepository: RefreshTokenRepository
+        private lateinit var authCodeStore: AuthCodeStore
         private lateinit var successHandler: OAuth2AuthenticationSuccessHandler
         private lateinit var request: HttpServletRequest
         private lateinit var response: HttpServletResponse
@@ -35,12 +30,10 @@ class OAuth2AuthenticationHandlersTest {
 
         @BeforeEach
         fun setUp() {
-            jwtTokenProvider = mockk()
-            refreshTokenRepository = mockk(relaxed = true)
+            authCodeStore = mockk()
             successHandler =
                 OAuth2AuthenticationSuccessHandler(
-                    jwtTokenProvider,
-                    refreshTokenRepository,
+                    authCodeStore,
                     redirectUri,
                 )
             request = mockk(relaxed = true)
@@ -68,97 +61,59 @@ class OAuth2AuthenticationHandlersTest {
         }
 
         @Test
-        fun `should redirect with tokens on success`() {
+        fun `should redirect with auth code instead of tokens`() {
             // given
             val principal = createPrincipal(userId = 1L, isNewUser = false)
             val redirectUrlSlot = slot<String>()
 
             every { authentication.principal } returns principal
-            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access-token"
-            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh-token"
-            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(604800)
-            every { request.getHeader("User-Agent") } returns "Mozilla/5.0"
-            every { request.getHeader("X-Forwarded-For") } returns null
-            every { request.remoteAddr } returns "127.0.0.1"
-            every { refreshTokenRepository.save(any<RefreshToken>()) } returns mockk()
+            every { authCodeStore.generate(1L, false) } returns "test-auth-code"
             every { response.sendRedirect(capture(redirectUrlSlot)) } just Runs
 
             // when
             successHandler.onAuthenticationSuccess(request, response, authentication)
 
             // then
-            verify { refreshTokenRepository.save(any<RefreshToken>()) }
-            assertThat(redirectUrlSlot.captured).contains("accessToken=access-token")
-            assertThat(redirectUrlSlot.captured).contains("refreshToken=refresh-token")
-            assertThat(redirectUrlSlot.captured).contains("isNewUser=false")
+            assertThat(redirectUrlSlot.captured).contains("code=test-auth-code")
+            assertThat(redirectUrlSlot.captured).doesNotContain("accessToken")
+            assertThat(redirectUrlSlot.captured).doesNotContain("refreshToken")
+
+            verify(exactly = 1) { authCodeStore.generate(1L, false) }
         }
 
         @Test
-        fun `should set isNewUser to true for new users`() {
+        fun `should pass isNewUser flag to auth code store`() {
             // given
             val principal = createPrincipal(userId = 1L, isNewUser = true)
+
+            every { authentication.principal } returns principal
+            every { authCodeStore.generate(1L, true) } returns "new-user-code"
+            every { response.sendRedirect(any()) } just Runs
+
+            // when
+            successHandler.onAuthenticationSuccess(request, response, authentication)
+
+            // then
+            verify(exactly = 1) { authCodeStore.generate(1L, true) }
+        }
+
+        @Test
+        fun `should redirect to correct URI with code parameter`() {
+            // given
+            val principal = createPrincipal(userId = 5L, isNewUser = false)
             val redirectUrlSlot = slot<String>()
 
             every { authentication.principal } returns principal
-            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access-token"
-            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh-token"
-            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(604800)
-            every { request.getHeader("User-Agent") } returns "Mozilla/5.0"
-            every { request.getHeader("X-Forwarded-For") } returns null
-            every { request.remoteAddr } returns "127.0.0.1"
-            every { refreshTokenRepository.save(any<RefreshToken>()) } returns mockk()
+            every { authCodeStore.generate(5L, false) } returns "abc-123"
             every { response.sendRedirect(capture(redirectUrlSlot)) } just Runs
 
             // when
             successHandler.onAuthenticationSuccess(request, response, authentication)
 
             // then
-            assertThat(redirectUrlSlot.captured).contains("isNewUser=true")
-        }
-
-        @Test
-        fun `should use X-Forwarded-For header for client IP`() {
-            // given
-            val principal = createPrincipal(userId = 1L, isNewUser = false)
-            val refreshTokenSlot = slot<RefreshToken>()
-
-            every { authentication.principal } returns principal
-            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access-token"
-            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh-token"
-            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(604800)
-            every { request.getHeader("User-Agent") } returns "Mozilla/5.0"
-            every { request.getHeader("X-Forwarded-For") } returns "192.168.1.1, 10.0.0.1"
-            every { refreshTokenRepository.save(capture(refreshTokenSlot)) } returns mockk()
-            every { response.sendRedirect(any()) } just Runs
-
-            // when
-            successHandler.onAuthenticationSuccess(request, response, authentication)
-
-            // then
-            assertThat(refreshTokenSlot.captured.ipAddress).isEqualTo("192.168.1.1")
-        }
-
-        @Test
-        fun `should use remoteAddr when X-Forwarded-For is not present`() {
-            // given
-            val principal = createPrincipal(userId = 1L, isNewUser = false)
-            val refreshTokenSlot = slot<RefreshToken>()
-
-            every { authentication.principal } returns principal
-            every { jwtTokenProvider.createAccessToken(any(), any(), any()) } returns "access-token"
-            every { jwtTokenProvider.createRefreshToken(any()) } returns "refresh-token"
-            every { jwtTokenProvider.getRefreshTokenExpiration() } returns Instant.now().plusSeconds(604800)
-            every { request.getHeader("User-Agent") } returns "Mozilla/5.0"
-            every { request.getHeader("X-Forwarded-For") } returns null
-            every { request.remoteAddr } returns "10.0.0.5"
-            every { refreshTokenRepository.save(capture(refreshTokenSlot)) } returns mockk()
-            every { response.sendRedirect(any()) } just Runs
-
-            // when
-            successHandler.onAuthenticationSuccess(request, response, authentication)
-
-            // then
-            assertThat(refreshTokenSlot.captured.ipAddress).isEqualTo("10.0.0.5")
+            assertThat(redirectUrlSlot.captured)
+                .startsWith("http://localhost:3000/oauth/callback")
+            assertThat(redirectUrlSlot.captured).contains("code=abc-123")
         }
     }
 

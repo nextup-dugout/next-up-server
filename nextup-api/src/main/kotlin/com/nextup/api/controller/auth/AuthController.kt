@@ -7,7 +7,11 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 /**
  * 인증 관련 API Controller
@@ -88,6 +92,37 @@ class AuthController(
     ): ResponseEntity<ApiResponse<Unit>> {
         authenticationService.logoutAll(userId)
         return ResponseEntity.ok(ApiResponse.success(Unit))
+    }
+
+    /**
+     * OAuth2 인가 코드로 JWT 토큰 교환
+     *
+     * POST /api/auth/oauth2/token
+     */
+    @PostMapping("/oauth2/token")
+    fun exchangeOAuth2Token(
+        @Valid @RequestBody request: OAuth2TokenExchangeRequest,
+        httpRequest: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<OAuth2TokenResponse>> {
+        val deviceInfo = httpRequest.getHeader("User-Agent")
+        val ipAddress = getClientIpAddress(httpRequest)
+
+        val result =
+            authenticationService.exchangeOAuth2Code(
+                code = request.code,
+                deviceInfo = deviceInfo,
+                ipAddress = ipAddress,
+            )
+
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                OAuth2TokenResponse(
+                    accessToken = result.accessToken,
+                    refreshToken = result.refreshToken,
+                    isNewUser = result.isNewUser,
+                ),
+            ),
+        )
     }
 
     /**
