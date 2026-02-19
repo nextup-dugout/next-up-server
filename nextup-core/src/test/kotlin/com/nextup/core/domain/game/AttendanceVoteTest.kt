@@ -1,6 +1,7 @@
 package com.nextup.core.domain.game
 
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -49,7 +50,8 @@ class AttendanceVoteTest {
             assertThat(vote.game).isEqualTo(game)
             assertThat(vote.member).isEqualTo(member)
             assertThat(vote.status).isEqualTo(AttendanceStatus.UNDECIDED)
-            assertThat(vote.reason).isNull()
+            assertThat(vote.absenceReason).isNull()
+            assertThat(vote.reasonDetail).isNull()
             assertThat(vote.respondedAt).isNull()
             assertThat(vote.hasResponded).isFalse()
             assertThat(vote.isAttending).isFalse()
@@ -60,19 +62,49 @@ class AttendanceVoteTest {
     @DisplayName("투표하기")
     inner class Vote {
         @Test
-        fun `should vote attending with reason`() {
+        fun `should vote attending without reason`() {
             // given
             val vote = AttendanceVote.createForGame(game, member)
 
             // when
-            vote.vote(AttendanceStatus.ATTENDING, "참석합니다")
+            vote.vote(AttendanceStatus.ATTENDING)
 
             // then
             assertThat(vote.status).isEqualTo(AttendanceStatus.ATTENDING)
-            assertThat(vote.reason).isEqualTo("참석합니다")
+            assertThat(vote.absenceReason).isNull()
+            assertThat(vote.reasonDetail).isNull()
             assertThat(vote.respondedAt).isNotNull()
             assertThat(vote.hasResponded).isTrue()
             assertThat(vote.isAttending).isTrue()
+        }
+
+        @Test
+        fun `should vote absent with absence reason`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+
+            // when
+            vote.vote(AttendanceStatus.ABSENT, AbsenceReason.INJURY)
+
+            // then
+            assertThat(vote.status).isEqualTo(AttendanceStatus.ABSENT)
+            assertThat(vote.absenceReason).isEqualTo(AbsenceReason.INJURY)
+            assertThat(vote.reasonDetail).isNull()
+            assertThat(vote.hasResponded).isTrue()
+        }
+
+        @Test
+        fun `should vote absent with OTHER reason and detail`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+
+            // when
+            vote.vote(AttendanceStatus.ABSENT, AbsenceReason.OTHER, "개인 사정")
+
+            // then
+            assertThat(vote.status).isEqualTo(AttendanceStatus.ABSENT)
+            assertThat(vote.absenceReason).isEqualTo(AbsenceReason.OTHER)
+            assertThat(vote.reasonDetail).isEqualTo("개인 사정")
         }
 
         @Test
@@ -85,8 +117,41 @@ class AttendanceVoteTest {
 
             // then
             assertThat(vote.status).isEqualTo(AttendanceStatus.ABSENT)
-            assertThat(vote.reason).isNull()
+            assertThat(vote.absenceReason).isNull()
             assertThat(vote.hasResponded).isTrue()
+        }
+
+        @Test
+        fun `should throw when attending with absence reason`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                vote.vote(AttendanceStatus.ATTENDING, AbsenceReason.WORK)
+            }
+        }
+
+        @Test
+        fun `should throw when attending with reason detail`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                vote.vote(AttendanceStatus.ATTENDING, reasonDetail = "사유")
+            }
+        }
+
+        @Test
+        fun `should throw when reason detail provided without OTHER`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                vote.vote(AttendanceStatus.ABSENT, AbsenceReason.WORK, "출장")
+            }
         }
 
         @Test
@@ -113,19 +178,35 @@ class AttendanceVoteTest {
     @DisplayName("투표 변경")
     inner class ChangeVote {
         @Test
-        fun `should change vote from attending to absent`() {
+        fun `should change vote from attending to absent with reason`() {
             // given
             val vote = AttendanceVote.createForGame(game, member)
             vote.vote(AttendanceStatus.ATTENDING)
             val firstRespondedAt = vote.respondedAt
 
             // when
-            vote.changeVote(AttendanceStatus.ABSENT, "일정이 변경되었습니다")
+            vote.changeVote(AttendanceStatus.ABSENT, AbsenceReason.OTHER, "일정이 변경되었습니다")
 
             // then
             assertThat(vote.status).isEqualTo(AttendanceStatus.ABSENT)
-            assertThat(vote.reason).isEqualTo("일정이 변경되었습니다")
+            assertThat(vote.absenceReason).isEqualTo(AbsenceReason.OTHER)
+            assertThat(vote.reasonDetail).isEqualTo("일정이 변경되었습니다")
             assertThat(vote.respondedAt).isNotEqualTo(firstRespondedAt)
+        }
+
+        @Test
+        fun `should clear reason when changing to attending`() {
+            // given
+            val vote = AttendanceVote.createForGame(game, member)
+            vote.vote(AttendanceStatus.ABSENT, AbsenceReason.INJURY)
+
+            // when
+            vote.changeVote(AttendanceStatus.ATTENDING)
+
+            // then
+            assertThat(vote.status).isEqualTo(AttendanceStatus.ATTENDING)
+            assertThat(vote.absenceReason).isNull()
+            assertThat(vote.reasonDetail).isNull()
         }
 
         @Test

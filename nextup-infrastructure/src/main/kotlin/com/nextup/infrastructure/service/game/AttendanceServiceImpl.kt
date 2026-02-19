@@ -1,6 +1,7 @@
 package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.*
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.GameStatus
@@ -32,7 +33,8 @@ class AttendanceServiceImpl(
         gameId: Long,
         memberId: Long,
         status: AttendanceStatus,
-        reason: String?,
+        absenceReason: AbsenceReason?,
+        reasonDetail: String?,
     ): AttendanceVote {
         val game =
             gameRepository.findByIdOrNull(gameId)
@@ -60,12 +62,12 @@ class AttendanceServiceImpl(
 
         return if (existingVote != null) {
             // 투표 변경
-            existingVote.vote(status, reason)
+            existingVote.vote(status, absenceReason, reasonDetail)
             attendanceVoteRepository.save(existingVote)
         } else {
             // 새로 투표 생성 (자동 생성되지 않은 경우 대비)
             val newVote = AttendanceVote.createForGame(game, member)
-            newVote.vote(status, reason)
+            newVote.vote(status, absenceReason, reasonDetail)
             attendanceVoteRepository.save(newVote)
         }
     }

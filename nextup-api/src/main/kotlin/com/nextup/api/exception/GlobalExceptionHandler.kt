@@ -3,6 +3,7 @@ package com.nextup.api.exception
 import com.nextup.api.dto.common.ApiResponse
 import com.nextup.common.exception.AuthenticationException
 import com.nextup.common.exception.BusinessException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
 import org.slf4j.LoggerFactory
@@ -23,6 +24,14 @@ class GlobalExceptionHandler {
         log.warn("AuthenticationException: code={}, message={}", ex.code, ex.message)
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error(ex.code, ex.message))
+    }
+
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbiddenException(ex: ForbiddenException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("ForbiddenException: code={}, message={}", ex.code, ex.message)
+        return ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
             .body(ApiResponse.error(ex.code, ex.message))
     }
 

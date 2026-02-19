@@ -1,5 +1,6 @@
 package com.nextup.core.service.game
 
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.team.TeamMember
@@ -18,7 +19,8 @@ interface AttendanceService {
      * @param gameId 경기 ID
      * @param memberId 회원 ID
      * @param status 투표 상태
-     * @param reason 사유
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
      * @return 투표 결과
      * @throws AttendanceVoteNotFoundException 투표를 찾을 수 없는 경우
      * @throws VoteClosedException 투표가 마감된 경우
@@ -27,7 +29,8 @@ interface AttendanceService {
         gameId: Long,
         memberId: Long,
         status: AttendanceStatus,
-        reason: String?,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
     ): AttendanceVote
 
     /**

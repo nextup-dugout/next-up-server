@@ -79,6 +79,8 @@ class TeamAttendancePollController(
                 pollId = pollId,
                 playerId = request.playerId,
                 voteType = request.voteType,
+                absenceReason = request.absenceReason,
+                reasonDetail = request.reasonDetail,
             )
 
         return ApiResponse.success(vote.toResponse())

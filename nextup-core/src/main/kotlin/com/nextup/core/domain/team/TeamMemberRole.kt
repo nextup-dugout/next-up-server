@@ -17,7 +17,20 @@ enum class TeamMemberRole(
 
     /** 일반 회원 - 투표 참여, 게시글 작성 */
     MEMBER("일반 회원", 10),
+
+    /** 게스트 - 경기 참여만 가능, 투표/선거 불가 */
+    GUEST("게스트", 1),
     ;
+
+    /**
+     * 투표 참여 가능 여부를 확인합니다 (GUEST 제외).
+     */
+    fun canVoteInPoll(): Boolean = this != GUEST
+
+    /**
+     * 선거 참여 가능 여부를 확인합니다 (GUEST 제외).
+     */
+    fun canParticipateInElection(): Boolean = this != GUEST
 
     /**
      * 가입 승인 권한이 있는지 확인합니다.

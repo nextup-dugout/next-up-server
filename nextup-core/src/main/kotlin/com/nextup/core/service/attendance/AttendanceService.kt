@@ -1,5 +1,6 @@
 package com.nextup.core.service.attendance
 
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
@@ -33,12 +34,16 @@ interface AttendanceService {
      * @param pollId 투표 ID
      * @param playerId 선수 ID
      * @param voteType 투표 유형
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
      * @return 생성된 AttendanceVote
      */
     fun submitVote(
         pollId: Long,
         playerId: Long,
         voteType: VoteType,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
     ): AttendanceVote
 
     /**

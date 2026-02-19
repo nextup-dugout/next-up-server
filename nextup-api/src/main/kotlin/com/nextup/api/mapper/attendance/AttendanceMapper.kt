@@ -13,7 +13,8 @@ fun AttendanceVote.toResponse(): AttendanceVoteResponse =
         gameId = this.game.id,
         memberId = this.member.id,
         status = this.status,
-        reason = this.reason,
+        absenceReason = this.absenceReason,
+        reasonDetail = this.reasonDetail,
         respondedAt = this.respondedAt,
     )
 
@@ -44,7 +45,8 @@ fun AttendanceVote.toMemberVoteResponse(): MemberVoteResponse =
                 position = this.member.player.primaryPosition.abbreviation,
             ),
         status = this.status,
-        reason = this.reason,
+        absenceReason = this.absenceReason,
+        reasonDetail = this.reasonDetail,
         respondedAt = this.respondedAt,
     )
 

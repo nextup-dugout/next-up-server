@@ -2,6 +2,7 @@ package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
@@ -85,11 +86,11 @@ class AttendanceServiceImplTest {
             every { attendanceVoteRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.vote(100L, 200L, AttendanceStatus.ATTENDING, "참석합니다")
+            val result = service.vote(100L, 200L, AttendanceStatus.ATTENDING)
 
             // then
             assertThat(result.status).isEqualTo(AttendanceStatus.ATTENDING)
-            assertThat(result.reason).isEqualTo("참석합니다")
+            assertThat(result.absenceReason).isNull()
             assertThat(result.hasResponded).isTrue()
             verify { attendanceVoteRepository.save(any()) }
         }
@@ -106,11 +107,13 @@ class AttendanceServiceImplTest {
             every { attendanceVoteRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.vote(100L, 200L, AttendanceStatus.ABSENT, "일정 변경")
+            val result =
+                service.vote(100L, 200L, AttendanceStatus.ABSENT, AbsenceReason.OTHER, "일정 변경")
 
             // then
             assertThat(result.status).isEqualTo(AttendanceStatus.ABSENT)
-            assertThat(result.reason).isEqualTo("일정 변경")
+            assertThat(result.absenceReason).isEqualTo(AbsenceReason.OTHER)
+            assertThat(result.reasonDetail).isEqualTo("일정 변경")
             verify { attendanceVoteRepository.save(existingVote) }
         }
 
@@ -122,7 +125,7 @@ class AttendanceServiceImplTest {
 
             // when & then
             assertThatThrownBy {
-                service.vote(100L, 999L, AttendanceStatus.ATTENDING, null)
+                service.vote(100L, 999L, AttendanceStatus.ATTENDING)
             }.isInstanceOf(TeamMemberNotFoundException::class.java)
         }
 
@@ -140,7 +143,7 @@ class AttendanceServiceImplTest {
 
             // when & then
             assertThatThrownBy {
-                service.vote(100L, 201L, AttendanceStatus.ATTENDING, null)
+                service.vote(100L, 201L, AttendanceStatus.ATTENDING)
             }.isInstanceOf(InvalidStateException::class.java)
         }
 
@@ -154,7 +157,7 @@ class AttendanceServiceImplTest {
 
             // when & then
             assertThatThrownBy {
-                service.vote(100L, 200L, AttendanceStatus.ATTENDING, null)
+                service.vote(100L, 200L, AttendanceStatus.ATTENDING)
             }.isInstanceOf(VoteClosedException::class.java)
         }
     }

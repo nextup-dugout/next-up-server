@@ -70,7 +70,8 @@ class AttendanceControllerTest {
             every { this@mockk.game } returns this@AttendanceControllerTest.game
             every { this@mockk.member } returns this@AttendanceControllerTest.member
             every { this@mockk.status } returns status
-            every { reason } returns null
+            every { absenceReason } returns null
+            every { reasonDetail } returns null
             every { respondedAt } returns LocalDateTime.of(2026, 2, 25, 10, 0)
         }
 
@@ -90,7 +91,8 @@ class AttendanceControllerTest {
                     gameId = 1L,
                     memberId = 50L,
                     status = AttendanceStatus.ATTENDING,
-                    reason = null,
+                    absenceReason = null,
+                    reasonDetail = null,
                 )
             } returns vote
 

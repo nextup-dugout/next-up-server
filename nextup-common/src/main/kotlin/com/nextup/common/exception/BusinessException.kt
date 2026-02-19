@@ -31,3 +31,11 @@ open class InvalidInputException(
     code: String,
     message: String,
 ) : BusinessException(code, message)
+
+/**
+ * 접근 권한이 없을 때 발생하는 예외
+ */
+open class ForbiddenException(
+    code: String,
+    message: String,
+) : BusinessException(code, message)

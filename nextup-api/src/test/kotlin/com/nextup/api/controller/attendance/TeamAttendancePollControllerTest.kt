@@ -154,7 +154,9 @@ class TeamAttendancePollControllerTest {
             val request = SubmitVoteRequest(playerId = 1L, voteType = VoteType.ATTEND)
             val vote =
                 AttendanceVote.create(poll = poll, player = player, voteType = VoteType.ATTEND)
-            every { attendanceService.submitVote(1L, 1L, VoteType.ATTEND) } returns vote
+            every {
+                attendanceService.submitVote(1L, 1L, VoteType.ATTEND, null, null)
+            } returns vote
 
             // when & then
             mockMvc
