@@ -1,5 +1,6 @@
 package com.nextup.api.dto.attendance
 
+import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
@@ -45,6 +46,8 @@ data class SubmitVoteRequest(
     val playerId: Long,
     @field:NotNull(message = "투표 유형은 필수입니다")
     val voteType: VoteType,
+    val absenceReason: AbsenceReason? = null,
+    val reasonDetail: String? = null,
 )
 
 /**
@@ -56,6 +59,8 @@ data class VoteResponse(
     val playerId: Long,
     val playerName: String,
     val voteType: VoteType,
+    val absenceReason: AbsenceReason?,
+    val reasonDetail: String?,
     val createdAt: String,
     val updatedAt: String,
 )
@@ -94,6 +99,8 @@ fun AttendanceVote.toResponse(): VoteResponse =
         playerId = this.player.id,
         playerName = this.player.name,
         voteType = this.voteType,
+        absenceReason = this.absenceReason,
+        reasonDetail = this.reasonDetail,
         createdAt = this.createdAt.toString(),
         updatedAt = this.updatedAt.toString(),
     )
