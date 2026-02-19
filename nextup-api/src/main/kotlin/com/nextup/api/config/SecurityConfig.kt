@@ -8,6 +8,7 @@ import com.nextup.infrastructure.security.jwt.JwtProperties
 import com.nextup.infrastructure.security.oauth2.CustomOAuth2UserService
 import com.nextup.infrastructure.security.oauth2.OAuth2AuthenticationFailureHandler
 import com.nextup.infrastructure.security.oauth2.OAuth2AuthenticationSuccessHandler
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -39,6 +40,8 @@ class SecurityConfig(
     private val customOAuth2UserService: CustomOAuth2UserService,
     private val oAuth2AuthenticationSuccessHandler: OAuth2AuthenticationSuccessHandler,
     private val oAuth2AuthenticationFailureHandler: OAuth2AuthenticationFailureHandler,
+    @Value("\${springdoc.swagger-ui.enabled:true}")
+    private val swaggerEnabled: Boolean,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
@@ -71,13 +74,19 @@ class SecurityConfig(
                     .permitAll()
                     .requestMatchers("/login/oauth2/**")
                     .permitAll()
-                    // Swagger/OpenAPI
-                    .requestMatchers(
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                        "/swagger-resources/**",
-                    ).permitAll()
+                    // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
+                    .let { registry ->
+                        if (swaggerEnabled) {
+                            registry.requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                            ).permitAll()
+                        } else {
+                            registry
+                        }
+                    }
                     // Actuator endpoints
                     .requestMatchers("/actuator/health")
                     .permitAll()
