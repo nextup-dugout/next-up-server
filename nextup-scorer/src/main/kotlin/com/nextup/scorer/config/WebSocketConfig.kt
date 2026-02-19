@@ -1,6 +1,8 @@
 package com.nextup.scorer.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
+import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
@@ -10,10 +12,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * WebSocket 설정
  *
  * 실시간 스코어보드 브로드캐스트를 위한 STOMP over WebSocket 설정
+ * JWT 인증 필수, 허용된 도메인만 접근 가능
  */
 @Configuration
 @EnableWebSocketMessageBroker
-class WebSocketConfig : WebSocketMessageBrokerConfigurer {
+class WebSocketConfig(
+    private val webSocketAuthInterceptor: WebSocketAuthInterceptor,
+    @Value("\${app.websocket.allowed-origins:http://localhost:3000}")
+    private val allowedOrigins: String,
+) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         // 클라이언트가 구독할 수 있는 prefix
@@ -26,13 +33,19 @@ class WebSocketConfig : WebSocketMessageBrokerConfigurer {
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
-        // WebSocket 연결 엔드포인트
+        val origins = allowedOrigins.split(",").map { it.trim() }.toTypedArray()
+
+        // WebSocket 연결 엔드포인트 (SockJS 포함)
         registry.addEndpoint("/ws/scoreboard")
-            .setAllowedOriginPatterns("*")
+            .setAllowedOrigins(*origins)
             .withSockJS()
 
         // SockJS 없이 순수 WebSocket 연결
         registry.addEndpoint("/ws/scoreboard")
-            .setAllowedOriginPatterns("*")
+            .setAllowedOrigins(*origins)
+    }
+
+    override fun configureClientInboundChannel(registration: ChannelRegistration) {
+        registration.interceptors(webSocketAuthInterceptor)
     }
 }

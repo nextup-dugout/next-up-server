@@ -67,10 +67,26 @@ class TeamMember private constructor(
         get() = status == TeamMemberStatus.ACTIVE
 
     /**
-     * 투표 가능한지 확인합니다 (ACTIVE, SUSPENDED 모두 가능).
+     * 출석 투표 가능한지 확인합니다 (ACTIVE, SUSPENDED 모두 가능, GUEST 제외).
      */
     val canVote: Boolean
-        get() = status in listOf(TeamMemberStatus.ACTIVE, TeamMemberStatus.SUSPENDED)
+        get() =
+            status in listOf(TeamMemberStatus.ACTIVE, TeamMemberStatus.SUSPENDED) &&
+                role.canVoteInPoll()
+
+    /**
+     * 선거 참여 가능한지 확인합니다 (ACTIVE, SUSPENDED 모두 가능, GUEST 제외).
+     */
+    val canParticipateInElection: Boolean
+        get() =
+            status in listOf(TeamMemberStatus.ACTIVE, TeamMemberStatus.SUSPENDED) &&
+                role.canParticipateInElection()
+
+    /**
+     * 라인업에 포함 가능한지 확인합니다 (ACTIVE이면 GUEST 포함 가능).
+     */
+    val canBeInLineup: Boolean
+        get() = status == TeamMemberStatus.ACTIVE
 
     /**
      * OWNER 역할인지 확인합니다.

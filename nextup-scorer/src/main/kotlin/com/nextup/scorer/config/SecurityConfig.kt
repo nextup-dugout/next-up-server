@@ -69,8 +69,8 @@ class SecurityConfig(
                         ).permitAll()
                 }
 
-                auth
-                    // WebSocket endpoints (for real-time scoreboard)
+                    // WebSocket endpoints - HTTP 핸드셰이크 허용 (STOMP CONNECT에서 JWT 검증)
+
                     .requestMatchers("/ws/**").permitAll()
 
                     // Scorer API endpoints

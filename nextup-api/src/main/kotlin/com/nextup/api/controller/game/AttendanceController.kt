@@ -34,7 +34,8 @@ class AttendanceController(
                 gameId = gameId,
                 memberId = member.id,
                 status = request.status,
-                reason = request.reason,
+                absenceReason = request.absenceReason,
+                reasonDetail = request.reasonDetail,
             )
 
         return ApiResponse.success(vote.toResponse())
