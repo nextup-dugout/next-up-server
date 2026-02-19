@@ -4,6 +4,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 @DisplayName("AuthCodeStore 테스트")
 class AuthCodeStoreTest {
@@ -78,5 +80,41 @@ class AuthCodeStoreTest {
         // then
         assertThat(result1!!.userId).isEqualTo(1L)
         assertThat(result2!!.userId).isEqualTo(2L)
+    }
+
+    @Test
+    fun `만료된 인가 코드는 null을 반환한다`() {
+        // given - 리플렉션으로 만료된 엔트리를 직접 삽입
+        val storeField = AuthCodeStore::class.java.getDeclaredField("store")
+        storeField.isAccessible = true
+
+        @Suppress("UNCHECKED_CAST")
+        val store = storeField.get(authCodeStore) as ConcurrentHashMap<String, Any>
+
+        val entryClass =
+            Class.forName(
+                "com.nextup.infrastructure.security.oauth2.AuthCodeStore\$AuthCodeEntry",
+            )
+        val entryConstructor =
+            entryClass.getDeclaredConstructor(
+                Long::class.java,
+                Boolean::class.java,
+                Instant::class.java,
+            )
+        entryConstructor.isAccessible = true
+        val expiredEntry =
+            entryConstructor.newInstance(
+                1L,
+                false,
+                Instant.now().minusSeconds(60),
+            )
+
+        store["expired-code"] = expiredEntry
+
+        // when
+        val result = authCodeStore.consume("expired-code")
+
+        // then
+        assertThat(result).isNull()
     }
 }
