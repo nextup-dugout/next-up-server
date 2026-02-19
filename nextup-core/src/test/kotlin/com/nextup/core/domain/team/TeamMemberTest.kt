@@ -351,6 +351,94 @@ class TeamMemberTest {
             // then
             assertThat(member.canParticipateInGame).isFalse()
         }
+
+        @Test
+        fun `should check if member can participate in election`() {
+            assertThat(member.canParticipateInElection).isTrue()
+            assertThat(owner.canParticipateInElection).isTrue()
+        }
+
+        @Test
+        fun `should check if member can be in lineup`() {
+            assertThat(member.canBeInLineup).isTrue()
+            assertThat(owner.canBeInLineup).isTrue()
+        }
+
+        @Test
+        fun `should not allow suspended member in lineup`() {
+            // given
+            member.suspend("test", owner)
+
+            // then
+            assertThat(member.canBeInLineup).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("GUEST 역할")
+    inner class GuestRole {
+        private lateinit var guestUser: User
+        private lateinit var guestPlayer: Player
+        private lateinit var guest: TeamMember
+
+        @BeforeEach
+        fun setUpGuest() {
+            guestUser = User.createLocalUser("guest@example.com", "password", "게스트")
+            guestPlayer = Player(name = "게스트", primaryPosition = Position.DESIGNATED_HITTER)
+            guest = TeamMember.create(team, guestUser, guestPlayer, 99, TeamMemberRole.GUEST)
+            setTeamMemberId(guest, 10L)
+        }
+
+        @Test
+        fun `should create guest member`() {
+            assertThat(guest.role).isEqualTo(TeamMemberRole.GUEST)
+            assertThat(guest.status).isEqualTo(TeamMemberStatus.ACTIVE)
+            assertThat(guest.isActive).isTrue()
+        }
+
+        @Test
+        fun `GUEST should not be able to vote`() {
+            assertThat(guest.canVote).isFalse()
+        }
+
+        @Test
+        fun `GUEST should not be able to participate in election`() {
+            assertThat(guest.canParticipateInElection).isFalse()
+        }
+
+        @Test
+        fun `GUEST should be able to participate in game`() {
+            assertThat(guest.canParticipateInGame).isTrue()
+        }
+
+        @Test
+        fun `GUEST should be able to be in lineup`() {
+            assertThat(guest.canBeInLineup).isTrue()
+        }
+
+        @Test
+        fun `GUEST should not be able to manage members`() {
+            assertThat(guest.canManageMembers()).isFalse()
+        }
+
+        @Test
+        fun `GUEST should have lowest level`() {
+            assertThat(TeamMemberRole.GUEST.level).isEqualTo(1)
+            assertThat(TeamMemberRole.MEMBER.isHigherThan(TeamMemberRole.GUEST)).isTrue()
+            assertThat(TeamMemberRole.GUEST.isHigherThan(TeamMemberRole.MEMBER)).isFalse()
+        }
+
+        @Test
+        fun `GUEST should be kickable by owner`() {
+            guest.kick("게스트 기간 종료", owner)
+            assertThat(guest.status).isEqualTo(TeamMemberStatus.KICKED)
+        }
+
+        @Test
+        fun `GUEST should be able to leave`() {
+            guest.leave()
+            assertThat(guest.status).isEqualTo(TeamMemberStatus.LEFT)
+        }
     }
 
     private fun setTeamMemberId(
