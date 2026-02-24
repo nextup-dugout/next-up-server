@@ -1,7 +1,7 @@
 package com.nextup.api.controller.user
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.user.*
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal

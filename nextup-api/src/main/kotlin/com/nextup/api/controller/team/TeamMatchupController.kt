@@ -1,9 +1,9 @@
 package com.nextup.api.controller.team
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.team.TeamMatchupGameResponse
 import com.nextup.api.dto.team.TeamMatchupResponse
 import com.nextup.api.dto.team.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.team.TeamMatchupService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

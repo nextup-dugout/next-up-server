@@ -1,7 +1,7 @@
 package com.nextup.api.controller.attendance
 
 import com.nextup.api.dto.attendance.*
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.service.attendance.AttendanceService
 import jakarta.validation.Valid

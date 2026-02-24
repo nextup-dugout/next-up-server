@@ -1,6 +1,6 @@
 package com.nextup.backoffice.exception
 
-import com.nextup.backoffice.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.NotFoundException
 import org.slf4j.LoggerFactory

@@ -1,11 +1,11 @@
 package com.nextup.api.controller.match
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.match.CreateMatchRequestApiRequest
 import com.nextup.api.dto.match.MatchRequestDetailResponse
 import com.nextup.api.dto.match.MatchRequestResponse
 import com.nextup.api.dto.match.MatchResponseResponse
 import com.nextup.api.dto.match.RespondToMatchRequestApiRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.match.MatchingService
 import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto

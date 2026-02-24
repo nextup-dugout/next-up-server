@@ -1,9 +1,9 @@
 package com.nextup.api.controller.report
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.report.CompetitionReportResponse
 import com.nextup.api.dto.report.CompetitionSummaryResponse
 import com.nextup.api.dto.report.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.report.CompetitionReportService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

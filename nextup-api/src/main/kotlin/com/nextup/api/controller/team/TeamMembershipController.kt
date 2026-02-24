@@ -1,9 +1,9 @@
 package com.nextup.api.controller.team
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.team.*
 import com.nextup.api.mapper.team.toDetailResponse
 import com.nextup.api.mapper.team.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

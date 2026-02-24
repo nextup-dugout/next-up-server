@@ -1,4 +1,4 @@
-package com.nextup.api.dto.common
+package com.nextup.common.dto
 
 /**
  * 에러 상세 정보

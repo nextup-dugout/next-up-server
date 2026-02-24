@@ -1,12 +1,12 @@
 package com.nextup.api.controller.lineup
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.lineup.AddLineupEntryRequest
 import com.nextup.api.dto.lineup.CreateLineupRequest
 import com.nextup.api.dto.lineup.LineupEntryResponse
 import com.nextup.api.dto.lineup.LineupSubmissionResponse
 import com.nextup.api.dto.lineup.LineupSubmissionSummaryResponse
 import com.nextup.api.dto.lineup.SetLineupEntriesRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.lineup.LineupService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

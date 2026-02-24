@@ -1,9 +1,9 @@
 package com.nextup.api.controller.stadium
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stadium.BookingResponse
 import com.nextup.api.dto.stadium.StadiumResponse
 import com.nextup.api.dto.stadium.StadiumSlotResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumService
 import com.nextup.core.service.stadium.dto.BookSlotRequest
 import jakarta.validation.Valid

@@ -1,8 +1,8 @@
 package com.nextup.api.controller.league
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.league.LeagueResponse
 import com.nextup.api.dto.league.LeagueSummaryResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.league.LeagueService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

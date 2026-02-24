@@ -1,7 +1,7 @@
 package com.nextup.scorer.controller
 
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.PitchEventService
-import com.nextup.scorer.dto.common.ApiResponse
 import com.nextup.scorer.dto.pitch.PitchEventResponse
 import com.nextup.scorer.dto.pitch.RecordPitchRequest
 import com.nextup.scorer.dto.pitch.toResponse

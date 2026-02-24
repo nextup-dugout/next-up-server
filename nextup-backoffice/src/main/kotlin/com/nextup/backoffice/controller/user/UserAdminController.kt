@@ -1,7 +1,7 @@
 package com.nextup.backoffice.controller.user
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.user.*
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.user.Role
 import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid

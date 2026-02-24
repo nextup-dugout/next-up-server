@@ -1,9 +1,9 @@
 package com.nextup.api.controller.stats
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stats.PlayerRecordResponse
 import com.nextup.api.dto.stats.RecentFormResponse
 import com.nextup.api.mapper.stats.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stats.PlayerRecordService
 import com.nextup.core.service.stats.RecentFormService
 import com.nextup.core.service.stats.dto.FormType

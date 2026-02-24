@@ -1,10 +1,10 @@
 package com.nextup.api.controller.stats
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stats.BattingLeaderResponse
 import com.nextup.api.dto.stats.PitchingLeaderResponse
 import com.nextup.api.mapper.stats.toBattingLeaderResponse
 import com.nextup.api.mapper.stats.toPitchingLeaderResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stats.IndividualRankingService
 import com.nextup.core.service.stats.dto.BattingCategory
 import com.nextup.core.service.stats.dto.PitchingCategory

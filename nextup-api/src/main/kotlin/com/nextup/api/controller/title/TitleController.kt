@@ -1,10 +1,10 @@
 package com.nextup.api.controller.title
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.title.TitleListResponse
 import com.nextup.api.dto.title.TitleResponse
 import com.nextup.api.dto.title.toListResponse
 import com.nextup.api.dto.title.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.title.TitleCategory
 import com.nextup.core.service.title.TitleService
 import org.springframework.web.bind.annotation.GetMapping

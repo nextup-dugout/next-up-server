@@ -3,8 +3,8 @@ package com.nextup.api.controller.certificate
 import com.nextup.api.dto.certificate.CertificateResponse
 import com.nextup.api.dto.certificate.CertificateVerificationResponse
 import com.nextup.api.dto.certificate.IssueCertificateRequest
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.mapper.certificate.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.certificate.CertificateService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

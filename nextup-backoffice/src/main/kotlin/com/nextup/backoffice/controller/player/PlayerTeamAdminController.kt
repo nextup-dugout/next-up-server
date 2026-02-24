@@ -1,7 +1,7 @@
 package com.nextup.backoffice.controller.player
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.player.*
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.player.PlayerTeamService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

@@ -3,7 +3,7 @@ package com.nextup.backoffice.controller.appeal
 import com.nextup.backoffice.dto.appeal.AppealAdminResponse
 import com.nextup.backoffice.dto.appeal.ApproveAppealAdminRequest
 import com.nextup.backoffice.dto.appeal.RejectAppealAdminRequest
-import com.nextup.backoffice.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.appeal.AppealStatus
 import com.nextup.core.service.appeal.AppealService
 import jakarta.validation.Valid

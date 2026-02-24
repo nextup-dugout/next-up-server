@@ -1,9 +1,9 @@
 package com.nextup.api.controller.game
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.game.CreatePitchingRecordRequest
 import com.nextup.api.dto.game.PitchingRecordResponse
 import com.nextup.api.mapper.game.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.core.service.game.PitchingRecordService
 import com.nextup.infrastructure.repository.game.GamePlayerRepository

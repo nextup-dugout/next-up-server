@@ -3,7 +3,7 @@ package com.nextup.backoffice.controller.association
 import com.nextup.backoffice.dto.association.AssociationAdminResponse
 import com.nextup.backoffice.dto.association.CreateAssociationRequest
 import com.nextup.backoffice.dto.association.UpdateAssociationRequest
-import com.nextup.backoffice.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.association.AssociationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

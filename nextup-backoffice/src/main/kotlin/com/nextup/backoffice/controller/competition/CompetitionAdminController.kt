@@ -1,9 +1,9 @@
 package com.nextup.backoffice.controller.competition
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.competition.CompetitionAdminResponse
 import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
 import jakarta.validation.Valid

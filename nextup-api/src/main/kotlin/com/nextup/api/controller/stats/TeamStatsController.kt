@@ -1,8 +1,8 @@
 package com.nextup.api.controller.stats
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stats.TeamStatsResponse
 import com.nextup.api.mapper.stats.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stats.TeamStatsService
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

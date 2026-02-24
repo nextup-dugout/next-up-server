@@ -1,6 +1,5 @@
 package com.nextup.backoffice.controller.schedule
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.schedule.CreateScheduleRequest
 import com.nextup.backoffice.dto.schedule.PostponeBulkRequest
 import com.nextup.backoffice.dto.schedule.RescheduleRequest
@@ -8,6 +7,7 @@ import com.nextup.backoffice.dto.schedule.ScheduleAdminResponse
 import com.nextup.backoffice.dto.schedule.ScheduleConflictResponse
 import com.nextup.backoffice.dto.schedule.ScheduleGenerateRequest
 import com.nextup.backoffice.dto.schedule.UpdateScheduleRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.schedule.LeagueScheduleService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

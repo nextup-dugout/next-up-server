@@ -2,7 +2,7 @@ package com.nextup.api.controller.attendance
 
 import com.nextup.api.dto.attendance.NudgeRequest
 import com.nextup.api.dto.attendance.NudgeResponse
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.NudgeService
 import org.springframework.web.bind.annotation.*
 

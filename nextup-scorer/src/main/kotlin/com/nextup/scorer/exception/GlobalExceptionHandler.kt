@@ -1,10 +1,10 @@
 package com.nextup.scorer.exception
 
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
-import com.nextup.scorer.dto.common.ApiResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException

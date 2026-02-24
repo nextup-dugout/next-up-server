@@ -1,8 +1,8 @@
 package com.nextup.api.controller.game
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.game.GameTimelineResponse
 import com.nextup.api.mapper.game.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameTimelineService
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

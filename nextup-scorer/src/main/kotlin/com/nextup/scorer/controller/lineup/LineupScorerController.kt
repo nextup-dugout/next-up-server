@@ -1,7 +1,7 @@
 package com.nextup.scorer.controller.lineup
 
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.lineup.LineupService
-import com.nextup.scorer.dto.common.ApiResponse
 import com.nextup.scorer.dto.lineup.LineupEntryResponse
 import com.nextup.scorer.dto.lineup.LineupSubmissionResponse
 import com.nextup.scorer.dto.lineup.RejectLineupRequest

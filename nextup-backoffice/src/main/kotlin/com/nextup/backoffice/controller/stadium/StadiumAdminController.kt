@@ -1,11 +1,11 @@
 package com.nextup.backoffice.controller.stadium
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.stadium.CreateSlotRequest
 import com.nextup.backoffice.dto.stadium.CreateStadiumRequest
 import com.nextup.backoffice.dto.stadium.StadiumResponse
 import com.nextup.backoffice.dto.stadium.StadiumSlotResponse
 import com.nextup.backoffice.dto.stadium.UpdateStadiumRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumAdminService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*

@@ -3,7 +3,7 @@ package com.nextup.backoffice.controller.admin
 import com.nextup.backoffice.dto.admin.AssignAdminRequest
 import com.nextup.backoffice.dto.admin.ChangeRoleRequest
 import com.nextup.backoffice.dto.admin.OrganizationAdminResponse
-import com.nextup.backoffice.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.service.admin.OrganizationAdminService
 import jakarta.validation.Valid

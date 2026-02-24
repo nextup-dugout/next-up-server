@@ -2,7 +2,7 @@ package com.nextup.api.controller.appeal
 
 import com.nextup.api.dto.appeal.AppealResponse
 import com.nextup.api.dto.appeal.CreateAppealApiRequest
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.appeal.AppealService
 import com.nextup.core.service.appeal.dto.CreateAppealRequest
 import jakarta.validation.Valid
