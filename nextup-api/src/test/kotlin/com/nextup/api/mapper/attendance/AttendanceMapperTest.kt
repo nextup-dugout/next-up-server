@@ -2,8 +2,8 @@ package com.nextup.api.mapper.attendance
 
 import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
-import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.TeamMember
@@ -38,11 +38,11 @@ class AttendanceMapperTest {
         }
 
     @Test
-    fun `should map AttendanceVote to AttendanceVoteResponse`() {
+    fun `should map GameParticipation to GameParticipationResponse`() {
         // given
         val respondedAt = LocalDateTime.of(2026, 2, 1, 10, 0)
         val vote =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 1L
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
@@ -66,11 +66,11 @@ class AttendanceMapperTest {
     }
 
     @Test
-    fun `should map AttendanceVote with absence reason to response`() {
+    fun `should map GameParticipation with absence reason to response`() {
         // given
         val respondedAt = LocalDateTime.of(2026, 2, 1, 10, 0)
         val vote =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 2L
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
@@ -89,11 +89,11 @@ class AttendanceMapperTest {
     }
 
     @Test
-    fun `should map AttendanceVote to MemberVoteResponse`() {
+    fun `should map GameParticipation to MemberVoteResponse`() {
         // given
         val respondedAt = LocalDateTime.of(2026, 2, 1, 10, 0)
         val vote =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 2L
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.ABSENT
@@ -141,10 +141,10 @@ class AttendanceMapperTest {
     }
 
     @Test
-    fun `should map List of AttendanceVote to List of AttendanceVoteResponse`() {
+    fun `should map List of GameParticipation to List of GameParticipationResponse`() {
         // given
         val vote1 =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 1L
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
@@ -154,7 +154,7 @@ class AttendanceMapperTest {
                 every { respondedAt } returns LocalDateTime.now()
             }
         val vote2 =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 2L
                 every { this@mockk.game } returns this@AttendanceMapperTest.game
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
@@ -174,10 +174,10 @@ class AttendanceMapperTest {
     }
 
     @Test
-    fun `should map List of AttendanceVote to List of MemberVoteResponse`() {
+    fun `should map List of GameParticipation to List of MemberVoteResponse`() {
         // given
         val vote =
-            mockk<AttendanceVote> {
+            mockk<GameParticipation> {
                 every { id } returns 1L
                 every { this@mockk.member } returns this@AttendanceMapperTest.member
                 every { status } returns AttendanceStatus.UNDECIDED

@@ -2,8 +2,8 @@ package com.nextup.core.service.attendance
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.core.domain.game.AttendanceStatus
-import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.domain.team.TeamMember
@@ -177,7 +177,7 @@ class NudgeServiceTest {
     private fun createNonVoter(
         userId: Long,
         userName: String,
-    ): AttendanceVote {
+    ): GameParticipation {
         val user: com.nextup.core.domain.user.User = mockk(relaxed = true)
         every { user.id } returns userId
         every { user.nickname } returns userName
@@ -185,7 +185,7 @@ class NudgeServiceTest {
         val member: TeamMember = mockk(relaxed = true)
         every { member.user } returns user
 
-        val vote: AttendanceVote = mockk(relaxed = true)
+        val vote: GameParticipation = mockk(relaxed = true)
         every { vote.member } returns member
         every { vote.status } returns AttendanceStatus.UNDECIDED
         every { vote.hasResponded } returns false

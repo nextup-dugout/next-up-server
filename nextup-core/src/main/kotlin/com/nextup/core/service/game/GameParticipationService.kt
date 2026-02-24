@@ -2,7 +2,7 @@ package com.nextup.core.service.game
 
 import com.nextup.core.domain.attendance.AbsenceReason
 import com.nextup.core.domain.game.AttendanceStatus
-import com.nextup.core.domain.game.AttendanceVote
+import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
 import java.time.LocalDateTime
@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  *
  * 경기 출석 투표 관련 비즈니스 로직을 정의합니다.
  */
-interface AttendanceService {
+interface GameParticipationService {
     /**
      * 출석 투표를 합니다.
      *
@@ -31,7 +31,7 @@ interface AttendanceService {
         status: AttendanceStatus,
         absenceReason: AbsenceReason? = null,
         reasonDetail: String? = null,
-    ): AttendanceVote
+    ): GameParticipation
 
     /**
      * 경기의 출석 투표 요약을 조회합니다.
@@ -55,7 +55,7 @@ interface AttendanceService {
      * @param gameId 경기 ID
      * @return 생성된 투표 목록
      */
-    fun createVotesForGame(gameId: Long): List<AttendanceVote>
+    fun createVotesForGame(gameId: Long): List<GameParticipation>
 
     /**
      * 경기의 출석 투표 목록을 조회합니다.
@@ -63,7 +63,7 @@ interface AttendanceService {
      * @param gameId 경기 ID
      * @return 출석 투표 목록
      */
-    fun getVotesByGameId(gameId: Long): List<AttendanceVote>
+    fun getVotesByGameId(gameId: Long): List<GameParticipation>
 
     /**
      * 경기 참가 팀의 멤버인지 검증합니다.

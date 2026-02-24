@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
 
-@DisplayName("AttendanceVote 엔티티 테스트")
-class AttendanceVoteTest {
+@DisplayName("GameParticipation 엔티티 테스트")
+class GameParticipationTest {
     private lateinit var game: Game
     private lateinit var member: TeamMember
     private lateinit var team: Team
@@ -44,7 +44,7 @@ class AttendanceVoteTest {
         @Test
         fun `should create vote with UNDECIDED status`() {
             // when
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // then
             assertThat(vote.game).isEqualTo(game)
@@ -64,7 +64,7 @@ class AttendanceVoteTest {
         @Test
         fun `should vote attending without reason`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when
             vote.vote(AttendanceStatus.ATTENDING)
@@ -81,7 +81,7 @@ class AttendanceVoteTest {
         @Test
         fun `should vote absent with absence reason`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when
             vote.vote(AttendanceStatus.ABSENT, AbsenceReason.INJURY)
@@ -96,7 +96,7 @@ class AttendanceVoteTest {
         @Test
         fun `should vote absent with OTHER reason and detail`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when
             vote.vote(AttendanceStatus.ABSENT, AbsenceReason.OTHER, "개인 사정")
@@ -110,7 +110,7 @@ class AttendanceVoteTest {
         @Test
         fun `should vote absent without reason`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when
             vote.vote(AttendanceStatus.ABSENT)
@@ -124,7 +124,7 @@ class AttendanceVoteTest {
         @Test
         fun `should throw when attending with absence reason`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -135,7 +135,7 @@ class AttendanceVoteTest {
         @Test
         fun `should throw when attending with reason detail`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -146,7 +146,7 @@ class AttendanceVoteTest {
         @Test
         fun `should throw when reason detail provided without OTHER`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -165,7 +165,7 @@ class AttendanceVoteTest {
             setTeamMemberId(kickedMember, 2L)
             kickedMember.kick("규칙 위반", owner)
 
-            val vote = AttendanceVote.createForGame(game, kickedMember)
+            val vote = GameParticipation.createForGame(game, kickedMember)
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -180,7 +180,7 @@ class AttendanceVoteTest {
         @Test
         fun `should change vote from attending to absent with reason`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
             vote.vote(AttendanceStatus.ATTENDING)
             val firstRespondedAt = vote.respondedAt
 
@@ -197,7 +197,7 @@ class AttendanceVoteTest {
         @Test
         fun `should clear reason when changing to attending`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
             vote.vote(AttendanceStatus.ABSENT, AbsenceReason.INJURY)
 
             // when
@@ -212,7 +212,7 @@ class AttendanceVoteTest {
         @Test
         fun `should throw when changing vote without initial vote`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when & then
             assertThrows<IllegalStateException> {
@@ -227,7 +227,7 @@ class AttendanceVoteTest {
         @Test
         fun `should track responded timestamp`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
 
             // when
             vote.vote(AttendanceStatus.ATTENDING)
@@ -240,7 +240,7 @@ class AttendanceVoteTest {
         @Test
         fun `should update responded timestamp when changing vote`() {
             // given
-            val vote = AttendanceVote.createForGame(game, member)
+            val vote = GameParticipation.createForGame(game, member)
             vote.vote(AttendanceStatus.ATTENDING)
             val firstTimestamp = vote.respondedAt
 

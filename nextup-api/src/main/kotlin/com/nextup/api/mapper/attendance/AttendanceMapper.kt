@@ -1,13 +1,13 @@
 package com.nextup.api.mapper.attendance
 
 import com.nextup.api.dto.attendance.*
-import com.nextup.core.domain.game.AttendanceVote
+import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
 
 /**
- * AttendanceVote를 AttendanceVoteResponse로 변환합니다.
+ * GameParticipation를 AttendanceVoteResponse로 변환합니다.
  */
-fun AttendanceVote.toResponse(): AttendanceVoteResponse =
+fun GameParticipation.toResponse(): AttendanceVoteResponse =
     AttendanceVoteResponse(
         voteId = this.id,
         gameId = this.game.id,
@@ -32,9 +32,9 @@ fun AttendanceSummaryDto.toResponse(): AttendanceSummaryResponse =
     )
 
 /**
- * AttendanceVote를 MemberVoteResponse로 변환합니다.
+ * GameParticipation를 MemberVoteResponse로 변환합니다.
  */
-fun AttendanceVote.toMemberVoteResponse(): MemberVoteResponse =
+fun GameParticipation.toMemberVoteResponse(): MemberVoteResponse =
     MemberVoteResponse(
         voteId = this.id,
         member =
@@ -51,11 +51,11 @@ fun AttendanceVote.toMemberVoteResponse(): MemberVoteResponse =
     )
 
 /**
- * List<AttendanceVote>를 List<AttendanceVoteResponse>로 변환합니다.
+ * List<GameParticipation>를 List<AttendanceVoteResponse>로 변환합니다.
  */
-fun List<AttendanceVote>.toResponse(): List<AttendanceVoteResponse> = this.map { it.toResponse() }
+fun List<GameParticipation>.toResponse(): List<AttendanceVoteResponse> = this.map { it.toResponse() }
 
 /**
- * List<AttendanceVote>를 List<MemberVoteResponse>로 변환합니다.
+ * List<GameParticipation>를 List<MemberVoteResponse>로 변환합니다.
  */
-fun List<AttendanceVote>.toMemberVoteResponse(): List<MemberVoteResponse> = this.map { it.toMemberVoteResponse() }
+fun List<GameParticipation>.toMemberVoteResponse(): List<MemberVoteResponse> = this.map { it.toMemberVoteResponse() }

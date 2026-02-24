@@ -1,32 +1,32 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.game.AttendanceStatus
-import com.nextup.core.domain.game.AttendanceVote
+import com.nextup.core.domain.game.GameParticipation
 
 /**
- * AttendanceVote Repository Port
+ * GameParticipation Repository Port
  * Core 모듈의 Repository 인터페이스 - Infrastructure에서 구현
  */
 interface AttendanceVoteRepositoryPort {
-    fun save(attendanceVote: AttendanceVote): AttendanceVote
+    fun save(attendanceVote: GameParticipation): GameParticipation
 
-    fun saveAll(attendanceVotes: List<AttendanceVote>): List<AttendanceVote>
+    fun saveAll(attendanceVotes: List<GameParticipation>): List<GameParticipation>
 
-    fun findByIdOrNull(id: Long): AttendanceVote?
+    fun findByIdOrNull(id: Long): GameParticipation?
 
-    fun findByGameId(gameId: Long): List<AttendanceVote>
+    fun findByGameId(gameId: Long): List<GameParticipation>
 
     fun findByGameIdAndMemberId(
         gameId: Long,
         memberId: Long,
-    ): AttendanceVote?
+    ): GameParticipation?
 
     fun findByGameIdAndStatus(
         gameId: Long,
         status: AttendanceStatus,
-    ): List<AttendanceVote>
+    ): List<GameParticipation>
 
-    fun findNonVotersByGameId(gameId: Long): List<AttendanceVote>
+    fun findNonVotersByGameId(gameId: Long): List<GameParticipation>
 
     fun countByGameId(gameId: Long): Long
 
@@ -35,7 +35,7 @@ interface AttendanceVoteRepositoryPort {
         status: AttendanceStatus,
     ): Long
 
-    fun delete(attendanceVote: AttendanceVote)
+    fun delete(attendanceVote: GameParticipation)
 
     fun deleteById(id: Long)
 }
