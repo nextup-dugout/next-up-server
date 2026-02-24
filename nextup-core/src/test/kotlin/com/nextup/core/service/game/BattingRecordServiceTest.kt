@@ -117,13 +117,15 @@ class BattingRecordServiceTest {
         val runsScored = true
 
         every { battingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockBattingRecord
-        every { mockBattingRecord.recordPlateAppearance(result, runsBattedIn, runsScored) } returns Unit
+        every { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) } returns Unit
+        every { mockBattingRecord.recordRun() } returns Unit
 
         // when
         battingRecordService.recordPlateAppearance(gamePlayerId, result, runsBattedIn, runsScored)
 
         // then
-        verify(exactly = 1) { mockBattingRecord.recordPlateAppearance(result, runsBattedIn, runsScored) }
+        verify(exactly = 1) { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) }
+        verify(exactly = 1) { mockBattingRecord.recordRun() }
     }
 
     @Test
