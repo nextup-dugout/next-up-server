@@ -1,5 +1,6 @@
 package com.nextup.core.domain.stadium
 
+import com.nextup.common.exception.BookingTransferForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.common.BaseTimeEntity
 import jakarta.persistence.*
@@ -64,6 +65,21 @@ class StadiumBooking private constructor(
             )
         }
         this.status = BookingStatus.CANCELLED
+    }
+
+    /**
+     * 예약 소유권을 다른 팀으로 양도합니다.
+     *
+     * 예약이 CONFIRMED 상태일 때만 양도 가능합니다.
+     */
+    fun transferTo(newTeamId: Long) {
+        if (status != BookingStatus.CONFIRMED) {
+            throw BookingTransferForbiddenException(
+                "Booking cannot be transferred. Current status: $status",
+            )
+        }
+        require(newTeamId > 0) { "New team ID must be positive" }
+        require(newTeamId != teamId) { "New team ID must differ from current team ID" }
     }
 
     /**
