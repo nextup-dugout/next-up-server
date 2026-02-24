@@ -4,6 +4,7 @@ import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
+import com.nextup.common.exception.UnregisteredPlayerInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.league.League
@@ -204,6 +205,175 @@ class LineupValidatorTest {
         assertThrows<NonAttendingPlayerInLineupException> {
             LineupValidator.validate(entries, attendingPlayerIds)
         }
+    }
+
+    // ========== League Registration (부정선수 체크) Tests ==========
+
+    @Test
+    fun `should pass when all lineup players are registered for competition`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val registeredPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validate(entries, registeredPlayerIds = registeredPlayerIds)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should throw UnregisteredPlayerInLineupException when unregistered player in lineup`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        // player 9 (우익수) is not registered
+        val registeredPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L)
+
+        // when & then
+        val exception =
+            assertThrows<UnregisteredPlayerInLineupException> {
+                LineupValidator.validate(entries, registeredPlayerIds = registeredPlayerIds)
+            }
+        assert(exception.message?.contains("9") == true)
+    }
+
+    @Test
+    fun `should throw UnregisteredPlayerInLineupException when multiple unregistered players`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        // players 7, 8, 9 are not registered
+        val registeredPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L)
+
+        // when & then
+        assertThrows<UnregisteredPlayerInLineupException> {
+            LineupValidator.validate(entries, registeredPlayerIds = registeredPlayerIds)
+        }
+    }
+
+    @Test
+    fun `should skip registration validation when registeredPlayerIds is null`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+
+        // when & then - should pass even without registration info
+        assertThatCode {
+            LineupValidator.validate(entries, registeredPlayerIds = null)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should validate registration for both starters and substitutes`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries =
+            listOf(
+                createEntry(
+                    submission,
+                    createPlayer("투수", Position.STARTING_PITCHER, 1L),
+                    Position.STARTING_PITCHER,
+                    1,
+                    true,
+                ),
+                createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+                createEntry(
+                    submission,
+                    createPlayer("1루수", Position.FIRST_BASE, 3L),
+                    Position.FIRST_BASE,
+                    3,
+                    true,
+                ),
+                createEntry(
+                    submission,
+                    createPlayer("대타", Position.LEFT_FIELD, 10L),
+                    Position.LEFT_FIELD,
+                    null,
+                    false,
+                ),
+            )
+        // substitute player 10 is not registered
+        val registeredPlayerIds = setOf(1L, 2L, 3L)
+
+        // when & then
+        assertThrows<UnregisteredPlayerInLineupException> {
+            LineupValidator.validate(entries, registeredPlayerIds = registeredPlayerIds)
+        }
+    }
+
+    @Test
+    fun `should validate both attendance and registration when both provided`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val attendingPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+        val registeredPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
+
+        // when & then - both validations pass
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                attendingPlayerIds = attendingPlayerIds,
+                registeredPlayerIds = registeredPlayerIds,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `validateLeagueRegisteredPlayers should throw for unregistered player`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries =
+            listOf(
+                createEntry(
+                    submission,
+                    createPlayer("투수", Position.STARTING_PITCHER, 1L),
+                    Position.STARTING_PITCHER,
+                    1,
+                    true,
+                ),
+                createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+                // player 99 is not registered
+                createEntry(
+                    submission,
+                    createPlayer("미등록선수", Position.LEFT_FIELD, 99L),
+                    Position.LEFT_FIELD,
+                    3,
+                    true,
+                ),
+            )
+        val registeredPlayerIds = setOf(1L, 2L)
+
+        // when & then
+        val exception =
+            assertThrows<UnregisteredPlayerInLineupException> {
+                LineupValidator.validateLeagueRegisteredPlayers(entries, registeredPlayerIds)
+            }
+        assert(exception.message?.contains("99") == true)
+    }
+
+    @Test
+    fun `validateLeagueRegisteredPlayers should pass when all players registered`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries =
+            listOf(
+                createEntry(
+                    submission,
+                    createPlayer("투수", Position.STARTING_PITCHER, 1L),
+                    Position.STARTING_PITCHER,
+                    1,
+                    true,
+                ),
+                createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+            )
+        val registeredPlayerIds = setOf(1L, 2L)
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validateLeagueRegisteredPlayers(entries, registeredPlayerIds)
+        }.doesNotThrowAnyException()
     }
 
     // ========== Helper Methods ==========
