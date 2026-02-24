@@ -106,14 +106,16 @@ class CompetitionService(
     @Transactional
     fun update(
         id: Long,
-        description: String?,
-        endDate: LocalDate?,
+        name: String? = null,
+        description: String? = null,
+        endDate: LocalDate? = null,
     ): Competition {
         val competition = getById(id)
-
-        description?.let { competition.description = it }
-        endDate?.let { competition.endDate = it }
-
+        try {
+            competition.updateInfo(name = name, description = description, endDate = endDate)
+        } catch (e: IllegalArgumentException) {
+            throw InvalidCompetitionStateException(e.message ?: "Cannot update competition")
+        }
         return competition
     }
 
@@ -168,10 +170,11 @@ class CompetitionService(
     @Transactional
     fun postpone(id: Long): Competition {
         val competition = getById(id)
-        if (competition.status != CompetitionStatus.SCHEDULED) {
-            throw InvalidCompetitionStateException("Only scheduled competitions can be postponed")
+        try {
+            competition.postpone()
+        } catch (e: IllegalArgumentException) {
+            throw InvalidCompetitionStateException(e.message ?: "Cannot postpone competition")
         }
-        competition.status = CompetitionStatus.POSTPONED
         return competition
     }
 }

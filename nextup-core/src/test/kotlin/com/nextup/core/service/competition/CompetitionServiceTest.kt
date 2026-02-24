@@ -326,6 +326,144 @@ class CompetitionServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("update")
+    inner class Update {
+        @Test
+        fun `should update competition description`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when
+            val result = competitionService.update(id, description = "업데이트된 설명")
+
+            // then
+            assertThat(result.description).isEqualTo("업데이트된 설명")
+        }
+
+        @Test
+        fun `should update competition name`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when
+            val result = competitionService.update(id, name = "2025 추계대회")
+
+            // then
+            assertThat(result.name).isEqualTo("2025 추계대회")
+        }
+
+        @Test
+        fun `should update competition endDate`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            val newEndDate = LocalDate.of(2025, 9, 30)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when
+            val result = competitionService.update(id, endDate = newEndDate)
+
+            // then
+            assertThat(result.endDate).isEqualTo(newEndDate)
+        }
+
+        @Test
+        fun `should throw exception when endDate is before startDate`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.update(id, endDate = LocalDate.of(2025, 1, 1))
+            }.isInstanceOf(InvalidCompetitionStateException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("postpone")
+    inner class Postpone {
+        @Test
+        fun `should postpone scheduled competition`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when
+            val result = competitionService.postpone(id)
+
+            // then
+            assertThat(result.status).isEqualTo(CompetitionStatus.POSTPONED)
+        }
+
+        @Test
+        fun `should postpone in-progress competition`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply { start() }
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when
+            val result = competitionService.postpone(id)
+
+            // then
+            assertThat(result.status).isEqualTo(CompetitionStatus.POSTPONED)
+        }
+
+        @Test
+        fun `should throw exception when competition is completed`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition =
+                createCompetition(id, league, "2025 춘계대회", 2025, 1).apply {
+                    start()
+                    complete()
+                }
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.postpone(id)
+            }.isInstanceOf(InvalidCompetitionStateException::class.java)
+        }
+
+        @Test
+        fun `should throw exception when competition is cancelled`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1).apply { cancel() }
+            every { competitionRepository.findByIdOrNull(id) } returns competition
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.postpone(id)
+            }.isInstanceOf(InvalidCompetitionStateException::class.java)
+        }
+    }
+
     private fun createAssociation(
         id: Long,
         name: String,

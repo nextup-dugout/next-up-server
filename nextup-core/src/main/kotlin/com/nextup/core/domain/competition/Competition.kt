@@ -26,7 +26,7 @@ class Competition(
     @JoinColumn(name = "league_id", nullable = false)
     val league: League,
     @Column(nullable = false, length = 100)
-    val name: String,
+    var name: String,
     @Column(nullable = false)
     val year: Int,
     @Column(nullable = false)
@@ -75,6 +75,32 @@ class Competition(
     fun cancel() {
         require(status != CompetitionStatus.COMPLETED) { "완료된 대회는 취소할 수 없습니다." }
         this.status = CompetitionStatus.CANCELLED
+    }
+
+    /**
+     * 대회를 연기합니다.
+     */
+    fun postpone() {
+        require(
+            status == CompetitionStatus.SCHEDULED || status == CompetitionStatus.IN_PROGRESS,
+        ) { "예정 중이거나 진행 중인 대회만 연기할 수 있습니다." }
+        this.status = CompetitionStatus.POSTPONED
+    }
+
+    /**
+     * 대회 정보를 업데이트합니다.
+     */
+    fun updateInfo(
+        name: String? = null,
+        description: String? = null,
+        endDate: LocalDate? = null,
+    ) {
+        endDate?.let {
+            require(!it.isBefore(startDate)) { "종료일은 시작일 이후여야 합니다." }
+            this.endDate = it
+        }
+        name?.let { this.name = it }
+        description?.let { this.description = it }
     }
 
     /**
