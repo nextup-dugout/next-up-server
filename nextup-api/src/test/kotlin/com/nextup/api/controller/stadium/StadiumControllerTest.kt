@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nextup.api.exception.GlobalExceptionHandler
+import com.nextup.common.exception.InvalidInputException
 import com.nextup.core.domain.stadium.Stadium
 import com.nextup.core.domain.stadium.StadiumBooking
 import com.nextup.core.domain.stadium.StadiumSlot
@@ -15,6 +16,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -36,8 +41,118 @@ class StadiumControllerTest {
     fun setUp() {
         stadiumService = mockk()
         controller = StadiumController(stadiumService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(GlobalExceptionHandler()).build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
+                .setCustomArgumentResolvers(PageableHandlerMethodArgumentResolver())
+                .build()
         objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/stadiums/nearby")
+    inner class FindNearbyStadiums {
+        @Test
+        fun `should return paged stadiums ordered by distance`() {
+            // given
+            val stadiums =
+                listOf(
+                    createStadium(1L, "잠실 야구장", 37.5121, 127.0717),
+                    createStadium(2L, "고척 야구장", 37.4981, 126.8671),
+                )
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl(stadiums, pageable, 2)
+            every { stadiumService.findNearbyStadiums(37.5, 127.0, 10.0, any<Pageable>()) } returns page
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/stadiums/nearby")
+                        .param("latitude", "37.5")
+                        .param("longitude", "127.0")
+                        .param("radiusKm", "10.0"),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].name").value("잠실 야구장"))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+        }
+
+        @Test
+        fun `should use default radiusKm of 10 when not provided`() {
+            // given
+            val pageable = PageRequest.of(0, 20)
+            val page = PageImpl(emptyList<Stadium>(), pageable, 0)
+            every { stadiumService.findNearbyStadiums(37.5, 127.0, 10.0, any<Pageable>()) } returns page
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/stadiums/nearby")
+                        .param("latitude", "37.5")
+                        .param("longitude", "127.0"),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        fun `should return 400 when invalid latitude is provided`() {
+            // given
+            every {
+                stadiumService.findNearbyStadiums(91.0, 127.0, 10.0, any<Pageable>())
+            } throws InvalidInputException("INVALID_LATITUDE", "위도는 -90 ~ 90 범위여야 합니다: 91.0")
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/stadiums/nearby")
+                        .param("latitude", "91.0")
+                        .param("longitude", "127.0")
+                        .param("radiusKm", "10.0"),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_LATITUDE"))
+        }
+
+        @Test
+        fun `should return 400 when invalid longitude is provided`() {
+            // given
+            every {
+                stadiumService.findNearbyStadiums(37.5, 181.0, 10.0, any<Pageable>())
+            } throws InvalidInputException("INVALID_LONGITUDE", "경도는 -180 ~ 180 범위여야 합니다: 181.0")
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/stadiums/nearby")
+                        .param("latitude", "37.5")
+                        .param("longitude", "181.0")
+                        .param("radiusKm", "10.0"),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_LONGITUDE"))
+        }
+
+        @Test
+        fun `should return 400 when radiusKm is zero`() {
+            // given
+            every {
+                stadiumService.findNearbyStadiums(37.5, 127.0, 0.0, any<Pageable>())
+            } throws InvalidInputException("INVALID_RADIUS", "검색 반경은 0보다 커야 합니다: 0.0")
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/stadiums/nearby")
+                        .param("latitude", "37.5")
+                        .param("longitude", "127.0")
+                        .param("radiusKm", "0.0"),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_RADIUS"))
+        }
     }
 
     @Nested

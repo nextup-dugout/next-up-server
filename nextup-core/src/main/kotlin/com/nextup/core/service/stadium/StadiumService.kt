@@ -1,6 +1,7 @@
 package com.nextup.core.service.stadium
 
 import com.nextup.common.exception.BookingNotFoundException
+import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.SlotNotFoundException
 import com.nextup.common.exception.StadiumNotFoundException
 import com.nextup.core.domain.stadium.BookingStatus
@@ -12,6 +13,8 @@ import com.nextup.core.port.repository.StadiumBookingRepositoryPort
 import com.nextup.core.port.repository.StadiumRepositoryPort
 import com.nextup.core.port.repository.StadiumSlotRepositoryPort
 import com.nextup.core.service.stadium.dto.BookSlotRequest
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -36,6 +39,42 @@ class StadiumService(
         longitude: Double,
         radiusKm: Double,
     ): List<Stadium> = stadiumRepository.findNearby(latitude, longitude, radiusKm)
+
+    /**
+     * 위치 기반으로 근처 구장을 거리 순으로 페이징하여 검색합니다.
+     *
+     * @param latitude 위도 (-90 ~ 90)
+     * @param longitude 경도 (-180 ~ 180)
+     * @param radiusKm 검색 반경 킬로미터 (0 초과)
+     * @param pageable 페이징 정보
+     * @return 거리 순으로 정렬된 구장 페이지
+     */
+    fun findNearbyStadiums(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
+        pageable: Pageable,
+    ): Page<Stadium> {
+        if (latitude !in -90.0..90.0) {
+            throw InvalidInputException(
+                "INVALID_LATITUDE",
+                "위도는 -90 ~ 90 범위여야 합니다: $latitude",
+            )
+        }
+        if (longitude !in -180.0..180.0) {
+            throw InvalidInputException(
+                "INVALID_LONGITUDE",
+                "경도는 -180 ~ 180 범위여야 합니다: $longitude",
+            )
+        }
+        if (radiusKm <= 0) {
+            throw InvalidInputException(
+                "INVALID_RADIUS",
+                "검색 반경은 0보다 커야 합니다: $radiusKm",
+            )
+        }
+        return stadiumRepository.findNearbyStadiums(latitude, longitude, radiusKm, pageable)
+    }
 
     /**
      * ID로 구장을 조회합니다.
