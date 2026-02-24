@@ -73,4 +73,32 @@ class Team(
             this.abbreviation = abbreviation
         }
     }
+
+    /**
+     * 팀이 추가 멤버를 수용할 수 있는지 확인합니다.
+     *
+     * 사회인 야구 팀의 일반적인 최대 인원은 30명입니다.
+     *
+     * @param currentMemberCount 현재 활성 멤버 수
+     * @return 멤버 추가 가능 여부
+     */
+    fun canAcceptMember(currentMemberCount: Int): Boolean = currentMemberCount < MAX_MEMBER_COUNT
+
+    /**
+     * 팀 가입 자격을 검증합니다.
+     *
+     * 비활성화된 팀에는 가입할 수 없습니다.
+     *
+     * @throws IllegalStateException 팀이 비활성 상태인 경우
+     */
+    fun validateJoinEligibility() {
+        check(isActive) {
+            "비활성화된 팀에는 가입할 수 없습니다. (팀: $fullName)"
+        }
+    }
+
+    companion object {
+        /** 팀 최대 멤버 수 (사회인 야구 일반 기준) */
+        const val MAX_MEMBER_COUNT = 30
+    }
 }
