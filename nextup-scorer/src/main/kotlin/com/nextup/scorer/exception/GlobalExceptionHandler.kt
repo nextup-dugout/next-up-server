@@ -5,10 +5,9 @@ import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
+import com.nextup.infrastructure.exception.BaseExceptionHandler
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.http.converter.HttpMessageNotReadableException
-import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -16,15 +15,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * 전역 예외 핸들러
  *
  * 모든 컨트롤러에서 발생하는 예외를 처리합니다.
+ * 공통 예외 처리 로직은 BaseExceptionHandler에서 상속받으며,
+ * scorer 모듈 전용 동작을 override합니다.
  */
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class GlobalExceptionHandler : BaseExceptionHandler() {
 
     /**
      * 비즈니스 예외 처리
+     *
+     * 예외 타입에 따라 HTTP 상태 코드를 결정합니다.
+     * - NotFoundException → 404
+     * - InvalidStateException / InvalidInputException → 400
+     * - 기타 BusinessException → 500
      */
     @ExceptionHandler(BusinessException::class)
-    fun handleBusinessException(ex: BusinessException): ResponseEntity<ApiResponse<Unit>> {
+    override fun handleBusinessException(ex: BusinessException): ResponseEntity<ApiResponse<Nothing>> {
         val status =
             when (ex) {
                 is NotFoundException -> HttpStatus.NOT_FOUND
@@ -38,42 +44,11 @@ class GlobalExceptionHandler {
     }
 
     /**
-     * 입력 검증 예외 처리
-     */
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Unit>> {
-        val message =
-            ex.bindingResult.fieldErrors
-                .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("VALIDATION_ERROR", message))
-    }
-
-    /**
-     * JSON 파싱 예외 처리 (잘못된 요청 본문)
-     */
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ApiResponse<Unit>> =
-        ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("INVALID_REQUEST_BODY", "요청 본문이 올바르지 않습니다."))
-
-    /**
-     * IllegalArgumentException 처리 (도메인 로직 검증 실패)
-     */
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ApiResponse<Unit>> {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("INVALID_ARGUMENT", ex.message ?: "Invalid argument"))
-    }
-
-    /**
      * 기타 예외 처리
      */
     @ExceptionHandler(Exception::class)
-    fun handleException(ex: Exception): ResponseEntity<ApiResponse<Unit>> {
+    override fun handleException(ex: Exception): ResponseEntity<ApiResponse<Nothing>> {
+        log.error("UnexpectedException: {}", ex.message, ex)
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "An unexpected error occurred"))

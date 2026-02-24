@@ -1,10 +1,10 @@
 package com.nextup.backoffice.controller.stadium
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.stadium.AcceptBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.BookingTransferResponse
 import com.nextup.backoffice.dto.stadium.CancelBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.CreateBookingTransferRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

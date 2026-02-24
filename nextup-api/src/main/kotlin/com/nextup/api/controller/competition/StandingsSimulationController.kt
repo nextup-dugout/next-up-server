@@ -1,10 +1,10 @@
 package com.nextup.api.controller.competition
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.standings.MagicNumberResponse
 import com.nextup.api.dto.standings.PlayoffScenarioResponse
 import com.nextup.api.dto.standings.SimulationApiRequest
 import com.nextup.api.dto.standings.SimulationResultResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.standings.StandingsSimulationService
 import com.nextup.core.service.standings.dto.SimulatedGameResult
 import com.nextup.core.service.standings.dto.SimulationRequest
