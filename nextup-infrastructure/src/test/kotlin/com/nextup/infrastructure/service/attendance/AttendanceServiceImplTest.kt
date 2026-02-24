@@ -26,6 +26,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -35,6 +36,7 @@ class AttendanceServiceImplTest {
     private lateinit var attendanceVoteRepository: AttendanceVoteRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var attendanceService: AttendanceServiceImpl
 
     private lateinit var team: Team
@@ -47,12 +49,14 @@ class AttendanceServiceImplTest {
         attendanceVoteRepository = mockk()
         teamRepository = mockk()
         playerRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         attendanceService =
             AttendanceServiceImpl(
                 attendancePollRepository,
                 attendanceVoteRepository,
                 teamRepository,
                 playerRepository,
+                eventPublisher,
             )
 
         val association = Association(name = "테스트협회", region = "서울")

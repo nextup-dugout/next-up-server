@@ -377,7 +377,7 @@ class GameScorerServiceUndoTest {
 
     private fun setEntityId(
         entity: Any,
-        id: Long
+        id: Long,
     ) {
         val idField = entity::class.java.getDeclaredField("id")
         idField.isAccessible = true

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 
 @DisplayName("TeamMembershipServiceImpl")
 class TeamMembershipServiceImplTest {
@@ -26,6 +27,7 @@ class TeamMembershipServiceImplTest {
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var service: TeamMembershipServiceImpl
 
     private lateinit var team: Team
@@ -42,6 +44,7 @@ class TeamMembershipServiceImplTest {
         teamRepository = mockk()
         userRepository = mockk()
         playerRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
 
         service =
             TeamMembershipServiceImpl(
@@ -51,6 +54,7 @@ class TeamMembershipServiceImplTest {
                 teamRepository,
                 userRepository,
                 playerRepository,
+                eventPublisher,
             )
 
         // 테스트 데이터 생성

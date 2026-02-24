@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -39,6 +40,7 @@ class LineupServiceTest {
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var attendanceVoteRepository: com.nextup.core.port.repository.AttendanceVoteRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var lineupService: LineupService
 
     private lateinit var game: Game
@@ -55,6 +57,7 @@ class LineupServiceTest {
         playerRepository = mockk()
         userRepository = mockk()
         attendanceVoteRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
 
         lineupService =
             LineupService(
@@ -65,6 +68,7 @@ class LineupServiceTest {
                 playerRepository = playerRepository,
                 userRepository = userRepository,
                 attendanceVoteRepository = attendanceVoteRepository,
+                eventPublisher = eventPublisher,
             )
 
         // Setup test data
@@ -518,6 +522,32 @@ class LineupServiceTest {
                 }
             assertThat(exception.message).contains("기록원 ID")
         }
+
+        @Test
+        fun `should publish LineupConfirmedEvent when lineup is confirmed`() {
+            // given
+            val submission = createSubmissionWithEntries().apply { submit() }
+            val scorer =
+                User.createLocalUser(email = "scorer@test.com", encodedPassword = "encoded", nickname = "기록원")
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every { userRepository.findByIdOrNull(any()) } returns scorer
+
+            val submissionSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
+
+            val eventSlot = slot<com.nextup.core.domain.event.LineupConfirmedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            lineupService.confirmLineup(1L, 1L)
+
+            // then
+            verify(exactly = 1) {
+                eventPublisher.publishEvent(any<com.nextup.core.domain.event.LineupConfirmedEvent>())
+            }
+            assertThat(eventSlot.captured).isNotNull
+        }
     }
 
     @Nested
@@ -769,9 +799,9 @@ class LineupServiceTest {
 
     private fun createAttendingVotesForPlayers(
         playerIds: List<Long>,
-    ): List<com.nextup.core.domain.game.GameParticipation> =
+    ): List<com.nextup.core.domain.game.AttendanceVote> =
         playerIds.map { playerId ->
-            mockk<com.nextup.core.domain.game.GameParticipation>().apply {
+            mockk<com.nextup.core.domain.game.AttendanceVote>().apply {
                 every { member } returns
                     mockk<com.nextup.core.domain.team.TeamMember>().apply {
                         every { team } returns this@LineupServiceTest.team

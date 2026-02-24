@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 
 @DisplayName("TeamMembershipServiceImpl.getMemberById")
 class TeamMembershipServiceImplGetMemberByIdTest {
@@ -18,6 +19,7 @@ class TeamMembershipServiceImplGetMemberByIdTest {
     @BeforeEach
     fun setUp() {
         teamMemberRepository = mockk()
+        val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
         service =
             TeamMembershipServiceImpl(
                 teamMemberRepository,
@@ -26,6 +28,7 @@ class TeamMembershipServiceImplGetMemberByIdTest {
                 mockk(),
                 mockk(),
                 mockk(),
+                eventPublisher,
             )
     }
 

@@ -4,8 +4,11 @@ import com.nextup.common.audit.AuditLog
 import com.nextup.common.audit.AuditSeverity
 import com.nextup.common.exception.*
 import com.nextup.core.domain.team.*
+import com.nextup.core.event.TeamJoinApprovedEvent
+import com.nextup.core.event.TeamJoinRejectedEvent
 import com.nextup.core.port.repository.*
 import com.nextup.core.service.team.TeamMembershipService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,6 +24,7 @@ class TeamMembershipServiceImpl(
     private val teamRepository: TeamRepositoryPort,
     private val userRepository: UserRepositoryPort,
     private val playerRepository: PlayerRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : TeamMembershipService {
     @Transactional
     override fun requestJoin(
@@ -131,7 +135,17 @@ class TeamMembershipServiceImpl(
                 role = TeamMemberRole.MEMBER,
             )
 
-        return teamMemberRepository.save(newMember)
+        val savedMember = teamMemberRepository.save(newMember)
+
+        eventPublisher.publishEvent(
+            TeamJoinApprovedEvent(
+                teamId = joinRequest.team.id,
+                userId = joinRequest.user.id,
+                teamName = joinRequest.team.name,
+            ),
+        )
+
+        return savedMember
     }
 
     @Transactional
@@ -160,7 +174,17 @@ class TeamMembershipServiceImpl(
         // 가입 신청 거부 처리
         joinRequest.reject(processor, reason)
 
-        return teamJoinRequestRepository.save(joinRequest)
+        val savedRequest = teamJoinRequestRepository.save(joinRequest)
+
+        eventPublisher.publishEvent(
+            TeamJoinRejectedEvent(
+                teamId = joinRequest.team.id,
+                userId = joinRequest.user.id,
+                teamName = joinRequest.team.name,
+            ),
+        )
+
+        return savedRequest
     }
 
     @AuditLog(action = "KICK_MEMBER", severity = AuditSeverity.WARN)

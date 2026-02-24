@@ -59,6 +59,7 @@ class GameScorerServiceImplTest {
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
+        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,

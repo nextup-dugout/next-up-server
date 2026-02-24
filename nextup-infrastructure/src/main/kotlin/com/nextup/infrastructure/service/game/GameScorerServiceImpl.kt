@@ -13,6 +13,8 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.HomeAway
+import com.nextup.core.event.GameResultConfirmedEvent
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -172,7 +174,9 @@ class GameScorerServiceImpl(
             GameEndReason.OTHER -> game.callGame("기타 사유")
         }
 
-        return gameRepository.save(game)
+        val savedGame = gameRepository.save(game)
+        publishGameResultEvent(gameId)
+        return savedGame
     }
 
     @Transactional
@@ -333,7 +337,24 @@ class GameScorerServiceImpl(
             gameTeams = gameTeams,
         )
 
-        return gameRepository.save(game)
+        val savedGame = gameRepository.save(game)
+        publishGameResultEvent(gameId)
+        return savedGame
+    }
+
+    private fun publishGameResultEvent(gameId: Long) {
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME } ?: return
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY } ?: return
+        eventPublisher.publishEvent(
+            GameResultConfirmedEvent(
+                gameId = gameId,
+                homeTeamId = homeTeam.team.id,
+                awayTeamId = awayTeam.team.id,
+                homeScore = homeTeam.totalScore,
+                awayScore = awayTeam.totalScore,
+            ),
+        )
     }
 
     private fun findGame(id: Long): Game =
