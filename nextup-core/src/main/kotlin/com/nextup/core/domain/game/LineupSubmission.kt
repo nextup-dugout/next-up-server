@@ -120,6 +120,21 @@ class LineupSubmission private constructor(
     }
 
     /**
+     * 양 팀 모두 제출 완료 시 라인업을 교환 상태로 전환합니다.
+     *
+     * SUBMITTED → EXCHANGED 전환.
+     * 교환되면 상대팀이 이 라인업을 조회할 수 있습니다.
+     *
+     * @throws IllegalArgumentException SUBMITTED 상태가 아닐 때
+     */
+    fun exchange() {
+        require(status.canExchange()) {
+            "제출된 상태의 라인업만 교환할 수 있습니다. 현재 상태: ${status.displayName}"
+        }
+        this.status = LineupSubmissionStatus.EXCHANGED
+    }
+
+    /**
      * 기록원이 라인업을 반려합니다.
      */
     fun reject(

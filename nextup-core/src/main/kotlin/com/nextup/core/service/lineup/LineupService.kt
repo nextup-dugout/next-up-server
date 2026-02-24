@@ -1,5 +1,6 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.common.exception.LineupNotExchangedException
 import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.LineupEntry
@@ -49,19 +50,19 @@ class LineupService(
     ): LineupSubmission {
         val game =
             gameRepository.findByIdOrNull(gameId)
-                ?: throw IllegalArgumentException("경기 ID \$gameId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("경기 ID $gameId 를 찾을 수 없습니다.")
 
         val team =
             teamRepository.findByIdOrNull(teamId)
-                ?: throw IllegalArgumentException("팀 ID \$teamId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("팀 ID $teamId 를 찾을 수 없습니다.")
 
         val user =
             userRepository.findByIdOrNull(submittedByUserId)
-                ?: throw IllegalArgumentException("사용자 ID \$submittedByUserId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("사용자 ID $submittedByUserId 를 찾을 수 없습니다.")
 
         // 이미 존재하는 라인업 확인
         lineupSubmissionRepository.findByGameIdAndTeamId(gameId, teamId)?.let {
-            throw IllegalArgumentException("이미 해당 경기/팀의 라인업이 존재합니다. (ID: \${it.id})")
+            throw IllegalArgumentException("이미 해당 경기/팀의 라인업이 존재합니다. (ID: ${it.id})")
         }
 
         val submission = LineupSubmission.create(game, team, user)
@@ -73,7 +74,7 @@ class LineupService(
      */
     fun getLineupSubmission(submissionId: Long): LineupSubmission =
         lineupSubmissionRepository.findByIdOrNull(submissionId)
-            ?: throw IllegalArgumentException("라인업 제출 ID \$submissionId 를 찾을 수 없습니다.")
+            ?: throw IllegalArgumentException("라인업 제출 ID $submissionId 를 찾을 수 없습니다.")
 
     /**
      * 경기의 모든 라인업 제출을 조회합니다.
@@ -121,17 +122,17 @@ class LineupService(
 
         val player =
             playerRepository.findByIdOrNull(playerId)
-                ?: throw IllegalArgumentException("선수 ID \$playerId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("선수 ID $playerId 를 찾을 수 없습니다.")
 
         // 중복 선수 검증
         lineupEntryRepository.findBySubmissionIdAndPlayerId(submissionId, playerId)?.let {
-            throw IllegalArgumentException("이미 라인업에 등록된 선수입니다. (선수: \${player.name})")
+            throw IllegalArgumentException("이미 라인업에 등록된 선수입니다. (선수: ${player.name})")
         }
 
         // 중복 타순 검증 (선발인 경우에만)
         if (isStarter && battingOrder != null) {
             lineupEntryRepository.findBySubmissionIdAndBattingOrder(submissionId, battingOrder)?.let {
-                throw IllegalArgumentException("이미 해당 타순에 선수가 등록되어 있습니다. (타순: \$battingOrder)")
+                throw IllegalArgumentException("이미 해당 타순에 선수가 등록되어 있습니다. (타순: $battingOrder)")
             }
         }
 
@@ -170,7 +171,7 @@ class LineupService(
         return entries.map { input ->
             val player =
                 playerRepository.findByIdOrNull(input.playerId)
-                    ?: throw IllegalArgumentException("선수 ID \${input.playerId} 를 찾을 수 없습니다.")
+                    ?: throw IllegalArgumentException("선수 ID ${input.playerId} 를 찾을 수 없습니다.")
 
             val entry =
                 LineupEntry(
@@ -208,7 +209,7 @@ class LineupService(
         // 최소 인원 검증 (9명 이상)
         val starters = submission.entries.filter { it.isStarter }
         require(starters.size >= 9) {
-            "선발 라인업은 최소 9명이 필요합니다. (현재: \${starters.size}명)"
+            "선발 라인업은 최소 9명이 필요합니다. (현재: ${starters.size}명)"
         }
 
         // 참석(ATTENDING) 선수 ID 목록 조회
@@ -216,7 +217,65 @@ class LineupService(
 
         // 필수 포지션 + 중복 선수 + DH 규칙 + 참석자만 등록 검증은 submit() 내부에서 수행
         submission.submit(attendingPlayerIds)
-        return lineupSubmissionRepository.save(submission)
+        lineupSubmissionRepository.save(submission)
+
+        // 양 팀 모두 제출 완료 시 자동으로 교환 처리
+        tryExchangeLineups(gameId = submission.game.id, currentSubmission = submission)
+
+        return submission
+    }
+
+    /**
+     * 양 팀이 모두 라인업을 제출한 경우 자동으로 EXCHANGED 상태로 전환합니다.
+     *
+     * 현재 제출된 라인업 + 상대팀 라인업이 모두 SUBMITTED 상태일 때 양쪽 모두 EXCHANGED로 변경합니다.
+     */
+    private fun tryExchangeLineups(
+        gameId: Long,
+        currentSubmission: LineupSubmission,
+    ) {
+        val allSubmissions = lineupSubmissionRepository.findAllByGameId(gameId)
+        val submittedSubmissions =
+            allSubmissions.filter { it.status == LineupSubmissionStatus.SUBMITTED }
+
+        if (submittedSubmissions.size >= 2) {
+            submittedSubmissions.forEach { sub ->
+                sub.exchange()
+                lineupSubmissionRepository.save(sub)
+            }
+        }
+    }
+
+    /**
+     * 상대팀 라인업을 조회합니다.
+     *
+     * 양 팀의 라인업이 모두 EXCHANGED 상태인 경우에만 상대팀 라인업을 반환합니다.
+     *
+     * @param gameId 경기 ID
+     * @param myTeamId 요청 팀 ID
+     * @return 상대팀의 라인업 제출 (EXCHANGED 상태일 때만)
+     * @throws LineupNotExchangedException 아직 교환이 완료되지 않았을 때
+     * @throws IllegalArgumentException 라인업 데이터가 없을 때
+     */
+    fun getOpponentLineup(
+        gameId: Long,
+        myTeamId: Long,
+    ): LineupSubmission {
+        val allSubmissions = lineupSubmissionRepository.findAllByGameId(gameId)
+
+        val mySubmission =
+            allSubmissions.find { it.team.id == myTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 팀 ID $myTeamId 의 라인업을 찾을 수 없습니다.")
+
+        val opponentSubmission =
+            allSubmissions.find { it.team.id != myTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 상대팀 라인업을 찾을 수 없습니다.")
+
+        if (!mySubmission.status.isVisibleToOpponent() || !opponentSubmission.status.isVisibleToOpponent()) {
+            throw LineupNotExchangedException(gameId)
+        }
+
+        return opponentSubmission
     }
 
     /**
@@ -251,7 +310,7 @@ class LineupService(
 
         val scorer =
             userRepository.findByIdOrNull(scorerUserId)
-                ?: throw IllegalArgumentException("기록원 ID \$scorerUserId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("기록원 ID $scorerUserId 를 찾을 수 없습니다.")
 
         submission.confirm(scorer)
         val savedSubmission = lineupSubmissionRepository.save(submission)
@@ -279,7 +338,7 @@ class LineupService(
 
         val scorer =
             userRepository.findByIdOrNull(scorerUserId)
-                ?: throw IllegalArgumentException("기록원 ID \$scorerUserId 를 찾을 수 없습니다.")
+                ?: throw IllegalArgumentException("기록원 ID $scorerUserId 를 찾을 수 없습니다.")
 
         submission.reject(scorer, reason)
         return lineupSubmissionRepository.save(submission)

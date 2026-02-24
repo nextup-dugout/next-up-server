@@ -137,6 +137,91 @@ class LineupSubmissionTest {
     }
 
     @Test
+    fun `should exchange lineup when status is SUBMITTED`() {
+        // given
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
+
+        // when
+        submission.exchange()
+
+        // then
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+    }
+
+    @Test
+    fun `should throw exception when exchanging non-submitted lineup`() {
+        // given
+        val submission = createLineupSubmission()
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.exchange()
+            }
+        assertThat(exception.message).contains("제출된 상태의 라인업만 교환할 수 있습니다")
+    }
+
+    @Test
+    fun `should throw exception when exchanging already exchanged lineup`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                exchange()
+            }
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.exchange()
+            }
+        assertThat(exception.message).contains("제출된 상태의 라인업만 교환할 수 있습니다")
+    }
+
+    @Test
+    fun `should not allow submitting from EXCHANGED status`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                exchange()
+            }
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.submit()
+            }
+        assertThat(exception.message).contains("제출 가능한 상태가 아닙니다")
+    }
+
+    @Test
+    fun `should not allow editing EXCHANGED lineup`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                exchange()
+            }
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.clearEntries()
+            }
+        assertThat(exception.message).contains("수정 가능한 상태가 아닙니다")
+    }
+
+    @Test
+    fun `EXCHANGED status should be visible to opponent`() {
+        assertThat(LineupSubmissionStatus.EXCHANGED.isVisibleToOpponent()).isTrue()
+        assertThat(LineupSubmissionStatus.SUBMITTED.isVisibleToOpponent()).isFalse()
+        assertThat(LineupSubmissionStatus.DRAFT.isVisibleToOpponent()).isFalse()
+        assertThat(LineupSubmissionStatus.CONFIRMED.isVisibleToOpponent()).isFalse()
+        assertThat(LineupSubmissionStatus.REJECTED.isVisibleToOpponent()).isFalse()
+    }
+
+    @Test
     fun `should not allow editing confirmed lineup`() {
         // given
         val submission =

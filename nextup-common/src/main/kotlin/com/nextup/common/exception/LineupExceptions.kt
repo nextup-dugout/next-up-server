@@ -48,6 +48,16 @@ class NonAttendingPlayerInLineupException(
     )
 
 /**
+ * 라인업이 아직 교환되지 않아 상대팀이 조회할 수 없을 때 발생하는 예외
+ */
+class LineupNotExchangedException(
+    gameId: Long,
+) : ForbiddenException(
+        "LINEUP_NOT_EXCHANGED",
+        "아직 양 팀 라인업 교환이 완료되지 않았습니다. 경기 ID: $gameId",
+    )
+
+/**
  * 대진표를 찾을 수 없을 때 발생하는 예외
  */
 class ScheduleNotFoundException(

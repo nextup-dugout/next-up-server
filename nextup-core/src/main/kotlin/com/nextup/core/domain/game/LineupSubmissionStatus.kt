@@ -27,6 +27,11 @@ enum class LineupSubmissionStatus(
      * 반려됨 - 기록원이 라인업을 반려한 상태
      */
     REJECTED("반려됨"),
+
+    /**
+     * 교환됨 - 양 팀 모두 라인업을 제출하여 상호 공개된 상태
+     */
+    EXCHANGED("교환됨"),
     ;
 
     /**
@@ -48,4 +53,14 @@ enum class LineupSubmissionStatus(
      * 수정 가능한 상태인지 확인합니다.
      */
     fun canEdit(): Boolean = this == DRAFT || this == REJECTED
+
+    /**
+     * 교환 가능한 상태인지 확인합니다.
+     */
+    fun canExchange(): Boolean = this == SUBMITTED
+
+    /**
+     * 상대팀이 조회 가능한 상태인지 확인합니다.
+     */
+    fun isVisibleToOpponent(): Boolean = this == EXCHANGED
 }
