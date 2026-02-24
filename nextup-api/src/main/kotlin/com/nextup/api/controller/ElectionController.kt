@@ -12,6 +12,7 @@ import com.nextup.core.service.election.dto.ElectionResultResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -28,6 +29,7 @@ class ElectionController(
      * 선거를 생성합니다.
      */
     @PostMapping
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun createElection(
         @PathVariable teamId: Long,
         @RequestBody @Valid request: CreateElectionApiRequest,

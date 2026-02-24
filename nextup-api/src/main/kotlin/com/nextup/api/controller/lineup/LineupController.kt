@@ -11,6 +11,7 @@ import com.nextup.core.service.lineup.LineupService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -141,6 +142,7 @@ class LineupController(
      * 라인업을 기록원에게 제출합니다.
      */
     @PostMapping("/{submissionId}/submit")
+    @PreAuthorize("@lineupSecurity.canSubmit(#submissionId, authentication.principal)")
     fun submitLineup(
         @PathVariable submissionId: Long,
     ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {

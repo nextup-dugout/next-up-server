@@ -7,6 +7,7 @@ import com.nextup.api.mapper.team.toResponse
 import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -55,6 +56,7 @@ class TeamMembershipController(
      * 가입 신청을 승인합니다.
      */
     @PostMapping("/join-requests/{requestId}/approve")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun approveJoinRequest(
         @PathVariable teamId: Long,
         @PathVariable requestId: Long,
@@ -105,6 +107,7 @@ class TeamMembershipController(
      * 멤버를 강퇴합니다.
      */
     @DeleteMapping("/members/{memberId}")
+    @PreAuthorize("@teamSecurity.isOwner(#teamId, authentication.principal)")
     fun kickMember(
         @PathVariable teamId: Long,
         @PathVariable memberId: Long,
@@ -147,6 +150,7 @@ class TeamMembershipController(
      * 멤버의 역할을 변경합니다.
      */
     @PatchMapping("/members/{memberId}/role")
+    @PreAuthorize("@teamSecurity.isOwner(#teamId, authentication.principal)")
     fun changeRole(
         @PathVariable teamId: Long,
         @PathVariable memberId: Long,
