@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -45,6 +46,7 @@ class GameScorerServiceImplTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var gameScorerService: GameScorerServiceImpl
 
     @BeforeEach
@@ -56,6 +58,7 @@ class GameScorerServiceImplTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
@@ -65,6 +68,7 @@ class GameScorerServiceImplTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                eventPublisher,
             )
     }
 

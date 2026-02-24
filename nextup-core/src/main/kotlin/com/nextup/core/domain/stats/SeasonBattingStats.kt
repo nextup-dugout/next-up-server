@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.BattingRecord
+import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.Player
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -225,6 +226,72 @@ class SeasonBattingStats(
         stolenBases += record.stolenBases
         caughtStealing += record.caughtStealing
         groundedIntoDoublePlays += record.groundedIntoDoublePlays
+    }
+
+    /**
+     * 경기 중 타석 결과를 즉시 시즌 통계에 반영합니다 (실시간 갱신).
+     *
+     * 이벤트 기반으로 호출되며, 경기 종료 전에도 통계가 반영됩니다.
+     */
+    fun applyLiveUpdate(result: PlateAppearanceResult) {
+        plateAppearances++
+
+        if (result.isAtBat) {
+            atBats++
+        }
+
+        if (result.isHit) {
+            hits++
+            when {
+                result.isDouble -> doubles++
+                result.isTriple -> triples++
+                result.isHomeRun -> homeRuns++
+                else -> Unit
+            }
+        }
+
+        when (result) {
+            PlateAppearanceResult.WALK -> walks++
+            PlateAppearanceResult.INTENTIONAL_WALK -> intentionalWalks++
+            PlateAppearanceResult.HIT_BY_PITCH -> hitByPitch++
+            PlateAppearanceResult.STRIKEOUT -> strikeouts++
+            PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
+            PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
+            else -> Unit
+        }
+    }
+
+    /**
+     * 경기 중 타석 결과를 시즌 통계에서 역산합니다 (Undo 처리).
+     *
+     * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
+     */
+    fun revertLiveUpdate(result: PlateAppearanceResult) {
+        if (plateAppearances > 0) plateAppearances--
+
+        if (result.isAtBat && atBats > 0) {
+            atBats--
+        }
+
+        if (result.isHit && hits > 0) {
+            hits--
+            when {
+                result.isDouble && doubles > 0 -> doubles--
+                result.isTriple && triples > 0 -> triples--
+                result.isHomeRun && homeRuns > 0 -> homeRuns--
+                else -> Unit
+            }
+        }
+
+        when (result) {
+            PlateAppearanceResult.WALK -> if (walks > 0) walks--
+            PlateAppearanceResult.INTENTIONAL_WALK -> if (intentionalWalks > 0) intentionalWalks--
+            PlateAppearanceResult.HIT_BY_PITCH -> if (hitByPitch > 0) hitByPitch--
+            PlateAppearanceResult.STRIKEOUT -> if (strikeouts > 0) strikeouts--
+            PlateAppearanceResult.SACRIFICE_BUNT -> if (sacrificeBunts > 0) sacrificeBunts--
+            PlateAppearanceResult.SACRIFICE_FLY -> if (sacrificeFlies > 0) sacrificeFlies--
+            else -> Unit
+        }
     }
 
     /**

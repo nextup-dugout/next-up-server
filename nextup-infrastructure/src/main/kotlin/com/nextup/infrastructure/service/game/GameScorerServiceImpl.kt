@@ -7,6 +7,8 @@ import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.common.exception.NoEventToUndoException
 import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.UndoNotAvailableException
+import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
+import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
@@ -21,6 +23,7 @@ import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -37,6 +40,7 @@ class GameScorerServiceImpl(
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : GameScorerService {
     @Transactional
     override fun startGame(gameId: Long): Game {
@@ -113,6 +117,15 @@ class GameScorerServiceImpl(
             rbis = request.getActualRbis(),
             runsScored = scoredRunnerIds,
             inning = game.currentInning,
+        )
+
+        // 실시간 통계 갱신 이벤트 발행
+        eventPublisher.publishEvent(
+            PlateAppearanceRecordedEvent(
+                gameId = gameId,
+                playerId = batter.player.id,
+                result = request.result,
+            ),
         )
 
         // 다음 타자로 진행
@@ -193,6 +206,21 @@ class GameScorerServiceImpl(
 
         // 게임 상태 저장
         gameRepository.save(game)
+
+        // 타석 결과 Undo인 경우 실시간 통계 역산 이벤트 발행
+        if (lastEvent.eventType == GameEventType.PLATE_APPEARANCE) {
+            lastEvent.plateAppearanceResult?.let { result ->
+                lastEvent.batter?.let { batter ->
+                    eventPublisher.publishEvent(
+                        PlateAppearanceUndoneEvent(
+                            gameId = gameId,
+                            playerId = batter.player.id,
+                            result = result,
+                        ),
+                    )
+                }
+            }
+        }
 
         return lastEvent
     }
