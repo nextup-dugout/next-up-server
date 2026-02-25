@@ -31,21 +31,21 @@ interface StadiumJpaRepository : JpaRepository<Stadium, Long> {
         value = """
         SELECT s.* FROM stadiums s
         WHERE ST_DWithin(
-            s.location,
-            ST_SetSRID(ST_Point(:longitude, :latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
             :radiusMeters
         )
         AND s.is_active = true
         ORDER BY ST_Distance(
-            s.location,
-            ST_SetSRID(ST_Point(:longitude, :latitude), 4326)::geography
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
         ) ASC
         """,
         countQuery = """
         SELECT COUNT(*) FROM stadiums s
         WHERE ST_DWithin(
-            s.location,
-            ST_SetSRID(ST_Point(:longitude, :latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
             :radiusMeters
         )
         AND s.is_active = true
