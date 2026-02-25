@@ -129,6 +129,25 @@ class BattingRecordServiceTest {
     }
 
     @Test
+    fun `should record plate appearance without run when runsScored is false`() {
+        // given
+        val gamePlayerId = 1L
+        val result = PlateAppearanceResult.SINGLE
+        val runsBattedIn = 0
+        val runsScored = false
+
+        every { battingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockBattingRecord
+        every { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) } returns Unit
+
+        // when
+        battingRecordService.recordPlateAppearance(gamePlayerId, result, runsBattedIn, runsScored)
+
+        // then
+        verify(exactly = 1) { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) }
+        verify(exactly = 0) { mockBattingRecord.recordRun() }
+    }
+
+    @Test
     fun `should record stolen base successfully`() {
         // given
         val gamePlayerId = 1L
