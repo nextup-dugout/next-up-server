@@ -69,6 +69,8 @@ subprojects {
             "**/mapper/**",
             // Health controllers
             "**/HealthController*",
+            // Domain event data classes (Jacoco가 Kotlin data class 생성자 프로퍼티를 측정 못하는 한계)
+            "**/domain/event/**",
         )
 
     tasks.withType<JacocoReport> {
