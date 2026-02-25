@@ -95,6 +95,7 @@ class BookingTransferService(
         booking.transferTo(buyerTeamId)
 
         bookingTransferRepository.save(transfer)
+        bookingRepository.save(booking)
 
         return transfer
     }

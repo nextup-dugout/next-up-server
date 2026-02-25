@@ -25,7 +25,7 @@ class StadiumBooking private constructor(
     @JoinColumn(name = "slot_id", nullable = false)
     val slot: StadiumSlot,
     @Column(nullable = false, name = "team_id")
-    val teamId: Long,
+    var teamId: Long,
     @Column(nullable = false, name = "booked_by")
     val bookedBy: Long,
     @Enumerated(EnumType.STRING)
@@ -80,6 +80,7 @@ class StadiumBooking private constructor(
         }
         require(newTeamId > 0) { "New team ID must be positive" }
         require(newTeamId != teamId) { "New team ID must differ from current team ID" }
+        this.teamId = newTeamId
     }
 
     /**

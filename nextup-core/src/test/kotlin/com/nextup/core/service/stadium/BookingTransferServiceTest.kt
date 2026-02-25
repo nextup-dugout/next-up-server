@@ -154,6 +154,7 @@ class BookingTransferServiceTest {
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
             every { bookingRepository.findByIdOrNull(transfer.bookingId) } returns booking
             every { bookingTransferRepository.save(any()) } returns transfer
+            every { bookingRepository.save(any()) } returns booking
 
             // when
             val result = service.acceptTransfer(transferId = 1L, buyerTeamId = 20L)
@@ -162,6 +163,7 @@ class BookingTransferServiceTest {
             assertThat(result.status).isEqualTo(TransferStatus.ACCEPTED)
             assertThat(result.buyerTeamId).isEqualTo(20L)
             verify { bookingTransferRepository.save(any()) }
+            verify { bookingRepository.save(any()) }
         }
 
         @Test
