@@ -13,6 +13,7 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
+import com.nextup.core.event.LineupConfirmedEvent
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
@@ -536,16 +537,14 @@ class LineupServiceTest {
             val submissionSlot = slot<LineupSubmission>()
             every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
 
-            val eventSlot = slot<com.nextup.core.domain.event.LineupConfirmedEvent>()
+            val eventSlot = slot<LineupConfirmedEvent>()
             every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
 
             // when
             lineupService.confirmLineup(1L, 1L)
 
             // then
-            verify(exactly = 1) {
-                eventPublisher.publishEvent(any<com.nextup.core.domain.event.LineupConfirmedEvent>())
-            }
+            verify(exactly = 1) { eventPublisher.publishEvent(any<LineupConfirmedEvent>()) }
             assertThat(eventSlot.captured).isNotNull
         }
     }

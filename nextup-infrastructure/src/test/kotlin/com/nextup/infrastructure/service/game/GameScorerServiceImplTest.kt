@@ -12,8 +12,10 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.event.GameResultConfirmedEvent
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -26,6 +28,7 @@ import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.core.service.game.dto.RunnerMovement
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -220,6 +223,39 @@ class GameScorerServiceImplTest {
             // when & then
             assertThatThrownBy { gameScorerService.endGame(1L, GameEndReason.REGULATION) }
                 .isInstanceOf(InvalidGameStateException::class.java)
+        }
+
+        @Test
+        fun `should publish GameResultConfirmedEvent when game ends`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 5
+            every { awayGameTeam.totalScore } returns 3
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<GameResultConfirmedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
+            assertThat(eventSlot.captured.gameId).isEqualTo(1L)
+            assertThat(eventSlot.captured.homeTeamId).isEqualTo(10L)
+            assertThat(eventSlot.captured.awayTeamId).isEqualTo(20L)
+            assertThat(eventSlot.captured.homeScore).isEqualTo(5)
+            assertThat(eventSlot.captured.awayScore).isEqualTo(3)
         }
     }
 

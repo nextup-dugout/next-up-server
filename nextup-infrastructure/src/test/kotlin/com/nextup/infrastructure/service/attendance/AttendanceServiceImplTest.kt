@@ -13,12 +13,14 @@ import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
+import com.nextup.core.event.AttendanceVoteCreatedEvent
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -114,6 +116,31 @@ class AttendanceServiceImplTest {
                     deadline = deadline.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 )
             }
+        }
+
+        @Test
+        fun `출석 투표 생성 시 AttendanceVoteCreatedEvent 이벤트가 발행된다`() {
+            // given
+            val eventDate = LocalDateTime.now().plusDays(7)
+            val deadline = LocalDateTime.now().plusDays(5)
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { attendancePollRepository.save(any()) } returnsArgument 0
+
+            val eventSlot = slot<AttendanceVoteCreatedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            attendanceService.createPoll(
+                teamId = 1L,
+                title = "이번 주 경기",
+                eventDate = eventDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                deadline = deadline.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            )
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<AttendanceVoteCreatedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.eventDate).isEqualTo(eventDate)
         }
     }
 
