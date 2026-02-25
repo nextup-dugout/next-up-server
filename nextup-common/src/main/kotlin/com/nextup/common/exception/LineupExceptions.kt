@@ -58,6 +58,27 @@ class LineupNotExchangedException(
     )
 
 /**
+ * 상대팀 감독이 라인업 교환을 거부했을 때 발생하는 예외
+ */
+class LineupExchangeRejectedException(
+    submissionId: Long,
+    reason: String,
+) : InvalidStateException(
+        "LINEUP_EXCHANGE_REJECTED",
+        "라인업 교환이 거부되었습니다. 제출 ID: $submissionId, 사유: $reason",
+    )
+
+/**
+ * 라인업 교환 승인/거부 권한이 없을 때 발생하는 예외
+ */
+class LineupExchangeNotAuthorizedException(
+    submissionId: Long,
+) : ForbiddenException(
+        "LINEUP_EXCHANGE_NOT_AUTHORIZED",
+        "해당 라인업의 교환을 승인/거부할 권한이 없습니다. 제출 ID: $submissionId",
+    )
+
+/**
  * 대진표를 찾을 수 없을 때 발생하는 예외
  */
 class ScheduleNotFoundException(

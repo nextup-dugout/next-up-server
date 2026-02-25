@@ -137,45 +137,146 @@ class LineupSubmissionTest {
     }
 
     @Test
-    fun `should exchange lineup when status is SUBMITTED`() {
+    fun `should mark lineup as exchange pending when status is SUBMITTED`() {
         // given
         val submission = createLineupSubmissionWithEntries().apply { submit() }
 
         // when
-        submission.exchange()
+        submission.markExchangePending()
 
         // then
-        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_PENDING)
+        assertThat(submission.exchangePendingAt).isNotNull()
     }
 
     @Test
-    fun `should throw exception when exchanging non-submitted lineup`() {
+    fun `should throw exception when marking exchange pending for non-submitted lineup`() {
         // given
         val submission = createLineupSubmission()
 
         // when & then
         val exception =
             assertThrows<IllegalArgumentException> {
-                submission.exchange()
+                submission.markExchangePending()
             }
-        assertThat(exception.message).contains("제출된 상태의 라인업만 교환할 수 있습니다")
+        assertThat(exception.message).contains("제출된 상태의 라인업만 교환 대기 상태로 전환할 수 있습니다")
     }
 
     @Test
-    fun `should throw exception when exchanging already exchanged lineup`() {
+    fun `should approve exchange when status is EXCHANGE_PENDING`() {
         // given
         val submission =
             createLineupSubmissionWithEntries().apply {
                 submit()
-                exchange()
+                markExchangePending()
             }
+
+        // when
+        submission.approveExchange()
+
+        // then
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+    }
+
+    @Test
+    fun `should throw exception when approving exchange for non-pending lineup`() {
+        // given
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
 
         // when & then
         val exception =
             assertThrows<IllegalArgumentException> {
-                submission.exchange()
+                submission.approveExchange()
             }
-        assertThat(exception.message).contains("제출된 상태의 라인업만 교환할 수 있습니다")
+        assertThat(exception.message).contains("교환 대기 중인 라인업만 승인할 수 있습니다")
+    }
+
+    @Test
+    fun `should reject exchange when status is EXCHANGE_PENDING`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+            }
+        val manager = createManager()
+        val reason = "라인업 선수 정보 불일치"
+
+        // when
+        submission.rejectExchange(manager, reason)
+
+        // then
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_REJECTED)
+        assertThat(submission.exchangeRejectionReason).isEqualTo(reason)
+        assertThat(submission.exchangeRejectedBy).isEqualTo(manager)
+    }
+
+    @Test
+    fun `should throw exception when rejecting exchange with blank reason`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+            }
+        val manager = createManager()
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.rejectExchange(manager, "  ")
+            }
+        assertThat(exception.message).contains("교환 거부 사유는 필수입니다")
+    }
+
+    @Test
+    fun `should throw exception when rejecting exchange for non-pending lineup`() {
+        // given
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
+        val manager = createManager()
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.rejectExchange(manager, "사유")
+            }
+        assertThat(exception.message).contains("교환 대기 중인 라인업만 거부할 수 있습니다")
+    }
+
+    @Test
+    fun `should revert to SUBMITTED when exchange pending lineup is reverted`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+            }
+
+        // when
+        submission.revertToSubmitted()
+
+        // then
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        assertThat(submission.exchangePendingAt).isNull()
+    }
+
+    @Test
+    fun `should allow resubmit after exchange rejected`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+                rejectExchange(createManager(), "라인업 오류")
+            }
+
+        // when
+        submission.submit()
+
+        // then
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        assertThat(submission.exchangeRejectionReason).isNull()
+        assertThat(submission.exchangeRejectedBy).isNull()
     }
 
     @Test
@@ -184,7 +285,8 @@ class LineupSubmissionTest {
         val submission =
             createLineupSubmissionWithEntries().apply {
                 submit()
-                exchange()
+                markExchangePending()
+                approveExchange()
             }
 
         // when & then
@@ -201,7 +303,8 @@ class LineupSubmissionTest {
         val submission =
             createLineupSubmissionWithEntries().apply {
                 submit()
-                exchange()
+                markExchangePending()
+                approveExchange()
             }
 
         // when & then
@@ -219,6 +322,8 @@ class LineupSubmissionTest {
         assertThat(LineupSubmissionStatus.DRAFT.isVisibleToOpponent()).isFalse()
         assertThat(LineupSubmissionStatus.CONFIRMED.isVisibleToOpponent()).isFalse()
         assertThat(LineupSubmissionStatus.REJECTED.isVisibleToOpponent()).isFalse()
+        assertThat(LineupSubmissionStatus.EXCHANGE_PENDING.isVisibleToOpponent()).isFalse()
+        assertThat(LineupSubmissionStatus.EXCHANGE_REJECTED.isVisibleToOpponent()).isFalse()
     }
 
     @Test
@@ -236,6 +341,23 @@ class LineupSubmissionTest {
                 submission.submit()
             }
         assertThat(exception.message).contains("제출 가능한 상태가 아닙니다")
+    }
+
+    @Test
+    fun `should not allow editing EXCHANGE_PENDING lineup`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+            }
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.clearEntries()
+            }
+        assertThat(exception.message).contains("수정 가능한 상태가 아닙니다")
     }
 
     private fun createLineupSubmissionWithEntries(): LineupSubmission {

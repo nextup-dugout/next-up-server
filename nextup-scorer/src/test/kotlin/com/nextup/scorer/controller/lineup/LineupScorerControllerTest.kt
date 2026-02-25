@@ -70,6 +70,9 @@ class LineupScorerControllerTest {
                 every { confirmedBy } returns null
                 every { rejectionReason } returns null
                 every { rejectedBy } returns null
+                every { exchangePendingAt } returns null
+                every { exchangeRejectionReason } returns null
+                every { exchangeRejectedBy } returns null
             }
 
         // Mock entry
@@ -122,6 +125,9 @@ class LineupScorerControllerTest {
                     every { confirmedBy } returns null
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.getSubmittedLineupsByGame(1L) } returns listOf(submittedSubmission)
@@ -172,6 +178,9 @@ class LineupScorerControllerTest {
                     every { confirmedBy?.nickname } returns "기록원"
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.confirmLineup(1L, 2L) } returns confirmedSubmission
@@ -206,6 +215,9 @@ class LineupScorerControllerTest {
                     every { confirmedBy } returns null
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.getOpponentLineup(1L, 1L) } returns exchangedSubmission
@@ -260,6 +272,9 @@ class LineupScorerControllerTest {
                     every { rejectionReason } returns "선수 등록번호 확인 필요"
                     every { rejectedBy?.id } returns 2L
                     every { rejectedBy?.nickname } returns "기록원"
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.rejectLineup(1L, 2L, "선수 등록번호 확인 필요") } returns rejectedSubmission

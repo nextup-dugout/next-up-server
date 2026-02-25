@@ -68,6 +68,9 @@ class LineupControllerTest {
                 every { confirmedBy } returns null
                 every { rejectionReason } returns null
                 every { rejectedBy } returns null
+                every { exchangePendingAt } returns null
+                every { exchangeRejectionReason } returns null
+                every { exchangeRejectedBy } returns null
             }
 
         // Mock entry
@@ -271,6 +274,9 @@ class LineupControllerTest {
                     every { confirmedBy } returns null
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.submitLineup(1L) } returns submittedSubmission

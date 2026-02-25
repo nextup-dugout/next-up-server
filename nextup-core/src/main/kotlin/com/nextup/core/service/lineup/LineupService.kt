@@ -1,5 +1,6 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.common.exception.LineupExchangeNotAuthorizedException
 import com.nextup.common.exception.LineupNotExchangedException
 import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.AttendanceStatus
@@ -219,31 +220,125 @@ class LineupService(
         submission.submit(attendingPlayerIds)
         lineupSubmissionRepository.save(submission)
 
-        // 양 팀 모두 제출 완료 시 자동으로 교환 처리
-        tryExchangeLineups(gameId = submission.game.id, currentSubmission = submission)
+        // 양 팀 모두 제출 완료 시 교환 대기(EXCHANGE_PENDING) 상태로 전환
+        tryMarkExchangePending(gameId = submission.game.id)
 
         return submission
     }
 
     /**
-     * 양 팀이 모두 라인업을 제출한 경우 자동으로 EXCHANGED 상태로 전환합니다.
+     * 양 팀이 모두 라인업을 제출한 경우 EXCHANGE_PENDING 상태로 전환합니다.
      *
-     * 현재 제출된 라인업 + 상대팀 라인업이 모두 SUBMITTED 상태일 때 양쪽 모두 EXCHANGED로 변경합니다.
+     * 양 팀 모두 SUBMITTED 상태일 때 양쪽 모두 EXCHANGE_PENDING으로 변경합니다.
+     * 이후 각 팀 감독이 상대팀 라인업을 승인해야 EXCHANGED 상태가 됩니다.
      */
-    private fun tryExchangeLineups(
-        gameId: Long,
-        currentSubmission: LineupSubmission,
-    ) {
+    private fun tryMarkExchangePending(gameId: Long) {
         val allSubmissions = lineupSubmissionRepository.findAllByGameId(gameId)
         val submittedSubmissions =
             allSubmissions.filter { it.status == LineupSubmissionStatus.SUBMITTED }
 
         if (submittedSubmissions.size >= 2) {
             submittedSubmissions.forEach { sub ->
-                sub.exchange()
+                sub.markExchangePending()
                 lineupSubmissionRepository.save(sub)
             }
         }
+    }
+
+    /**
+     * 감독이 상대팀 라인업 교환을 승인합니다.
+     *
+     * 승인하는 감독의 팀이 아닌 상대팀 라인업을 승인합니다.
+     * 양 팀 모두 승인하면 두 라인업 모두 EXCHANGED 상태로 전환됩니다.
+     *
+     * @param gameId 경기 ID
+     * @param approvingTeamId 승인하는 감독의 팀 ID
+     * @return 승인된 상대팀 라인업 제출
+     * @throws LineupExchangeNotAuthorizedException 해당 팀의 라인업이 교환 대기 상태가 아닐 때
+     */
+    @Transactional
+    fun approveLineupExchange(
+        gameId: Long,
+        approvingTeamId: Long,
+    ): LineupSubmission {
+        val allSubmissions = lineupSubmissionRepository.findAllByGameId(gameId)
+
+        val mySubmission =
+            allSubmissions.find { it.team.id == approvingTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 팀 ID $approvingTeamId 의 라인업을 찾을 수 없습니다.")
+
+        val opponentSubmission =
+            allSubmissions.find { it.team.id != approvingTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 상대팀 라인업을 찾을 수 없습니다.")
+
+        // 상대팀 라인업이 교환 대기 상태인지 확인
+        if (!opponentSubmission.status.canApproveExchange()) {
+            throw LineupExchangeNotAuthorizedException(opponentSubmission.id)
+        }
+
+        // 상대팀 라인업 승인
+        opponentSubmission.approveExchange()
+        lineupSubmissionRepository.save(opponentSubmission)
+
+        // 내 라인업도 이미 EXCHANGED이거나 상대방도 승인 완료이면 내 라인업도 EXCHANGED로 전환
+        if (mySubmission.status.canApproveExchange()) {
+            mySubmission.approveExchange()
+            lineupSubmissionRepository.save(mySubmission)
+        }
+
+        return opponentSubmission
+    }
+
+    /**
+     * 감독이 상대팀 라인업 교환을 거부합니다.
+     *
+     * 거부당한 상대팀은 라인업을 수정하여 재제출해야 합니다.
+     * 거부 시 상대팀 라인업은 EXCHANGE_REJECTED 상태로, 내 라인업도 SUBMITTED 상태로 복원됩니다.
+     *
+     * @param gameId 경기 ID
+     * @param rejectingTeamId 거부하는 감독의 팀 ID
+     * @param rejectingUserId 거부하는 감독의 사용자 ID
+     * @param reason 거부 사유
+     * @return 거부된 상대팀 라인업 제출
+     * @throws LineupExchangeNotAuthorizedException 해당 팀의 라인업이 교환 대기 상태가 아닐 때
+     */
+    @Transactional
+    fun rejectLineupExchange(
+        gameId: Long,
+        rejectingTeamId: Long,
+        rejectingUserId: Long,
+        reason: String,
+    ): LineupSubmission {
+        val allSubmissions = lineupSubmissionRepository.findAllByGameId(gameId)
+
+        val mySubmission =
+            allSubmissions.find { it.team.id == rejectingTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 팀 ID $rejectingTeamId 의 라인업을 찾을 수 없습니다.")
+
+        val opponentSubmission =
+            allSubmissions.find { it.team.id != rejectingTeamId }
+                ?: throw IllegalArgumentException("경기 ID $gameId 에서 상대팀 라인업을 찾을 수 없습니다.")
+
+        // 상대팀 라인업이 교환 대기 상태인지 확인
+        if (!opponentSubmission.status.canRejectExchange()) {
+            throw LineupExchangeNotAuthorizedException(opponentSubmission.id)
+        }
+
+        val rejectingManager =
+            userRepository.findByIdOrNull(rejectingUserId)
+                ?: throw IllegalArgumentException("사용자 ID $rejectingUserId 를 찾을 수 없습니다.")
+
+        // 상대팀 라인업 교환 거부
+        opponentSubmission.rejectExchange(rejectingManager, reason)
+        lineupSubmissionRepository.save(opponentSubmission)
+
+        // 내 라인업도 EXCHANGE_PENDING이었으면 SUBMITTED로 복원
+        if (mySubmission.status == LineupSubmissionStatus.EXCHANGE_PENDING) {
+            mySubmission.revertToSubmitted()
+            lineupSubmissionRepository.save(mySubmission)
+        }
+
+        return opponentSubmission
     }
 
     /**

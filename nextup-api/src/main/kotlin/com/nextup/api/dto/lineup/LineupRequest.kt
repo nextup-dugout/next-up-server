@@ -67,3 +67,16 @@ data class LineupEntryDto(
             isStarter = isStarter,
         )
 }
+
+/**
+ * 라인업 교환 거부 요청 DTO
+ */
+data class RejectLineupExchangeRequest(
+    @field:NotNull(message = "경기 ID는 필수입니다.")
+    val gameId: Long,
+    @field:NotNull(message = "팀 ID는 필수입니다.")
+    val teamId: Long,
+    @field:NotEmpty(message = "거부 사유는 필수입니다.")
+    @field:Size(max = 500, message = "거부 사유는 500자 이하여야 합니다.")
+    val reason: String,
+)
