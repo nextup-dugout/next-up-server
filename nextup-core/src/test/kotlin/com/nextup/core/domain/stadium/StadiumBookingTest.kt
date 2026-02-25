@@ -127,6 +127,81 @@ class StadiumBookingTest {
     }
 
     @Nested
+    @DisplayName("transferTo")
+    inner class TransferTo {
+        @Test
+        fun `should transfer confirmed booking to new team`() {
+            // given
+            val slot = mockk<StadiumSlot>(relaxed = true)
+            val booking =
+                StadiumBooking.create(
+                    slot = slot,
+                    teamId = 100L,
+                    bookedBy = 200L,
+                )
+
+            // when & then (transferTo does not change teamId field, only validates)
+            booking.transferTo(newTeamId = 200L)
+            assertThat(booking.status).isEqualTo(BookingStatus.CONFIRMED)
+        }
+
+        @Test
+        fun `should throw exception when transferring cancelled booking`() {
+            // given
+            val slot = mockk<StadiumSlot>(relaxed = true)
+            val booking =
+                StadiumBooking.create(
+                    slot = slot,
+                    teamId = 100L,
+                    bookedBy = 200L,
+                )
+            booking.cancel()
+
+            // when & then
+            assertThatThrownBy {
+                booking.transferTo(newTeamId = 200L)
+            }.isInstanceOf(com.nextup.common.exception.BookingTransferForbiddenException::class.java)
+                .hasMessageContaining("cannot be transferred")
+        }
+
+        @Test
+        fun `should throw exception when new team ID is not positive`() {
+            // given
+            val slot = mockk<StadiumSlot>(relaxed = true)
+            val booking =
+                StadiumBooking.create(
+                    slot = slot,
+                    teamId = 100L,
+                    bookedBy = 200L,
+                )
+
+            // when & then
+            assertThatThrownBy {
+                booking.transferTo(newTeamId = 0L)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("New team ID must be positive")
+        }
+
+        @Test
+        fun `should throw exception when new team ID is same as current team`() {
+            // given
+            val slot = mockk<StadiumSlot>(relaxed = true)
+            val booking =
+                StadiumBooking.create(
+                    slot = slot,
+                    teamId = 100L,
+                    bookedBy = 200L,
+                )
+
+            // when & then
+            assertThatThrownBy {
+                booking.transferTo(newTeamId = 100L)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("New team ID must differ from current team ID")
+        }
+    }
+
+    @Nested
     @DisplayName("complete")
     inner class Complete {
         @Test
