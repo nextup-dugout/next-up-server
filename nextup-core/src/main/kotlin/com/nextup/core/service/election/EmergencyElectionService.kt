@@ -3,6 +3,7 @@ package com.nextup.core.service.election
 import com.nextup.common.exception.ActiveElectionAlreadyExistsException
 import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidActingOwnerException
+import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.common.exception.UnauthorizedEmergencyElectionException
@@ -47,6 +48,14 @@ class EmergencyElectionService(
         val requester =
             teamMemberRepository.findByIdOrNull(request.requesterId)
                 ?: throw TeamMemberNotFoundException(request.requesterId)
+
+        // Authorization: 요청자가 해당 팀 소속인지 검증
+        if (requester.team.id != request.teamId) {
+            throw InvalidInputException(
+                code = "UNAUTHORIZED_TEAM_ACCESS",
+                message = "Member ${request.requesterId} does not belong to team ${request.teamId}",
+            )
+        }
 
         if (requester.role != TeamMemberRole.MANAGER) {
             throw UnauthorizedEmergencyElectionException(request.requesterId)
@@ -126,6 +135,16 @@ class EmergencyElectionService(
     fun createRegularElectionAfterEmergency(emergencyElection: Election): ElectionResponse {
         require(emergencyElection.isEmergency()) {
             "정규 선거 자동 생성은 긴급 선거 완료 후에만 가능합니다."
+        }
+        if (emergencyElection.status != ElectionStatus.COMPLETED) {
+            val currentStatus = emergencyElection.status
+            val electionId = emergencyElection.id
+            throw InvalidStateException(
+                code = "EMERGENCY_ELECTION_NOT_COMPLETED",
+                message =
+                    "Emergency election $electionId must be COMPLETED before creating " +
+                        "a regular election, but current status is $currentStatus",
+            )
         }
         val deadline =
             checkNotNull(emergencyElection.regularElectionDeadline) {

@@ -3,12 +3,14 @@ package com.nextup.core.service.election
 import com.nextup.common.exception.ActiveElectionAlreadyExistsException
 import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidActingOwnerException
+import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.common.exception.UnauthorizedEmergencyElectionException
 import com.nextup.core.domain.election.Election
 import com.nextup.core.domain.election.ElectionStatus
 import com.nextup.core.domain.election.ElectionType
+import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.ElectionRepositoryPort
@@ -61,9 +63,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val managerMember =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.MANAGER
+                    every { team } returns mockTeam
                 }
 
             every { teamMemberRepository.findByIdOrNull(10L) } returns managerMember
@@ -82,6 +86,35 @@ class EmergencyElectionServiceTest {
         }
 
         @Test
+        fun `다른 팀 소속 MANAGER가 긴급 선거를 발동하면 예외가 발생한다`() {
+            // given
+            val now = Instant.now()
+            val request =
+                TriggerEmergencyElectionRequest(
+                    teamId = 1L,
+                    requesterId = 10L,
+                    title = "비상대책위원회 긴급 선거",
+                    startAt = now,
+                    endAt = now.plus(14, ChronoUnit.DAYS),
+                )
+
+            val otherTeam = mockk<Team> { every { id } returns 99L }
+            val managerMember =
+                mockk<TeamMember> {
+                    every { role } returns TeamMemberRole.MANAGER
+                    every { team } returns otherTeam
+                }
+
+            every { teamMemberRepository.findByIdOrNull(10L) } returns managerMember
+
+            // when & then
+            assertThatThrownBy {
+                emergencyElectionService.triggerEmergencyElection(request)
+            }.isInstanceOf(InvalidInputException::class.java)
+                .hasMessageContaining("does not belong to team")
+        }
+
+        @Test
         fun `MANAGER가 아닌 멤버가 긴급 선거를 발동하면 예외가 발생한다`() {
             // given
             val now = Instant.now()
@@ -94,9 +127,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val memberRole =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.MEMBER
+                    every { team } returns mockTeam
                 }
 
             every { teamMemberRepository.findByIdOrNull(10L) } returns memberRole
@@ -120,9 +155,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val ownerMember =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.OWNER
+                    every { team } returns mockTeam
                 }
 
             every { teamMemberRepository.findByIdOrNull(10L) } returns ownerMember
@@ -167,9 +204,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val managerMember =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.MANAGER
+                    every { team } returns mockTeam
                 }
             val activeElection = createTestElection(1L, ElectionStatus.IN_PROGRESS)
 
@@ -195,9 +234,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val managerMember =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.MANAGER
+                    every { team } returns mockTeam
                 }
             val scheduledElection = createTestElection(1L, ElectionStatus.SCHEDULED)
 
@@ -223,9 +264,11 @@ class EmergencyElectionServiceTest {
                     endAt = now.plus(14, ChronoUnit.DAYS),
                 )
 
+            val mockTeam = mockk<Team> { every { id } returns 1L }
             val managerMember =
                 mockk<TeamMember> {
                     every { role } returns TeamMemberRole.MANAGER
+                    every { team } returns mockTeam
                 }
             val completedElection = createTestElection(1L, ElectionStatus.COMPLETED)
 
@@ -346,7 +389,10 @@ class EmergencyElectionServiceTest {
         @Test
         fun `긴급 선거 완료 후 정규 선거를 자동 생성할 수 있다`() {
             // given
-            val emergencyElection = createTestEmergencyElection(1L)
+            val emergencyElection =
+                createTestEmergencyElection(1L).also {
+                    it.complete()
+                }
 
             every { electionRepository.save(any()) } answers { firstArg() }
 
@@ -359,6 +405,19 @@ class EmergencyElectionServiceTest {
             assertThat(result.teamId).isEqualTo(emergencyElection.teamId)
             assertThat(result.title).contains("정규")
             verify { electionRepository.save(any()) }
+        }
+
+        @Test
+        fun `완료되지 않은 긴급 선거로 정규 선거 자동 생성을 호출하면 예외가 발생한다`() {
+            // given
+            val inProgressEmergencyElection = createTestEmergencyElection(1L)
+            // IN_PROGRESS 상태 (complete() 호출 안 함)
+
+            // when & then
+            assertThatThrownBy {
+                emergencyElectionService.createRegularElectionAfterEmergency(inProgressEmergencyElection)
+            }.isInstanceOf(InvalidStateException::class.java)
+                .hasMessageContaining("COMPLETED")
         }
 
         @Test
