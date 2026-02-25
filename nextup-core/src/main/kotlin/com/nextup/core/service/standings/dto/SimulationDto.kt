@@ -53,14 +53,14 @@ data class SimulationResult(
 /**
  * 플레이오프 진출 시나리오 결과
  *
- * @param totalScenarios 총 시나리오 수
+ * @param totalScenarios 총 시나리오 수 (완전 탐색 시 3^n 규모로 커질 수 있어 Long 사용)
  * @param qualifyingScenarios 플레이오프 진출 시나리오 수
  * @param probability 플레이오프 진출 확률 (0.0 ~ 1.0)
  * @param magicNumber 플레이오프 진출 확정을 위한 매직넘버 (null이면 이미 확정 또는 불가)
  */
 data class PlayoffScenarioResult(
-    val totalScenarios: Int,
-    val qualifyingScenarios: Int,
+    val totalScenarios: Long,
+    val qualifyingScenarios: Long,
     val probability: Double,
     val magicNumber: Int?,
 )

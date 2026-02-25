@@ -284,8 +284,8 @@ class StandingsSimulationControllerTest {
             val playoffTeams = 4
             val scenarioResult =
                 PlayoffScenarioResult(
-                    totalScenarios = 27,
-                    qualifyingScenarios = 20,
+                    totalScenarios = 27L,
+                    qualifyingScenarios = 20L,
                     probability = 0.741,
                     magicNumber = 3,
                 )
@@ -313,8 +313,8 @@ class StandingsSimulationControllerTest {
             val competitionId = 1L
             val scenarioResult =
                 PlayoffScenarioResult(
-                    totalScenarios = 1,
-                    qualifyingScenarios = 1,
+                    totalScenarios = 1L,
+                    qualifyingScenarios = 1L,
                     probability = 1.0,
                     magicNumber = null,
                 )

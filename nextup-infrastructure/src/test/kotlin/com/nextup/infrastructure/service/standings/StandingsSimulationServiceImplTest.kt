@@ -513,62 +513,23 @@ class StandingsSimulationServiceImplTest {
         }
 
         @Test
-        fun `비선두팀 rawMagicNumber 0 이하이고 탈락 아닌 경우 isClinched true`() {
-            // given: 3팀, 2팀이 플레이오프 진출, 3위팀의 rawMagicNumber <= 0이 되는 상황
-            // Tigers: 10승 0패, Lions: 9승 1패, Bears: 0승 10패
-            // leader(Tigers) remainingGames = 0
-            // Bears: rawMN = 0+1-(10-0) = -9 <= 0, maxPossibleWins = 0+0 = 0 < 10 → isEliminated true
-            // Lions: rawMN = 0+1-(10-9) = 0 <= 0, maxPossibleWins = 9+0=9 < 10 → isEliminated true
-            // → Lions도 isEliminated=true이면 isClinched = false
-            // Let's try: Tigers 3승, Lions 2승, Bears 0승, no remaining
-            // Bears: rawMN = 0+1-(3-0) = -2 <=0, maxPossible = 0 < 3 → isEliminated true → isClinched false
-            // Lions: rawMN = 0+1-(3-2) = 0 <=0, maxPossible = 2+0=2 < 3 → isEliminated true → isClinched false
-            //
-            // To get isClinched=true for a non-leader, we need:
-            // rawMagicNumber <= 0 && !isEliminated
-            // maxPossibleWins >= leader.wins but rawMN <= 0
-            // Scenario: Tigers 5승 1패, Lions 3승 1패, Lions remainingGames=2
-            // leader = Tigers (5승), remainingGames=0
-            // Lions: rawMN = 0+1-(5-3) = -1 <= 0
-            //        maxPossibleWins = 3+2 = 5 >= 5 → isEliminated = false
-            //        isClinched = true
+        fun `비선두팀의 매직넘버가 양수이면 isClinched false`() {
+            // 표준 야구 매직넘버 공식: stats.remainingGames - leader.wins + stats.wins + 1
+            // Tigers: 5승, remainingGames=0 (leader)
+            // Lions: 3승, remainingGames=2
+            // Lions rawMN = 2 - 5 + 3 + 1 = 1 > 0 → isClinched = false
+            // maxPossibleWins = 3 + 2 = 5 >= 5 → isEliminated = false
+            // 표준 공식에서는 비선두팀이 남은 경기가 있는 한 순위 미확정
 
             val teamA = createTeam(1L, league, "Tigers")
             val teamB = createTeam(2L, league, "Lions")
 
-            // Tigers: 5 decided games (WIN), 0 remaining
-            val tigerGames = (1..5).map { createGame(it.toLong(), competition) }
-            // Lions: 3 decided games (WIN, LOSS), 2 remaining
-            val lionGames = (1..3).map { createGame(it.toLong(), competition) }
-            val lionRemainingGames = (6..7).map { createGame(it.toLong(), competition) }
-
-            val decidedGameTeams = mutableListOf<GameTeam>()
-            val allGameTeams = mutableListOf<GameTeam>()
-
-            var gtId = 1L
-            tigerGames.forEachIndexed { i, game ->
-                val gt = createGameTeam(gtId++, game, teamA, HomeAway.HOME, 5, GameResult.WIN)
-                val gl = createGameTeam(gtId++, game, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
-                decidedGameTeams += listOf(gt, gl)
-                allGameTeams += listOf(gt, gl)
-            }
-
-            // override Lions in Tiger's games - actually need separate games per team
-            // Simpler: separate games for Lions vs some dummy
-            // Reset and use a cleaner scenario:
-            // Tigers play 5 games against external (only Tigers in allGameTeams for those games)
-            // Let's just use 2 teams playing each other
-
-            // Clean approach: Tigers 5 wins (5 games), Lions: 3 wins from same 5 games → impossible if they play each other
-
-            // Best approach: Tigers 5W vs unknown, Lions 3W vs unknown
-            // Use single-team game entries (no opponent in allGameTeams → opponent not tracked)
-            decidedGameTeams.clear()
-            allGameTeams.clear()
-
             val tigerOnlyGames = (10..14).map { createGame(it.toLong(), competition) }
             val lionOnlyGamesDecided = (20..22).map { createGame(it.toLong(), competition) }
             val lionOnlyGamesRemaining = (30..31).map { createGame(it.toLong(), competition) }
+
+            val decidedGameTeams = mutableListOf<GameTeam>()
+            val allGameTeams = mutableListOf<GameTeam>()
 
             var id = 1L
             tigerOnlyGames.forEach { game ->
@@ -597,9 +558,10 @@ class StandingsSimulationServiceImplTest {
             val tigersResult = result.find { it.teamId == 1L }!!
             assertThat(tigersResult.isClinched).isTrue()
 
-            // Lions: rawMN = 0+1-(5-3) = -1 <= 0, maxPossibleWins = 3+2=5 >= 5 → isEliminated=false → isClinched=true
+            // Lions: rawMN = 2-5+3+1 = 1 > 0 → isClinched=false, isEliminated=false (maxPossibleWins=5 >= 5)
             val lionsResult = result.find { it.teamId == 2L }!!
-            assertThat(lionsResult.isClinched).isTrue()
+            assertThat(lionsResult.magicNumber).isEqualTo(1)
+            assertThat(lionsResult.isClinched).isFalse()
             assertThat(lionsResult.isEliminated).isFalse()
         }
 
@@ -747,8 +709,8 @@ class StandingsSimulationServiceImplTest {
             val result = service.calculatePlayoffScenarios(1L, 1L, 2)
 
             // then: 몬테카를로 결과 (총 1000 iterations)
-            assertThat(result.totalScenarios).isEqualTo(1000)
-            assertThat(result.qualifyingScenarios).isBetween(0, 1000)
+            assertThat(result.totalScenarios).isEqualTo(1000L)
+            assertThat(result.qualifyingScenarios).isBetween(0L, 1000L)
             assertThat(result.probability).isBetween(0.0, 1.0)
         }
 
@@ -780,8 +742,8 @@ class StandingsSimulationServiceImplTest {
             val result = service.calculatePlayoffScenarios(1L, 1L, 1)
 
             // then: 3^2 = 9 시나리오
-            assertThat(result.totalScenarios).isEqualTo(9)
-            assertThat(result.qualifyingScenarios).isBetween(0, 9)
+            assertThat(result.totalScenarios).isEqualTo(9L)
+            assertThat(result.qualifyingScenarios).isBetween(0L, 9L)
             assertThat(result.probability).isBetween(0.0, 1.0)
         }
 
@@ -815,7 +777,7 @@ class StandingsSimulationServiceImplTest {
             val result = service.calculatePlayoffScenarios(1L, 3L, 2)
 
             // then: 3^2=9 시나리오
-            assertThat(result.totalScenarios).isEqualTo(9)
+            assertThat(result.totalScenarios).isEqualTo(9L)
             assertThat(result.probability).isBetween(0.0, 1.0)
         }
 
@@ -840,7 +802,7 @@ class StandingsSimulationServiceImplTest {
             val result = service.calculatePlayoffScenarios(1L, 1L, 2)
 
             // then: totalScenarios = 1, Tigers는 1위이므로 probability = 1.0
-            assertThat(result.totalScenarios).isEqualTo(1)
+            assertThat(result.totalScenarios).isEqualTo(1L)
             assertThat(result.probability).isEqualTo(1.0)
         }
 

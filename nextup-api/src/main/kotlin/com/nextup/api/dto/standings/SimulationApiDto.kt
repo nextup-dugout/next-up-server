@@ -103,8 +103,8 @@ data class SimulationResultResponse(
  * 플레이오프 시나리오 결과 응답
  */
 data class PlayoffScenarioResponse(
-    val totalScenarios: Int,
-    val qualifyingScenarios: Int,
+    val totalScenarios: Long,
+    val qualifyingScenarios: Long,
     val probability: Double,
     val magicNumber: Int?,
 ) {

@@ -32,7 +32,7 @@ class StandingsSimulationServiceImpl(
     private val gameTeamRepository: GameTeamRepositoryPort,
 ) : StandingsSimulationService {
     companion object {
-        private const val MONTE_CARLO_ITERATIONS = 1000
+        private const val MONTE_CARLO_ITERATIONS = 1000L
         private const val MONTE_CARLO_THRESHOLD = 15
     }
 
@@ -58,9 +58,11 @@ class StandingsSimulationServiceImpl(
 
         return sortedStats.mapIndexed { index, stats ->
             val targetRank = index + 1
-            // Magic Number = 리더의 남은 경기 + 1 - (리더 승수 - 해당팀 승수)
+            // 표준 야구 매직넘버 공식:
+            // Magic Number = (상대팀 남은 경기 수) - (1위팀 승수) + (상대팀 승수) + 1
+            // 의미: 1위팀의 우승 확정에 필요한 (1위팀 추가 승 + 2위팀 추가 패) 합계
             val rawMagicNumber =
-                leader.remainingGames + 1 - (leader.wins - stats.wins)
+                stats.remainingGames - leader.wins + stats.wins + 1
             // 수학적 탈락: 해당 팀이 남은 경기를 모두 이겨도 리더를 따라잡을 수 없는 경우
             val maxPossibleWins = stats.wins + stats.remainingGames
             val isEliminated = maxPossibleWins < leader.wins
@@ -367,9 +369,9 @@ class StandingsSimulationServiceImpl(
                 .toList()
         val gameTeamsByGameId = allGameTeams.groupBy { it.game.id }
 
-        var qualifyingCount = 0
+        var qualifyingCount = 0L
 
-        repeat(MONTE_CARLO_ITERATIONS) {
+        repeat(MONTE_CARLO_ITERATIONS.toInt()) {
             val stats = currentStats.toMutableMap()
             remainingGames.forEach { gameId ->
                 val gameTeams = gameTeamsByGameId[gameId] ?: return@forEach
@@ -438,15 +440,15 @@ class StandingsSimulationServiceImpl(
         }
 
         val gameTeamsByGameId = allGameTeams.groupBy { it.game.id }
-        val totalScenarios = Math.pow(3.0, remainingGameIds.size.toDouble()).toInt()
-        var qualifyingCount = 0
+        val totalScenarios = Math.pow(3.0, remainingGameIds.size.toDouble()).toLong()
+        var qualifyingCount = 0L
 
-        for (scenario in 0 until totalScenarios) {
+        for (scenario in 0L until totalScenarios) {
             val stats = currentStats.toMutableMap()
             var temp = scenario
 
             for (gameId in remainingGameIds) {
-                val outcome = temp % 3
+                val outcome = (temp % 3).toInt()
                 temp /= 3
 
                 val gameTeams = gameTeamsByGameId[gameId] ?: continue
@@ -477,7 +479,7 @@ class StandingsSimulationServiceImpl(
         }
 
         val probability =
-            if (totalScenarios > 0) qualifyingCount.toDouble() / totalScenarios else 0.0
+            if (totalScenarios > 0L) qualifyingCount.toDouble() / totalScenarios else 0.0
         return PlayoffScenarioResult(
             totalScenarios = totalScenarios,
             qualifyingScenarios = qualifyingCount,
