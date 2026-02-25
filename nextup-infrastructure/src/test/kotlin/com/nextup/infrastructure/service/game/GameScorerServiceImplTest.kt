@@ -7,6 +7,7 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
@@ -15,7 +16,6 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
-import com.nextup.core.event.GameResultConfirmedEvent
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort

@@ -9,11 +9,11 @@ import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.attendance.VoteType
+import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
-import com.nextup.core.event.AttendanceVoteCreatedEvent
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort

@@ -1,11 +1,9 @@
 package com.nextup.infrastructure.service.team
 
-import com.nextup.common.audit.AuditLog
-import com.nextup.common.audit.AuditSeverity
 import com.nextup.common.exception.*
+import com.nextup.core.domain.event.TeamJoinApprovedEvent
+import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.team.*
-import com.nextup.core.event.TeamJoinApprovedEvent
-import com.nextup.core.event.TeamJoinRejectedEvent
 import com.nextup.core.port.repository.*
 import com.nextup.core.service.team.TeamMembershipService
 import org.springframework.context.ApplicationEventPublisher
@@ -187,7 +185,6 @@ class TeamMembershipServiceImpl(
         return savedRequest
     }
 
-    @AuditLog(action = "KICK_MEMBER", severity = AuditSeverity.WARN)
     @Transactional
     override fun kickMember(
         memberId: Long,
@@ -240,7 +237,6 @@ class TeamMembershipServiceImpl(
         teamMemberRepository.save(member)
     }
 
-    @AuditLog(action = "ROLE_CHANGE", severity = AuditSeverity.WARN)
     @Transactional
     override fun changeRole(
         memberId: Long,
@@ -323,7 +319,6 @@ class TeamMembershipServiceImpl(
         return savedTeam
     }
 
-    @AuditLog(action = "DELETE_TEAM", severity = AuditSeverity.WARN)
     @Transactional
     override fun deleteTeam(
         teamId: Long,

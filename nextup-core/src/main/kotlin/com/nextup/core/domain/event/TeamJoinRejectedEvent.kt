@@ -1,4 +1,4 @@
-package com.nextup.core.event
+package com.nextup.core.domain.event
 
 /**
  * 팀 가입 거절 이벤트

@@ -4,6 +4,7 @@ import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
@@ -13,7 +14,6 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
-import com.nextup.core.event.LineupConfirmedEvent
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort

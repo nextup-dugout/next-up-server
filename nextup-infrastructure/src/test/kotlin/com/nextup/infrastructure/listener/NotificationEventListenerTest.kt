@@ -1,6 +1,11 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
+import com.nextup.core.domain.event.GameResultConfirmedEvent
+import com.nextup.core.domain.event.LineupConfirmedEvent
+import com.nextup.core.domain.event.TeamJoinApprovedEvent
+import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.domain.player.Player
@@ -10,11 +15,6 @@ import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.domain.user.User
-import com.nextup.core.event.AttendanceVoteCreatedEvent
-import com.nextup.core.event.GameResultConfirmedEvent
-import com.nextup.core.event.LineupConfirmedEvent
-import com.nextup.core.event.TeamJoinApprovedEvent
-import com.nextup.core.event.TeamJoinRejectedEvent
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.notification.NotificationService
 import com.nextup.core.service.notification.dto.SendNotificationRequest

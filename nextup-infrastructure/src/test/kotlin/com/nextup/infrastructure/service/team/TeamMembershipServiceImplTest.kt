@@ -2,13 +2,13 @@ package com.nextup.infrastructure.service.team
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.event.TeamJoinApprovedEvent
+import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.*
 import com.nextup.core.domain.user.User
-import com.nextup.core.event.TeamJoinApprovedEvent
-import com.nextup.core.event.TeamJoinRejectedEvent
 import com.nextup.core.port.repository.*
 import io.mockk.every
 import io.mockk.mockk

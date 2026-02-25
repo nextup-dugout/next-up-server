@@ -1,11 +1,11 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.player.Position
-import com.nextup.core.event.LineupConfirmedEvent
 import com.nextup.core.port.repository.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort

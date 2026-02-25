@@ -1,4 +1,4 @@
-package com.nextup.core.event
+package com.nextup.core.domain.event
 
 import java.time.LocalDateTime
 

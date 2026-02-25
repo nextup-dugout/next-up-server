@@ -1,22 +1,24 @@
 package com.nextup.infrastructure.listener
 
+import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
+import com.nextup.core.domain.event.GameResultConfirmedEvent
+import com.nextup.core.domain.event.LineupConfirmedEvent
+import com.nextup.core.domain.event.TeamJoinApprovedEvent
+import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.domain.team.TeamMemberStatus
-import com.nextup.core.event.AttendanceVoteCreatedEvent
-import com.nextup.core.event.GameResultConfirmedEvent
-import com.nextup.core.event.LineupConfirmedEvent
-import com.nextup.core.event.TeamJoinApprovedEvent
-import com.nextup.core.event.TeamJoinRejectedEvent
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.notification.NotificationService
 import com.nextup.core.service.notification.dto.SendNotificationRequest
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 
 /**
  * 알림 이벤트 리스너
  *
  * 도메인 이벤트를 수신하여 사용자 알림을 생성합니다.
+ * AFTER_COMMIT 단계에서 실행되어 비즈니스 트랜잭션 롤백에 영향을 주지 않습니다.
  */
 @Component
 class NotificationEventListener(
@@ -26,7 +28,7 @@ class NotificationEventListener(
     /**
      * 팀 가입 승인 이벤트를 처리합니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleTeamJoinApproved(event: TeamJoinApprovedEvent) {
         notificationService.sendNotification(
             SendNotificationRequest(
@@ -41,7 +43,7 @@ class NotificationEventListener(
     /**
      * 팀 가입 거절 이벤트를 처리합니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleTeamJoinRejected(event: TeamJoinRejectedEvent) {
         notificationService.sendNotification(
             SendNotificationRequest(
@@ -58,7 +60,7 @@ class NotificationEventListener(
      *
      * 해당 팀의 모든 활성 멤버에게 알림을 발송합니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleAttendanceVoteCreated(event: AttendanceVoteCreatedEvent) {
         val activeMembers =
             teamMemberRepository.findByTeamIdAndStatus(event.teamId, TeamMemberStatus.ACTIVE)
@@ -80,7 +82,7 @@ class NotificationEventListener(
      *
      * 홈팀과 원정팀의 모든 활성 멤버에게 알림을 발송합니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleGameResultConfirmed(event: GameResultConfirmedEvent) {
         val body = "경기 결과: ${event.homeScore} - ${event.awayScore}"
         val allTeamIds = listOf(event.homeTeamId, event.awayTeamId)
@@ -105,7 +107,7 @@ class NotificationEventListener(
      *
      * 해당 팀의 모든 활성 멤버에게 알림을 발송합니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleLineupConfirmed(event: LineupConfirmedEvent) {
         val activeMembers =
             teamMemberRepository.findByTeamIdAndStatus(event.teamId, TeamMemberStatus.ACTIVE)

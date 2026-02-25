@@ -1,4 +1,4 @@
-package com.nextup.core.event
+package com.nextup.core.domain.event
 
 /**
  * 경기 결과 확정 이벤트

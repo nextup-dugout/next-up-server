@@ -7,6 +7,7 @@ import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.common.exception.NoEventToUndoException
 import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.UndoNotAvailableException
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.game.Game
@@ -14,7 +15,6 @@ import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
-import com.nextup.core.event.GameResultConfirmedEvent
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
