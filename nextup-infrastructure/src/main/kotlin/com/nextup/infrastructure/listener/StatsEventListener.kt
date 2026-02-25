@@ -6,9 +6,10 @@ import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 
 /**
  * 실시간 통계 갱신 이벤트 리스너
@@ -29,7 +30,7 @@ class StatsEventListener(
      * 해당 선수의 시즌 타격 통계를 찾아 실시간으로 갱신합니다.
      * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
@@ -61,7 +62,7 @@ class StatsEventListener(
      * 해당 선수의 시즌 타격 통계를 찾아 이전 타석 결과를 역산합니다.
      * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
