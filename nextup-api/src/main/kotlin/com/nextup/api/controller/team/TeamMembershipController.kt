@@ -77,6 +77,7 @@ class TeamMembershipController(
      * 가입 신청을 거부합니다.
      */
     @PostMapping("/join-requests/{requestId}/reject")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun rejectJoinRequest(
         @PathVariable teamId: Long,
         @PathVariable requestId: Long,

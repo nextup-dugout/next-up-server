@@ -61,6 +61,7 @@ class ElectionController(
      * 선거를 시작합니다.
      */
     @PutMapping("/{electionId}/start")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun startElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -70,6 +71,7 @@ class ElectionController(
      * 선거를 완료합니다.
      */
     @PutMapping("/{electionId}/complete")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun completeElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -79,6 +81,7 @@ class ElectionController(
      * 선거를 취소합니다.
      */
     @PutMapping("/{electionId}/cancel")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun cancelElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
