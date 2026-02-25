@@ -471,6 +471,406 @@ class StandingsSimulationServiceImplTest {
     }
 
     // =========================================================================
+    // Additional coverage tests
+    // =========================================================================
+
+    @Nested
+    @DisplayName("calculateMagicNumbers - 추가 시나리오")
+    inner class CalculateMagicNumbersExtra {
+        @Test
+        fun `선두팀 남은경기 없고 경기 뛴 경우 isClinched true`() {
+            // given: Tigers 3승 0패, 남은 경기 없음 → leader.remainingGames == 0 && gamesPlayed > 0 → isClinched true
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            val game1 = createGame(1L, competition)
+            val game2 = createGame(2L, competition)
+            val game3 = createGame(3L, competition)
+
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+            val gt2 = createGameTeam(3L, game2, teamA, HomeAway.HOME, 4, GameResult.WIN)
+            val gl2 = createGameTeam(4L, game2, teamB, HomeAway.AWAY, 1, GameResult.LOSS)
+            val gt3 = createGameTeam(5L, game3, teamA, HomeAway.HOME, 6, GameResult.WIN)
+            val gl3 = createGameTeam(6L, game3, teamB, HomeAway.AWAY, 3, GameResult.LOSS)
+
+            val allGameTeams = listOf(gt1, gl1, gt2, gl2, gt3, gl3)
+            val decidedGameTeams = listOf(gt1, gl1, gt2, gl2, gt3, gl3)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val result = service.calculateMagicNumbers(1L)
+
+            // then: Tigers(1위) - 남은경기 0, gamesPlayed 3 → isClinched true
+            val tigersResult = result.find { it.teamId == 1L }!!
+            assertThat(tigersResult.isClinched).isTrue()
+            // Lions(2위) - isEliminated true(maxPossibleWins=0 < 3)
+            val lionsResult = result.find { it.teamId == 2L }!!
+            assertThat(lionsResult.isEliminated).isTrue()
+        }
+
+        @Test
+        fun `비선두팀 rawMagicNumber 0 이하이고 탈락 아닌 경우 isClinched true`() {
+            // given: 3팀, 2팀이 플레이오프 진출, 3위팀의 rawMagicNumber <= 0이 되는 상황
+            // Tigers: 10승 0패, Lions: 9승 1패, Bears: 0승 10패
+            // leader(Tigers) remainingGames = 0
+            // Bears: rawMN = 0+1-(10-0) = -9 <= 0, maxPossibleWins = 0+0 = 0 < 10 → isEliminated true
+            // Lions: rawMN = 0+1-(10-9) = 0 <= 0, maxPossibleWins = 9+0=9 < 10 → isEliminated true
+            // → Lions도 isEliminated=true이면 isClinched = false
+            // Let's try: Tigers 3승, Lions 2승, Bears 0승, no remaining
+            // Bears: rawMN = 0+1-(3-0) = -2 <=0, maxPossible = 0 < 3 → isEliminated true → isClinched false
+            // Lions: rawMN = 0+1-(3-2) = 0 <=0, maxPossible = 2+0=2 < 3 → isEliminated true → isClinched false
+            //
+            // To get isClinched=true for a non-leader, we need:
+            // rawMagicNumber <= 0 && !isEliminated
+            // maxPossibleWins >= leader.wins but rawMN <= 0
+            // Scenario: Tigers 5승 1패, Lions 3승 1패, Lions remainingGames=2
+            // leader = Tigers (5승), remainingGames=0
+            // Lions: rawMN = 0+1-(5-3) = -1 <= 0
+            //        maxPossibleWins = 3+2 = 5 >= 5 → isEliminated = false
+            //        isClinched = true
+
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            // Tigers: 5 decided games (WIN), 0 remaining
+            val tigerGames = (1..5).map { createGame(it.toLong(), competition) }
+            // Lions: 3 decided games (WIN, LOSS), 2 remaining
+            val lionGames = (1..3).map { createGame(it.toLong(), competition) }
+            val lionRemainingGames = (6..7).map { createGame(it.toLong(), competition) }
+
+            val decidedGameTeams = mutableListOf<GameTeam>()
+            val allGameTeams = mutableListOf<GameTeam>()
+
+            var gtId = 1L
+            tigerGames.forEachIndexed { i, game ->
+                val gt = createGameTeam(gtId++, game, teamA, HomeAway.HOME, 5, GameResult.WIN)
+                val gl = createGameTeam(gtId++, game, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+                decidedGameTeams += listOf(gt, gl)
+                allGameTeams += listOf(gt, gl)
+            }
+
+            // override Lions in Tiger's games - actually need separate games per team
+            // Simpler: separate games for Lions vs some dummy
+            // Reset and use a cleaner scenario:
+            // Tigers play 5 games against external (only Tigers in allGameTeams for those games)
+            // Let's just use 2 teams playing each other
+
+            // Clean approach: Tigers 5 wins (5 games), Lions: 3 wins from same 5 games → impossible if they play each other
+
+            // Best approach: Tigers 5W vs unknown, Lions 3W vs unknown
+            // Use single-team game entries (no opponent in allGameTeams → opponent not tracked)
+            decidedGameTeams.clear()
+            allGameTeams.clear()
+
+            val tigerOnlyGames = (10..14).map { createGame(it.toLong(), competition) }
+            val lionOnlyGamesDecided = (20..22).map { createGame(it.toLong(), competition) }
+            val lionOnlyGamesRemaining = (30..31).map { createGame(it.toLong(), competition) }
+
+            var id = 1L
+            tigerOnlyGames.forEach { game ->
+                val gt = createGameTeam(id++, game, teamA, HomeAway.HOME, 5, GameResult.WIN)
+                decidedGameTeams += gt
+                allGameTeams += gt
+            }
+            lionOnlyGamesDecided.forEach { game ->
+                val gl = createGameTeam(id++, game, teamB, HomeAway.HOME, 4, GameResult.WIN)
+                decidedGameTeams += gl
+                allGameTeams += gl
+            }
+            lionOnlyGamesRemaining.forEach { game ->
+                val gl = createGameTeam(id++, game, teamB, HomeAway.HOME, 0, GameResult.UNDECIDED)
+                allGameTeams += gl
+            }
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val result = service.calculateMagicNumbers(1L)
+
+            // then: Tigers leader, remainingGames=0, gamesPlayed=5 → isClinched=true
+            val tigersResult = result.find { it.teamId == 1L }!!
+            assertThat(tigersResult.isClinched).isTrue()
+
+            // Lions: rawMN = 0+1-(5-3) = -1 <= 0, maxPossibleWins = 3+2=5 >= 5 → isEliminated=false → isClinched=true
+            val lionsResult = result.find { it.teamId == 2L }!!
+            assertThat(lionsResult.isClinched).isTrue()
+            assertThat(lionsResult.isEliminated).isFalse()
+        }
+
+        @Test
+        fun `팀이 한 경기도 없는 경우 winningPercentage 0`() {
+            // gamesPlayed == 0 → BigDecimal.ZERO branch in buildTeamStatsMap
+            val teamA = createTeam(1L, league, "Tigers")
+            val game1 = createGame(1L, competition)
+            // Only UNDECIDED games → decided is empty
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns listOf(gt1)
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns emptyList()
+
+            // when
+            val result = service.calculateMagicNumbers(1L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].teamId).isEqualTo(1L)
+            assertThat(result[0].magicNumber).isGreaterThanOrEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("simulateStandings - 추가 시나리오")
+    inner class SimulateStandingsExtra {
+        @Test
+        fun `홈팀 승리 시나리오가 올바르게 적용된다`() {
+            // given: home win path (simResult.homeScore > simResult.awayScore)
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            val game1 = createGame(1L, competition)
+            val game2 = createGame(2L, competition)
+
+            // 현재 동률
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+            val gt2 = createGameTeam(3L, game2, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val gl2 = createGameTeam(4L, game2, teamB, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+
+            val allGameTeams = listOf(gt1, gl1, gt2, gl2)
+            val decidedGameTeams = listOf(gt1, gl1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when: Tigers(홈)이 game2에서 승리
+            val request =
+                SimulationRequest(
+                    listOf(SimulatedGameResult(gameId = 2L, homeScore = 5, awayScore = 1)),
+                )
+
+            val result = service.simulateStandings(1L, request)
+
+            // then: Tigers 2승, Lions 0승 1패 → Tigers 1위
+            assertThat(result.standings).hasSize(2)
+            val tigers = result.standings.find { it.teamId == 1L }!!
+            assertThat(tigers.wins).isEqualTo(2)
+            assertThat(tigers.rank).isEqualTo(1)
+        }
+
+        @Test
+        fun `존재하지 않는 gameId 시뮬레이션은 무시된다`() {
+            // given: gameId가 allGameTeams에 없는 경우 → return@forEach
+            val teamA = createTeam(1L, league, "Tigers")
+            val game1 = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns listOf(gt1)
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns listOf(gt1)
+
+            // when: 존재하지 않는 gameId 999
+            val request =
+                SimulationRequest(
+                    listOf(SimulatedGameResult(gameId = 999L, homeScore = 5, awayScore = 1)),
+                )
+
+            val result = service.simulateStandings(1L, request)
+
+            // then: 결과에 변화 없음
+            assertThat(result.standings).hasSize(1)
+            assertThat(result.changes).isEmpty()
+        }
+
+        @Test
+        fun `awayScore가 음수이면 InvalidInputException 발생`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns emptyList()
+
+            val request =
+                SimulationRequest(
+                    listOf(SimulatedGameResult(gameId = 1L, homeScore = 3, awayScore = -1)),
+                )
+
+            // when/then
+            assertThrows<InvalidInputException> {
+                service.simulateStandings(1L, request)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("calculatePlayoffScenarios - 몬테카를로 시뮬레이션")
+    inner class CalculatePlayoffScenariosMonteCarlo {
+        @Test
+        fun `남은 경기가 15 초과이면 몬테카를로 시뮬레이션을 수행한다`() {
+            // given: 2팀, 16개의 미결 경기 → MONTE_CARLO_THRESHOLD(15) 초과
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            // 1 결정된 경기
+            val decidedGame = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, decidedGame, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, decidedGame, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+
+            val decidedGameTeams = listOf(gt1, gl1)
+            val allGameTeams = mutableListOf<GameTeam>()
+            allGameTeams += gt1
+            allGameTeams += gl1
+
+            // 16개 미결 경기 추가
+            var id = 3L
+            (2..17).forEach { gameNum ->
+                val game = createGame(gameNum.toLong(), competition)
+                val gtUndecided =
+                    createGameTeam(id++, game, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+                val glUndecided =
+                    createGameTeam(id++, game, teamB, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+                allGameTeams += gtUndecided
+                allGameTeams += glUndecided
+            }
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val result = service.calculatePlayoffScenarios(1L, 1L, 2)
+
+            // then: 몬테카를로 결과 (총 1000 iterations)
+            assertThat(result.totalScenarios).isEqualTo(1000)
+            assertThat(result.qualifyingScenarios).isBetween(0, 1000)
+            assertThat(result.probability).isBetween(0.0, 1.0)
+        }
+
+        @Test
+        fun `남은 경기가 있을 때 완전 탐색 시뮬레이션 내부 루프가 실행된다`() {
+            // given: 2팀, 2개의 미결 경기 (완전 탐색, 3^2=9 시나리오)
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            val decidedGame = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, decidedGame, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, decidedGame, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+
+            val game2 = createGame(2L, competition)
+            val game3 = createGame(3L, competition)
+            val gt2 = createGameTeam(3L, game2, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val gl2 = createGameTeam(4L, game2, teamB, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+            val gt3 = createGameTeam(5L, game3, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val gl3 = createGameTeam(6L, game3, teamB, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+
+            val allGameTeams = listOf(gt1, gl1, gt2, gl2, gt3, gl3)
+            val decidedGameTeams = listOf(gt1, gl1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when: Tigers의 플레이오프 시나리오 (상위 1팀)
+            val result = service.calculatePlayoffScenarios(1L, 1L, 1)
+
+            // then: 3^2 = 9 시나리오
+            assertThat(result.totalScenarios).isEqualTo(9)
+            assertThat(result.qualifyingScenarios).isBetween(0, 9)
+            assertThat(result.probability).isBetween(0.0, 1.0)
+        }
+
+        @Test
+        fun `남은 경기가 있고 상위 2팀 플레이오프 진출 가능성이 계산된다`() {
+            // given: 3팀, 2개 미결 경기
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+            val teamC = createTeam(3L, league, "Bears")
+
+            val game1 = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+
+            val game2 = createGame(2L, competition)
+            val gt2 = createGameTeam(3L, game2, teamA, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val gl2 = createGameTeam(4L, game2, teamC, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+
+            val game3 = createGame(3L, competition)
+            val gt3 = createGameTeam(5L, game3, teamB, HomeAway.HOME, 0, GameResult.UNDECIDED)
+            val gl3 = createGameTeam(6L, game3, teamC, HomeAway.AWAY, 0, GameResult.UNDECIDED)
+
+            val allGameTeams = listOf(gt1, gl1, gt2, gl2, gt3, gl3)
+            val decidedGameTeams = listOf(gt1, gl1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when: Bears 플레이오프(상위 2팀)
+            val result = service.calculatePlayoffScenarios(1L, 3L, 2)
+
+            // then: 3^2=9 시나리오
+            assertThat(result.totalScenarios).isEqualTo(9)
+            assertThat(result.probability).isBetween(0.0, 1.0)
+        }
+
+        @Test
+        fun `모든 경기 완료 후 완전 탐색은 1개 시나리오만 실행`() {
+            // given: 남은 경기 없음 → totalScenarios = 3^0 = 1
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            val game1 = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 5, GameResult.WIN)
+            val gl1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 2, GameResult.LOSS)
+
+            val allGameTeams = listOf(gt1, gl1)
+            val decidedGameTeams = listOf(gt1, gl1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val result = service.calculatePlayoffScenarios(1L, 1L, 2)
+
+            // then: totalScenarios = 1, Tigers는 1위이므로 probability = 1.0
+            assertThat(result.totalScenarios).isEqualTo(1)
+            assertThat(result.probability).isEqualTo(1.0)
+        }
+
+        @Test
+        fun `무승부 경기가 있는 경우 draws 카운트가 올바르다`() {
+            // given: 무승부 결과 포함 → draws branch in buildTeamStatsMap
+            val teamA = createTeam(1L, league, "Tigers")
+            val teamB = createTeam(2L, league, "Lions")
+
+            val game1 = createGame(1L, competition)
+            val gt1 = createGameTeam(1L, game1, teamA, HomeAway.HOME, 3, GameResult.DRAW)
+            val gl1 = createGameTeam(2L, game1, teamB, HomeAway.AWAY, 3, GameResult.DRAW)
+
+            val allGameTeams = listOf(gt1, gl1)
+            val decidedGameTeams = listOf(gt1, gl1)
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns allGameTeams
+            every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(1L) } returns decidedGameTeams
+
+            // when
+            val magicNumbers = service.calculateMagicNumbers(1L)
+
+            // then
+            assertThat(magicNumbers).hasSize(2)
+            // 무승부인 경우 winningPercentage = 0.5
+        }
+    }
+
+    // =========================================================================
     // Helper methods
     // =========================================================================
 
