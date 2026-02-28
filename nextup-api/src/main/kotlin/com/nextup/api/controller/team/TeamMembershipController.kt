@@ -4,6 +4,8 @@ import com.nextup.api.dto.team.*
 import com.nextup.api.mapper.team.toDetailResponse
 import com.nextup.api.mapper.team.toResponse
 import com.nextup.common.dto.ApiResponse
+import com.nextup.common.exception.ForbiddenException
+import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -117,7 +119,7 @@ class TeamMembershipController(
     ): ApiResponse<Unit> {
         // IDOR 방지: 요청자가 해당 팀의 멤버인지 검증
         teamMembershipService.getMember(teamId, kickerUserId)
-            ?: throw IllegalStateException("You are not a member of this team")
+            ?: throw ForbiddenException("TEAM_MEMBERSHIP_001", "You are not a member of this team")
 
         validateMemberBelongsToTeam(memberId, teamId)
 
@@ -141,7 +143,7 @@ class TeamMembershipController(
         // 현재 사용자의 멤버 ID 조회
         val member =
             teamMembershipService.getMember(teamId, userId)
-                ?: throw IllegalStateException("You are not a member of this team")
+                ?: throw ForbiddenException("TEAM_MEMBERSHIP_001", "You are not a member of this team")
 
         teamMembershipService.leaveMember(member.id)
         return ApiResponse.success(Unit)
@@ -160,7 +162,7 @@ class TeamMembershipController(
     ): ApiResponse<TeamMemberResponse> {
         // IDOR 방지: 요청자가 해당 팀의 멤버인지 검증
         teamMembershipService.getMember(teamId, changerUserId)
-            ?: throw IllegalStateException("You are not a member of this team")
+            ?: throw ForbiddenException("TEAM_MEMBERSHIP_001", "You are not a member of this team")
 
         validateMemberBelongsToTeam(memberId, teamId)
 
@@ -179,9 +181,9 @@ class TeamMembershipController(
     ) {
         val targetMember =
             teamMembershipService.getMemberById(memberId)
-                ?: throw IllegalStateException("Member not found: $memberId")
+                ?: throw TeamMemberNotFoundException(memberId)
         if (targetMember.team.id != teamId) {
-            throw IllegalStateException("Member does not belong to this team")
+            throw ForbiddenException("TEAM_MEMBERSHIP_002", "Member does not belong to this team")
         }
     }
 }

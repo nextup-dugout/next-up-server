@@ -15,6 +15,10 @@ paths:
 - 구독 경로: `/topic/game/{gameId}` 패턴
 - 발행 경로: `/app/game/{gameId}/event` 패턴
 
+## URL 패턴
+- URL prefix: `/api/scorer/`
+- RESTful 리소스 명명: 복수형 (`/api/scorer/games`, `/api/scorer/lineups`)
+
 ## 네이밍 컨벤션
 - Controller: `*ScorerController` 패턴
 - WebSocket Handler: `*WebSocketHandler` 패턴
