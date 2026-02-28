@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/backoffice/users")
 class UserAdminController(
     private val userService: UserService,
+    private val passwordEncoder: PasswordEncoder,
 ) {
     /**
      * 모든 사용자 목록을 페이징으로 조회합니다.
@@ -76,20 +78,16 @@ class UserAdminController(
 
     /**
      * 사용자를 생성합니다 (관리자용 - 비밀번호 직접 설정).
-     *
-     * 주의: 실제 운영에서는 PasswordEncoder를 사용해야 합니다.
-     * Security 모듈 구현 후 수정 필요.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createUser(
         @Valid @RequestBody request: CreateUserRequest,
     ): ApiResponse<UserAdminResponse> {
-        // TODO: PasswordEncoder 적용 필요 (Issue #26)
         val user =
             userService.createLocalUser(
                 email = request.email,
-                encodedPassword = request.password, // 임시: 실제로는 인코딩 필요
+                encodedPassword = passwordEncoder.encode(request.password),
                 nickname = request.nickname,
             )
 
