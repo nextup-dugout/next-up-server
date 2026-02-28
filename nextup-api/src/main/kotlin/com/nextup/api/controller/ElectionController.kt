@@ -12,6 +12,7 @@ import com.nextup.core.service.election.dto.ElectionResultResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -28,6 +29,7 @@ class ElectionController(
      * 선거를 생성합니다.
      */
     @PostMapping
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun createElection(
         @PathVariable teamId: Long,
         @RequestBody @Valid request: CreateElectionApiRequest,
@@ -59,6 +61,7 @@ class ElectionController(
      * 선거를 시작합니다.
      */
     @PutMapping("/{electionId}/start")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun startElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -68,6 +71,7 @@ class ElectionController(
      * 선거를 완료합니다.
      */
     @PutMapping("/{electionId}/complete")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun completeElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -77,6 +81,7 @@ class ElectionController(
      * 선거를 취소합니다.
      */
     @PutMapping("/{electionId}/cancel")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun cancelElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
