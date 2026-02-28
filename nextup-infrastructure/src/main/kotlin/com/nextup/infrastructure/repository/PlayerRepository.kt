@@ -1,9 +1,13 @@
 package com.nextup.infrastructure.repository
 
 import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.time.LocalDate
 
 interface PlayerRepository :
@@ -38,4 +42,20 @@ interface PlayerRepository :
         teamId: Long,
         date: LocalDate,
     ): List<Player>
+
+    @Query(
+        """
+        SELECT DISTINCT p FROM Player p
+        LEFT JOIN PlayerTeamHistory h ON h.player.id = p.id AND h.endDate IS NULL
+        WHERE (:name IS NULL OR p.name LIKE %:name%)
+        AND (:teamId IS NULL OR h.team.id = :teamId)
+        AND (:position IS NULL OR p.primaryPosition = :position)
+    """,
+    )
+    override fun search(
+        @Param("name") name: String?,
+        @Param("teamId") teamId: Long?,
+        @Param("position") position: Position?,
+        pageable: Pageable,
+    ): Page<Player>
 }

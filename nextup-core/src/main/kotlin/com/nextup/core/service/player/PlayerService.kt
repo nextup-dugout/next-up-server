@@ -2,7 +2,10 @@ package com.nextup.core.service.player
 
 import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -42,4 +45,26 @@ class PlayerService(
      * 활성 선수 목록을 조회합니다.
      */
     fun getActivePlayers(): List<Player> = playerRepository.findActivePlayers()
+
+    /**
+     * 이름(부분 일치), 팀 ID, 포지션으로 선수를 검색합니다.
+     *
+     * @param name 이름 부분 검색 (null이면 조건 무시)
+     * @param teamId 팀 ID 필터 (null이면 조건 무시)
+     * @param position 포지션 필터 (null이면 조건 무시)
+     * @param pageable 페이징 정보
+     * @return 검색 결과 페이지
+     */
+    fun search(
+        name: String?,
+        teamId: Long?,
+        position: Position?,
+        pageable: Pageable,
+    ): Page<Player> =
+        playerRepository.search(
+            name = name,
+            teamId = teamId,
+            position = position,
+            pageable = pageable,
+        )
 }
