@@ -10,7 +10,7 @@ paths:
 ## 네이밍 컨벤션
 - Controller: `*AdminController` 패턴
 - DTO: `*AdminRequest`, `*AdminResponse` 패턴
-- URL prefix: `/admin/api/v1/`
+- URL prefix: `/api/backoffice/`
 
 ## 보안
 - SecurityConfig 독립 구성 (nextup-api와 별도)

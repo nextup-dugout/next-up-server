@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/backoffice/v1/competitions/{competitionId}/bracket")
+@RequestMapping("/api/backoffice/competitions/{competitionId}/bracket")
 class BracketManagementController(
     private val bracketGeneratorService: BracketGeneratorService,
 ) {

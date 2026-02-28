@@ -335,7 +335,7 @@ class GameParticipationServiceImplTest {
             // when & then
             assertThatThrownBy {
                 service.verifyGameTeamMember(100L, 999L)
-            }.isInstanceOf(IllegalStateException::class.java)
+            }.isInstanceOf(ForbiddenException::class.java)
                 .hasMessage("You are not a member of either team in this game")
         }
     }
@@ -392,7 +392,7 @@ class GameParticipationServiceImplTest {
             // when & then
             assertThatThrownBy {
                 service.findMemberInGame(100L, 999L)
-            }.isInstanceOf(IllegalStateException::class.java)
+            }.isInstanceOf(ForbiddenException::class.java)
                 .hasMessage("You are not a member of either team in this game")
         }
     }
