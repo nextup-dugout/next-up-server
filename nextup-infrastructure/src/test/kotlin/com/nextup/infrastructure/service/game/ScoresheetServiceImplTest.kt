@@ -249,6 +249,49 @@ class ScoresheetServiceImplTest {
     }
 
     @Test
+    fun `should display infinity symbol for null ERA pitcher`() {
+        // given
+        val pitcher = Player(name = "투수1", primaryPosition = Position.STARTING_PITCHER, id = 10L)
+
+        val pitcherGamePlayer =
+            GamePlayer.createStarter(
+                gameTeam = homeGameTeam,
+                player = pitcher,
+                position = Position.STARTING_PITCHER,
+                battingOrder = null,
+                backNumber = 1,
+            )
+
+        val pitchingRecord =
+            mockk<PitchingRecord> {
+                every { isStartingPitcher } returns true
+                every { inningsPitchedDisplay } returns "0.0"
+                every { hitsAllowed } returns 2
+                every { runsAllowed } returns 3
+                every { earnedRuns } returns 3
+                every { walksAllowed } returns 1
+                every { strikeouts } returns 0
+                every { homeRunsAllowed } returns 0
+                every { decision } returns PitchingDecision.LOSS
+                every { earnedRunAverage } returns null
+            }
+
+        every { gameRepository.findByIdOrNull(100L) } returns game
+        every { gameTeamRepository.findAllByGameId(100L) } returns listOf(homeGameTeam, awayGameTeam)
+        every { gamePlayerRepository.findAllByGameId(100L) } returns listOf(pitcherGamePlayer)
+        every { battingRecordRepository.findByGamePlayer(any()) } returns null
+        every { pitchingRecordRepository.findByGamePlayer(pitcherGamePlayer) } returns pitchingRecord
+        every { gameEventRepository.findAllByGameIdOrderByEventTimestamp(100L) } returns emptyList()
+
+        // when
+        val result = scoresheetService.getScoresheet(100L)
+
+        // then
+        assertThat(result.pitchingRecords.home).hasSize(1)
+        assertThat(result.pitchingRecords.home[0].era).isEqualTo("\u221E")
+    }
+
+    @Test
     fun `should handle players without batting records`() {
         // given
         val player = Player(name = "선수1", primaryPosition = Position.STARTING_PITCHER, id = 1L)

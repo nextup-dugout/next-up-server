@@ -211,6 +211,81 @@ class TitleServiceImplTest {
     }
 
     @Nested
+    @DisplayName("getTitleByCategory - 타점왕")
+    inner class GetRbiTitle {
+        @Test
+        fun `타점 최다 선수를 우승자로 선정`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+
+            val player1 = createPlayer(1L, "김타점")
+            val stats1 = createBattingStats(1L, player1, 2025, runsBattedIn = 30)
+
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2025, 10) } returns listOf(stats1)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.RBI)
+
+            // then
+            assertThat(result.category).isEqualTo(TitleCategory.RBI)
+            assertThat(result.winner).isNotNull
+            assertThat(result.winner?.statValue).isEqualTo(30.0)
+            assertThat(result.topCandidates[0].isQualified).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("getTitleByCategory - 도루왕")
+    inner class GetStolenBasesTitle {
+        @Test
+        fun `도루 최다 선수를 우승자로 선정`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+
+            val player1 = createPlayer(1L, "김도루")
+            val stats1 = createBattingStats(1L, player1, 2025, stolenBases = 20)
+
+            every { seasonBattingStatsRepository.findTopByStolenBases(2025, 10) } returns listOf(stats1)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.STOLEN_BASES)
+
+            // then
+            assertThat(result.category).isEqualTo(TitleCategory.STOLEN_BASES)
+            assertThat(result.winner).isNotNull
+            assertThat(result.winner?.statValue).isEqualTo(20.0)
+            assertThat(result.topCandidates[0].isQualified).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("getTitleByCategory - 최다안타")
+    inner class GetHitsTitle {
+        @Test
+        fun `안타 최다 선수를 우승자로 선정`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+
+            val player1 = createPlayer(1L, "김안타")
+            val stats1 = createBattingStats(1L, player1, 2025, hits = 50)
+
+            every { seasonBattingStatsRepository.findTopByHits(2025, 10) } returns listOf(stats1)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.HITS)
+
+            // then
+            assertThat(result.category).isEqualTo(TitleCategory.HITS)
+            assertThat(result.winner).isNotNull
+            assertThat(result.winner?.statValue).isEqualTo(50.0)
+            assertThat(result.topCandidates[0].isQualified).isTrue()
+        }
+    }
+
+    @Nested
     @DisplayName("getTitleByCategory - 평균자책점")
     inner class GetEraTitle {
         @Test
@@ -246,6 +321,84 @@ class TitleServiceImplTest {
             assertThat(result.topCandidates[0].isQualified).isFalse() // ERA 1위지만 규정 미충족
             assertThat(result.topCandidates[1].rank).isEqualTo(2)
             assertThat(result.topCandidates[1].isQualified).isTrue() // 규정 충족
+        }
+
+        @Test
+        fun `0이닝 투수의 null ERA는 MAX_VALUE로 처리되어 최하위 정렬`() {
+            // given
+            val teamA = createTeam(1L, league, "Tigers")
+            val game1 = createGame(1L, competition)
+            val gameTeams = (1..10).map { createGameTeam(it.toLong(), game1, teamA, HomeAway.HOME, 0) }
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns gameTeams
+
+            val player1 = createPlayer(1L, "김에이스")
+            val player2 = createPlayer(2L, "박폭투")
+
+            val stats1 = createPitchingStats(1L, player1, 2025, inningsPitchedOuts = 45, earnedRuns = 10)
+            val stats2 = createPitchingStats(2L, player2, 2025, inningsPitchedOuts = 0, earnedRuns = 3)
+
+            every { seasonPitchingStatsRepository.findAllByYear(2025) } returns listOf(stats1, stats2)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.ERA)
+
+            // then
+            assertThat(result.topCandidates).hasSize(2)
+            assertThat(result.topCandidates[0].playerId).isEqualTo(1L)
+            assertThat(result.topCandidates[1].playerId).isEqualTo(2L)
+            assertThat(result.topCandidates[1].statValue).isEqualTo(Double.MAX_VALUE)
+        }
+    }
+
+    @Nested
+    @DisplayName("getTitleByCategory - 세이브왕")
+    inner class GetSavesTitle {
+        @Test
+        fun `세이브 최다 투수를 우승자로 선정`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+
+            val player1 = createPlayer(1L, "김마무리")
+            val stats1 = createPitchingStats(1L, player1, 2025, saves = 15)
+
+            every { seasonPitchingStatsRepository.findTopBySaves(2025, 10) } returns listOf(stats1)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.SAVES)
+
+            // then
+            assertThat(result.category).isEqualTo(TitleCategory.SAVES)
+            assertThat(result.winner).isNotNull
+            assertThat(result.winner?.statValue).isEqualTo(15.0)
+            assertThat(result.topCandidates[0].isQualified).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("getTitleByCategory - 탈삼진왕")
+    inner class GetStrikeoutsTitle {
+        @Test
+        fun `탈삼진 최다 투수를 우승자로 선정`() {
+            // given
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { gameTeamRepository.findAllByCompetitionId(1L) } returns emptyList()
+
+            val player1 = createPlayer(1L, "김삼진")
+            val stats1 = createPitchingStats(1L, player1, 2025, strikeouts = 80)
+
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2025, 10) } returns listOf(stats1)
+
+            // when
+            val result = titleService.getTitleByCategory(1L, TitleCategory.STRIKEOUTS)
+
+            // then
+            assertThat(result.category).isEqualTo(TitleCategory.STRIKEOUTS)
+            assertThat(result.winner).isNotNull
+            assertThat(result.winner?.statValue).isEqualTo(80.0)
+            assertThat(result.topCandidates[0].isQualified).isTrue()
         }
     }
 
@@ -381,6 +534,8 @@ class TitleServiceImplTest {
         atBats: Int = 0,
         hits: Int = 0,
         homeRuns: Int = 0,
+        runsBattedIn: Int = 0,
+        stolenBases: Int = 0,
     ): SeasonBattingStats {
         val stats = mockk<SeasonBattingStats>(relaxed = true)
         every { stats.id } returns id
@@ -390,6 +545,8 @@ class TitleServiceImplTest {
         every { stats.atBats } returns atBats
         every { stats.hits } returns hits
         every { stats.homeRuns } returns homeRuns
+        every { stats.runsBattedIn } returns runsBattedIn
+        every { stats.stolenBases } returns stolenBases
         every { stats.battingAverage } returns
             if (atBats > 0) {
                 BigDecimal(hits).divide(BigDecimal(atBats), 3, java.math.RoundingMode.HALF_UP)
@@ -406,6 +563,8 @@ class TitleServiceImplTest {
         inningsPitchedOuts: Int = 0,
         earnedRuns: Int = 0,
         wins: Int = 0,
+        saves: Int = 0,
+        strikeouts: Int = 0,
     ): SeasonPitchingStats {
         val stats = mockk<SeasonPitchingStats>(relaxed = true)
         every { stats.id } returns id
@@ -414,9 +573,13 @@ class TitleServiceImplTest {
         every { stats.inningsPitchedOuts } returns inningsPitchedOuts
         every { stats.earnedRuns } returns earnedRuns
         every { stats.wins } returns wins
+        every { stats.saves } returns saves
+        every { stats.strikeouts } returns strikeouts
         every { stats.earnedRunAverage } returns
             if (inningsPitchedOuts > 0) {
-                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, java.math.RoundingMode.HALF_UP)
+                val innings =
+                    BigDecimal(inningsPitchedOuts)
+                        .divide(BigDecimal(3), 10, java.math.RoundingMode.HALF_UP)
                 BigDecimal(earnedRuns)
                     .multiply(BigDecimal(9))
                     .divide(innings, 2, java.math.RoundingMode.HALF_UP)
