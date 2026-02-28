@@ -40,6 +40,24 @@ class StadiumSlotTest {
         }
 
         @Test
+        fun `should have version field initialized to 0`() {
+            // given
+            val stadium = mockk<Stadium>(relaxed = true)
+
+            // when
+            val slot =
+                StadiumSlot.create(
+                    stadium = stadium,
+                    date = LocalDate.of(2024, 12, 25),
+                    startTime = LocalTime.of(10, 0),
+                    endTime = LocalTime.of(12, 0),
+                )
+
+            // then
+            assertThat(slot.version).isEqualTo(0L)
+        }
+
+        @Test
         fun `should throw exception when start time is after end time`() {
             // given
             val stadium = mockk<Stadium>(relaxed = true)
