@@ -759,4 +759,387 @@ class PitchingRecordTest {
             assertThat(pitchingRecord.unearnedRuns).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("revertBatterFaced - 음수 값 방지 가드")
+    inner class RevertBatterFacedNegativeGuardTest {
+        @Test
+        fun `대면 타자 기록이 없을 때 롤백하면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 대면 타자 기록이 없습니다")
+        }
+
+        @Test
+        fun `피안타 기록이 없을 때 단타 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피안타 기록이 없습니다")
+        }
+
+        @Test
+        fun `피홈런 기록이 없을 때 홈런 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HOME_RUN)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피홈런 기록이 없습니다")
+        }
+
+        @Test
+        fun `삼진 기록이 없을 때 삼진 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.STRIKEOUT)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 삼진 기록이 없습니다")
+        }
+
+        @Test
+        fun `볼넷 기록이 없을 때 볼넷 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.WALK)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 볼넷 기록이 없습니다")
+        }
+
+        @Test
+        fun `사구 기록이 없을 때 사구 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HIT_BY_PITCH)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 사구 기록이 없습니다")
+        }
+
+        @Test
+        fun `단타 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("revertEarnedRun - 음수 값 방지 가드")
+    inner class RevertEarnedRunNegativeGuardTest {
+        @Test
+        fun `롤백할 자책점이 현재 자책점보다 크면 예외가 발생한다`() {
+            pitchingRecord.recordEarnedRun(1)
+
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(2)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 자책점")
+        }
+
+        @Test
+        fun `자책점 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.recordEarnedRun(3)
+            pitchingRecord.revertEarnedRun(2)
+
+            assertThat(pitchingRecord.earnedRuns).isEqualTo(1)
+            assertThat(pitchingRecord.runsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `음수 롤백 값은 허용되지 않는다`() {
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(-1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 자책점은 0 이상이어야 합니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("revertOut - 아웃 카운트 롤백")
+    inner class RevertOutTest {
+        @Test
+        fun `아웃 카운트를 롤백할 수 있다`() {
+            pitchingRecord.recordOut()
+            assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(1)
+
+            pitchingRecord.revertOut()
+            assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(0)
+        }
+
+        @Test
+        fun `롤백할 아웃 카운트가 없으면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.revertOut()
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 아웃 카운트가 없습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("revertBatterFaced - 결과별 롤백 정상 동작")
+    inner class RevertBatterFacedHappyPathTest {
+        @Test
+        fun `2루타 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.DOUBLE)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.DOUBLE)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `3루타 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.TRIPLE)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.TRIPLE)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `홈런 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.HOME_RUN)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.HOME_RUN)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+            assertThat(pitchingRecord.homeRunsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `삼진 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.strikeouts).isEqualTo(0)
+        }
+
+        @Test
+        fun `볼넷 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.WALK)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.WALK)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `고의4구 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.INTENTIONAL_WALK)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.walksAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `사구 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.HIT_BY_PITCH)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.HIT_BY_PITCH)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitBatsmen).isEqualTo(0)
+        }
+
+        @Test
+        fun `땅볼아웃 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("revertBatterFaced - 중간 가드 커버리지")
+    inner class RevertBatterFacedIntermediateGuardTest {
+        @Test
+        fun `홈런 롤백 시 피안타가 없으면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HOME_RUN)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피안타 기록이 없습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("revertEarnedRun - 중간 가드 커버리지")
+    inner class RevertEarnedRunIntermediateGuardTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(pitchingRecord, value)
+        }
+
+        @Test
+        fun `자책점 롤백 시 실점이 부족하면 예외가 발생한다`() {
+            setField("earnedRuns", 3)
+            setField("runsAllowed", 1)
+
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(2)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 실점")
+        }
+    }
+
+    @Nested
+    @DisplayName("validate - 음수 필드 검증")
+    inner class ValidateNonNegativeFieldTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(pitchingRecord, value)
+        }
+
+        @Test
+        fun `이닝 아웃 수가 음수이면 검증에 실패한다`() {
+            setField("inningsPitchedOuts", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 아웃 수")
+        }
+
+        @Test
+        fun `자책점이 음수이면 검증에 실패한다`() {
+            setField("earnedRuns", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("자책점")
+        }
+
+        @Test
+        fun `실점이 음수이면 검증에 실패한다`() {
+            setField("runsAllowed", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("실점")
+        }
+
+        @Test
+        fun `피안타가 음수이면 검증에 실패한다`() {
+            setField("hitsAllowed", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("피안타")
+        }
+
+        @Test
+        fun `볼넷 허용이 음수이면 검증에 실패한다`() {
+            setField("walksAllowed", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("볼넷 허용")
+        }
+
+        @Test
+        fun `삼진이 음수이면 검증에 실패한다`() {
+            setField("strikeouts", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("삼진")
+        }
+
+        @Test
+        fun `피홈런이 음수이면 검증에 실패한다`() {
+            setField("homeRunsAllowed", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("피홈런")
+        }
+
+        @Test
+        fun `사구가 음수이면 검증에 실패한다`() {
+            setField("hitBatsmen", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("사구")
+        }
+
+        @Test
+        fun `와일드피치가 음수이면 검증에 실패한다`() {
+            setField("wildPitches", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("와일드피치")
+        }
+
+        @Test
+        fun `보크가 음수이면 검증에 실패한다`() {
+            setField("balks", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("보크")
+        }
+
+        @Test
+        fun `대면 타자 수가 음수이면 검증에 실패한다`() {
+            setField("battersFaced", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("대면 타자 수")
+        }
+    }
+
+    @Nested
+    @DisplayName("validate - 관계형 제약 검증")
+    inner class ValidateRelationalTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(pitchingRecord, value)
+        }
+
+        @Test
+        fun `자책점이 실점보다 크면 검증에 실패한다`() {
+            setField("earnedRuns", 3)
+            setField("runsAllowed", 2)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("자책점")
+        }
+
+        @Test
+        fun `스트라이크가 투구 수보다 크면 검증에 실패한다`() {
+            pitchingRecord.recordPitchCount(totalPitches = 50, strikes = 30)
+            val strikesField = PitchingRecord::class.java.getDeclaredField("strikesThrown")
+            strikesField.isAccessible = true
+            strikesField.set(pitchingRecord, 60)
+
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("스트라이크 수")
+        }
+
+        @Test
+        fun `선발 투수가 승리 자격 미달인데 승리 결정이면 검증에 실패한다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(14) { pitchingRecord.recordOut() } // 4.2이닝 (5이닝 미만)
+            pitchingRecord.assignWin()
+
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("선발 승리 자격")
+        }
+    }
 }
