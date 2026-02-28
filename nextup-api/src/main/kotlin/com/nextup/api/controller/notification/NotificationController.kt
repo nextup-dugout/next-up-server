@@ -1,5 +1,6 @@
 package com.nextup.api.controller.notification
 
+import com.nextup.api.dto.common.PagedResponse
 import com.nextup.api.dto.notification.DeviceTokenResponse
 import com.nextup.api.dto.notification.NotificationPreferenceResponse
 import com.nextup.api.dto.notification.NotificationResponse
@@ -67,9 +68,9 @@ class NotificationController(
     fun getNotifications(
         @AuthenticationPrincipal userId: Long,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ApiResponse<List<NotificationResponse>> {
+    ): ApiResponse<PagedResponse<NotificationResponse>> {
         val notifications = notificationService.getUserNotifications(userId, pageable)
-        return ApiResponse.success(notifications.content.map { NotificationResponse.from(it) })
+        return ApiResponse.success(PagedResponse.from(notifications.map { NotificationResponse.from(it) }))
     }
 
     /**
