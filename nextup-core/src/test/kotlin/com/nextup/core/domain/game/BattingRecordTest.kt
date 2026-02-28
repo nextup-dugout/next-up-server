@@ -619,12 +619,13 @@ class BattingRecordTest {
         }
 
         @Test
-        fun `삼중살을 적용하면 타수와 groundedIntoDoublePlays가 증가한다`() {
+        fun `삼중살을 적용하면 타수와 triplePlays가 증가한다`() {
             battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
 
             assertThat(battingRecord.plateAppearances).isEqualTo(1)
             assertThat(battingRecord.atBats).isEqualTo(1)
-            assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(1)
+            assertThat(battingRecord.triplePlays).isEqualTo(1)
+            assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(0)
         }
     }
 
@@ -801,13 +802,14 @@ class BattingRecordTest {
         }
 
         @Test
-        fun `삼중살을 롤백하면 타수와 groundedIntoDoublePlays가 감소한다`() {
+        fun `삼중살을 롤백하면 타수와 triplePlays가 감소한다`() {
             battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
 
             battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
 
             assertThat(battingRecord.plateAppearances).isEqualTo(0)
             assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.triplePlays).isEqualTo(0)
             assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(0)
         }
 
@@ -898,11 +900,22 @@ class BattingRecordTest {
     @DisplayName("applyPlateAppearanceResult - 삼중살 기록")
     inner class RecordTriplePlayTest {
         @Test
-        fun `삼중살을 기록하면 groundedIntoDoublePlays가 증가한다`() {
+        fun `삼중살을 기록하면 triplePlays가 증가한다`() {
             battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
 
-            assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(1)
+            assertThat(battingRecord.triplePlays).isEqualTo(1)
             assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.groundedIntoDoublePlays).isEqualTo(0)
+        }
+
+        @Test
+        fun `삼중살 롤백 시 triplePlays가 감소한다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
+
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
+
+            assertThat(battingRecord.triplePlays).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
         }
     }
 
@@ -996,6 +1009,16 @@ class BattingRecordTest {
                 battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.DOUBLE_PLAY)
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("롤백할 병살타 기록이 없습니다")
+        }
+
+        @Test
+        fun `삼중살 기록이 없을 때 삼중살을 롤백하면 예외가 발생한다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 삼중살 기록이 없습니다")
         }
     }
 
@@ -1329,6 +1352,14 @@ class BattingRecordTest {
             assertThatThrownBy { battingRecord.validate() }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("병살타")
+        }
+
+        @Test
+        fun `삼중살이 음수이면 검증에 실패한다`() {
+            setField("triplePlays", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("삼중살")
         }
     }
 }

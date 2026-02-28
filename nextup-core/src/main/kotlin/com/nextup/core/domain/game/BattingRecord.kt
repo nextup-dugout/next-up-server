@@ -95,6 +95,10 @@ class BattingRecord(
     var groundedIntoDoublePlays: Int = 0
         protected set
 
+    @Column(name = "triple_plays", nullable = false)
+    var triplePlays: Int = 0
+        protected set
+
     // Calculated properties
 
     /**
@@ -248,11 +252,13 @@ class BattingRecord(
             PlateAppearanceResult.SACRIFICE_BUNT -> {
                 sacrificeBunts++
             }
-            PlateAppearanceResult.DOUBLE_PLAY,
-            PlateAppearanceResult.TRIPLE_PLAY,
-            -> {
+            PlateAppearanceResult.DOUBLE_PLAY -> {
                 atBats++
                 groundedIntoDoublePlays++
+            }
+            PlateAppearanceResult.TRIPLE_PLAY -> {
+                atBats++
+                triplePlays++
             }
             PlateAppearanceResult.INTERFERENCE -> {
                 // 방해는 타수에 포함되지 않음
@@ -365,13 +371,17 @@ class BattingRecord(
                 require(sacrificeBunts > 0) { "롤백할 희생번트 기록이 없습니다." }
                 sacrificeBunts--
             }
-            PlateAppearanceResult.DOUBLE_PLAY,
-            PlateAppearanceResult.TRIPLE_PLAY,
-            -> {
+            PlateAppearanceResult.DOUBLE_PLAY -> {
                 require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
                 require(groundedIntoDoublePlays > 0) { "롤백할 병살타 기록이 없습니다." }
                 atBats--
                 groundedIntoDoublePlays--
+            }
+            PlateAppearanceResult.TRIPLE_PLAY -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(triplePlays > 0) { "롤백할 삼중살 기록이 없습니다." }
+                atBats--
+                triplePlays--
             }
             PlateAppearanceResult.INTERFERENCE -> {
                 // 방해는 타수에 포함되지 않음
@@ -410,6 +420,7 @@ class BattingRecord(
         require(stolenBases >= 0) { "도루($stolenBases)는 음수일 수 없습니다." }
         require(caughtStealing >= 0) { "도루실패($caughtStealing)는 음수일 수 없습니다." }
         require(groundedIntoDoublePlays >= 0) { "병살타($groundedIntoDoublePlays)는 음수일 수 없습니다." }
+        require(triplePlays >= 0) { "삼중살($triplePlays)은 음수일 수 없습니다." }
         require(hits <= atBats) {
             "안타 수($hits)가 타수($atBats)보다 클 수 없습니다."
         }
