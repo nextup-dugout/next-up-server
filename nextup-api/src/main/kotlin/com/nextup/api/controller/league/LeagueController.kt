@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
  * 리그 조회 API Controller (일반 사용자용)
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 class LeagueController(
     private val leagueService: LeagueService,
 ) {

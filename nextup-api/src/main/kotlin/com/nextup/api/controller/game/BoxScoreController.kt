@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
  * 박스스코어 API 컨트롤러
  */
 @RestController
-@RequestMapping("/api/games/{gameId}/boxscore")
+@RequestMapping("/api/v1/games/{gameId}/boxscore")
 class BoxScoreController(
     private val boxScoreService: BoxScoreService,
 ) {

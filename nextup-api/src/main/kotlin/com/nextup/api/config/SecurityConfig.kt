@@ -70,17 +70,17 @@ class SecurityConfig(
                 auth
                     // Public auth endpoints (explicit paths instead of wildcard)
                     .requestMatchers(
-                        "/api/auth/login",
-                        "/api/auth/refresh",
-                        "/api/auth/oauth2/token",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/refresh",
+                        "/api/v1/auth/oauth2/token",
                     ).permitAll()
                     // Authenticated auth endpoints
                     .requestMatchers(
-                        "/api/auth/me",
-                        "/api/auth/logout",
-                        "/api/auth/logout-all",
+                        "/api/v1/auth/me",
+                        "/api/v1/auth/logout",
+                        "/api/v1/auth/logout-all",
                     ).authenticated()
-                    .requestMatchers(HttpMethod.GET, "/api/associations/**")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/associations/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/stats/**")
                     .permitAll()
@@ -111,7 +111,7 @@ class SecurityConfig(
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     // Scorer endpoints (for game recording)
-                    .requestMatchers("/api/games/*/records/**")
+                    .requestMatchers("/api/v1/games/*/records/**")
                     .hasAnyRole("SCORER", "ADMIN")
                     // All other endpoints require authentication
                     .anyRequest()

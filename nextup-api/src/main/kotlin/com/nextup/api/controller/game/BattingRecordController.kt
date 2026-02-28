@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/games/{gameId}/batting-records")
+@RequestMapping("/api/v1/games/{gameId}/batting-records")
 class BattingRecordController(
     private val battingRecordService: BattingRecordService,
     private val gamePlayerRepository: GamePlayerRepository,

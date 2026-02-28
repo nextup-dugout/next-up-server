@@ -20,7 +20,7 @@ class SecurityConfigUrlPatternTest {
     // SecurityConfig에서 정의된 public 패턴 목록
     private val publicPatterns =
         listOf(
-            "/api/auth/**",
+            "/api/v1/auth/**",
             "/oauth2/**",
             "/login/oauth2/**",
             "/swagger-ui/**",
@@ -33,7 +33,7 @@ class SecurityConfigUrlPatternTest {
     // GET 전용 public 패턴
     private val publicGetPatterns =
         listOf(
-            "/api/associations/**",
+            "/api/v1/associations/**",
             "/api/stats/**",
         )
 
@@ -46,7 +46,7 @@ class SecurityConfigUrlPatternTest {
     // SCORER or ADMIN 패턴
     private val scorerAdminPatterns =
         listOf(
-            "/api/games/*/records/**",
+            "/api/v1/games/*/records/**",
         )
 
     private fun matchesAnyPublicPattern(url: String): Boolean = publicPatterns.any { matcher.match(it, url) }
@@ -62,17 +62,17 @@ class SecurityConfigUrlPatternTest {
     inner class AuthEndpoints {
         @Test
         fun `api auth 로그인 경로는 public이어야 한다`() {
-            assertThat(matchesAnyPublicPattern("/api/auth/login")).isTrue()
+            assertThat(matchesAnyPublicPattern("/api/v1/auth/login")).isTrue()
         }
 
         @Test
         fun `api auth 회원가입 경로는 public이어야 한다`() {
-            assertThat(matchesAnyPublicPattern("/api/auth/register")).isTrue()
+            assertThat(matchesAnyPublicPattern("/api/v1/auth/register")).isTrue()
         }
 
         @Test
         fun `api auth 토큰 갱신 경로는 public이어야 한다`() {
-            assertThat(matchesAnyPublicPattern("/api/auth/refresh")).isTrue()
+            assertThat(matchesAnyPublicPattern("/api/v1/auth/refresh")).isTrue()
         }
     }
 
@@ -134,7 +134,7 @@ class SecurityConfigUrlPatternTest {
     inner class PublicGetEndpoints {
         @Test
         fun `api associations 경로는 GET public 패턴에 포함된다`() {
-            assertThat(matchesAnyPublicGetPattern("/api/associations/1")).isTrue()
+            assertThat(matchesAnyPublicGetPattern("/api/v1/associations/1")).isTrue()
         }
 
         @Test
@@ -164,7 +164,7 @@ class SecurityConfigUrlPatternTest {
 
         @Test
         fun `api auth 경로는 ADMIN 패턴에 포함되지 않는다`() {
-            assertThat(matchesAnyAdminPattern("/api/auth/login")).isFalse()
+            assertThat(matchesAnyAdminPattern("/api/v1/auth/login")).isFalse()
         }
     }
 
@@ -173,18 +173,18 @@ class SecurityConfigUrlPatternTest {
     inner class ScorerAdminEndpoints {
         @Test
         fun `api games records 경로는 SCORER ADMIN 패턴에 포함된다`() {
-            assertThat(matchesAnyScorerAdminPattern("/api/games/123/records/batting")).isTrue()
+            assertThat(matchesAnyScorerAdminPattern("/api/v1/games/123/records/batting")).isTrue()
         }
 
         @Test
         fun `api games records 중첩 경로도 SCORER ADMIN 패턴에 포함된다`() {
-            assertThat(matchesAnyScorerAdminPattern("/api/games/456/records/pitching/events")).isTrue()
+            assertThat(matchesAnyScorerAdminPattern("/api/v1/games/456/records/pitching/events")).isTrue()
         }
 
         @Test
         fun `api games 기본 경로는 SCORER ADMIN 패턴에 포함되지 않는다`() {
             // /api/games/123 만으로는 records 패턴에 해당하지 않음
-            assertThat(matchesAnyScorerAdminPattern("/api/games/123")).isFalse()
+            assertThat(matchesAnyScorerAdminPattern("/api/v1/games/123")).isFalse()
         }
     }
 

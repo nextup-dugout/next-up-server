@@ -97,7 +97,7 @@ class BattingRecordControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/batting-records"))
+                .perform(get("/api/v1/games/$gameId/batting-records"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -112,7 +112,7 @@ class BattingRecordControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/batting-records"))
+                .perform(get("/api/v1/games/$gameId/batting-records"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -172,7 +172,7 @@ class BattingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/batting-records")
+                    post("/api/v1/games/$gameId/batting-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
@@ -190,7 +190,7 @@ class BattingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/batting-records")
+                    post("/api/v1/games/$gameId/batting-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isNotFound)
@@ -214,7 +214,7 @@ class BattingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/batting-records")
+                    post("/api/v1/games/$gameId/batting-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isBadRequest)

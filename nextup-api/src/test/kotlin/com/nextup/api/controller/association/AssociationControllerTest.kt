@@ -42,7 +42,7 @@ class AssociationControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/associations"))
+                .perform(get("/api/v1/associations"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -61,7 +61,7 @@ class AssociationControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/associations").param("region", "서울"))
+                .perform(get("/api/v1/associations").param("region", "서울"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(1))
@@ -80,7 +80,7 @@ class AssociationControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/associations/1"))
+                .perform(get("/api/v1/associations/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
