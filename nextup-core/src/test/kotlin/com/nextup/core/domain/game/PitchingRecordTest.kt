@@ -960,6 +960,44 @@ class PitchingRecordTest {
     }
 
     @Nested
+    @DisplayName("revertBatterFaced - 중간 가드 커버리지")
+    inner class RevertBatterFacedIntermediateGuardTest {
+        @Test
+        fun `홈런 롤백 시 피안타가 없으면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HOME_RUN)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피안타 기록이 없습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("revertEarnedRun - 중간 가드 커버리지")
+    inner class RevertEarnedRunIntermediateGuardTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(pitchingRecord, value)
+        }
+
+        @Test
+        fun `자책점 롤백 시 실점이 부족하면 예외가 발생한다`() {
+            setField("earnedRuns", 3)
+            setField("runsAllowed", 1)
+
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(2)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 실점")
+        }
+    }
+
+    @Nested
     @DisplayName("validate - 음수 필드 검증")
     inner class ValidateNonNegativeFieldTest {
         private fun setField(
