@@ -24,6 +24,9 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 /**
  * Spring Security 설정
@@ -42,10 +45,13 @@ class SecurityConfig(
     private val oAuth2AuthenticationFailureHandler: OAuth2AuthenticationFailureHandler,
     @Value("\${springdoc.swagger-ui.enabled:true}")
     private val swaggerEnabled: Boolean,
+    @Value("\${app.cors.allowed-origins:http://localhost:3000}")
+    private val allowedOrigins: String,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
         http
+            .cors { it.configurationSource(corsConfigurationSource()) }
             .csrf { csrf ->
                 csrf.ignoringRequestMatchers("/api/**")
             }.headers { headers ->
@@ -62,9 +68,18 @@ class SecurityConfig(
                 it.accessDeniedHandler(customAccessDeniedHandler)
             }.authorizeHttpRequests { auth ->
                 auth
-                    // Public endpoints
-                    .requestMatchers("/api/auth/**")
-                    .permitAll()
+                    // Public auth endpoints (explicit paths instead of wildcard)
+                    .requestMatchers(
+                        "/api/auth/login",
+                        "/api/auth/refresh",
+                        "/api/auth/oauth2/token",
+                    ).permitAll()
+                    // Authenticated auth endpoints
+                    .requestMatchers(
+                        "/api/auth/me",
+                        "/api/auth/logout",
+                        "/api/auth/logout-all",
+                    ).authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/associations/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/stats/**")
@@ -114,4 +129,18 @@ class SecurityConfig(
     @Bean
     fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager =
         authenticationConfiguration.authenticationManager
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration()
+        configuration.allowedOrigins = allowedOrigins.split(",").map { it.trim() }
+        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+        configuration.allowedHeaders = listOf("*")
+        configuration.allowCredentials = true
+        configuration.maxAge = 3600L
+
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return source
+    }
 }
