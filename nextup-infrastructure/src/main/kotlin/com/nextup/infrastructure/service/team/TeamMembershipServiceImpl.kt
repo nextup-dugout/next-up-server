@@ -354,4 +354,10 @@ class TeamMembershipServiceImpl(
     override fun getTeamMemberCount(teamId: Long): Int {
         return teamMemberRepository.countByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE).toInt()
     }
+
+    override fun getTeamMemberCounts(teamIds: List<Long>): Map<Long, Int> {
+        if (teamIds.isEmpty()) return emptyMap()
+        return teamMemberRepository.countByTeamIdsAndStatus(teamIds, TeamMemberStatus.ACTIVE)
+            .mapValues { it.value.toInt() }
+    }
 }

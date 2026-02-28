@@ -170,4 +170,12 @@ interface TeamMembershipService {
      * @return 활성 멤버 수
      */
     fun getTeamMemberCount(teamId: Long): Int
+
+    /**
+     * 여러 팀의 활성 멤버 수를 배치로 반환합니다. (N+1 방지)
+     *
+     * @param teamIds 팀 ID 목록
+     * @return 팀 ID → 활성 멤버 수 맵
+     */
+    fun getTeamMemberCounts(teamIds: List<Long>): Map<Long, Int>
 }

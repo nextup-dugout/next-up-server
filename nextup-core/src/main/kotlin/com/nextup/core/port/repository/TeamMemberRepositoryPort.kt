@@ -63,4 +63,9 @@ interface TeamMemberRepositoryPort {
         teamId: Long,
         status: TeamMemberStatus,
     ): Long
+
+    fun countByTeamIdsAndStatus(
+        teamIds: List<Long>,
+        status: TeamMemberStatus,
+    ): Map<Long, Long>
 }
