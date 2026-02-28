@@ -1,6 +1,8 @@
 package com.nextup.api.controller.team
 
 import com.nextup.api.dto.team.*
+import com.nextup.common.exception.ForbiddenException
+import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.*
@@ -238,7 +240,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMember(1L, 10L) } returns null
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<ForbiddenException> {
                 controller.kickMember(teamId = 1L, memberId = 50L, request = request, kickerUserId = 10L)
             }
         }
@@ -252,7 +254,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMemberById(50L) } returns null
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<TeamMemberNotFoundException> {
                 controller.kickMember(teamId = 1L, memberId = 50L, request = request, kickerUserId = 10L)
             }
         }
@@ -272,7 +274,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMemberById(50L) } returns wrongTeamMember
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<ForbiddenException> {
                 controller.kickMember(teamId = 1L, memberId = 50L, request = request, kickerUserId = 10L)
             }
         }
@@ -302,7 +304,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMember(1L, 10L) } returns null
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<ForbiddenException> {
                 controller.leaveTeam(teamId = 1L, userId = 10L)
             }
         }
@@ -341,7 +343,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMember(1L, 10L) } returns null
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<ForbiddenException> {
                 controller.changeRole(teamId = 1L, memberId = 50L, request = request, changerUserId = 10L)
             }
         }
@@ -355,7 +357,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMemberById(50L) } returns null
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<TeamMemberNotFoundException> {
                 controller.changeRole(teamId = 1L, memberId = 50L, request = request, changerUserId = 10L)
             }
         }
@@ -375,7 +377,7 @@ class TeamMembershipControllerTest {
             every { teamMembershipService.getMemberById(50L) } returns wrongTeamMember
 
             // when & then
-            assertThrows<IllegalStateException> {
+            assertThrows<ForbiddenException> {
                 controller.changeRole(teamId = 1L, memberId = 50L, request = request, changerUserId = 10L)
             }
         }
