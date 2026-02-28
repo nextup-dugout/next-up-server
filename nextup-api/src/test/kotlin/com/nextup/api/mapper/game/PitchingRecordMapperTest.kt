@@ -114,7 +114,7 @@ class PitchingRecordMapperTest {
 
         // then
         assertThat(response.inningsPitchedOuts).isEqualTo(0)
-        assertThat(response.earnedRunAverage).isEqualTo("0.00")
+        assertThat(response.earnedRunAverage).isEqualTo("0.00") // 0이닝 + 0자책점 => 0.00
     }
 
     @Test

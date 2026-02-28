@@ -14,6 +14,7 @@ import com.nextup.core.service.title.dto.TitleDto
 import com.nextup.core.service.title.dto.TitleWinnerDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 /**
  * 타이틀 서비스 구현
@@ -226,7 +227,7 @@ class TitleServiceImpl(
         val allStats = seasonPitchingStatsRepository.findAllByYear(year)
 
         return allStats
-            .sortedBy { it.earnedRunAverage } // ERA는 낮을수록 좋음
+            .sortedBy { it.earnedRunAverage ?: BigDecimal.valueOf(Double.MAX_VALUE) } // ERA는 낮을수록 좋음, null(무한대)은 최하위
             .take(TOP_CANDIDATES_LIMIT)
             .mapIndexed { index, stats ->
                 TitleCandidateDto(
@@ -234,7 +235,7 @@ class TitleServiceImpl(
                     playerId = stats.player.id,
                     playerName = stats.player.name,
                     teamName = getPlayerTeamName(stats),
-                    statValue = stats.earnedRunAverage.toDouble(),
+                    statValue = stats.earnedRunAverage?.toDouble() ?: Double.MAX_VALUE,
                     isQualified = stats.inningsPitchedOuts >= minInningsPitchedOuts,
                 )
             }

@@ -420,6 +420,8 @@ class TitleServiceImplTest {
                 BigDecimal(earnedRuns)
                     .multiply(BigDecimal(9))
                     .divide(innings, 2, java.math.RoundingMode.HALF_UP)
+            } else if (earnedRuns > 0) {
+                null
             } else {
                 BigDecimal.ZERO
             }
