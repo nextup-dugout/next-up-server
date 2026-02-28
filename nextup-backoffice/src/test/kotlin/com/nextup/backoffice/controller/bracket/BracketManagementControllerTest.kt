@@ -67,7 +67,7 @@ class BracketManagementControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /backoffice/v1/competitions/{competitionId}/bracket/generate")
+    @DisplayName("POST /api/backoffice/competitions/{competitionId}/bracket/generate")
     inner class GenerateBracket {
         @Test
         fun `should generate single elimination bracket`() {
@@ -103,7 +103,7 @@ class BracketManagementControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/backoffice/v1/competitions/{competitionId}/bracket/generate", competitionId)
+                    post("/api/backoffice/competitions/{competitionId}/bracket/generate", competitionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody),
                 ).andExpect(status().isCreated)
@@ -152,7 +152,7 @@ class BracketManagementControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/backoffice/v1/competitions/{competitionId}/bracket/generate", competitionId)
+                    post("/api/backoffice/competitions/{competitionId}/bracket/generate", competitionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody),
                 ).andExpect(status().isCreated)
@@ -179,7 +179,7 @@ class BracketManagementControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/backoffice/v1/competitions/{competitionId}/bracket/generate", competitionId)
+                    post("/api/backoffice/competitions/{competitionId}/bracket/generate", competitionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody),
                 ).andExpect(status().isBadRequest)
@@ -208,7 +208,7 @@ class BracketManagementControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/backoffice/v1/competitions/{competitionId}/bracket/generate", competitionId)
+                    post("/api/backoffice/competitions/{competitionId}/bracket/generate", competitionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody),
                 ).andExpect(status().isBadRequest)
@@ -216,7 +216,7 @@ class BracketManagementControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /backoffice/v1/competitions/{competitionId}/bracket/{entryId}/advance")
+    @DisplayName("PUT /api/backoffice/competitions/{competitionId}/bracket/{entryId}/advance")
     inner class AdvanceWinner {
         @Test
         fun `should advance winner successfully`() {
@@ -251,7 +251,7 @@ class BracketManagementControllerTest {
             mockMvc
                 .perform(
                     put(
-                        "/backoffice/v1/competitions/{competitionId}/bracket/{entryId}/advance",
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/advance",
                         competitionId,
                         entryId,
                     ).contentType(MediaType.APPLICATION_JSON)
@@ -286,7 +286,7 @@ class BracketManagementControllerTest {
             mockMvc
                 .perform(
                     put(
-                        "/backoffice/v1/competitions/{competitionId}/bracket/{entryId}/advance",
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/advance",
                         competitionId,
                         entryId,
                     ).contentType(MediaType.APPLICATION_JSON)
@@ -319,7 +319,7 @@ class BracketManagementControllerTest {
             mockMvc
                 .perform(
                     put(
-                        "/backoffice/v1/competitions/{competitionId}/bracket/{entryId}/advance",
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/advance",
                         competitionId,
                         entryId,
                     ).contentType(MediaType.APPLICATION_JSON)
