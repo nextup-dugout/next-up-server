@@ -759,4 +759,106 @@ class PitchingRecordTest {
             assertThat(pitchingRecord.unearnedRuns).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("revertBatterFaced - 음수 값 방지 가드")
+    inner class RevertBatterFacedNegativeGuardTest {
+        @Test
+        fun `대면 타자 기록이 없을 때 롤백하면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 대면 타자 기록이 없습니다")
+        }
+
+        @Test
+        fun `피안타 기록이 없을 때 단타 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피안타 기록이 없습니다")
+        }
+
+        @Test
+        fun `피홈런 기록이 없을 때 홈런 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HOME_RUN)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 피홈런 기록이 없습니다")
+        }
+
+        @Test
+        fun `삼진 기록이 없을 때 삼진 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.STRIKEOUT)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 삼진 기록이 없습니다")
+        }
+
+        @Test
+        fun `볼넷 기록이 없을 때 볼넷 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.WALK)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 볼넷 기록이 없습니다")
+        }
+
+        @Test
+        fun `사구 기록이 없을 때 사구 롤백하면 예외가 발생한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.GROUND_OUT)
+
+            assertThatThrownBy {
+                pitchingRecord.revertBatterFaced(PlateAppearanceResult.HIT_BY_PITCH)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 사구 기록이 없습니다")
+        }
+
+        @Test
+        fun `단타 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.SINGLE)
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.SINGLE)
+
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("revertEarnedRun - 음수 값 방지 가드")
+    inner class RevertEarnedRunNegativeGuardTest {
+        @Test
+        fun `롤백할 자책점이 현재 자책점보다 크면 예외가 발생한다`() {
+            pitchingRecord.recordEarnedRun(1)
+
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(2)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 자책점")
+        }
+
+        @Test
+        fun `자책점 롤백이 정상적으로 동작한다`() {
+            pitchingRecord.recordEarnedRun(3)
+            pitchingRecord.revertEarnedRun(2)
+
+            assertThat(pitchingRecord.earnedRuns).isEqualTo(1)
+            assertThat(pitchingRecord.runsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `음수 롤백 값은 허용되지 않는다`() {
+            assertThatThrownBy {
+                pitchingRecord.revertEarnedRun(-1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 자책점은 0 이상이어야 합니다")
+        }
+    }
 }
