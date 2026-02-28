@@ -421,6 +421,7 @@ class PitchingRecord(
      * applyBatterFaced의 역연산입니다.
      */
     fun revertBatterFaced(result: PlateAppearanceResult) {
+        require(battersFaced > 0) { "롤백할 대면 타자 기록이 없습니다." }
         battersFaced--
 
         when (result) {
@@ -428,21 +429,27 @@ class PitchingRecord(
             PlateAppearanceResult.DOUBLE,
             PlateAppearanceResult.TRIPLE,
             -> {
+                require(hitsAllowed > 0) { "롤백할 피안타 기록이 없습니다." }
                 hitsAllowed--
             }
             PlateAppearanceResult.HOME_RUN -> {
+                require(hitsAllowed > 0) { "롤백할 피안타 기록이 없습니다." }
+                require(homeRunsAllowed > 0) { "롤백할 피홈런 기록이 없습니다." }
                 hitsAllowed--
                 homeRunsAllowed--
             }
             PlateAppearanceResult.STRIKEOUT -> {
+                require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
                 strikeouts--
             }
             PlateAppearanceResult.WALK,
             PlateAppearanceResult.INTENTIONAL_WALK,
             -> {
+                require(walksAllowed > 0) { "롤백할 볼넷 기록이 없습니다." }
                 walksAllowed--
             }
             PlateAppearanceResult.HIT_BY_PITCH -> {
+                require(hitBatsmen > 0) { "롤백할 사구 기록이 없습니다." }
                 hitBatsmen--
             }
             else -> {
@@ -464,6 +471,8 @@ class PitchingRecord(
      */
     fun revertEarnedRun(runs: Int) {
         require(runs >= 0) { "롤백할 자책점은 0 이상이어야 합니다." }
+        require(earnedRuns >= runs) { "롤백할 자책점($runs)이 현재 자책점($earnedRuns)보다 클 수 없습니다." }
+        require(runsAllowed >= runs) { "롤백할 실점($runs)이 현재 실점($runsAllowed)보다 클 수 없습니다." }
         earnedRuns -= runs
         runsAllowed -= runs
     }
@@ -472,6 +481,17 @@ class PitchingRecord(
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
+        require(inningsPitchedOuts >= 0) { "이닝 아웃 수($inningsPitchedOuts)는 음수일 수 없습니다." }
+        require(earnedRuns >= 0) { "자책점($earnedRuns)은 음수일 수 없습니다." }
+        require(runsAllowed >= 0) { "실점($runsAllowed)은 음수일 수 없습니다." }
+        require(hitsAllowed >= 0) { "피안타($hitsAllowed)는 음수일 수 없습니다." }
+        require(walksAllowed >= 0) { "볼넷 허용($walksAllowed)은 음수일 수 없습니다." }
+        require(strikeouts >= 0) { "삼진($strikeouts)은 음수일 수 없습니다." }
+        require(homeRunsAllowed >= 0) { "피홈런($homeRunsAllowed)은 음수일 수 없습니다." }
+        require(hitBatsmen >= 0) { "사구($hitBatsmen)는 음수일 수 없습니다." }
+        require(wildPitches >= 0) { "와일드피치($wildPitches)는 음수일 수 없습니다." }
+        require(balks >= 0) { "보크($balks)는 음수일 수 없습니다." }
+        require(battersFaced >= 0) { "대면 타자 수($battersFaced)는 음수일 수 없습니다." }
         require(earnedRuns <= runsAllowed) {
             "자책점($earnedRuns)이 실점($runsAllowed)보다 클 수 없습니다."
         }

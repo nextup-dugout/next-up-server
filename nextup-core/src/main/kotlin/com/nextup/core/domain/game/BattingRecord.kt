@@ -291,30 +291,48 @@ class BattingRecord(
         result: PlateAppearanceResult,
         rbis: Int = 0,
     ) {
+        require(plateAppearances > 0) { "롤백할 타석 기록이 없습니다." }
+        require(rbis >= 0) { "타점은 0 이상이어야 합니다." }
+        require(runsBattedIn >= rbis) { "롤백할 타점($rbis)이 현재 타점($runsBattedIn)보다 클 수 없습니다." }
+
         plateAppearances--
 
         when (result) {
             PlateAppearanceResult.SINGLE -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(hits > 0) { "롤백할 안타 기록이 없습니다." }
                 atBats--
                 hits--
             }
             PlateAppearanceResult.DOUBLE -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(hits > 0) { "롤백할 안타 기록이 없습니다." }
+                require(doubles > 0) { "롤백할 2루타 기록이 없습니다." }
                 atBats--
                 hits--
                 doubles--
             }
             PlateAppearanceResult.TRIPLE -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(hits > 0) { "롤백할 안타 기록이 없습니다." }
+                require(triples > 0) { "롤백할 3루타 기록이 없습니다." }
                 atBats--
                 hits--
                 triples--
             }
             PlateAppearanceResult.HOME_RUN -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(hits > 0) { "롤백할 안타 기록이 없습니다." }
+                require(homeRuns > 0) { "롤백할 홈런 기록이 없습니다." }
+                require(runs > 0) { "롤백할 득점 기록이 없습니다." }
                 atBats--
                 hits--
                 homeRuns--
                 runs--
             }
             PlateAppearanceResult.STRIKEOUT -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
                 atBats--
                 strikeouts--
             }
@@ -324,26 +342,34 @@ class BattingRecord(
             PlateAppearanceResult.FIELDERS_CHOICE,
             PlateAppearanceResult.ERROR,
             -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
                 atBats--
             }
             PlateAppearanceResult.WALK -> {
+                require(walks > 0) { "롤백할 볼넷 기록이 없습니다." }
                 walks--
             }
             PlateAppearanceResult.INTENTIONAL_WALK -> {
+                require(intentionalWalks > 0) { "롤백할 고의사구 기록이 없습니다." }
                 intentionalWalks--
             }
             PlateAppearanceResult.HIT_BY_PITCH -> {
+                require(hitByPitch > 0) { "롤백할 사구 기록이 없습니다." }
                 hitByPitch--
             }
             PlateAppearanceResult.SACRIFICE_FLY -> {
+                require(sacrificeFlies > 0) { "롤백할 희생플라이 기록이 없습니다." }
                 sacrificeFlies--
             }
             PlateAppearanceResult.SACRIFICE_BUNT -> {
+                require(sacrificeBunts > 0) { "롤백할 희생번트 기록이 없습니다." }
                 sacrificeBunts--
             }
             PlateAppearanceResult.DOUBLE_PLAY,
             PlateAppearanceResult.TRIPLE_PLAY,
             -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(groundedIntoDoublePlays > 0) { "롤백할 병살타 기록이 없습니다." }
                 atBats--
                 groundedIntoDoublePlays--
             }
@@ -367,6 +393,23 @@ class BattingRecord(
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
+        require(plateAppearances >= 0) { "타석($plateAppearances)은 음수일 수 없습니다." }
+        require(atBats >= 0) { "타수($atBats)는 음수일 수 없습니다." }
+        require(hits >= 0) { "안타($hits)는 음수일 수 없습니다." }
+        require(doubles >= 0) { "2루타($doubles)는 음수일 수 없습니다." }
+        require(triples >= 0) { "3루타($triples)는 음수일 수 없습니다." }
+        require(homeRuns >= 0) { "홈런($homeRuns)은 음수일 수 없습니다." }
+        require(runs >= 0) { "득점($runs)은 음수일 수 없습니다." }
+        require(runsBattedIn >= 0) { "타점($runsBattedIn)은 음수일 수 없습니다." }
+        require(walks >= 0) { "볼넷($walks)은 음수일 수 없습니다." }
+        require(intentionalWalks >= 0) { "고의사구($intentionalWalks)는 음수일 수 없습니다." }
+        require(hitByPitch >= 0) { "사구($hitByPitch)는 음수일 수 없습니다." }
+        require(strikeouts >= 0) { "삼진($strikeouts)은 음수일 수 없습니다." }
+        require(sacrificeBunts >= 0) { "희생번트($sacrificeBunts)는 음수일 수 없습니다." }
+        require(sacrificeFlies >= 0) { "희생플라이($sacrificeFlies)는 음수일 수 없습니다." }
+        require(stolenBases >= 0) { "도루($stolenBases)는 음수일 수 없습니다." }
+        require(caughtStealing >= 0) { "도루실패($caughtStealing)는 음수일 수 없습니다." }
+        require(groundedIntoDoublePlays >= 0) { "병살타($groundedIntoDoublePlays)는 음수일 수 없습니다." }
         require(hits <= atBats) {
             "안타 수($hits)가 타수($atBats)보다 클 수 없습니다."
         }
