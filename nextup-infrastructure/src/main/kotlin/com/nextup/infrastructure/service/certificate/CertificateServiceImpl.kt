@@ -2,6 +2,7 @@ package com.nextup.infrastructure.service.certificate
 
 import com.nextup.common.exception.CertificateNotFoundByIssueNumberException
 import com.nextup.common.exception.CertificateNotFoundException
+import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.certificate.Certificate
 import com.nextup.core.dto.certificate.*
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -36,7 +37,7 @@ class CertificateServiceImpl(
     ): CertificateDto {
         val player =
             playerRepository.findByIdOrNull(playerId)
-                ?: throw IllegalArgumentException("선수를 찾을 수 없습니다: $playerId")
+                ?: throw PlayerNotFoundException(playerId)
 
         // 증명서 발급
         val certificate = Certificate.issue(player, validityDays)

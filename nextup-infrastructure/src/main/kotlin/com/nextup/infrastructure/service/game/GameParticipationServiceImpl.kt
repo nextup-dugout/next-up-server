@@ -154,7 +154,7 @@ class GameParticipationServiceImpl(
                 members.any { it.user.id == userId }
             }
         if (!isMember) {
-            throw IllegalStateException("You are not a member of either team in this game")
+            throw ForbiddenException("GAME_MEMBER_001", "You are not a member of either team in this game")
         }
     }
 
@@ -173,7 +173,7 @@ class GameParticipationServiceImpl(
                 teamMemberRepository.findByTeamId(gameTeam.team.id)
             }
             .firstOrNull { it.user.id == userId }
-            ?: throw IllegalStateException("You are not a member of either team in this game")
+            ?: throw ForbiddenException("GAME_MEMBER_001", "You are not a member of either team in this game")
     }
 
     override fun getGameScheduledAt(gameId: Long): LocalDateTime {
