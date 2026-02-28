@@ -6,142 +6,122 @@ import com.nextup.backoffice.dto.admin.OrganizationAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.service.admin.OrganizationAdminService
+import com.nextup.core.service.audit.AuditService
+import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 조직 관리자 API Controller (관리자용)
- *
- * 조직-관리자 매핑을 관리하는 API를 제공합니다.
- */
 @RestController
 @RequestMapping("/api/backoffice/organizations")
 class OrganizationAdminController(
     private val organizationAdminService: OrganizationAdminService,
+    private val auditService: AuditService,
 ) {
-    /**
-     * 관리자를 할당합니다.
-     *
-     * @param type 조직 유형 (ASSOCIATION, LEAGUE, TEAM)
-     * @param id 조직 ID
-     * @param request 할당 요청 (userId, role)
-     * @return 생성된 관리자 정보
-     */
     @PostMapping("/{type}/{id}/admins")
     @ResponseStatus(HttpStatus.CREATED)
     fun assignAdmin(
         @PathVariable type: String,
         @PathVariable id: Long,
         @Valid @RequestBody request: AssignAdminRequest,
+        @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<OrganizationAdminResponse> {
         val organizationType = OrganizationType.fromValue(type)
-
-        val admin =
+        val orgAdmin =
             organizationAdminService.assignAdmin(
                 userId = request.userId,
                 organizationType = organizationType,
                 organizationId = id,
                 role = request.role,
-                assignedBy = null, // TODO: 인증된 사용자 ID로 변경
+                assignedBy = admin.id,
             )
-
-        return ApiResponse.success(OrganizationAdminResponse.from(admin))
+        auditService.log(
+            adminUserId = admin.id,
+            action = "ASSIGN_ADMIN",
+            targetEntity = organizationType.name,
+            targetId = id,
+            details = "{\"userId\":${request.userId},\"role\":\"${request.role}\"}",
+        )
+        return ApiResponse.success(OrganizationAdminResponse.from(orgAdmin))
     }
 
-    /**
-     * 관리자 권한을 해제합니다.
-     *
-     * @param type 조직 유형
-     * @param id 조직 ID
-     * @param userId 사용자 ID
-     * @return 성공 응답
-     */
     @DeleteMapping("/{type}/{id}/admins/{userId}")
     fun removeAdmin(
         @PathVariable type: String,
         @PathVariable id: Long,
         @PathVariable userId: Long,
+        @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<Unit> {
         val organizationType = OrganizationType.fromValue(type)
-
         organizationAdminService.removeAdmin(
             userId = userId,
             organizationType = organizationType,
             organizationId = id,
         )
-
+        auditService.log(
+            adminUserId = admin.id,
+            action = "REMOVE_ADMIN",
+            targetEntity = organizationType.name,
+            targetId = id,
+            details = "{\"userId\":$userId}",
+        )
         return ApiResponse.success(Unit)
     }
 
-    /**
-     * 특정 조직의 관리자 목록을 조회합니다.
-     *
-     * @param type 조직 유형
-     * @param id 조직 ID
-     * @return 관리자 목록
-     */
     @GetMapping("/{type}/{id}/admins")
     fun getAdminsByOrganization(
         @PathVariable type: String,
         @PathVariable id: Long,
     ): ApiResponse<List<OrganizationAdminResponse>> {
         val organizationType = OrganizationType.fromValue(type)
-
         val admins =
             organizationAdminService.getAdminsByOrganization(
                 organizationType = organizationType,
                 organizationId = id,
             )
-
-        return ApiResponse.success(
-            admins.map { OrganizationAdminResponse.from(it) },
-        )
+        return ApiResponse.success(admins.map { OrganizationAdminResponse.from(it) })
     }
 
-    /**
-     * 특정 사용자가 관리하는 모든 조직을 조회합니다.
-     *
-     * @param userId 사용자 ID
-     * @return 관리하는 조직 목록
-     */
     @GetMapping("/by-user/{userId}")
     fun getOrganizationsByUser(
         @PathVariable userId: Long,
     ): ApiResponse<List<OrganizationAdminResponse>> {
         val admins = organizationAdminService.getOrganizationsByUser(userId)
-
-        return ApiResponse.success(
-            admins.map { OrganizationAdminResponse.from(it) },
-        )
+        return ApiResponse.success(admins.map { OrganizationAdminResponse.from(it) })
     }
 
-    /**
-     * 관리자의 역할을 변경합니다.
-     *
-     * @param type 조직 유형
-     * @param id 조직 ID
-     * @param userId 사용자 ID
-     * @param request 역할 변경 요청
-     * @return 수정된 관리자 정보
-     */
     @PutMapping("/{type}/{id}/admins/{userId}/role")
     fun changeRole(
         @PathVariable type: String,
         @PathVariable id: Long,
         @PathVariable userId: Long,
         @Valid @RequestBody request: ChangeRoleRequest,
+        @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<OrganizationAdminResponse> {
         val organizationType = OrganizationType.fromValue(type)
-
-        val admin =
+        val orgAdmin =
             organizationAdminService.changeRole(
                 userId = userId,
                 organizationType = organizationType,
                 organizationId = id,
                 newRole = request.role,
             )
-
-        return ApiResponse.success(OrganizationAdminResponse.from(admin))
+        auditService.log(
+            adminUserId = admin.id,
+            action = "CHANGE_ADMIN_ROLE",
+            targetEntity = organizationType.name,
+            targetId = id,
+            details = "{\"userId\":$userId,\"newRole\":\"${request.role}\"}",
+        )
+        return ApiResponse.success(OrganizationAdminResponse.from(orgAdmin))
     }
 }
