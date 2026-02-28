@@ -177,8 +177,8 @@ class PlayerStatsService(
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetCareerBattingStats(careerStats)
 
-        // 모든 타격 기록 조회
-        val battingRecords = battingRecordRepository.findAllByPlayerId(playerId)
+        // 모든 타격 기록 조회 (FETCH JOIN으로 N+1 방지)
+        val battingRecords = battingRecordRepository.findAllByPlayerIdWithGameInfo(playerId)
 
         // 기록 누적
         battingRecords.forEach { record ->
@@ -221,8 +221,8 @@ class PlayerStatsService(
         // 기존 통계 초기화 (새로 계산하기 위해)
         resetCareerPitchingStats(careerStats)
 
-        // 모든 투수 기록 조회
-        val pitchingRecords = pitchingRecordRepository.findAllByPlayerId(playerId)
+        // 모든 투수 기록 조회 (FETCH JOIN으로 N+1 방지)
+        val pitchingRecords = pitchingRecordRepository.findAllByPlayerIdWithGameInfo(playerId)
 
         // 기록 누적
         pitchingRecords.forEach { record ->

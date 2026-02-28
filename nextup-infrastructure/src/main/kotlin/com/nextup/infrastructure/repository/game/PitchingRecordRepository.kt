@@ -268,4 +268,22 @@ interface PitchingRecordRepository :
         @Param("teamId") teamId: Long,
         @Param("gameIds") gameIds: List<Long>,
     ): List<PitchingRecord>
+
+    /**
+     * 선수 ID로 모든 투수 기록을 조회합니다. (FETCH JOIN으로 N+1 방지)
+     * gamePlayer, gameTeam, game을 함께 로딩하여 커리어 통계 계산 시 추가 쿼리가 발생하지 않습니다.
+     */
+    @Query(
+        """
+        SELECT pr FROM PitchingRecord pr
+        JOIN FETCH pr.gamePlayer gp
+        JOIN FETCH gp.gameTeam gt
+        JOIN FETCH gt.game g
+        WHERE gp.player.id = :playerId
+        ORDER BY g.scheduledAt DESC
+    """,
+    )
+    override fun findAllByPlayerIdWithGameInfo(
+        @Param("playerId") playerId: Long,
+    ): List<PitchingRecord>
 }
