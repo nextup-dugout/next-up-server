@@ -166,10 +166,11 @@ class Game(
         forfeitReason = reason
         note = (note?.let { "$it\n" } ?: "") + "몰수 사유: $reason"
 
-        // 승리팀 7:0 점수 반영
+        // 승리팀에 대회 규칙의 몰수승 점수 반영
+        val forfeitWinScore = competition.gameRules.forfeitScore
         gameTeams.forEach { gameTeam ->
             if (gameTeam.team.id == winnerTeamId) {
-                gameTeam.updateScore(totalScore = FORFEIT_WIN_SCORE, totalHits = 0, totalErrors = 0)
+                gameTeam.updateScore(totalScore = forfeitWinScore, totalHits = 0, totalErrors = 0)
                 gameTeam.updateResult(GameResult.WIN)
             } else {
                 gameTeam.updateScore(totalScore = 0, totalHits = 0, totalErrors = 0)
@@ -179,8 +180,8 @@ class Game(
     }
 
     companion object {
-        /** 몰수승 점수 */
-        const val FORFEIT_WIN_SCORE = 7
+        /** 몰수승 기본 점수 (GameRules.forfeitScore 기본값과 일치) */
+        const val DEFAULT_FORFEIT_WIN_SCORE = 7
     }
 
     /**
