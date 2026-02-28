@@ -2,6 +2,7 @@ package com.nextup.infrastructure.service.certificate
 
 import com.nextup.common.exception.CertificateNotFoundByIssueNumberException
 import com.nextup.common.exception.CertificateNotFoundException
+import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.certificate.Certificate
 import com.nextup.core.domain.certificate.CertificateStatus
 import com.nextup.core.domain.player.BattingHand
@@ -88,7 +89,7 @@ class CertificateServiceImplTest {
         every { playerRepository.findByIdOrNull(playerId) } returns null
 
         // when & then
-        assertThrows<IllegalArgumentException> {
+        assertThrows<PlayerNotFoundException> {
             certificateService.issueCertificate(playerId)
         }
     }
