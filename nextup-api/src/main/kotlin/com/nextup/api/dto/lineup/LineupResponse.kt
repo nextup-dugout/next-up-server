@@ -26,6 +26,10 @@ data class LineupSubmissionResponse(
     val rejectionReason: String?,
     val rejectedById: Long?,
     val rejectedByName: String?,
+    val exchangePendingAt: Instant?,
+    val exchangeRejectionReason: String?,
+    val exchangeRejectedById: Long?,
+    val exchangeRejectedByName: String?,
     val entries: List<LineupEntryResponse>,
 ) {
     companion object {
@@ -49,6 +53,10 @@ data class LineupSubmissionResponse(
                 rejectionReason = submission.rejectionReason,
                 rejectedById = submission.rejectedBy?.id,
                 rejectedByName = submission.rejectedBy?.nickname,
+                exchangePendingAt = submission.exchangePendingAt,
+                exchangeRejectionReason = submission.exchangeRejectionReason,
+                exchangeRejectedById = submission.exchangeRejectedBy?.id,
+                exchangeRejectedByName = submission.exchangeRejectedBy?.nickname,
                 entries = entries.map { LineupEntryResponse.from(it) },
             )
     }

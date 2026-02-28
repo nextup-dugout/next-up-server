@@ -1,6 +1,7 @@
 package com.nextup.api.controller.lineup
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
 import com.nextup.core.domain.game.LineupSubmissionStatus
@@ -37,6 +38,7 @@ class LineupControllerTest {
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
                 .setCustomArgumentResolvers(
                     object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
                         override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
@@ -68,6 +70,9 @@ class LineupControllerTest {
                 every { confirmedBy } returns null
                 every { rejectionReason } returns null
                 every { rejectedBy } returns null
+                every { exchangePendingAt } returns null
+                every { exchangeRejectionReason } returns null
+                every { exchangeRejectedBy } returns null
             }
 
         // Mock entry
@@ -271,6 +276,9 @@ class LineupControllerTest {
                     every { confirmedBy } returns null
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.submitLineup(1L) } returns submittedSubmission
@@ -282,6 +290,184 @@ class LineupControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("SUBMITTED"))
+        }
+    }
+
+    @Nested
+    inner class ApproveLineupExchangeTest {
+        @Test
+        fun `should approve lineup exchange successfully`() {
+            // given
+            val exchangedSubmission =
+                mockk<LineupSubmission>().apply {
+                    every { id } returns 2L
+                    every { game.id } returns 1L
+                    every { team.id } returns 2L
+                    every { team.name } returns "Lions"
+                    every { submittedBy.id } returns 2L
+                    every { submittedBy.nickname } returns "상대감독"
+                    every { status } returns LineupSubmissionStatus.EXCHANGED
+                    every { submittedAt } returns java.time.Instant.now()
+                    every { confirmedAt } returns null
+                    every { confirmedBy } returns null
+                    every { rejectionReason } returns null
+                    every { rejectedBy } returns null
+                    every { exchangePendingAt } returns java.time.Instant.now()
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
+                }
+
+            every {
+                lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = 1L)
+            } returns exchangedSubmission
+            every { lineupService.getLineupEntries(2L) } returns emptyList()
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/1/exchange/approve")
+                        .param("teamId", "1"),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("EXCHANGED"))
+                .andExpect(jsonPath("$.data.teamName").value("Lions"))
+        }
+
+        @Test
+        fun `should return 400 when approve throws IllegalArgumentException`() {
+            // given
+            every {
+                lineupService.approveLineupExchange(gameId = 99L, approvingTeamId = 1L)
+            } throws IllegalArgumentException("경기 ID 99 에서 팀 ID 1 의 라인업을 찾을 수 없습니다.")
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/99/exchange/approve")
+                        .param("teamId", "1"),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+
+        @Test
+        fun `should return 403 when approve throws LineupExchangeNotAuthorizedException`() {
+            // given
+            every {
+                lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = 1L)
+            } throws com.nextup.common.exception.LineupExchangeNotAuthorizedException(2L)
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/1/exchange/approve")
+                        .param("teamId", "1"),
+                ).andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("LINEUP_EXCHANGE_NOT_AUTHORIZED"))
+        }
+    }
+
+    @Nested
+    inner class RejectLineupExchangeTest {
+        @Test
+        fun `should reject lineup exchange successfully`() {
+            // given
+            val rejectedSubmission =
+                mockk<LineupSubmission>().apply {
+                    every { id } returns 2L
+                    every { game.id } returns 1L
+                    every { team.id } returns 2L
+                    every { team.name } returns "Lions"
+                    every { submittedBy.id } returns 2L
+                    every { submittedBy.nickname } returns "상대감독"
+                    every { status } returns LineupSubmissionStatus.EXCHANGE_REJECTED
+                    every { submittedAt } returns java.time.Instant.now()
+                    every { confirmedAt } returns null
+                    every { confirmedBy } returns null
+                    every { rejectionReason } returns null
+                    every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns "선수 등록번호 불일치"
+                    every { exchangeRejectedBy } returns null
+                }
+
+            val request =
+                mapOf(
+                    "gameId" to 1L,
+                    "teamId" to 1L,
+                    "reason" to "선수 등록번호 불일치",
+                )
+
+            every {
+                lineupService.rejectLineupExchange(
+                    gameId = 1L,
+                    rejectingTeamId = 1L,
+                    rejectingUserId = 1L,
+                    reason = "선수 등록번호 불일치",
+                )
+            } returns rejectedSubmission
+            every { lineupService.getLineupEntries(2L) } returns emptyList()
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/1/exchange/reject")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("EXCHANGE_REJECTED"))
+                .andExpect(jsonPath("$.data.exchangeRejectionReason").value("선수 등록번호 불일치"))
+        }
+
+        @Test
+        fun `should return 400 when reject reason is blank`() {
+            // given
+            val request =
+                mapOf(
+                    "gameId" to 1L,
+                    "teamId" to 1L,
+                    "reason" to "",
+                )
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/1/exchange/reject")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+
+        @Test
+        fun `should return 403 when reject throws LineupExchangeNotAuthorizedException`() {
+            // given
+            val request =
+                mapOf(
+                    "gameId" to 1L,
+                    "teamId" to 1L,
+                    "reason" to "사유",
+                )
+
+            every {
+                lineupService.rejectLineupExchange(
+                    gameId = 1L,
+                    rejectingTeamId = 1L,
+                    rejectingUserId = 1L,
+                    reason = "사유",
+                )
+            } throws com.nextup.common.exception.LineupExchangeNotAuthorizedException(2L)
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/v1/lineups/games/1/exchange/reject")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("LINEUP_EXCHANGE_NOT_AUTHORIZED"))
         }
     }
 }

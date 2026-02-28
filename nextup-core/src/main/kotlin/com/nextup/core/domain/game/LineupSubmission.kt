@@ -11,6 +11,11 @@ import java.time.Instant
  *
  * 경기 전 감독이 작성하고 기록원이 확인하는 라인업 제출 워크플로우를 나타냅니다.
  * 확인 완료 후 GamePlayer로 변환됩니다.
+ *
+ * 교환 워크플로우:
+ * 1. 양 팀 모두 SUBMITTED → 각 팀 EXCHANGE_PENDING 상태로 전환
+ * 2. 상대팀 감독이 승인(approveExchange) → EXCHANGED 상태로 전환
+ * 3. 상대팀 감독이 거부(rejectExchange) → EXCHANGE_REJECTED 상태로 전환 (재제출 필요)
  */
 @Entity
 @Table(
@@ -69,6 +74,19 @@ class LineupSubmission private constructor(
     var rejectedBy: User? = null
         protected set
 
+    @Column(name = "exchange_pending_at")
+    var exchangePendingAt: Instant? = null
+        protected set
+
+    @Column(name = "exchange_rejection_reason", length = 500)
+    var exchangeRejectionReason: String? = null
+        protected set
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exchange_rejected_by_id")
+    var exchangeRejectedBy: User? = null
+        protected set
+
     @OneToMany(
         mappedBy = "submission",
         cascade = [CascadeType.ALL],
@@ -105,6 +123,8 @@ class LineupSubmission private constructor(
         // 재제출 시 이전 반려 정보 초기화
         this.rejectionReason = null
         this.rejectedBy = null
+        this.exchangeRejectionReason = null
+        this.exchangeRejectedBy = null
     }
 
     /**
@@ -117,6 +137,76 @@ class LineupSubmission private constructor(
         this.status = LineupSubmissionStatus.CONFIRMED
         this.confirmedAt = Instant.now()
         this.confirmedBy = scorer
+    }
+
+    /**
+     * 양 팀 모두 제출 완료 시 라인업을 교환 대기 상태로 전환합니다.
+     *
+     * SUBMITTED → EXCHANGE_PENDING 전환.
+     * 교환 대기 상태가 되면 상대팀 감독의 승인을 기다립니다.
+     *
+     * @throws IllegalArgumentException SUBMITTED 상태가 아닐 때
+     */
+    fun markExchangePending() {
+        require(status.canMarkExchangePending()) {
+            "제출된 상태의 라인업만 교환 대기 상태로 전환할 수 있습니다. 현재 상태: ${status.displayName}"
+        }
+        this.status = LineupSubmissionStatus.EXCHANGE_PENDING
+        this.exchangePendingAt = Instant.now()
+    }
+
+    /**
+     * 상대팀 감독이 라인업 교환을 승인합니다.
+     *
+     * EXCHANGE_PENDING → EXCHANGED 전환.
+     * 교환 완료 후 상대팀이 이 라인업을 조회할 수 있습니다.
+     *
+     * @throws IllegalArgumentException EXCHANGE_PENDING 상태가 아닐 때
+     */
+    fun approveExchange() {
+        require(status.canApproveExchange()) {
+            "교환 대기 중인 라인업만 승인할 수 있습니다. 현재 상태: ${status.displayName}"
+        }
+        this.status = LineupSubmissionStatus.EXCHANGED
+    }
+
+    /**
+     * 상대팀 감독이 라인업 교환을 거부합니다.
+     *
+     * EXCHANGE_PENDING → EXCHANGE_REJECTED 전환.
+     * 거부된 팀은 라인업을 수정하여 재제출해야 합니다.
+     *
+     * @param rejectingManager 거부하는 감독 (상대팀 감독)
+     * @param reason 거부 사유
+     * @throws IllegalArgumentException EXCHANGE_PENDING 상태가 아니거나 사유가 비어있을 때
+     */
+    fun rejectExchange(
+        rejectingManager: User,
+        reason: String,
+    ) {
+        require(status.canRejectExchange()) {
+            "교환 대기 중인 라인업만 거부할 수 있습니다. 현재 상태: ${status.displayName}"
+        }
+        require(reason.isNotBlank()) { "교환 거부 사유는 필수입니다." }
+        this.status = LineupSubmissionStatus.EXCHANGE_REJECTED
+        this.exchangeRejectionReason = reason
+        this.exchangeRejectedBy = rejectingManager
+    }
+
+    /**
+     * 교환 거부로 인해 EXCHANGE_PENDING → SUBMITTED 상태로 복원합니다.
+     *
+     * 상대팀이 교환을 거부하면 내 라인업은 다시 SUBMITTED 상태로 돌아갑니다.
+     * 양 팀 모두 다시 제출/교환 프로세스를 거쳐야 합니다.
+     *
+     * @throws IllegalArgumentException EXCHANGE_PENDING 상태가 아닐 때
+     */
+    fun revertToSubmitted() {
+        require(status.canRevertToSubmitted()) {
+            "교환 대기 중인 라인업만 제출 상태로 복원할 수 있습니다. 현재 상태: ${status.displayName}"
+        }
+        this.status = LineupSubmissionStatus.SUBMITTED
+        this.exchangePendingAt = null
     }
 
     /**

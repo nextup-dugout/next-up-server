@@ -5,6 +5,7 @@ import com.nextup.api.dto.lineup.CreateLineupRequest
 import com.nextup.api.dto.lineup.LineupEntryResponse
 import com.nextup.api.dto.lineup.LineupSubmissionResponse
 import com.nextup.api.dto.lineup.LineupSubmissionSummaryResponse
+import com.nextup.api.dto.lineup.RejectLineupExchangeRequest
 import com.nextup.api.dto.lineup.SetLineupEntriesRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.lineup.LineupService
@@ -150,5 +151,50 @@ class LineupController(
         val entries = lineupService.getLineupEntries(submissionId)
 
         return ResponseEntity.ok(ApiResponse.success(LineupSubmissionResponse.from(submission, entries)))
+    }
+
+    /**
+     * 상대팀 라인업 교환을 승인합니다.
+     *
+     * 양 팀 모두 라인업을 제출한 후(EXCHANGE_PENDING 상태) 각 팀 감독이 상대팀 라인업을 승인합니다.
+     * 양 팀 감독 모두 승인해야 EXCHANGED 상태가 되어 상호 조회가 가능합니다.
+     */
+    @PostMapping("/games/{gameId}/exchange/approve")
+    fun approveLineupExchange(
+        @PathVariable gameId: Long,
+        @RequestParam teamId: Long,
+    ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
+        val opponentSubmission =
+            lineupService.approveLineupExchange(
+                gameId = gameId,
+                approvingTeamId = teamId,
+            )
+        val entries = lineupService.getLineupEntries(opponentSubmission.id)
+
+        return ResponseEntity.ok(ApiResponse.success(LineupSubmissionResponse.from(opponentSubmission, entries)))
+    }
+
+    /**
+     * 상대팀 라인업 교환을 거부합니다.
+     *
+     * 거부된 상대팀은 라인업을 수정하여 재제출해야 합니다.
+     * 거부 시 내 라인업도 SUBMITTED 상태로 복원됩니다.
+     */
+    @PostMapping("/games/{gameId}/exchange/reject")
+    fun rejectLineupExchange(
+        @PathVariable gameId: Long,
+        @Valid @RequestBody request: RejectLineupExchangeRequest,
+        @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
+        val opponentSubmission =
+            lineupService.rejectLineupExchange(
+                gameId = gameId,
+                rejectingTeamId = request.teamId,
+                rejectingUserId = userId,
+                reason = request.reason,
+            )
+        val entries = lineupService.getLineupEntries(opponentSubmission.id)
+
+        return ResponseEntity.ok(ApiResponse.success(LineupSubmissionResponse.from(opponentSubmission, entries)))
     }
 }

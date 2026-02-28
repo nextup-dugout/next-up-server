@@ -1,5 +1,7 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.common.exception.LineupExchangeNotAuthorizedException
+import com.nextup.common.exception.LineupNotExchangedException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.core.domain.association.Association
@@ -247,7 +249,13 @@ class LineupServiceTest {
             // when & then
             val exception =
                 assertThrows<IllegalArgumentException> {
-                    lineupService.addLineupEntry(1L, 1L, Position.SHORTSTOP, 1, 7, true)
+                    lineupService.addLineupEntry(
+                        submissionId = 1L,
+                        playerId = 1L,
+                        position = Position.SHORTSTOP,
+                        battingOrder = 1,
+                        backNumber = 7,
+                    )
                 }
             assertThat(exception.message).contains("이미 라인업에 등록된 선수입니다")
         }
@@ -265,7 +273,13 @@ class LineupServiceTest {
             // when & then
             val exception =
                 assertThrows<IllegalArgumentException> {
-                    lineupService.addLineupEntry(1L, 1L, Position.SHORTSTOP, 1, 7, true)
+                    lineupService.addLineupEntry(
+                        submissionId = 1L,
+                        playerId = 1L,
+                        position = Position.SHORTSTOP,
+                        battingOrder = 1,
+                        backNumber = 7,
+                    )
                 }
             assertThat(exception.message).contains("이미 해당 타순에 선수가 등록되어 있습니다")
         }
@@ -284,94 +298,62 @@ class LineupServiceTest {
             val entrySlot = slot<LineupEntry>()
             every { lineupEntryRepository.save(capture(entrySlot)) } answers { entrySlot.captured }
 
-            val entries =
+            val inputs =
                 listOf(
                     LineupEntryInput(
                         playerId = 1L,
-                        position = Position.STARTING_PITCHER,
+                        position = Position.SHORTSTOP,
                         battingOrder = 1,
-                        backNumber = 1,
-                        isStarter = true,
-                    ),
-                    LineupEntryInput(
-                        playerId = 2L,
-                        position = Position.CATCHER,
-                        battingOrder = 2,
-                        backNumber = 2,
-                        isStarter = true,
+                        backNumber = 7,
                     ),
                 )
 
             // when
-            val result = lineupService.setLineupEntries(1L, entries)
+            val result = lineupService.setLineupEntries(1L, inputs)
 
             // then
-            assertThat(result).hasSize(2)
+            assertThat(result).hasSize(1)
             verify { lineupEntryRepository.deleteAllBySubmissionId(any()) }
         }
 
         @Test
-        fun `should throw exception when duplicate players`() {
+        fun `should throw exception when duplicate player in entries`() {
             // given
             val submission = LineupSubmission.create(game, team, user)
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every { lineupEntryRepository.deleteAllBySubmissionId(any()) } returns Unit
 
-            val entries =
+            val inputs =
                 listOf(
-                    LineupEntryInput(
-                        playerId = 1L,
-                        position = Position.STARTING_PITCHER,
-                        battingOrder = 1,
-                        backNumber = 1,
-                        isStarter = true,
-                    ),
-                    LineupEntryInput(
-                        playerId = 1L,
-                        position = Position.CATCHER,
-                        battingOrder = 2,
-                        backNumber = 2,
-                        isStarter = true,
-                    ),
+                    LineupEntryInput(playerId = 1L, position = Position.SHORTSTOP, battingOrder = 1, backNumber = 7),
+                    LineupEntryInput(playerId = 1L, position = Position.FIRST_BASE, battingOrder = 2, backNumber = 8),
                 )
 
             // when & then
             val exception =
                 assertThrows<IllegalArgumentException> {
-                    lineupService.setLineupEntries(1L, entries)
+                    lineupService.setLineupEntries(1L, inputs)
                 }
             assertThat(exception.message).contains("중복된 선수")
         }
 
         @Test
-        fun `should throw exception when duplicate batting order`() {
+        fun `should throw exception when duplicate batting order in entries`() {
             // given
             val submission = LineupSubmission.create(game, team, user)
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every { lineupEntryRepository.deleteAllBySubmissionId(any()) } returns Unit
 
-            val entries =
+            val inputs =
                 listOf(
-                    LineupEntryInput(
-                        playerId = 1L,
-                        position = Position.STARTING_PITCHER,
-                        battingOrder = 1,
-                        backNumber = 1,
-                        isStarter = true,
-                    ),
-                    LineupEntryInput(
-                        playerId = 2L,
-                        position = Position.CATCHER,
-                        battingOrder = 1,
-                        backNumber = 2,
-                        isStarter = true,
-                    ),
+                    LineupEntryInput(playerId = 1L, position = Position.SHORTSTOP, battingOrder = 1, backNumber = 7),
+                    LineupEntryInput(playerId = 2L, position = Position.FIRST_BASE, battingOrder = 1, backNumber = 8),
                 )
 
             // when & then
             val exception =
                 assertThrows<IllegalArgumentException> {
-                    lineupService.setLineupEntries(1L, entries)
+                    lineupService.setLineupEntries(1L, inputs)
                 }
             assertThat(exception.message).contains("중복된 타순")
         }
@@ -380,18 +362,21 @@ class LineupServiceTest {
     @Nested
     inner class SubmitLineupTest {
         @Test
-        fun `should submit lineup successfully with 9 starters`() {
+        fun `should submit lineup successfully`() {
             // given
             val submission = createSubmissionWithEntries()
-            val attendingVotes = createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+            val attendingVotes =
+                createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every {
                 attendanceVoteRepository.findByGameIdAndStatus(
                     any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
+            // Only one team submitted — no exchange yet
+            every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
             val submissionSlot = slot<LineupSubmission>()
             every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
@@ -432,7 +417,7 @@ class LineupServiceTest {
             every {
                 attendanceVoteRepository.findByGameIdAndStatus(
                     any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
 
@@ -452,7 +437,7 @@ class LineupServiceTest {
             every {
                 attendanceVoteRepository.findByGameIdAndStatus(
                     any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
 
@@ -472,9 +457,11 @@ class LineupServiceTest {
             every {
                 attendanceVoteRepository.findByGameIdAndStatus(
                     any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
+            // Only one team submitted — no exchange yet
+            every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
             val submissionSlot = slot<LineupSubmission>()
             every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
@@ -506,6 +493,7 @@ class LineupServiceTest {
 
             // then
             assertThat(result.status).isEqualTo(LineupSubmissionStatus.CONFIRMED)
+            verify { eventPublisher.publishEvent(any<LineupConfirmedEvent>()) }
         }
 
         @Test
@@ -522,30 +510,6 @@ class LineupServiceTest {
                     lineupService.confirmLineup(1L, 1L)
                 }
             assertThat(exception.message).contains("기록원 ID")
-        }
-
-        @Test
-        fun `should publish LineupConfirmedEvent when lineup is confirmed`() {
-            // given
-            val submission = createSubmissionWithEntries().apply { submit() }
-            val scorer =
-                User.createLocalUser(email = "scorer@test.com", encodedPassword = "encoded", nickname = "기록원")
-
-            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
-            every { userRepository.findByIdOrNull(any()) } returns scorer
-
-            val submissionSlot = slot<LineupSubmission>()
-            every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
-
-            val eventSlot = slot<LineupConfirmedEvent>()
-            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
-
-            // when
-            lineupService.confirmLineup(1L, 1L)
-
-            // then
-            verify(exactly = 1) { eventPublisher.publishEvent(any<LineupConfirmedEvent>()) }
-            assertThat(eventSlot.captured).isNotNull
         }
     }
 
@@ -675,7 +639,660 @@ class LineupServiceTest {
         }
     }
 
+    @Nested
+    inner class ExchangePendingTest {
+        // awayTeam has a distinct id (2L) so findAllByGameId can differentiate home vs away
+        private fun createAwayTeam(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Lions",
+                city = "부산",
+                foundedYear = 2021,
+                id = 2L,
+            )
+        }
+
+        @Test
+        fun `should mark both lineups as exchange pending when both teams submit`() {
+            // given
+            val awayTeam = createAwayTeam()
+            val homeSubmission = createSubmissionWithEntries()
+            val awaySubmission =
+                LineupSubmission.create(game, awayTeam, user).also { sub ->
+                    addEntriesToSubmission(sub, ninePositions())
+                }
+
+            // homeSubmission is already SUBMITTED before away submits
+            homeSubmission.submit()
+
+            // Create attending votes that reference awayTeam (id=2L) so the team filter passes
+            val awayAttendingVotes =
+                (1L..9L).map { playerId ->
+                    mockk<com.nextup.core.domain.game.GameParticipation>().apply {
+                        every { member } returns
+                            mockk<com.nextup.core.domain.team.TeamMember>().apply {
+                                every { team } returns awayTeam
+                                every { player } returns
+                                    mockk<Player>().apply {
+                                        every { id } returns playerId
+                                    }
+                            }
+                    }
+                }
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns awaySubmission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
+                )
+            } returns awayAttendingVotes
+            // Both submissions present — exchange pending should trigger
+            every { lineupSubmissionRepository.findAllByGameId(any()) } returns
+                listOf(homeSubmission, awaySubmission)
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when
+            lineupService.submitLineup(awaySubmission.id)
+
+            // then: both should now be EXCHANGE_PENDING (waiting for manager approval)
+            assertThat(homeSubmission.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_PENDING)
+            assertThat(awaySubmission.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_PENDING)
+        }
+
+        @Test
+        fun `should not mark exchange pending when only one team has submitted`() {
+            // given
+            val homeSubmission = createSubmissionWithEntries()
+            val attendingVotes =
+                createAttendingVotesForPlayers(listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns homeSubmission
+            every {
+                attendanceVoteRepository.findByGameIdAndStatus(
+                    any(),
+                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
+                )
+            } returns attendingVotes
+            // Only one submission in the game — opponent hasn't submitted yet
+            every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(homeSubmission)
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when
+            lineupService.submitLineup(homeSubmission.id)
+
+            // then: still SUBMITTED since only one team submitted
+            assertThat(homeSubmission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        }
+    }
+
+    @Nested
+    inner class ApproveLineupExchangeTest {
+        private val homeTeamId = 1L
+        private val awayTeamId = 2L
+
+        private fun createHomeTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Tigers",
+                city = "서울",
+                foundedYear = 2020,
+                id = homeTeamId,
+            )
+        }
+
+        private fun createAwayTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Lions",
+                city = "부산",
+                foundedYear = 2021,
+                id = awayTeamId,
+            )
+        }
+
+        private fun createExchangePendingSubmission(teamForSub: com.nextup.core.domain.team.Team): LineupSubmission {
+            val sub = LineupSubmission.create(game, teamForSub, user)
+            addEntriesToSubmission(sub, ninePositions())
+            sub.submit()
+            sub.markExchangePending()
+            return sub
+        }
+
+        @Test
+        fun `should approve opponent lineup exchange and transition to EXCHANGED`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when: home team manager approves opponent (away) lineup
+            val result = lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = homeTeamId)
+
+            // then: opponent (away) lineup is now EXCHANGED
+            assertThat(result.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+            assertThat(awaySubmission.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+        }
+
+        @Test
+        fun `should throw LineupExchangeNotAuthorizedException when opponent lineup is not exchange pending`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+            // Opponent is only SUBMITTED, not EXCHANGE_PENDING
+            val awaySubmission =
+                LineupSubmission.create(game, awayTeam, user).also { sub ->
+                    addEntriesToSubmission(sub, ninePositions())
+                    sub.submit()
+                }
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+
+            // when & then
+            assertThrows<LineupExchangeNotAuthorizedException> {
+                lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = homeTeamId)
+            }
+        }
+
+        @Test
+        fun `should approve opponent and skip my lineup transition when my lineup is not EXCHANGE_PENDING`() {
+            // given: home is SUBMITTED (not EXCHANGE_PENDING), away is EXCHANGE_PENDING
+            // Home team approves the away lineup — home's own lineup is not yet pending
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val homeSubmission =
+                LineupSubmission.create(game, homeTeam, user).also { sub ->
+                    addEntriesToSubmission(sub, ninePositions())
+                    sub.submit()
+                }
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when: home team approves away lineup; home is SUBMITTED so mySubmission.canApproveExchange() = false
+            val result = lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = homeTeamId)
+
+            // then: opponent (away) is approved; my (home) lineup stays SUBMITTED
+            assertThat(result.status).isEqualTo(LineupSubmissionStatus.EXCHANGED)
+            assertThat(homeSubmission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when my team lineup not found`() {
+            // given
+            val awayTeam = createAwayTeamWithId()
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns listOf(awaySubmission)
+
+            // when & then: requesting team (homeTeamId=1) has no submission
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = homeTeamId)
+                }
+            assertThat(exception.message).contains("라인업을 찾을 수 없습니다")
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when opponent lineup not found`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns listOf(homeSubmission)
+
+            // when & then: no opponent submission
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = homeTeamId)
+                }
+            assertThat(exception.message).contains("상대팀 라인업을 찾을 수 없습니다")
+        }
+    }
+
+    @Nested
+    inner class RejectLineupExchangeTest {
+        private val homeTeamId = 1L
+        private val awayTeamId = 2L
+
+        private fun createHomeTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Tigers",
+                city = "서울",
+                foundedYear = 2020,
+                id = homeTeamId,
+            )
+        }
+
+        private fun createAwayTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Lions",
+                city = "부산",
+                foundedYear = 2021,
+                id = awayTeamId,
+            )
+        }
+
+        private fun createExchangePendingSubmission(teamForSub: com.nextup.core.domain.team.Team): LineupSubmission {
+            val sub = LineupSubmission.create(game, teamForSub, user)
+            addEntriesToSubmission(sub, ninePositions())
+            sub.submit()
+            sub.markExchangePending()
+            return sub
+        }
+
+        @Test
+        fun `should reject opponent lineup exchange and revert my lineup to SUBMITTED`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+            val manager =
+                User.createLocalUser(
+                    email = "manager@test.com",
+                    encodedPassword = "encoded",
+                    nickname = "감독",
+                )
+
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+            every { userRepository.findByIdOrNull(any()) } returns manager
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when: home team manager rejects opponent (away) lineup
+            val result =
+                lineupService.rejectLineupExchange(
+                    gameId = 1L,
+                    rejectingTeamId = homeTeamId,
+                    rejectingUserId = 1L,
+                    reason = "선수 등록번호 불일치",
+                )
+
+            // then: away lineup is EXCHANGE_REJECTED, home lineup reverts to SUBMITTED
+            assertThat(result.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_REJECTED)
+            assertThat(awaySubmission.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_REJECTED)
+            assertThat(awaySubmission.exchangeRejectionReason).isEqualTo("선수 등록번호 불일치")
+            assertThat(homeSubmission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        }
+
+        @Test
+        fun `should throw LineupExchangeNotAuthorizedException when opponent lineup is not exchange pending`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+            // Opponent is only SUBMITTED, not EXCHANGE_PENDING
+            val awaySubmission =
+                LineupSubmission.create(game, awayTeam, user).also { sub ->
+                    addEntriesToSubmission(sub, ninePositions())
+                    sub.submit()
+                }
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+            every { userRepository.findByIdOrNull(any()) } returns user
+
+            // when & then
+            assertThrows<LineupExchangeNotAuthorizedException> {
+                lineupService.rejectLineupExchange(
+                    gameId = 1L,
+                    rejectingTeamId = homeTeamId,
+                    rejectingUserId = 1L,
+                    reason = "사유",
+                )
+            }
+        }
+
+        @Test
+        fun `should not revert my lineup when it is not EXCHANGE_PENDING during reject`() {
+            // given: home lineup is SUBMITTED (not EXCHANGE_PENDING), away is EXCHANGE_PENDING
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+            val manager = User.createLocalUser(email = "mgr@test.com", encodedPassword = "encoded", nickname = "감독")
+
+            val homeSubmission =
+                LineupSubmission.create(game, homeTeam, user).also { sub ->
+                    addEntriesToSubmission(sub, ninePositions())
+                    sub.submit()
+                }
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+            every { userRepository.findByIdOrNull(any()) } returns manager
+
+            val savedSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when: home team rejects away lineup — home is SUBMITTED so no revert needed
+            val result =
+                lineupService.rejectLineupExchange(
+                    gameId = 1L,
+                    rejectingTeamId = homeTeamId,
+                    rejectingUserId = 1L,
+                    reason = "선수 오류",
+                )
+
+            // then: away becomes EXCHANGE_REJECTED; home stays SUBMITTED (unchanged)
+            assertThat(result.status).isEqualTo(LineupSubmissionStatus.EXCHANGE_REJECTED)
+            assertThat(homeSubmission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when rejectingTeam lineup not found`() {
+            // given: only away submission exists, home (rejectingTeam) has none
+            val awayTeam = createAwayTeamWithId()
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns listOf(awaySubmission)
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.rejectLineupExchange(
+                        gameId = 1L,
+                        rejectingTeamId = homeTeamId,
+                        rejectingUserId = 1L,
+                        reason = "사유",
+                    )
+                }
+            assertThat(exception.message).contains("라인업을 찾을 수 없습니다")
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when opponent lineup not found during reject`() {
+            // given: only home submission exists, no opponent
+            val homeTeam = createHomeTeamWithId()
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns listOf(homeSubmission)
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.rejectLineupExchange(
+                        gameId = 1L,
+                        rejectingTeamId = homeTeamId,
+                        rejectingUserId = 1L,
+                        reason = "사유",
+                    )
+                }
+            assertThat(exception.message).contains("상대팀 라인업을 찾을 수 없습니다")
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when rejecting user not found`() {
+            // given
+            val homeTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val homeSubmission = createExchangePendingSubmission(homeTeam)
+            val awaySubmission = createExchangePendingSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(homeSubmission, awaySubmission)
+            every { userRepository.findByIdOrNull(any()) } returns null
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.rejectLineupExchange(
+                        gameId = 1L,
+                        rejectingTeamId = homeTeamId,
+                        rejectingUserId = 999L,
+                        reason = "사유",
+                    )
+                }
+            assertThat(exception.message).contains("사용자 ID")
+        }
+    }
+
+    @Nested
+    inner class GetOpponentLineupTest {
+        private val homeTeamId = 1L
+        private val awayTeamId = 2L
+
+        private fun createHomeTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Tigers",
+                city = "서울",
+                foundedYear = 2020,
+                id = homeTeamId,
+            )
+        }
+
+        private fun createAwayTeamWithId(): com.nextup.core.domain.team.Team {
+            val league =
+                com.nextup.core.domain.league.League(
+                    association =
+                        com.nextup.core.domain.association.Association(
+                            name = "서울시야구협회",
+                            abbreviation = "서야협",
+                            region = "서울",
+                        ),
+                    name = "서울시 리그",
+                    foundedYear = 2020,
+                )
+            return com.nextup.core.domain.team.Team(
+                league = league,
+                name = "Lions",
+                city = "부산",
+                foundedYear = 2021,
+                id = awayTeamId,
+            )
+        }
+
+        private fun createExchangedSubmission(teamForSub: com.nextup.core.domain.team.Team): LineupSubmission {
+            val sub = LineupSubmission.create(game, teamForSub, user)
+            addEntriesToSubmission(sub, ninePositions())
+            sub.submit()
+            sub.markExchangePending()
+            sub.approveExchange()
+            return sub
+        }
+
+        private fun createSubmittedSubmission(teamForSub: com.nextup.core.domain.team.Team): LineupSubmission {
+            val sub = LineupSubmission.create(game, teamForSub, user)
+            addEntriesToSubmission(sub, ninePositions())
+            sub.submit()
+            return sub
+        }
+
+        @Test
+        fun `should return opponent lineup when both are exchanged`() {
+            // given
+            val myTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val mySubmission = createExchangedSubmission(myTeam)
+            val opponentSubmission = createExchangedSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(mySubmission, opponentSubmission)
+
+            // when
+            val result = lineupService.getOpponentLineup(gameId = 1L, myTeamId = homeTeamId)
+
+            // then
+            assertThat(result).isEqualTo(opponentSubmission)
+            assertThat(result.team.name).isEqualTo("Lions")
+        }
+
+        @Test
+        fun `should throw LineupNotExchangedException when opponent has not submitted`() {
+            // given
+            val myTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            val mySubmission = createExchangedSubmission(myTeam)
+            // Opponent is only SUBMITTED, not EXCHANGED
+            val opponentSubmission = createSubmittedSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(mySubmission, opponentSubmission)
+
+            // when & then
+            assertThrows<LineupNotExchangedException> {
+                lineupService.getOpponentLineup(gameId = 1L, myTeamId = homeTeamId)
+            }
+        }
+
+        @Test
+        fun `should throw LineupNotExchangedException when my lineup is not yet exchanged`() {
+            // given
+            val myTeam = createHomeTeamWithId()
+            val awayTeam = createAwayTeamWithId()
+
+            // My submission is only SUBMITTED, not EXCHANGED
+            val mySubmission = createSubmittedSubmission(myTeam)
+            val opponentSubmission = createExchangedSubmission(awayTeam)
+
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns
+                listOf(mySubmission, opponentSubmission)
+
+            // when & then
+            assertThrows<LineupNotExchangedException> {
+                lineupService.getOpponentLineup(gameId = 1L, myTeamId = homeTeamId)
+            }
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when my lineup does not exist`() {
+            // given
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns emptyList()
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.getOpponentLineup(gameId = 1L, myTeamId = 999L)
+                }
+            assertThat(exception.message).contains("라인업을 찾을 수 없습니다")
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when opponent lineup does not exist`() {
+            // given
+            val myTeam = createHomeTeamWithId()
+            val mySubmission = createExchangedSubmission(myTeam)
+            every { lineupSubmissionRepository.findAllByGameId(1L) } returns listOf(mySubmission)
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    lineupService.getOpponentLineup(gameId = 1L, myTeamId = homeTeamId)
+                }
+            assertThat(exception.message).contains("상대팀 라인업을 찾을 수 없습니다")
+        }
+    }
+
     // Helper methods
+    private fun ninePositions(): List<Position> =
+        listOf(
+            Position.STARTING_PITCHER,
+            Position.CATCHER,
+            Position.FIRST_BASE,
+            Position.SECOND_BASE,
+            Position.THIRD_BASE,
+            Position.SHORTSTOP,
+            Position.LEFT_FIELD,
+            Position.CENTER_FIELD,
+            Position.RIGHT_FIELD,
+        )
+
     private fun createMockEntry(
         submission: LineupSubmission,
         position: Position,
@@ -695,45 +1312,6 @@ class LineupServiceTest {
             isStarter = true,
         )
     }
-
-    private fun createMinimalLineup(submission: LineupSubmission): List<LineupEntry> =
-        listOf(
-            createMockEntry(submission, Position.STARTING_PITCHER, 1),
-            createMockEntry(submission, Position.CATCHER, 2),
-            createMockEntry(submission, Position.FIRST_BASE, 3),
-            createMockEntry(submission, Position.SECOND_BASE, 4),
-            createMockEntry(submission, Position.THIRD_BASE, 5),
-            createMockEntry(submission, Position.SHORTSTOP, 6),
-            createMockEntry(submission, Position.LEFT_FIELD, 7),
-            createMockEntry(submission, Position.CENTER_FIELD, 8),
-            createMockEntry(submission, Position.RIGHT_FIELD, 9),
-        )
-
-    private fun createMinimalLineupWithoutPitcher(submission: LineupSubmission): List<LineupEntry> =
-        listOf(
-            createMockEntry(submission, Position.CATCHER, 1),
-            createMockEntry(submission, Position.FIRST_BASE, 2),
-            createMockEntry(submission, Position.SECOND_BASE, 3),
-            createMockEntry(submission, Position.THIRD_BASE, 4),
-            createMockEntry(submission, Position.SHORTSTOP, 5),
-            createMockEntry(submission, Position.LEFT_FIELD, 6),
-            createMockEntry(submission, Position.CENTER_FIELD, 7),
-            createMockEntry(submission, Position.RIGHT_FIELD, 8),
-            createMockEntry(submission, Position.DESIGNATED_HITTER, 9),
-        )
-
-    private fun createMinimalLineupWithoutCatcher(submission: LineupSubmission): List<LineupEntry> =
-        listOf(
-            createMockEntry(submission, Position.STARTING_PITCHER, 1),
-            createMockEntry(submission, Position.FIRST_BASE, 2),
-            createMockEntry(submission, Position.SECOND_BASE, 3),
-            createMockEntry(submission, Position.THIRD_BASE, 4),
-            createMockEntry(submission, Position.SHORTSTOP, 5),
-            createMockEntry(submission, Position.LEFT_FIELD, 6),
-            createMockEntry(submission, Position.CENTER_FIELD, 7),
-            createMockEntry(submission, Position.RIGHT_FIELD, 8),
-            createMockEntry(submission, Position.DESIGNATED_HITTER, 9),
-        )
 
     private fun createSubmissionWithEntries(): LineupSubmission {
         val submission = LineupSubmission.create(game, team, user)

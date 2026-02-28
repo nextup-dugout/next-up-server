@@ -70,6 +70,28 @@ class LineupScorerController(
     }
 
     /**
+     * 상대팀 라인업을 조회합니다. (교환 완료 후에만 조회 가능)
+     *
+     * 양 팀 모두 라인업을 제출하여 EXCHANGED 상태가 된 경우에만 상대팀 라인업을 반환합니다.
+     * 교환이 완료되지 않은 경우 403 응답을 반환합니다.
+     *
+     * @param gameId 경기 ID
+     * @param myTeamId 요청하는 팀 ID (본인 팀)
+     */
+    @GetMapping("/games/{gameId}/opponent-lineup")
+    fun getOpponentLineup(
+        @PathVariable gameId: Long,
+        @RequestParam myTeamId: Long,
+    ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
+        val opponentSubmission = lineupService.getOpponentLineup(gameId, myTeamId)
+        val entries = lineupService.getLineupEntries(opponentSubmission.id)
+
+        return ResponseEntity.ok(
+            ApiResponse.success(LineupSubmissionResponse.from(opponentSubmission, entries)),
+        )
+    }
+
+    /**
      * 기록원이 라인업을 확인합니다.
      */
     @PostMapping("/{submissionId}/confirm")

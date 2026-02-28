@@ -1,11 +1,13 @@
 package com.nextup.scorer.controller.lineup
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.nextup.common.exception.LineupNotExchangedException
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.player.Position
 import com.nextup.core.service.lineup.LineupService
+import com.nextup.scorer.exception.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +38,7 @@ class LineupScorerControllerTest {
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
                 .setCustomArgumentResolvers(
                     object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
                         override fun supportsParameter(parameter: org.springframework.core.MethodParameter,): Boolean =
@@ -67,6 +70,9 @@ class LineupScorerControllerTest {
                 every { confirmedBy } returns null
                 every { rejectionReason } returns null
                 every { rejectedBy } returns null
+                every { exchangePendingAt } returns null
+                every { exchangeRejectionReason } returns null
+                every { exchangeRejectedBy } returns null
             }
 
         // Mock entry
@@ -119,6 +125,9 @@ class LineupScorerControllerTest {
                     every { confirmedBy } returns null
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.getSubmittedLineupsByGame(1L) } returns listOf(submittedSubmission)
@@ -169,6 +178,9 @@ class LineupScorerControllerTest {
                     every { confirmedBy?.nickname } returns "기록원"
                     every { rejectionReason } returns null
                     every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.confirmLineup(1L, 2L) } returns confirmedSubmission
@@ -181,6 +193,62 @@ class LineupScorerControllerTest {
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
+        }
+    }
+
+    @Nested
+    inner class GetOpponentLineupTest {
+        @Test
+        fun `should return opponent lineup when exchange is complete`() {
+            // given
+            val exchangedSubmission =
+                mockk<LineupSubmission>().apply {
+                    every { id } returns 2L
+                    every { game.id } returns 1L
+                    every { team.id } returns 2L
+                    every { team.name } returns "Lions"
+                    every { submittedBy.id } returns 3L
+                    every { submittedBy.nickname } returns "상대감독"
+                    every { status } returns LineupSubmissionStatus.EXCHANGED
+                    every { submittedAt } returns java.time.Instant.now()
+                    every { confirmedAt } returns null
+                    every { confirmedBy } returns null
+                    every { rejectionReason } returns null
+                    every { rejectedBy } returns null
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
+                }
+
+            every { lineupService.getOpponentLineup(1L, 1L) } returns exchangedSubmission
+            every { lineupService.getLineupEntries(2L) } returns listOf(mockEntry)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/scorer/lineups/games/1/opponent-lineup")
+                        .param("myTeamId", "1"),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.teamName").value("Lions"))
+                .andExpect(jsonPath("$.data.status").value("EXCHANGED"))
+        }
+
+        @Test
+        fun `should return 403 when lineup exchange is not complete`() {
+            // given
+            every {
+                lineupService.getOpponentLineup(1L, 1L)
+            } throws LineupNotExchangedException(1L)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/scorer/lineups/games/1/opponent-lineup")
+                        .param("myTeamId", "1"),
+                ).andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("LINEUP_NOT_EXCHANGED"))
         }
     }
 
@@ -204,6 +272,9 @@ class LineupScorerControllerTest {
                     every { rejectionReason } returns "선수 등록번호 확인 필요"
                     every { rejectedBy?.id } returns 2L
                     every { rejectedBy?.nickname } returns "기록원"
+                    every { exchangePendingAt } returns null
+                    every { exchangeRejectionReason } returns null
+                    every { exchangeRejectedBy } returns null
                 }
 
             every { lineupService.rejectLineup(1L, 2L, "선수 등록번호 확인 필요") } returns rejectedSubmission
