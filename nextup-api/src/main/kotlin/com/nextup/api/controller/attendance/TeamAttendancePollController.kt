@@ -7,6 +7,7 @@ import com.nextup.core.service.attendance.AttendanceService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import java.time.format.DateTimeFormatter
 
@@ -24,6 +25,7 @@ class TeamAttendancePollController(
      * 출석 투표를 생성합니다.
      */
     @PostMapping
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun createPoll(
         @PathVariable teamId: Long,
         @RequestBody @Valid request: CreatePollRequest,
@@ -45,6 +47,7 @@ class TeamAttendancePollController(
      * 팀의 출석 투표 목록을 조회합니다.
      */
     @GetMapping
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun listPolls(
         @PathVariable teamId: Long,
         @RequestParam(required = false) status: PollStatus?,
@@ -57,6 +60,7 @@ class TeamAttendancePollController(
      * 출석 투표를 조회합니다.
      */
     @GetMapping("/{pollId}")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getPoll(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
@@ -69,6 +73,7 @@ class TeamAttendancePollController(
      * 출석 투표에 응답합니다.
      */
     @PutMapping("/{pollId}/vote")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun submitVote(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
@@ -90,6 +95,7 @@ class TeamAttendancePollController(
      * 출석 투표를 마감합니다.
      */
     @PutMapping("/{pollId}/close")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun closePoll(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
@@ -102,6 +108,7 @@ class TeamAttendancePollController(
      * 출석 투표의 응답 목록을 조회합니다.
      */
     @GetMapping("/{pollId}/votes")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun listVotes(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
@@ -114,6 +121,7 @@ class TeamAttendancePollController(
      * 출석 투표 통계를 조회합니다.
      */
     @GetMapping("/{pollId}/statistics")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getPollStatistics(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
