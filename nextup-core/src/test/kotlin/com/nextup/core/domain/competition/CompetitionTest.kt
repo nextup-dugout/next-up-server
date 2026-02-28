@@ -170,6 +170,143 @@ class CompetitionTest {
     }
 
     @Nested
+    @DisplayName("대회 연기")
+    inner class Postpone {
+        @Test
+        fun `예정된 대회를 연기할 수 있다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.SCHEDULED)
+
+            // when
+            competition.postpone()
+
+            // then
+            assertThat(competition.status).isEqualTo(CompetitionStatus.POSTPONED)
+        }
+
+        @Test
+        fun `진행 중인 대회를 연기할 수 있다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.IN_PROGRESS)
+
+            // when
+            competition.postpone()
+
+            // then
+            assertThat(competition.status).isEqualTo(CompetitionStatus.POSTPONED)
+        }
+
+        @Test
+        fun `완료된 대회는 연기할 수 없다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.COMPLETED)
+
+            // when & then
+            assertThatThrownBy { competition.postpone() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("예정 중이거나 진행 중인 대회만 연기할 수 있습니다.")
+        }
+
+        @Test
+        fun `취소된 대회는 연기할 수 없다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.CANCELLED)
+
+            // when & then
+            assertThatThrownBy { competition.postpone() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("예정 중이거나 진행 중인 대회만 연기할 수 있습니다.")
+        }
+    }
+
+    @Nested
+    @DisplayName("대회 정보 업데이트")
+    inner class UpdateInfo {
+        @Test
+        fun `대회명을 변경할 수 있다`() {
+            // given
+            val competition = createCompetition()
+            val newName = "2025 추계대회"
+
+            // when
+            competition.updateInfo(name = newName)
+
+            // then
+            assertThat(competition.name).isEqualTo(newName)
+        }
+
+        @Test
+        fun `설명을 변경할 수 있다`() {
+            // given
+            val competition = createCompetition()
+            val newDescription = "2025 정규 리그 추계 시즌"
+
+            // when
+            competition.updateInfo(description = newDescription)
+
+            // then
+            assertThat(competition.description).isEqualTo(newDescription)
+        }
+
+        @Test
+        fun `종료일을 변경할 수 있다`() {
+            // given
+            val competition = createCompetition(startDate = LocalDate.of(2025, 3, 1))
+            val newEndDate = LocalDate.of(2025, 9, 30)
+
+            // when
+            competition.updateInfo(endDate = newEndDate)
+
+            // then
+            assertThat(competition.endDate).isEqualTo(newEndDate)
+        }
+
+        @Test
+        fun `종료일이 시작일보다 이전이면 업데이트할 수 없다`() {
+            // given
+            val competition = createCompetition(startDate = LocalDate.of(2025, 3, 1))
+
+            // when & then
+            assertThatThrownBy { competition.updateInfo(endDate = LocalDate.of(2025, 2, 28)) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("종료일은 시작일 이후여야 합니다.")
+        }
+
+        @Test
+        fun `여러 필드를 동시에 업데이트할 수 있다`() {
+            // given
+            val competition = createCompetition(startDate = LocalDate.of(2025, 3, 1))
+            val newName = "2025 추계대회"
+            val newDescription = "추계 시즌"
+            val newEndDate = LocalDate.of(2025, 10, 31)
+
+            // when
+            competition.updateInfo(name = newName, description = newDescription, endDate = newEndDate)
+
+            // then
+            assertThat(competition.name).isEqualTo(newName)
+            assertThat(competition.description).isEqualTo(newDescription)
+            assertThat(competition.endDate).isEqualTo(newEndDate)
+        }
+
+        @Test
+        fun `null 값은 기존 값을 유지한다`() {
+            // given
+            val competition =
+                createCompetition(startDate = LocalDate.of(2025, 3, 1)).apply {
+                    updateInfo(description = "원본 설명")
+                }
+
+            // when
+            competition.updateInfo(name = null, description = null, endDate = null)
+
+            // then
+            assertThat(competition.name).isEqualTo("2025 춘계대회")
+            assertThat(competition.description).isEqualTo("원본 설명")
+        }
+    }
+
+    @Nested
     @DisplayName("활성 상태 확인")
     inner class IsActive {
         @Test
