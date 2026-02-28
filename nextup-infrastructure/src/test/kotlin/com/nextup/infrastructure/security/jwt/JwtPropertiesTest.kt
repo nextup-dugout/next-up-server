@@ -112,4 +112,79 @@ class JwtPropertiesTest {
             assertThat(properties.issuer).isEqualTo("nextup")
         }
     }
+
+    @Nested
+    @DisplayName("커스텀 값 설정")
+    inner class CustomValues {
+        @Test
+        fun `should accept custom access token expiration`() {
+            // given
+            val customExpiration = 3_600_000L // 1시간
+
+            // when
+            val properties =
+                JwtProperties(
+                    secret = validSecret,
+                    accessTokenExpiration = customExpiration,
+                )
+
+            // then
+            assertThat(properties.accessTokenExpiration).isEqualTo(customExpiration)
+        }
+
+        @Test
+        fun `should accept custom refresh token expiration`() {
+            // given
+            val customExpiration = 86_400_000L // 1일
+
+            // when
+            val properties =
+                JwtProperties(
+                    secret = validSecret,
+                    refreshTokenExpiration = customExpiration,
+                )
+
+            // then
+            assertThat(properties.refreshTokenExpiration).isEqualTo(customExpiration)
+        }
+
+        @Test
+        fun `should accept custom issuer`() {
+            // given
+            val customIssuer = "my-custom-issuer"
+
+            // when
+            val properties =
+                JwtProperties(
+                    secret = validSecret,
+                    issuer = customIssuer,
+                )
+
+            // then
+            assertThat(properties.issuer).isEqualTo(customIssuer)
+        }
+    }
+
+    @Nested
+    @DisplayName("만료 시간 비교")
+    inner class ExpirationComparison {
+        @Test
+        fun `refresh token expiration should be longer than access token expiration`() {
+            // given
+            val properties = JwtProperties(secret = validSecret)
+
+            // then
+            assertThat(properties.refreshTokenExpiration)
+                .isGreaterThan(properties.accessTokenExpiration)
+        }
+
+        @Test
+        fun `access token expiration should be positive`() {
+            // given
+            val properties = JwtProperties(secret = validSecret)
+
+            // then
+            assertThat(properties.accessTokenExpiration).isPositive()
+        }
+    }
 }
