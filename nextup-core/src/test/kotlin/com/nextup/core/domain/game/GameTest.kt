@@ -165,17 +165,266 @@ class GameTest {
     @DisplayName("콜드게임")
     inner class CallGame {
         @Test
-        fun `진행 중인 경기를 콜드게임 처리할 수 있다`() {
+        fun `최소 이닝 이상 진행된 경기를 콜드게임 처리할 수 있다`() {
             // given
-            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
 
             // when
-            game.callGame("우천")
+            game.callGame(reason = "우천")
 
             // then
             assertThat(game.status).isEqualTo(GameStatus.CALLED)
             assertThat(game.endedAt).isNotNull()
             assertThat(game.note).contains("우천")
+        }
+
+        @Test
+        fun `최소 이닝 미만에서는 콜드게임 선언이 불가하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 4
+                    isTopInning = true
+                }
+
+            // when & then
+            assertThatThrownBy { game.callGame() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 5이닝")
+        }
+
+        @Test
+        fun `정확히 최소 이닝(5회초)에서 콜드게임 선언이 가능하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when
+            game.callGame()
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+        }
+
+        @Test
+        fun `홈팀 리드 시 4말(4점5이닝)에서 콜드게임 선언이 가능하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 4
+                    isTopInning = false
+                }
+
+            // when
+            game.callGame(isHomeTeamLeading = true, reason = "점수차")
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+            assertThat(game.note).contains("점수차")
+        }
+
+        @Test
+        fun `홈팀 리드가 없으면 4말에서 콜드게임 선언이 불가하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 4
+                    isTopInning = false
+                }
+
+            // when & then
+            assertThatThrownBy { game.callGame(isHomeTeamLeading = false) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 5이닝")
+        }
+
+        @Test
+        fun `6회 이상 진행된 경기는 콜드게임 선언이 가능하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 7
+                    isTopInning = false
+                }
+
+            // when
+            game.callGame()
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+        }
+
+        @Test
+        fun `사유 없이도 콜드게임 처리할 수 있다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when
+            game.callGame()
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+            assertThat(game.note).isNull()
+        }
+
+        @Test
+        fun `커스텀 최소 이닝을 지정할 수 있다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 3
+                    isTopInning = true
+                }
+
+            // when
+            game.callGame(minimumInning = 3)
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기는 콜드게임 처리할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.callGame() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("Mercy Rule 조건 판별")
+    inner class CheckMercyRuleCondition {
+        @Test
+        fun `최소 이닝 이상이고 점수차가 기준 이상이면 Mercy Rule 조건이 충족된다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 12, awayScore = 2)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `점수차가 기준 미만이면 Mercy Rule 조건이 충족되지 않는다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 7, awayScore = 2)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `최소 이닝 미만이면 Mercy Rule 조건이 충족되지 않는다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 4
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 15, awayScore = 0)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `경기가 진행 중이 아니면 Mercy Rule 조건이 충족되지 않는다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.FINISHED).apply {
+                    currentInning = 7
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 15, awayScore = 0)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `원정팀이 리드해도 점수차가 기준 이상이면 Mercy Rule 조건이 충족된다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 6
+                    isTopInning = false
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 0, awayScore = 10)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `점수차가 정확히 기준값이면 Mercy Rule 조건이 충족된다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.checkMercyRuleCondition(homeScore = 10, awayScore = 0)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `커스텀 점수차와 최소 이닝을 지정할 수 있다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 3
+                    isTopInning = false
+                }
+
+            // when
+            val result =
+                game.checkMercyRuleCondition(
+                    homeScore = 15,
+                    awayScore = 0,
+                    mercyRunDifference = 15,
+                    mercyMinimumInning = 3,
+                )
+
+            // then
+            assertThat(result).isTrue()
         }
     }
 

@@ -98,14 +98,70 @@ class Game(
 
     /**
      * 콜드게임으로 종료합니다.
+     *
+     * 최소 이닝 요건을 충족해야 콜드게임 선언이 가능합니다.
+     * - 원칙: 최소 [minimumInning]회 이상 진행 후 선언 가능
+     * - 예외: [minimumInning]회 초(top)까지 완료되고 홈팀이 리드 중이면
+     *         [minimumInning - 1].5이닝에서도 선언 가능 (홈팀 승리 확정)
+     *
+     * @param minimumInning 콜드게임 최소 요건 이닝 (기본값: 5이닝)
+     * @param isHomeTeamLeading 홈팀이 리드 중인지 여부 (기본값: false)
+     * @param reason 콜드게임 사유 (선택)
      */
-    fun callGame(reason: String? = null) {
+    fun callGame(
+        minimumInning: Int = DEFAULT_COLD_GAME_MINIMUM_INNING,
+        isHomeTeamLeading: Boolean = false,
+        reason: String? = null,
+    ) {
         require(status.isOngoing()) { "진행 중인 경기만 콜드게임 처리할 수 있습니다." }
+        require(minimumInning >= 1) { "최소 이닝은 1 이상이어야 합니다." }
+
+        val meetsMinimumRequirement =
+            currentInning > minimumInning ||
+                (currentInning == minimumInning) ||
+                (currentInning == minimumInning - 1 && !isTopInning && isHomeTeamLeading)
+
+        require(meetsMinimumRequirement) {
+            "콜드게임은 최소 ${minimumInning}이닝(홈팀 리드 시 ${minimumInning - 1}.5이닝) 이후에만 선언 가능합니다. " +
+                "현재: ${currentInning}회${if (isTopInning) "초" else "말"}"
+        }
+
         status = GameStatus.CALLED
         endedAt = LocalDateTime.now()
         if (reason != null) {
             note = (note?.let { "$it\n" } ?: "") + "콜드게임 사유: $reason"
         }
+    }
+
+    /**
+     * Mercy Rule(콜드게임) 조건이 충족되었는지 확인합니다.
+     *
+     * 조건:
+     * 1. 경기가 진행 중이어야 합니다.
+     * 2. 현재 이닝이 [mercyMinimumInning] 이상이어야 합니다.
+     * 3. 두 팀 간 점수 차이가 [mercyRunDifference] 이상이어야 합니다.
+     *
+     * 이 메서드는 조건 판별만 수행하며, 실제 콜드게임 처리는
+     * 기록원이 [callGame]을 명시적으로 호출해야 합니다.
+     *
+     * @param homeScore 홈팀 현재 점수
+     * @param awayScore 원정팀 현재 점수
+     * @param mercyRunDifference 머시룰 점수 차이 기준 (기본값: 10점)
+     * @param mercyMinimumInning 머시룰 적용 최소 이닝 (기본값: 5이닝)
+     * @return Mercy Rule 조건 충족 여부
+     */
+    fun checkMercyRuleCondition(
+        homeScore: Int,
+        awayScore: Int,
+        mercyRunDifference: Int = DEFAULT_MERCY_RUN_DIFFERENCE,
+        mercyMinimumInning: Int = DEFAULT_MERCY_MINIMUM_INNING,
+    ): Boolean {
+        require(mercyRunDifference > 0) { "머시룰 점수 차이 기준은 1 이상이어야 합니다." }
+        require(mercyMinimumInning >= 1) { "머시룰 최소 이닝은 1 이상이어야 합니다." }
+
+        if (!status.isOngoing()) return false
+        if (currentInning < mercyMinimumInning) return false
+        return kotlin.math.abs(homeScore - awayScore) >= mercyRunDifference
     }
 
     /**
@@ -182,6 +238,15 @@ class Game(
     companion object {
         /** 몰수승 기본 점수 (GameRules.forfeitScore 기본값과 일치) */
         const val DEFAULT_FORFEIT_WIN_SCORE = 7
+
+        /** 콜드게임 기본 최소 이닝 */
+        const val DEFAULT_COLD_GAME_MINIMUM_INNING = 5
+
+        /** Mercy Rule 기본 점수 차이 */
+        const val DEFAULT_MERCY_RUN_DIFFERENCE = 10
+
+        /** Mercy Rule 기본 최소 이닝 */
+        const val DEFAULT_MERCY_MINIMUM_INNING = 5
     }
 
     /**
