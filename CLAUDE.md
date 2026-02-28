@@ -96,7 +96,7 @@ nextup-scorer     ─┘
 | `reviewer` | VETO 권한, 빌드/테스트/보안 검증 |
 | `devops` | GitHub PR/Issue 관리, 문서 유지보수 |
 
-### Skills (6개)
+### Skills (13개)
 
 | Skill | 역할 |
 |-------|------|
@@ -106,6 +106,13 @@ nextup-scorer     ─┘
 | `quality-metrics` | 빌드/테스트/커버리지/정적분석 |
 | `security-audit` | OWASP Top 10 보안 체크리스트 |
 | `db-manager` | PostgreSQL/PostGIS 쿼리 |
+| `verify-implementation` | 모든 verify 스킬을 순차 실행하여 통합 검증 보고서 생성 |
+| `manage-skills` | 세션 변경사항 분석하여 검증 스킬 생성/업데이트 및 CLAUDE.md 관리 |
+| `verify-entity-leak` | Controller 반환 타입에 Entity 직접 노출 방지 검증 |
+| `verify-dependency` | 멀티모듈 의존성 방향 규칙 검증 |
+| `verify-api-response` | Controller의 ApiResponse 래핑 사용 검증 |
+| `verify-custom-exception` | BusinessException 계열 커스텀 예외 사용 검증 |
+| `verify-url-prefix` | 모듈별 URL 프리픽스 통일 검증 |
 
 ### Rules (절대 규칙)
 
@@ -123,6 +130,8 @@ nextup-scorer     ─┘
 | `/build` | Gradle 빌드 & 테스트 실행 |
 | `/review` | 코드 품질 & 보안 검증 |
 | `/pr` | GitHub PR 생성 |
+| `/verify-implementation` | 등록된 verify 스킬 통합 실행 |
+| `/manage-skills` | 세션 변경사항 기반 스킬 유지보수 |
 
 ---
 
