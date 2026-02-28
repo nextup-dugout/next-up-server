@@ -186,52 +186,11 @@ class BattingRecord(
     // Business logic
 
     /**
-     * 타석 결과를 기록합니다.
-     */
-    fun recordPlateAppearance(
-        result: PlateAppearanceResult,
-        runsBattedIn: Int = 0,
-        runsScored: Boolean = false,
-    ) {
-        require(runsBattedIn >= 0) { "타점은 0 이상이어야 합니다." }
-
-        plateAppearances++
-
-        if (result.isAtBat) {
-            atBats++
-        }
-
-        if (result.isHit) {
-            hits++
-            when (result) {
-                PlateAppearanceResult.DOUBLE -> doubles++
-                PlateAppearanceResult.TRIPLE -> triples++
-                PlateAppearanceResult.HOME_RUN -> homeRuns++
-                else -> { /* single */ }
-            }
-        }
-
-        when (result) {
-            PlateAppearanceResult.STRIKEOUT -> strikeouts++
-            PlateAppearanceResult.WALK -> walks++
-            PlateAppearanceResult.INTENTIONAL_WALK -> intentionalWalks++
-            PlateAppearanceResult.HIT_BY_PITCH -> hitByPitch++
-            PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
-            PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
-            PlateAppearanceResult.DOUBLE_PLAY, PlateAppearanceResult.TRIPLE_PLAY -> groundedIntoDoublePlays++
-            else -> { /* no additional tracking needed */ }
-        }
-
-        this.runsBattedIn += runsBattedIn
-
-        if (runsScored) {
-            runs++
-        }
-    }
-
-    /**
-     * 타석 결과에 따른 기록을 자동으로 갱신합니다 (BoxScore 계산용).
-     * recordPlateAppearance와 유사하지만 더 명시적인 API를 제공합니다.
+     * 타석 결과에 따른 기록을 갱신합니다.
+     *
+     * 모든 타석 결과를 망라하는 단일 정규 메서드입니다.
+     * 홈런은 타자 자신의 득점(runs)도 자동으로 포함됩니다.
+     * 주루 중 별도 득점은 [recordRun]을 사용하세요.
      */
     fun applyPlateAppearanceResult(
         result: PlateAppearanceResult,

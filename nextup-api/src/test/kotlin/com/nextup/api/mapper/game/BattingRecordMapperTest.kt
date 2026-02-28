@@ -18,8 +18,9 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.SINGLE, 1, true)
-                recordPlateAppearance(PlateAppearanceResult.HOME_RUN, 2, true)
+                applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 1)
+                recordRun() // 단타 후 주루 득점 별도 기록
+                applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 2)
             }
 
         // when
@@ -32,7 +33,7 @@ class BattingRecordMapperTest {
         assertThat(response.hits).isEqualTo(2)
         assertThat(response.singles).isEqualTo(1)
         assertThat(response.homeRuns).isEqualTo(1)
-        assertThat(response.runs).isEqualTo(2)
+        assertThat(response.runs).isEqualTo(2) // 단타 주루 득점 1 + 홈런 자동 득점 1
         assertThat(response.runsBattedIn).isEqualTo(3)
         assertThat(response.totalBases).isEqualTo(5) // 1 + 4
     }
@@ -46,10 +47,10 @@ class BattingRecordMapperTest {
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
                 repeat(3) {
-                    recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                    applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
                 }
                 repeat(2) {
-                    recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
+                    applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
                 }
             }
 
@@ -69,7 +70,7 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.WALK)
+                applyPlateAppearanceResult(PlateAppearanceResult.WALK)
             }
 
         // when
@@ -89,10 +90,10 @@ class BattingRecordMapperTest {
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
                 // 2 hits (1 single, 1 home run) in 3 at-bats, 1 walk
-                recordPlateAppearance(PlateAppearanceResult.SINGLE)
-                recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
-                recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
-                recordPlateAppearance(PlateAppearanceResult.WALK)
+                applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+                applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
+                applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+                applyPlateAppearanceResult(PlateAppearanceResult.WALK)
             }
 
         // when
@@ -155,10 +156,10 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.SINGLE)
-                recordPlateAppearance(PlateAppearanceResult.DOUBLE)
-                recordPlateAppearance(PlateAppearanceResult.TRIPLE)
-                recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
+                applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+                applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+                applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE)
+                applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
             }
 
         // when
@@ -181,9 +182,9 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.WALK)
-                recordPlateAppearance(PlateAppearanceResult.WALK)
-                recordPlateAppearance(PlateAppearanceResult.INTENTIONAL_WALK)
+                applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+                applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+                applyPlateAppearanceResult(PlateAppearanceResult.INTENTIONAL_WALK)
             }
 
         // when
@@ -203,8 +204,8 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.SACRIFICE_BUNT)
-                recordPlateAppearance(PlateAppearanceResult.SACRIFICE_FLY)
+                applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_BUNT)
+                applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY)
             }
 
         // when
@@ -227,10 +228,10 @@ class BattingRecordMapperTest {
         val records =
             listOf(
                 BattingRecord.create(gamePlayer1).apply {
-                    recordPlateAppearance(PlateAppearanceResult.SINGLE)
+                    applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
                 },
                 BattingRecord.create(gamePlayer2).apply {
-                    recordPlateAppearance(PlateAppearanceResult.HOME_RUN)
+                    applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
                 },
             )
 
@@ -272,9 +273,9 @@ class BattingRecordMapperTest {
 
         val battingRecord =
             BattingRecord.create(gamePlayer).apply {
-                recordPlateAppearance(PlateAppearanceResult.STRIKEOUT)
-                recordPlateAppearance(PlateAppearanceResult.GROUND_OUT)
-                recordPlateAppearance(PlateAppearanceResult.DOUBLE_PLAY)
+                applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+                applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+                applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE_PLAY)
             }
 
         // when

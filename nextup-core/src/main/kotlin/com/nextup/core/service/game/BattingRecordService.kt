@@ -48,6 +48,9 @@ class BattingRecordService(
 
     /**
      * 타석 결과를 기록합니다.
+     *
+     * 홈런은 [applyPlateAppearanceResult]에서 득점이 자동 처리됩니다.
+     * 주루 중 별도 득점이 있으면 [runsScored] 플래그로 [recordRun]을 추가 호출합니다.
      */
     @Transactional
     fun recordPlateAppearance(
@@ -57,7 +60,10 @@ class BattingRecordService(
         runsScored: Boolean = false,
     ) {
         val battingRecord = getByGamePlayerId(gamePlayerId)
-        battingRecord.recordPlateAppearance(result, runsBattedIn, runsScored)
+        battingRecord.applyPlateAppearanceResult(result, runsBattedIn)
+        if (runsScored) {
+            battingRecord.recordRun()
+        }
     }
 
     /**

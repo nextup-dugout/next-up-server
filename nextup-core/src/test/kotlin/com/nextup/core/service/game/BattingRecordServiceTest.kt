@@ -117,13 +117,34 @@ class BattingRecordServiceTest {
         val runsScored = true
 
         every { battingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockBattingRecord
-        every { mockBattingRecord.recordPlateAppearance(result, runsBattedIn, runsScored) } returns Unit
+        every { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) } returns Unit
+        every { mockBattingRecord.recordRun() } returns Unit
 
         // when
         battingRecordService.recordPlateAppearance(gamePlayerId, result, runsBattedIn, runsScored)
 
         // then
-        verify(exactly = 1) { mockBattingRecord.recordPlateAppearance(result, runsBattedIn, runsScored) }
+        verify(exactly = 1) { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) }
+        verify(exactly = 1) { mockBattingRecord.recordRun() }
+    }
+
+    @Test
+    fun `should record plate appearance without run when runsScored is false`() {
+        // given
+        val gamePlayerId = 1L
+        val result = PlateAppearanceResult.SINGLE
+        val runsBattedIn = 0
+        val runsScored = false
+
+        every { battingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockBattingRecord
+        every { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) } returns Unit
+
+        // when
+        battingRecordService.recordPlateAppearance(gamePlayerId, result, runsBattedIn, runsScored)
+
+        // then
+        verify(exactly = 1) { mockBattingRecord.applyPlateAppearanceResult(result, runsBattedIn) }
+        verify(exactly = 0) { mockBattingRecord.recordRun() }
     }
 
     @Test
