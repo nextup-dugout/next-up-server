@@ -360,6 +360,68 @@ class LineupSubmissionTest {
         assertThat(exception.message).contains("수정 가능한 상태가 아닙니다")
     }
 
+    @Test
+    fun `should throw exception when reverting non-EXCHANGE_PENDING lineup to submitted`() {
+        // given: SUBMITTED status (not EXCHANGE_PENDING)
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.revertToSubmitted()
+            }
+        assertThat(exception.message).contains("교환 대기 중인 라인업만 제출 상태로 복원할 수 있습니다")
+    }
+
+    @Test
+    fun `should throw exception when adding entry to non-editable status`() {
+        // given: SUBMITTED status (canEdit = false)
+        val submission = createLineupSubmissionWithEntries().apply { submit() }
+        val player =
+            Player(
+                name = "추가선수",
+                primaryPosition = Position.STARTING_PITCHER,
+                id = 99L,
+            )
+        val entry =
+            LineupEntry(
+                submission = submission,
+                player = player,
+                position = Position.STARTING_PITCHER,
+                battingOrder = 10,
+                backNumber = 99,
+                isStarter = false,
+            )
+
+        // when & then
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                submission.addEntry(entry)
+            }
+        assertThat(exception.message).contains("수정 가능한 상태가 아닙니다")
+    }
+
+    @Test
+    fun `should clear rejection info when resubmitting after exchange rejection`() {
+        // given
+        val submission =
+            createLineupSubmissionWithEntries().apply {
+                submit()
+                markExchangePending()
+                rejectExchange(createManager(), "오류")
+            }
+        assertThat(submission.exchangeRejectionReason).isNotNull()
+        assertThat(submission.exchangeRejectedBy).isNotNull()
+
+        // when
+        submission.submit()
+
+        // then: exchange rejection info cleared on resubmit
+        assertThat(submission.status).isEqualTo(LineupSubmissionStatus.SUBMITTED)
+        assertThat(submission.exchangeRejectionReason).isNull()
+        assertThat(submission.exchangeRejectedBy).isNull()
+    }
+
     private fun createLineupSubmissionWithEntries(): LineupSubmission {
         val submission = createLineupSubmission()
         addValidEntries(submission)
