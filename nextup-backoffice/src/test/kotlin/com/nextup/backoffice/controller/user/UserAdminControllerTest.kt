@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -31,13 +32,16 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class UserAdminControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var userService: UserService
+    private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var controller: UserAdminController
     private lateinit var objectMapper: ObjectMapper
 
     @BeforeEach
     fun setUp() {
         userService = mockk()
-        controller = UserAdminController(userService)
+        passwordEncoder = mockk()
+        every { passwordEncoder.encode(any()) } answers { "encoded_${firstArg<String>()}" }
+        controller = UserAdminController(userService, passwordEncoder)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
@@ -188,7 +192,7 @@ class UserAdminControllerTest {
             every {
                 userService.createLocalUser(
                     email = "newuser@example.com",
-                    encodedPassword = "password123",
+                    encodedPassword = "encoded_password123",
                     nickname = "새사용자",
                 )
             } returns user
@@ -208,7 +212,7 @@ class UserAdminControllerTest {
             verify(exactly = 1) {
                 userService.createLocalUser(
                     email = "newuser@example.com",
-                    encodedPassword = "password123",
+                    encodedPassword = "encoded_password123",
                     nickname = "새사용자",
                 )
             }
@@ -229,7 +233,7 @@ class UserAdminControllerTest {
             every {
                 userService.createLocalUser(
                     email = "admin@example.com",
-                    encodedPassword = "password123",
+                    encodedPassword = "encoded_password123",
                     nickname = "관리자",
                 )
             } returns user
