@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.concurrent.CountDownLatch
@@ -49,6 +50,7 @@ class GameScorerServiceConcurrencyTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var gameScorerService: GameScorerServiceImpl
 
     @BeforeEach
@@ -60,6 +62,7 @@ class GameScorerServiceConcurrencyTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
@@ -69,6 +72,7 @@ class GameScorerServiceConcurrencyTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                eventPublisher,
             )
     }
 
