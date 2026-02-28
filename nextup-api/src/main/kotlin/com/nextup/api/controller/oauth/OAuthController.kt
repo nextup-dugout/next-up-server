@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder
  * OAuth 계정 연동 관련 API Controller
  */
 @RestController
-@RequestMapping("/api/me/oauth-accounts")
+@RequestMapping("/api/v1/me/oauth-accounts")
 class OAuthController(
     private val oauthLinkService: OAuthLinkService,
     @Value("\${app.oauth2.base-url:http://localhost:8080}")

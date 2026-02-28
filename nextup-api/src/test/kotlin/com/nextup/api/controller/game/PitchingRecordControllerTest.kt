@@ -98,7 +98,7 @@ class PitchingRecordControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/pitching-records"))
+                .perform(get("/api/v1/games/$gameId/pitching-records"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -114,7 +114,7 @@ class PitchingRecordControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/pitching-records"))
+                .perform(get("/api/v1/games/$gameId/pitching-records"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -141,7 +141,7 @@ class PitchingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/pitching-records")
+                    post("/api/v1/games/$gameId/pitching-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
@@ -166,7 +166,7 @@ class PitchingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/pitching-records")
+                    post("/api/v1/games/$gameId/pitching-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
@@ -183,7 +183,7 @@ class PitchingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/pitching-records")
+                    post("/api/v1/games/$gameId/pitching-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isNotFound)
@@ -207,7 +207,7 @@ class PitchingRecordControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/games/$gameId/pitching-records")
+                    post("/api/v1/games/$gameId/pitching-records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isBadRequest)

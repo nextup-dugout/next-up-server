@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
  * 인증 관련 API Controller
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 class AuthController(
     private val authenticationService: AuthenticationService,
 ) {

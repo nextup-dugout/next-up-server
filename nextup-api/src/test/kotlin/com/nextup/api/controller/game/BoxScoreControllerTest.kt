@@ -134,7 +134,7 @@ class BoxScoreControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/boxscore"))
+                .perform(get("/api/v1/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -203,7 +203,7 @@ class BoxScoreControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/boxscore"))
+                .perform(get("/api/v1/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.batters[0].playerId").value(100))
                 .andExpect(jsonPath("$.data.homeTeam.batters[0].name").value("타자A"))
@@ -271,7 +271,7 @@ class BoxScoreControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/boxscore"))
+                .perform(get("/api/v1/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.pitchers[0].playerId").value(101))
                 .andExpect(jsonPath("$.data.homeTeam.pitchers[0].name").value("투수B"))
@@ -323,7 +323,7 @@ class BoxScoreControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/boxscore"))
+                .perform(get("/api/v1/games/$gameId/boxscore"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.homeTeam.inningScores").isArray)
                 .andExpect(jsonPath("$.data.homeTeam.inningScores[0]").value(2))
@@ -341,7 +341,7 @@ class BoxScoreControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/games/$gameId/boxscore"))
+                .perform(get("/api/v1/games/$gameId/boxscore"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
         }

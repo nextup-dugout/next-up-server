@@ -44,7 +44,7 @@ class LeagueControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/leagues"))
+                .perform(get("/api/v1/leagues"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -65,7 +65,7 @@ class LeagueControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/leagues/1"))
+                .perform(get("/api/v1/leagues/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -92,7 +92,7 @@ class LeagueControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/associations/$associationId/leagues"))
+                .perform(get("/api/v1/associations/$associationId/leagues"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  * 협회 조회 API Controller (일반 사용자용)
  */
 @RestController
-@RequestMapping("/api/associations")
+@RequestMapping("/api/v1/associations")
 class AssociationController(
     private val associationService: AssociationService,
 ) {
