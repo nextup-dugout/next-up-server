@@ -1,7 +1,7 @@
 package com.nextup.api.controller.stadium
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stadium.BookingResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.service.stadium.StadiumService
 import org.springframework.web.bind.annotation.*

@@ -1,10 +1,10 @@
 package com.nextup.api.controller
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.election.CastVoteApiRequest
 import com.nextup.api.dto.election.CreateElectionApiRequest
 import com.nextup.api.dto.election.RegisterCandidateApiRequest
 import com.nextup.api.dto.election.toServiceRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.election.ElectionService
 import com.nextup.core.service.election.dto.CandidateResponse
 import com.nextup.core.service.election.dto.ElectionResponse

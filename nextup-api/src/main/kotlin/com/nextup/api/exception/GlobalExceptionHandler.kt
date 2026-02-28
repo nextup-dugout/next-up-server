@@ -1,6 +1,6 @@
 package com.nextup.api.exception
 
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.AuthenticationException
 import com.nextup.common.exception.BusinessException
 import com.nextup.common.exception.ForbiddenException

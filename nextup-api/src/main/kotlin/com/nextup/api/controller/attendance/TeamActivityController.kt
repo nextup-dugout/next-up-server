@@ -3,7 +3,7 @@ package com.nextup.api.controller.attendance
 import com.nextup.api.dto.attendance.ActivityScoreResponse
 import com.nextup.api.dto.attendance.UpdateActivityScoreRequest
 import com.nextup.api.dto.attendance.toResponse
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.ActivityService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*

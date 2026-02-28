@@ -1,10 +1,10 @@
 package com.nextup.api.controller
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.pitch.BallCountResponse
 import com.nextup.api.dto.pitch.PitchEventResponse
 import com.nextup.api.dto.pitch.PitcherStatsResponse
 import com.nextup.api.dto.pitch.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.PitchEventService
 import org.springframework.web.bind.annotation.*
 

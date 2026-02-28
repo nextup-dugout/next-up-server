@@ -1,6 +1,5 @@
 package com.nextup.api.controller.stats
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.stats.CareerBattingStatsResponse
 import com.nextup.api.dto.stats.CareerPitchingStatsResponse
 import com.nextup.api.dto.stats.SeasonBattingStatsResponse
@@ -8,6 +7,7 @@ import com.nextup.api.dto.stats.SeasonPitchingStatsResponse
 import com.nextup.api.mapper.stats.toResponse
 import com.nextup.api.mapper.stats.toSeasonBattingResponse
 import com.nextup.api.mapper.stats.toSeasonPitchingResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stats.PlayerStatsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

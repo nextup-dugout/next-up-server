@@ -1,9 +1,9 @@
 package com.nextup.api.controller.recruitment
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.recruitment.CreateRecruitmentApiRequest
 import com.nextup.api.dto.recruitment.RecruitmentResponse
 import com.nextup.api.dto.recruitment.UpdateRecruitmentApiRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.recruitment.TeamRecruitmentService
 import com.nextup.core.service.recruitment.dto.CreateRecruitmentRequest
 import com.nextup.core.service.recruitment.dto.UpdateRecruitmentRequest

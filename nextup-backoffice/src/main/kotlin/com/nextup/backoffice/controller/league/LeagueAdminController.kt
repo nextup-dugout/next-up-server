@@ -1,9 +1,9 @@
 package com.nextup.backoffice.controller.league
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.league.CreateLeagueRequest
 import com.nextup.backoffice.dto.league.LeagueAdminResponse
 import com.nextup.backoffice.dto.league.UpdateLeagueRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.league.LeagueService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

@@ -1,7 +1,7 @@
 package com.nextup.api.controller.schedule
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.schedule.ScheduleResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.schedule.LeagueScheduleService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

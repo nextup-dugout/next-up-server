@@ -1,7 +1,7 @@
 package com.nextup.backoffice.controller.team
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.team.*
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.repository.TeamMemberRepositoryPort

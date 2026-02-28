@@ -1,7 +1,7 @@
 package com.nextup.api.controller.auth
 
 import com.nextup.api.dto.auth.*
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.infrastructure.security.AuthenticationService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid

@@ -4,7 +4,7 @@ import com.nextup.backoffice.dto.bracket.AdvanceWinnerRequest
 import com.nextup.backoffice.dto.bracket.BracketEntryResponse
 import com.nextup.backoffice.dto.bracket.GenerateBracketRequest
 import com.nextup.backoffice.dto.bracket.toResponse
-import com.nextup.backoffice.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.TournamentType
 import com.nextup.core.service.bracket.BracketGeneratorService
 import jakarta.validation.Valid

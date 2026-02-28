@@ -2,7 +2,7 @@ package com.nextup.api.controller.association
 
 import com.nextup.api.dto.association.AssociationResponse
 import com.nextup.api.dto.association.AssociationSummaryResponse
-import com.nextup.api.dto.common.ApiResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.association.AssociationService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

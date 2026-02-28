@@ -1,7 +1,7 @@
 package com.nextup.scorer.controller.league
 
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.league.LeagueService
-import com.nextup.scorer.dto.common.ApiResponse
 import com.nextup.scorer.dto.league.CreateLeagueRequest
 import com.nextup.scorer.dto.league.LeagueResponse
 import com.nextup.scorer.dto.league.UpdateLeagueRequest

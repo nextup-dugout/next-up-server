@@ -1,8 +1,8 @@
 package com.nextup.api.controller.competition
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.competition.CompetitionResponse
 import com.nextup.api.dto.standings.StandingsResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import org.springframework.web.bind.annotation.GetMapping

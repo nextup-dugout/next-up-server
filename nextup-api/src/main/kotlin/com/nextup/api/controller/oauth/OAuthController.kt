@@ -1,8 +1,8 @@
 package com.nextup.api.controller.oauth
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.oauth.LinkedOAuthAccountsResponse
 import com.nextup.api.dto.oauth.OAuthLinkStartResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.infrastructure.service.oauth.OAuthLinkService
 import org.springframework.beans.factory.annotation.Value

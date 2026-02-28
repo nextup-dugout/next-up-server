@@ -1,8 +1,8 @@
 package com.nextup.backoffice.controller.discipline
 
-import com.nextup.backoffice.dto.common.ApiResponse
 import com.nextup.backoffice.dto.discipline.DisciplineAdminResponse
 import com.nextup.backoffice.dto.discipline.IssueDisciplineRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.discipline.DisciplineStatus
 import com.nextup.core.domain.discipline.DisciplineType
 import com.nextup.core.service.discipline.DisciplineService

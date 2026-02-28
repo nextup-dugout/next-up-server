@@ -1,8 +1,8 @@
 package com.nextup.api.controller.discipline
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.discipline.DisciplineResponse
 import com.nextup.api.dto.discipline.PlayerDisciplineHistoryResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.discipline.DisciplineService
 import com.nextup.core.service.player.PlayerService
 import org.springframework.web.bind.annotation.*

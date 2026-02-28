@@ -1,9 +1,9 @@
 package com.nextup.api.controller.game
 
 import com.nextup.api.dto.attendance.*
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.mapper.attendance.toMemberVoteResponse
 import com.nextup.api.mapper.attendance.toResponse
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameParticipationService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal

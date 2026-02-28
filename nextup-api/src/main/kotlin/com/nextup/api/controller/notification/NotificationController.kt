@@ -1,11 +1,11 @@
 package com.nextup.api.controller.notification
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.notification.DeviceTokenResponse
 import com.nextup.api.dto.notification.NotificationPreferenceResponse
 import com.nextup.api.dto.notification.NotificationResponse
 import com.nextup.api.dto.notification.RegisterDeviceApiRequest
 import com.nextup.api.dto.notification.UpdatePreferenceApiRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.notification.NotificationService
 import com.nextup.core.service.notification.dto.RegisterDeviceRequest
 import com.nextup.core.service.notification.dto.UpdatePreferenceRequest

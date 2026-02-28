@@ -1,10 +1,10 @@
 package com.nextup.api.controller.team
 
-import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.dto.team.CreateTeamRequest
 import com.nextup.api.dto.team.TeamDetailResponse
 import com.nextup.api.dto.team.TeamSummaryResponse
 import com.nextup.api.dto.team.UpdateTeamRequest
+import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.InsufficientTeamRoleException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.LeagueNotFoundException
