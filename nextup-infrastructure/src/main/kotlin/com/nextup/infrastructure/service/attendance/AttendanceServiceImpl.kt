@@ -9,11 +9,13 @@ import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.attendance.VoteType
+import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.attendance.AttendanceService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -29,6 +31,7 @@ class AttendanceServiceImpl(
     private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
     private val playerRepository: PlayerRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : AttendanceService {
     @Transactional
     override fun createPoll(
@@ -52,7 +55,17 @@ class AttendanceServiceImpl(
                 deadline = deadlineDateTime,
             )
 
-        return attendancePollRepository.save(poll)
+        val savedPoll = attendancePollRepository.save(poll)
+
+        eventPublisher.publishEvent(
+            AttendanceVoteCreatedEvent(
+                teamId = teamId,
+                pollId = savedPoll.id,
+                eventDate = eventDateTime,
+            ),
+        )
+
+        return savedPoll
     }
 
     @Transactional

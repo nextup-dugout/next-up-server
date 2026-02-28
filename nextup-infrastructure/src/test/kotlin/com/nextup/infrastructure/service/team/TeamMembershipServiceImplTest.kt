@@ -2,6 +2,8 @@ package com.nextup.infrastructure.service.team
 
 import com.nextup.common.exception.*
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.event.TeamJoinApprovedEvent
+import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -10,6 +12,7 @@ import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.*
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 
 @DisplayName("TeamMembershipServiceImpl")
 class TeamMembershipServiceImplTest {
@@ -26,6 +30,7 @@ class TeamMembershipServiceImplTest {
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var service: TeamMembershipServiceImpl
 
     private lateinit var team: Team
@@ -42,6 +47,7 @@ class TeamMembershipServiceImplTest {
         teamRepository = mockk()
         userRepository = mockk()
         playerRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
 
         service =
             TeamMembershipServiceImpl(
@@ -51,6 +57,7 @@ class TeamMembershipServiceImplTest {
                 teamRepository,
                 userRepository,
                 playerRepository,
+                eventPublisher,
             )
 
         // 테스트 데이터 생성
@@ -315,6 +322,37 @@ class TeamMembershipServiceImplTest {
         }
 
         @Test
+        fun `should publish TeamJoinApprovedEvent when join request is approved`() {
+            // given
+            val joinRequest = TeamJoinRequest.create(team, user, player, 7)
+            setJoinRequestId(joinRequest, 50L)
+
+            every { teamJoinRequestRepository.findByIdOrNull(50L) } returns joinRequest
+            every { userRepository.findByIdOrNull(10L) } returns owner
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 10L) } returns ownerMember
+            every {
+                teamMemberRepository.existsByTeamIdAndUniformNumberAndStatus(
+                    1L,
+                    7,
+                    TeamMemberStatus.ACTIVE,
+                )
+            } returns false
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<TeamJoinApprovedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            service.approveJoinRequest(50L, 10L, null, null)
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<TeamJoinApprovedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.userId).isEqualTo(2L)
+            assertThat(eventSlot.captured.teamName).isEqualTo("타이거즈")
+        }
+
+        @Test
         fun `should throw when uniform number already taken on approve`() {
             // given
             val joinRequest = TeamJoinRequest.create(team, user, player, 7)
@@ -415,6 +453,30 @@ class TeamMembershipServiceImplTest {
             assertThat(result.status).isEqualTo(JoinRequestStatus.REJECTED)
             assertThat(result.responseMessage).isEqualTo("인원 충원됨")
             verify { teamJoinRequestRepository.save(any()) }
+        }
+
+        @Test
+        fun `should publish TeamJoinRejectedEvent when join request is rejected`() {
+            // given
+            val joinRequest = TeamJoinRequest.create(team, user, player, 7)
+            setJoinRequestId(joinRequest, 50L)
+
+            every { teamJoinRequestRepository.findByIdOrNull(50L) } returns joinRequest
+            every { userRepository.findByIdOrNull(10L) } returns owner
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 10L) } returns ownerMember
+            every { teamJoinRequestRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<TeamJoinRejectedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            service.rejectJoinRequest(50L, 10L, "인원 충원됨")
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<TeamJoinRejectedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.userId).isEqualTo(2L)
+            assertThat(eventSlot.captured.teamName).isEqualTo("타이거즈")
         }
     }
 

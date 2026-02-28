@@ -4,6 +4,7 @@ import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -39,6 +41,7 @@ class LineupServiceTest {
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var attendanceVoteRepository: com.nextup.core.port.repository.AttendanceVoteRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var lineupService: LineupService
 
     private lateinit var game: Game
@@ -55,6 +58,7 @@ class LineupServiceTest {
         playerRepository = mockk()
         userRepository = mockk()
         attendanceVoteRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
 
         lineupService =
             LineupService(
@@ -65,6 +69,7 @@ class LineupServiceTest {
                 playerRepository = playerRepository,
                 userRepository = userRepository,
                 attendanceVoteRepository = attendanceVoteRepository,
+                eventPublisher = eventPublisher,
             )
 
         // Setup test data
@@ -517,6 +522,30 @@ class LineupServiceTest {
                     lineupService.confirmLineup(1L, 1L)
                 }
             assertThat(exception.message).contains("기록원 ID")
+        }
+
+        @Test
+        fun `should publish LineupConfirmedEvent when lineup is confirmed`() {
+            // given
+            val submission = createSubmissionWithEntries().apply { submit() }
+            val scorer =
+                User.createLocalUser(email = "scorer@test.com", encodedPassword = "encoded", nickname = "기록원")
+
+            every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
+            every { userRepository.findByIdOrNull(any()) } returns scorer
+
+            val submissionSlot = slot<LineupSubmission>()
+            every { lineupSubmissionRepository.save(capture(submissionSlot)) } answers { submissionSlot.captured }
+
+            val eventSlot = slot<LineupConfirmedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            lineupService.confirmLineup(1L, 1L)
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<LineupConfirmedEvent>()) }
+            assertThat(eventSlot.captured).isNotNull
         }
     }
 

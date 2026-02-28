@@ -9,6 +9,7 @@ import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.AttendanceVote
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.attendance.VoteType
+import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -19,6 +20,7 @@ import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -35,6 +38,7 @@ class AttendanceServiceImplTest {
     private lateinit var attendanceVoteRepository: AttendanceVoteRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var attendanceService: AttendanceServiceImpl
 
     private lateinit var team: Team
@@ -47,12 +51,14 @@ class AttendanceServiceImplTest {
         attendanceVoteRepository = mockk()
         teamRepository = mockk()
         playerRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         attendanceService =
             AttendanceServiceImpl(
                 attendancePollRepository,
                 attendanceVoteRepository,
                 teamRepository,
                 playerRepository,
+                eventPublisher,
             )
 
         val association = Association(name = "테스트협회", region = "서울")
@@ -110,6 +116,31 @@ class AttendanceServiceImplTest {
                     deadline = deadline.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 )
             }
+        }
+
+        @Test
+        fun `출석 투표 생성 시 AttendanceVoteCreatedEvent 이벤트가 발행된다`() {
+            // given
+            val eventDate = LocalDateTime.now().plusDays(7)
+            val deadline = LocalDateTime.now().plusDays(5)
+            every { teamRepository.findByIdOrNull(1L) } returns team
+            every { attendancePollRepository.save(any()) } returnsArgument 0
+
+            val eventSlot = slot<AttendanceVoteCreatedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            attendanceService.createPoll(
+                teamId = 1L,
+                title = "이번 주 경기",
+                eventDate = eventDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                deadline = deadline.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            )
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<AttendanceVoteCreatedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.eventDate).isEqualTo(eventDate)
         }
     }
 

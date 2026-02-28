@@ -1,5 +1,6 @@
 package com.nextup.core.service.lineup
 
+import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.game.AttendanceStatus
 import com.nextup.core.domain.game.LineupEntry
 import com.nextup.core.domain.game.LineupSubmission
@@ -12,6 +13,7 @@ import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -30,6 +32,7 @@ class LineupService(
     private val playerRepository: PlayerRepositoryPort,
     private val userRepository: UserRepositoryPort,
     private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     // ========== 라인업 제출 관리 ==========
 
@@ -251,7 +254,16 @@ class LineupService(
                 ?: throw IllegalArgumentException("기록원 ID \$scorerUserId 를 찾을 수 없습니다.")
 
         submission.confirm(scorer)
-        return lineupSubmissionRepository.save(submission)
+        val savedSubmission = lineupSubmissionRepository.save(submission)
+
+        eventPublisher.publishEvent(
+            LineupConfirmedEvent(
+                gameId = submission.game.id,
+                teamId = submission.team.id,
+            ),
+        )
+
+        return savedSubmission
     }
 
     /**
