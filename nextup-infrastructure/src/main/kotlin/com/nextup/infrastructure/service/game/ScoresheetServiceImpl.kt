@@ -191,5 +191,6 @@ class ScoresheetServiceImpl(
 
     private fun formatAverage(avg: java.math.BigDecimal): String = avg.setScale(3, RoundingMode.HALF_UP).toString()
 
-    private fun formatERA(era: java.math.BigDecimal): String = era.setScale(2, RoundingMode.HALF_UP).toString()
+    private fun formatERA(era: java.math.BigDecimal?): String =
+        era?.setScale(2, RoundingMode.HALF_UP)?.toString() ?: "∞"
 }
