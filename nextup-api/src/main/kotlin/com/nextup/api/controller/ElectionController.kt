@@ -44,6 +44,7 @@ class ElectionController(
      * 팀의 모든 선거를 조회합니다.
      */
     @GetMapping
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getElectionsByTeam(
         @PathVariable teamId: Long,
     ): ApiResponse<List<ElectionResponse>> = ApiResponse.success(electionService.getElectionsByTeam(teamId))
@@ -52,6 +53,7 @@ class ElectionController(
      * 선거를 ID로 조회합니다.
      */
     @GetMapping("/{electionId}")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -91,6 +93,7 @@ class ElectionController(
      * 후보자를 등록합니다.
      */
     @PostMapping("/{electionId}/candidates")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun registerCandidate(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -106,6 +109,7 @@ class ElectionController(
      * 투표합니다.
      */
     @PostMapping("/{electionId}/votes")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun castVote(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
@@ -121,6 +125,7 @@ class ElectionController(
      * 선거 결과를 조회합니다.
      */
     @GetMapping("/{electionId}/results")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getResults(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
