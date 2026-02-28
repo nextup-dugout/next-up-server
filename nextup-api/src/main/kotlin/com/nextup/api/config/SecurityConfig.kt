@@ -84,6 +84,8 @@ class SecurityConfig(
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/stats/**")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/players/**")
+                    .permitAll()
                     // OAuth2 endpoints
                     .requestMatchers("/oauth2/**")
                     .permitAll()

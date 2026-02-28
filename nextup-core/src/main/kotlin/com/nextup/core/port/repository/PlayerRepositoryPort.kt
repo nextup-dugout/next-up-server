@@ -1,6 +1,9 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import java.time.LocalDate
 
 /**
@@ -32,4 +35,15 @@ interface PlayerRepositoryPort {
         teamId: Long,
         date: LocalDate,
     ): List<Player>
+
+    /**
+     * 이름(부분 일치), 팀 ID, 포지션 필터로 선수를 검색합니다.
+     * null 파라미터는 해당 조건을 무시합니다.
+     */
+    fun search(
+        name: String?,
+        teamId: Long?,
+        position: Position?,
+        pageable: Pageable,
+    ): Page<Player>
 }
