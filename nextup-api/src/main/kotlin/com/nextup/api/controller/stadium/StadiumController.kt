@@ -7,6 +7,9 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumService
 import com.nextup.core.service.stadium.dto.BookSlotRequest
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
@@ -30,6 +33,20 @@ class StadiumController(
     ): ApiResponse<List<StadiumResponse>> {
         val stadiums = stadiumService.searchStadiums(latitude, longitude, radiusKm)
         return ApiResponse.success(stadiums.map { StadiumResponse.from(it) })
+    }
+
+    /**
+     * 위치 기반으로 근처 구장을 거리 순으로 페이징하여 검색합니다.
+     */
+    @GetMapping("/nearby")
+    fun findNearbyStadiums(
+        @RequestParam latitude: Double,
+        @RequestParam longitude: Double,
+        @RequestParam(defaultValue = "10") radiusKm: Double,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ): ApiResponse<Page<StadiumResponse>> {
+        val page = stadiumService.findNearbyStadiums(latitude, longitude, radiusKm, pageable)
+        return ApiResponse.success(page.map { StadiumResponse.from(it) })
     }
 
     /**

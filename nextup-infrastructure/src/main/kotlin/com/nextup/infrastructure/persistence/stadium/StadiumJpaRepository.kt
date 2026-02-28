@@ -1,6 +1,8 @@
 package com.nextup.infrastructure.persistence.stadium
 
 import com.nextup.core.domain.stadium.Stadium
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
@@ -24,4 +26,36 @@ interface StadiumJpaRepository : JpaRepository<Stadium, Long> {
         longitude: Double,
         radiusMeters: Double,
     ): List<Stadium>
+
+    @Query(
+        value = """
+        SELECT s.* FROM stadiums s
+        WHERE ST_DWithin(
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+            :radiusMeters
+        )
+        AND s.is_active = true
+        ORDER BY ST_Distance(
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
+        ) ASC
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM stadiums s
+        WHERE ST_DWithin(
+            ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+            :radiusMeters
+        )
+        AND s.is_active = true
+        """,
+        nativeQuery = true,
+    )
+    fun findNearbyOrderByDistance(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Double,
+        pageable: Pageable,
+    ): Page<Stadium>
 }

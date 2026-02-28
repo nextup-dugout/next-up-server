@@ -1,6 +1,7 @@
 package com.nextup.infrastructure.persistence.stadium
 
 import com.nextup.core.domain.stadium.BookingStatus
+import com.nextup.core.domain.stadium.Stadium
 import com.nextup.core.domain.stadium.StadiumBooking
 import com.nextup.core.domain.stadium.StadiumSlot
 import io.mockk.every
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.repository.findByIdOrNull
+import java.time.LocalDate
+import java.time.LocalTime
 
 @DisplayName("StadiumBookingRepositoryAdapter")
 class StadiumBookingRepositoryAdapterTest {
@@ -22,14 +25,6 @@ class StadiumBookingRepositoryAdapterTest {
     fun setUp() {
         jpaRepository = mockk()
         adapter = StadiumBookingRepositoryAdapter(jpaRepository)
-    }
-
-    private fun createBooking(
-        teamId: Long = 10L,
-        bookedBy: Long = 100L,
-    ): StadiumBooking {
-        val slot = mockk<StadiumSlot>(relaxed = true)
-        return StadiumBooking.create(slot = slot, teamId = teamId, bookedBy = bookedBy)
     }
 
     @Nested
@@ -69,10 +64,10 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return null when not found`() {
             // given
-            every { jpaRepository.findByIdOrNull(99L) } returns null
+            every { jpaRepository.findByIdOrNull(999L) } returns null
 
             // when
-            val result = adapter.findByIdOrNull(99L)
+            val result = adapter.findByIdOrNull(999L)
 
             // then
             assertThat(result).isNull()
@@ -86,10 +81,10 @@ class StadiumBookingRepositoryAdapterTest {
         fun `should return bookings for given slot`() {
             // given
             val booking = createBooking()
-            every { jpaRepository.findBySlotId(5L) } returns listOf(booking)
+            every { jpaRepository.findBySlotId(1L) } returns listOf(booking)
 
             // when
-            val result = adapter.findBySlotId(5L)
+            val result = adapter.findBySlotId(1L)
 
             // then
             assertThat(result).hasSize(1)
@@ -114,15 +109,28 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return bookings for given team`() {
             // given
-            val booking = createBooking(teamId = 10L)
-            every { jpaRepository.findByTeamId(10L) } returns listOf(booking)
+            val booking = createBooking()
+            every { jpaRepository.findByTeamId(100L) } returns listOf(booking)
 
             // when
-            val result = adapter.findByTeamId(10L)
+            val result = adapter.findByTeamId(100L)
 
             // then
             assertThat(result).hasSize(1)
-            assertThat(result[0].teamId).isEqualTo(10L)
+            assertThat(result[0].teamId).isEqualTo(100L)
+        }
+
+        @Test
+        fun `should return all bookings for team`() {
+            // given
+            val bookings = listOf(createBooking(), createBooking())
+            every { jpaRepository.findByTeamId(100L) } returns bookings
+
+            // when
+            val result = adapter.findByTeamId(100L)
+
+            // then
+            assertThat(result).hasSize(2)
         }
 
         @Test
@@ -144,11 +152,13 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return confirmed bookings for given team`() {
             // given
-            val booking = createBooking(teamId = 10L)
-            every { jpaRepository.findByTeamIdAndStatus(10L, BookingStatus.CONFIRMED) } returns listOf(booking)
+            val booking = createBooking()
+            every {
+                jpaRepository.findByTeamIdAndStatus(100L, BookingStatus.CONFIRMED)
+            } returns listOf(booking)
 
             // when
-            val result = adapter.findByTeamIdAndStatus(10L, BookingStatus.CONFIRMED)
+            val result = adapter.findByTeamIdAndStatus(100L, BookingStatus.CONFIRMED)
 
             // then
             assertThat(result).hasSize(1)
@@ -158,10 +168,12 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return empty list when no bookings match team and status`() {
             // given
-            every { jpaRepository.findByTeamIdAndStatus(10L, BookingStatus.CANCELLED) } returns emptyList()
+            every {
+                jpaRepository.findByTeamIdAndStatus(100L, BookingStatus.CANCELLED)
+            } returns emptyList()
 
             // when
-            val result = adapter.findByTeamIdAndStatus(10L, BookingStatus.CANCELLED)
+            val result = adapter.findByTeamIdAndStatus(100L, BookingStatus.CANCELLED)
 
             // then
             assertThat(result).isEmpty()
@@ -174,7 +186,9 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return true when booking exists for slot and status`() {
             // given
-            every { jpaRepository.existsBySlotIdAndStatus(1L, BookingStatus.CONFIRMED) } returns true
+            every {
+                jpaRepository.existsBySlotIdAndStatus(1L, BookingStatus.CONFIRMED)
+            } returns true
 
             // when
             val result = adapter.existsBySlotIdAndStatus(1L, BookingStatus.CONFIRMED)
@@ -186,7 +200,9 @@ class StadiumBookingRepositoryAdapterTest {
         @Test
         fun `should return false when no booking exists for slot and status`() {
             // given
-            every { jpaRepository.existsBySlotIdAndStatus(99L, BookingStatus.CONFIRMED) } returns false
+            every {
+                jpaRepository.existsBySlotIdAndStatus(99L, BookingStatus.CONFIRMED)
+            } returns false
 
             // when
             val result = adapter.existsBySlotIdAndStatus(99L, BookingStatus.CONFIRMED)
@@ -194,5 +210,23 @@ class StadiumBookingRepositoryAdapterTest {
             // then
             assertThat(result).isFalse()
         }
+    }
+
+    private fun createBooking(): StadiumBooking {
+        val stadium =
+            Stadium.create(
+                name = "잠실 야구장",
+                address = "서울특별시",
+                latitude = 37.5121,
+                longitude = 127.0717,
+            )
+        val slot =
+            StadiumSlot.create(
+                stadium = stadium,
+                date = LocalDate.of(2024, 12, 25),
+                startTime = LocalTime.of(10, 0),
+                endTime = LocalTime.of(12, 0),
+            )
+        return StadiumBooking.create(slot = slot, teamId = 100L, bookedBy = 200L)
     }
 }
