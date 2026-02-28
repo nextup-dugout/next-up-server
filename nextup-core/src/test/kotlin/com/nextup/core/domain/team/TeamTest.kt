@@ -3,6 +3,7 @@ package com.nextup.core.domain.team
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.league.League
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -131,6 +132,73 @@ class TeamTest {
 
             // then
             assertThat(team.logoUrl).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("멤버 수용 가능 여부")
+    inner class CanAcceptMemberTests {
+        @Test
+        fun `현재 멤버 수가 최대 인원 미만이면 멤버를 수용할 수 있다`() {
+            // given
+            val team = createTeam()
+
+            // when
+            val result = team.canAcceptMember(currentMemberCount = 29)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `현재 멤버 수가 최대 인원에 도달하면 멤버를 수용할 수 없다`() {
+            // given
+            val team = createTeam()
+
+            // when
+            val result = team.canAcceptMember(currentMemberCount = Team.MAX_MEMBER_COUNT)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `팀 최대 멤버 수는 30명이다`() {
+            assertThat(Team.MAX_MEMBER_COUNT).isEqualTo(30)
+        }
+    }
+
+    @Nested
+    @DisplayName("가입 자격 검증")
+    inner class ValidateJoinEligibilityTests {
+        @Test
+        fun `활성화된 팀은 가입 자격 검증을 통과한다`() {
+            // given
+            val team = createTeam(isActive = true)
+
+            // when & then (예외 발생 없음)
+            team.validateJoinEligibility()
+        }
+
+        @Test
+        fun `비활성화된 팀에 가입하려 하면 예외가 발생한다`() {
+            // given
+            val team = createTeam(isActive = false)
+
+            // when & then
+            assertThrows(IllegalStateException::class.java) {
+                team.validateJoinEligibility()
+            }
+        }
+
+        @Test
+        fun `비활성화 후 활성화된 팀은 가입 자격 검증을 통과한다`() {
+            // given
+            val team = createTeam(isActive = false)
+            team.activate()
+
+            // when & then (예외 발생 없음)
+            team.validateJoinEligibility()
         }
     }
 }
