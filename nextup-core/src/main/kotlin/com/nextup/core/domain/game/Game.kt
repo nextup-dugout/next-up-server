@@ -57,6 +57,9 @@ class Game(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+
     /**
      * 경기를 시작합니다.
      */
