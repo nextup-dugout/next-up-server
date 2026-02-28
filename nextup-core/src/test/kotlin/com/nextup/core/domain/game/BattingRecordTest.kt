@@ -998,4 +998,153 @@ class BattingRecordTest {
                 .hasMessageContaining("롤백할 병살타 기록이 없습니다")
         }
     }
+
+    @Nested
+    @DisplayName("validate - 음수 필드 검증")
+    inner class ValidateNonNegativeFieldTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = BattingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(battingRecord, value)
+        }
+
+        @Test
+        fun `타석이 음수이면 검증에 실패한다`() {
+            setField("plateAppearances", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("타석")
+        }
+
+        @Test
+        fun `타수가 음수이면 검증에 실패한다`() {
+            setField("atBats", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("타수")
+        }
+
+        @Test
+        fun `안타가 음수이면 검증에 실패한다`() {
+            setField("hits", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("안타")
+        }
+
+        @Test
+        fun `2루타가 음수이면 검증에 실패한다`() {
+            setField("doubles", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("2루타")
+        }
+
+        @Test
+        fun `3루타가 음수이면 검증에 실패한다`() {
+            setField("triples", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("3루타")
+        }
+
+        @Test
+        fun `홈런이 음수이면 검증에 실패한다`() {
+            setField("homeRuns", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("홈런")
+        }
+
+        @Test
+        fun `득점이 음수이면 검증에 실패한다`() {
+            setField("runs", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("득점")
+        }
+
+        @Test
+        fun `타점이 음수이면 검증에 실패한다`() {
+            setField("runsBattedIn", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("타점")
+        }
+
+        @Test
+        fun `볼넷이 음수이면 검증에 실패한다`() {
+            setField("walks", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("볼넷")
+        }
+
+        @Test
+        fun `고의사구가 음수이면 검증에 실패한다`() {
+            setField("intentionalWalks", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("고의사구")
+        }
+
+        @Test
+        fun `사구가 음수이면 검증에 실패한다`() {
+            setField("hitByPitch", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("사구")
+        }
+
+        @Test
+        fun `삼진이 음수이면 검증에 실패한다`() {
+            setField("strikeouts", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("삼진")
+        }
+
+        @Test
+        fun `희생번트가 음수이면 검증에 실패한다`() {
+            setField("sacrificeBunts", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("희생번트")
+        }
+
+        @Test
+        fun `희생플라이가 음수이면 검증에 실패한다`() {
+            setField("sacrificeFlies", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("희생플라이")
+        }
+
+        @Test
+        fun `도루가 음수이면 검증에 실패한다`() {
+            setField("stolenBases", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("도루")
+        }
+
+        @Test
+        fun `도루실패가 음수이면 검증에 실패한다`() {
+            setField("caughtStealing", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("도루실패")
+        }
+
+        @Test
+        fun `병살타가 음수이면 검증에 실패한다`() {
+            setField("groundedIntoDoublePlays", -1)
+            assertThatThrownBy { battingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("병살타")
+        }
+    }
 }
