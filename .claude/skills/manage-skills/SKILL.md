@@ -28,13 +28,13 @@ argument-hint: "[선택사항: 특정 스킬 이름 또는 집중할 영역]"
 
 현재 프로젝트에 등록된 검증 스킬 목록입니다. 새 스킬 생성/삭제 시 이 목록을 업데이트합니다.
 
-(아직 등록된 검증 스킬이 없습니다)
-
-<!-- 스킬이 추가되면 아래 형식으로 등록:
 | 스킬 | 설명 | 커버 파일 패턴 |
 |------|------|---------------|
-| `verify-example` | 예시 검증 | `src/example/**/*.kt` |
--->
+| `verify-entity-leak` | Controller 반환 타입에 Entity 직접 노출 방지 | `**/controller/**/*.kt` |
+| `verify-dependency` | 멀티모듈 의존성 방향 규칙 검증 | `*/src/**/*.kt`, `*/build.gradle.kts` |
+| `verify-api-response` | Controller의 ApiResponse 래핑 사용 검증 | `**/controller/**/*.kt` |
+| `verify-custom-exception` | BusinessException 계열 커스텀 예외 사용 검증 | `*/src/main/kotlin/**/*.kt` |
+| `verify-url-prefix` | 모듈별 URL 프리픽스 통일 검증 | `**/controller/**/*.kt` |
 
 ## 워크플로우
 
