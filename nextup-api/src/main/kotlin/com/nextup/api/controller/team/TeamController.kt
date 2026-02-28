@@ -5,7 +5,6 @@ import com.nextup.api.dto.team.TeamDetailResponse
 import com.nextup.api.dto.team.TeamSummaryResponse
 import com.nextup.api.dto.team.UpdateTeamRequest
 import com.nextup.common.dto.ApiResponse
-import com.nextup.common.exception.InsufficientTeamRoleException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
@@ -86,18 +85,12 @@ class TeamController(
      * PUT /api/v1/teams/{teamId}
      */
     @PutMapping("/{teamId}")
+    @PreAuthorize("@teamSecurity.isOwner(#teamId, authentication.principal)")
     fun updateTeam(
         @PathVariable teamId: Long,
         @RequestBody @Valid request: UpdateTeamRequest,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<TeamDetailResponse> {
-        val member =
-            teamMembershipService.getMember(teamId, userId)
-                ?: throw InsufficientTeamRoleException("OWNER", "NONE")
-        if (!member.isOwner()) {
-            throw InsufficientTeamRoleException("OWNER", member.role.name)
-        }
-
         val team =
             teamRepository.findByIdWithLeague(teamId)
                 ?: throw TeamNotFoundException(teamId)
