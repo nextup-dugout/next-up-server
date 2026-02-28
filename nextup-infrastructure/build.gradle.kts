@@ -48,6 +48,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
+    // Spring AOP (for AuditLog aspect)
+    implementation("org.springframework.boot:spring-boot-starter-aop")
+
     // Rate Limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
 
