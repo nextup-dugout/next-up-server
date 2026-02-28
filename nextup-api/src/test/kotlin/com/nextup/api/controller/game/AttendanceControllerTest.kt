@@ -2,13 +2,13 @@ package com.nextup.api.controller.game
 
 import com.nextup.api.dto.attendance.AttendanceVoteRequest
 import com.nextup.core.domain.game.AttendanceStatus
-import com.nextup.core.domain.game.AttendanceVote
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.user.User
-import com.nextup.core.service.game.AttendanceService
+import com.nextup.core.service.game.GameParticipationService
 import com.nextup.core.service.game.dto.AttendanceSummaryDto
 import io.mockk.Runs
 import io.mockk.every
@@ -24,7 +24,7 @@ import java.time.LocalDateTime
 
 @DisplayName("AttendanceController")
 class AttendanceControllerTest {
-    private lateinit var attendanceService: AttendanceService
+    private lateinit var attendanceService: GameParticipationService
     private lateinit var controller: AttendanceController
 
     private val position =
@@ -64,7 +64,7 @@ class AttendanceControllerTest {
     private fun createMockVote(
         id: Long = 1L,
         status: AttendanceStatus = AttendanceStatus.ATTENDING,
-    ): AttendanceVote =
+    ): GameParticipation =
         mockk {
             every { this@mockk.id } returns id
             every { this@mockk.game } returns this@AttendanceControllerTest.game

@@ -4,7 +4,7 @@ import com.nextup.api.dto.attendance.*
 import com.nextup.api.dto.common.ApiResponse
 import com.nextup.api.mapper.attendance.toMemberVoteResponse
 import com.nextup.api.mapper.attendance.toResponse
-import com.nextup.core.service.game.AttendanceService
+import com.nextup.core.service.game.GameParticipationService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/v1/games/{gameId}/attendance")
 class AttendanceController(
-    private val attendanceService: AttendanceService,
+    private val attendanceService: GameParticipationService,
 ) {
     /**
      * 출석 투표를 합니다.

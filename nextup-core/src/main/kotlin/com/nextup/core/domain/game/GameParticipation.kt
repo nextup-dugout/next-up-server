@@ -23,7 +23,7 @@ import java.time.LocalDateTime
         UniqueConstraint(name = "uk_av_game_member", columnNames = ["game_id", "member_id"]),
     ],
 )
-class AttendanceVote private constructor(
+class GameParticipation private constructor(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)
     val game: Game,
@@ -124,13 +124,13 @@ class AttendanceVote private constructor(
          *
          * @param game 경기
          * @param member 팀 멤버
-         * @return 생성된 AttendanceVote
+         * @return 생성된 GameParticipation
          */
         fun createForGame(
             game: Game,
             member: TeamMember,
-        ): AttendanceVote =
-            AttendanceVote(
+        ): GameParticipation =
+            GameParticipation(
                 game = game,
                 member = member,
                 status = AttendanceStatus.UNDECIDED,

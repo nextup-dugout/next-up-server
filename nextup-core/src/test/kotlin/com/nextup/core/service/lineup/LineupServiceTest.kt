@@ -769,9 +769,9 @@ class LineupServiceTest {
 
     private fun createAttendingVotesForPlayers(
         playerIds: List<Long>,
-    ): List<com.nextup.core.domain.game.AttendanceVote> =
+    ): List<com.nextup.core.domain.game.GameParticipation> =
         playerIds.map { playerId ->
-            mockk<com.nextup.core.domain.game.AttendanceVote>().apply {
+            mockk<com.nextup.core.domain.game.GameParticipation>().apply {
                 every { member } returns
                     mockk<com.nextup.core.domain.team.TeamMember>().apply {
                         every { team } returns this@LineupServiceTest.team
