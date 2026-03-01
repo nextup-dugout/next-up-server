@@ -4,10 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
-import com.nextup.core.domain.team.*
+import com.nextup.core.domain.team.Team
+import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberRole
+import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
+import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.team.TeamMembershipService
+import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -20,6 +25,9 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -33,6 +41,7 @@ class TeamMemberAdminControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var teamMembershipService: TeamMembershipService
     private lateinit var teamMemberRepository: TeamMemberRepositoryPort
+    private lateinit var auditService: AuditService
     private lateinit var controller: TeamMemberAdminController
     private lateinit var objectMapper: ObjectMapper
 
@@ -45,31 +54,29 @@ class TeamMemberAdminControllerTest {
     fun setUp() {
         teamMembershipService = mockk()
         teamMemberRepository = mockk()
-        controller =
-            TeamMemberAdminController(teamMembershipService, teamMemberRepository)
+        auditService = mockk(relaxed = true)
+
+        val adminUserDetails = mockk<CustomUserDetails>()
+        every { adminUserDetails.id } returns 1L
+        every { adminUserDetails.authorities } returns emptyList()
+
+        val authentication = UsernamePasswordAuthenticationToken(adminUserDetails, null, emptyList())
+        SecurityContextHolder.getContext().authentication = authentication
+
+        controller = TeamMemberAdminController(teamMembershipService, teamMemberRepository, auditService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
-                .setCustomArgumentResolvers(PageableHandlerMethodArgumentResolver())
+                .setCustomArgumentResolvers(
+                    PageableHandlerMethodArgumentResolver(),
+                    AuthenticationPrincipalArgumentResolver(),
+                )
                 .build()
-        objectMapper =
-            ObjectMapper().apply {
-                findAndRegisterModules()
-            }
+        objectMapper = ObjectMapper().apply { findAndRegisterModules() }
 
-        val association =
-            com.nextup.core.domain.association.Association(
-                name = "서울시야구협회",
-                region = "서울",
-            )
-        val league =
-            com.nextup.core.domain.league.League(
-                association = association,
-                name = "1부 리그",
-                foundedYear = 2020,
-            )
-        team =
-            Team(league = league, name = "타이거즈", city = "서울", foundedYear = 2015)
+        val association = com.nextup.core.domain.association.Association(name = "서울시야구협회", region = "서울")
+        val league = com.nextup.core.domain.league.League(association = association, name = "1부 리그", foundedYear = 2020)
+        team = Team(league = league, name = "타이거즈", city = "서울", foundedYear = 2015)
         setId(team, Team::class.java, 1L)
 
         user = User.createLocalUser("test@example.com", "password", "테스터")
@@ -87,35 +94,22 @@ class TeamMemberAdminControllerTest {
     inner class GetAllMembers {
         @Test
         fun `should return paged members without status filter`() {
-            // given
             val pageable = PageRequest.of(0, 20)
             val page = PageImpl(listOf(member), pageable, 1)
-            every {
-                teamMemberRepository.findByTeamIdWithUserAndPlayer(1L, any())
-            } returns page
+            every { teamMemberRepository.findByTeamIdWithUserAndPlayer(1L, any()) } returns page
 
-            // when & then
-            mockMvc
-                .perform(get("/api/backoffice/teams/1/members"))
+            mockMvc.perform(get("/api/backoffice/teams/1/members"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content[0].memberId").value(50))
         }
 
         @Test
         fun `should return members filtered by status`() {
-            // given
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(member)
+            every { teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns listOf(member)
 
-            // when & then
-            mockMvc
-                .perform(
-                    get("/api/backoffice/teams/1/members")
-                        .param("status", "ACTIVE"),
-                ).andExpect(status().isOk)
+            mockMvc.perform(get("/api/backoffice/teams/1/members").param("status", "ACTIVE"))
+                .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray)
         }
@@ -126,25 +120,45 @@ class TeamMemberAdminControllerTest {
     inner class UpdateMemberStatus {
         @Test
         fun `should suspend member`() {
-            // given
             every { teamMemberRepository.findByIdOrNull(50L) } returns member
             every { teamMemberRepository.save(any()) } answers { firstArg() }
-            val request =
-                UpdateMemberStatusRequest(
-                    status = TeamMemberStatus.SUSPENDED,
-                    reason = "회비 미납",
-                )
+            val request = UpdateMemberStatusRequest(status = TeamMemberStatus.SUSPENDED, reason = "회비 미납")
 
-            // when & then
-            mockMvc
-                .perform(
-                    patch("/api/backoffice/teams/1/members/50/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
+            mockMvc.perform(
+                patch("/api/backoffice/teams/1/members/50/status")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
 
             verify { teamMemberRepository.save(any()) }
+        }
+
+        @Test
+        fun `should activate suspended member`() {
+            member.status = TeamMemberStatus.SUSPENDED
+            every { teamMemberRepository.findByIdOrNull(50L) } returns member
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+            val request = UpdateMemberStatusRequest(status = TeamMemberStatus.ACTIVE)
+
+            mockMvc.perform(
+                patch("/api/backoffice/teams/1/members/50/status")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
+
+            verify { teamMemberRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw for invalid status transition`() {
+            every { teamMemberRepository.findByIdOrNull(50L) } returns member
+            val request = UpdateMemberStatusRequest(status = TeamMemberStatus.LEFT)
+            val adminDetails = mockk<CustomUserDetails>()
+            every { adminDetails.id } returns 1L
+
+            org.junit.jupiter.api.assertThrows<com.nextup.common.exception.InvalidInputException> {
+                controller.updateMemberStatus(1L, 50L, request, adminDetails)
+            }
         }
     }
 
@@ -153,14 +167,10 @@ class TeamMemberAdminControllerTest {
     inner class DeleteMember {
         @Test
         fun `should delete member`() {
-            // given
             justRun { teamMemberRepository.deleteById(50L) }
 
-            // when & then
-            mockMvc
-                .perform(delete("/api/backoffice/teams/1/members/50"))
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
+            mockMvc.perform(delete("/api/backoffice/teams/1/members/50"))
+                .andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
 
             verify { teamMemberRepository.deleteById(50L) }
         }
@@ -169,7 +179,7 @@ class TeamMemberAdminControllerTest {
     private fun <T> setId(
         entity: T,
         clazz: Class<*>,
-        id: Long,
+        id: Long
     ) {
         val idField = clazz.getDeclaredField("id")
         idField.isAccessible = true

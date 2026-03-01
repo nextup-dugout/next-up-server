@@ -1,31 +1,36 @@
 package com.nextup.backoffice.controller.team
 
-import com.nextup.backoffice.dto.team.*
+import com.nextup.backoffice.dto.team.TeamMemberAdminResponse
+import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
 import com.nextup.common.dto.ApiResponse
+import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
+import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.team.TeamMembershipService
+import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
-import org.springframework.web.bind.annotation.*
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 팀 멤버 관리 API Controller (관리자용)
- *
- * 관리자가 팀 멤버를 관리하는 API를 제공합니다.
- */
 @RestController
 @RequestMapping("/api/backoffice/teams/{teamId}/members")
 class TeamMemberAdminController(
     private val teamMembershipService: TeamMembershipService,
     private val teamMemberRepository: TeamMemberRepositoryPort,
+    private val auditService: AuditService,
 ) {
-    /**
-     * 팀의 모든 멤버 목록을 조회합니다 (상태 필터 지원).
-     */
     @GetMapping
     fun getAllMembers(
         @PathVariable teamId: Long,
@@ -34,70 +39,64 @@ class TeamMemberAdminController(
     ): ApiResponse<Page<TeamMemberAdminResponse>> {
         val members =
             if (status != null) {
-                val memberList = teamMemberRepository.findByTeamIdAndStatus(teamId, status)
-                // 간단한 페이징 처리 (실제로는 Repository에서 페이징 지원 필요)
+                val list = teamMemberRepository.findByTeamIdAndStatus(teamId, status)
                 val start = pageable.offset.toInt()
-                val end = minOf(start + pageable.pageSize, memberList.size)
-                val pageContent = if (start < memberList.size) memberList.subList(start, end) else emptyList()
+                val end = minOf(start + pageable.pageSize, list.size)
                 org.springframework.data.domain.PageImpl(
-                    pageContent,
+                    if (start < list.size) list.subList(start, end) else emptyList(),
                     pageable,
-                    memberList.size.toLong(),
+                    list.size.toLong(),
                 )
             } else {
                 teamMemberRepository.findByTeamIdWithUserAndPlayer(teamId, pageable)
             }
-
         return ApiResponse.success(members.map { TeamMemberAdminResponse.from(it) })
     }
 
-    /**
-     * 특정 멤버의 상태를 변경합니다.
-     */
     @PatchMapping("/{memberId}/status")
     fun updateMemberStatus(
         @PathVariable teamId: Long,
         @PathVariable memberId: Long,
         @Valid @RequestBody request: UpdateMemberStatusRequest,
+        @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<TeamMemberAdminResponse> {
         val member =
-            teamMemberRepository.findByIdOrNull(memberId)
-                ?: throw TeamMemberNotFoundException(memberId)
-
-        // 상태 변경 (관리자 권한으로 직접 변경)
+            teamMemberRepository.findByIdOrNull(memberId) ?: throw TeamMemberNotFoundException(memberId)
         when (request.status) {
             TeamMemberStatus.ACTIVE -> {
-                if (member.status == TeamMemberStatus.SUSPENDED) {
-                    // 활동 재개 (OWNER 권한이 필요하므로 우회)
-                    member.status = TeamMemberStatus.ACTIVE
-                }
+                if (member.status == TeamMemberStatus.SUSPENDED) member.status = TeamMemberStatus.ACTIVE
             }
             TeamMemberStatus.SUSPENDED -> {
-                // 활동 정지
                 member.status = TeamMemberStatus.SUSPENDED
                 member.memo = request.reason
             }
-            else -> {
-                throw com.nextup.common.exception.InvalidInputException(
-                    "INVALID_STATUS",
-                    "Cannot change to status: ${request.status}",
-                )
-            }
+            else -> throw InvalidInputException("INVALID_STATUS", "Cannot change to status: ${request.status}")
         }
-
         val updated = teamMemberRepository.save(member)
+        auditService.log(
+            adminUserId = admin.id,
+            action = "UPDATE_MEMBER_STATUS",
+            targetEntity = "TeamMember",
+            targetId = memberId,
+            details = "{\"teamId\":$teamId,\"status\":\"${request.status}\"}",
+        )
         return ApiResponse.success(TeamMemberAdminResponse.from(updated))
     }
 
-    /**
-     * 멤버를 완전히 삭제합니다 (관리자 전용).
-     */
     @DeleteMapping("/{memberId}")
     fun deleteMember(
         @PathVariable teamId: Long,
         @PathVariable memberId: Long,
+        @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<Unit> {
         teamMemberRepository.deleteById(memberId)
+        auditService.log(
+            adminUserId = admin.id,
+            action = "DELETE_MEMBER",
+            targetEntity = "TeamMember",
+            targetId = memberId,
+            details = "{\"teamId\":$teamId}",
+        )
         return ApiResponse.success(Unit)
     }
 }

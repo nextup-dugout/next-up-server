@@ -8,6 +8,8 @@ import com.nextup.core.domain.admin.OrganizationRole
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.domain.user.User
 import com.nextup.core.service.admin.OrganizationAdminService
+import com.nextup.core.service.audit.AuditService
+import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,23 +18,44 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 @DisplayName("OrganizationAdminController")
 class OrganizationAdminControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var organizationAdminService: OrganizationAdminService
+    private lateinit var auditService: AuditService
     private lateinit var controller: OrganizationAdminController
     private lateinit var objectMapper: ObjectMapper
 
     @BeforeEach
     fun setUp() {
         organizationAdminService = mockk()
-        controller = OrganizationAdminController(organizationAdminService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        auditService = mockk(relaxed = true)
+
+        val adminUserDetails = mockk<CustomUserDetails>()
+        every { adminUserDetails.id } returns 1L
+        every { adminUserDetails.authorities } returns emptyList()
+
+        val authentication = UsernamePasswordAuthenticationToken(adminUserDetails, null, emptyList())
+        SecurityContextHolder.getContext().authentication = authentication
+
+        controller = OrganizationAdminController(organizationAdminService, auditService)
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+                .build()
         objectMapper = ObjectMapper()
     }
 
@@ -41,14 +64,12 @@ class OrganizationAdminControllerTest {
     inner class AssignAdmin {
         @Test
         fun `관리자를 할당할 수 있다`() {
-            // given
             val userId = 1L
             val user = createUser(userId, "test@example.com")
             val organizationType = OrganizationType.ASSOCIATION
             val organizationId = 1L
             val role = OrganizationRole.ADMIN
             val admin = createOrganizationAdmin(1L, user, organizationType, organizationId, role)
-
             val request = AssignAdminRequest(userId = userId, role = role)
 
             every {
@@ -57,11 +78,10 @@ class OrganizationAdminControllerTest {
                     organizationType = organizationType,
                     organizationId = organizationId,
                     role = role,
-                    assignedBy = null,
+                    assignedBy = 1L,
                 )
             } returns admin
 
-            // when & then
             mockMvc
                 .perform(
                     post("/api/backoffice/organizations/ASSOCIATION/1/admins")
@@ -81,7 +101,7 @@ class OrganizationAdminControllerTest {
                     organizationType = organizationType,
                     organizationId = organizationId,
                     role = role,
-                    assignedBy = null,
+                    assignedBy = 1L,
                 )
             }
         }
@@ -92,7 +112,6 @@ class OrganizationAdminControllerTest {
     inner class RemoveAdmin {
         @Test
         fun `관리자 권한을 해제할 수 있다`() {
-            // given
             val userId = 1L
             val organizationType = OrganizationType.ASSOCIATION
             val organizationId = 1L
@@ -105,11 +124,9 @@ class OrganizationAdminControllerTest {
                 )
             } returns Unit
 
-            // when & then
             mockMvc
-                .perform(
-                    delete("/api/backoffice/organizations/ASSOCIATION/1/admins/$userId"),
-                ).andExpect(status().isOk)
+                .perform(delete("/api/backoffice/organizations/ASSOCIATION/1/admins/$userId"))
+                .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
 
             verify(exactly = 1) {
@@ -127,7 +144,6 @@ class OrganizationAdminControllerTest {
     inner class GetAdminsByOrganization {
         @Test
         fun `특정 조직의 관리자 목록을 조회할 수 있다`() {
-            // given
             val organizationType = OrganizationType.ASSOCIATION
             val organizationId = 1L
             val user1 = createUser(1L, "user1@example.com")
@@ -139,11 +155,9 @@ class OrganizationAdminControllerTest {
                 organizationAdminService.getAdminsByOrganization(organizationType, organizationId)
             } returns listOf(admin1, admin2)
 
-            // when & then
             mockMvc
-                .perform(
-                    get("/api/backoffice/organizations/ASSOCIATION/1/admins"),
-                ).andExpect(status().isOk)
+                .perform(get("/api/backoffice/organizations/ASSOCIATION/1/admins"))
+                .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
@@ -159,7 +173,6 @@ class OrganizationAdminControllerTest {
     inner class GetOrganizationsByUser {
         @Test
         fun `사용자가 관리하는 모든 조직을 조회할 수 있다`() {
-            // given
             val userId = 1L
             val user = createUser(userId, "test@example.com")
             val admin1 = createOrganizationAdmin(1L, user, OrganizationType.ASSOCIATION, 1L, OrganizationRole.ADMIN)
@@ -167,11 +180,9 @@ class OrganizationAdminControllerTest {
 
             every { organizationAdminService.getOrganizationsByUser(userId) } returns listOf(admin1, admin2)
 
-            // when & then
             mockMvc
-                .perform(
-                    get("/api/backoffice/organizations/by-user/$userId"),
-                ).andExpect(status().isOk)
+                .perform(get("/api/backoffice/organizations/by-user/$userId"))
+                .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
@@ -185,14 +196,12 @@ class OrganizationAdminControllerTest {
     inner class ChangeRole {
         @Test
         fun `관리자 역할을 변경할 수 있다`() {
-            // given
             val userId = 1L
             val user = createUser(userId, "test@example.com")
             val organizationType = OrganizationType.ASSOCIATION
             val organizationId = 1L
             val newRole = OrganizationRole.MANAGER
             val admin = createOrganizationAdmin(1L, user, organizationType, organizationId, newRole)
-
             val request = ChangeRoleRequest(role = newRole)
 
             every {
@@ -204,7 +213,6 @@ class OrganizationAdminControllerTest {
                 )
             } returns admin
 
-            // when & then
             mockMvc
                 .perform(
                     put("/api/backoffice/organizations/ASSOCIATION/1/admins/$userId/role")
@@ -225,19 +233,14 @@ class OrganizationAdminControllerTest {
         }
     }
 
-    // Helper methods
-
     private fun createUser(
         id: Long,
-        email: String,
+        email: String
     ): User {
-        val user =
-            User.createLocalUser(
-                email = email,
-                encodedPassword = "password",
-                nickname = "Test User",
-            )
-        setEntityId(user, id)
+        val user = User.createLocalUser(email = email, encodedPassword = "password", nickname = "Test User")
+        val idField = user::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(user, id)
         return user
     }
 
@@ -253,18 +256,11 @@ class OrganizationAdminControllerTest {
                 user = user,
                 organizationType = organizationType,
                 organizationId = organizationId,
-                role = role,
+                role = role
             )
-        setEntityId(admin, id)
-        return admin
-    }
-
-    private fun setEntityId(
-        entity: Any,
-        id: Long,
-    ) {
-        val idField = entity::class.java.getDeclaredField("id")
+        val idField = admin::class.java.getDeclaredField("id")
         idField.isAccessible = true
-        idField.set(entity, id)
+        idField.set(admin, id)
+        return admin
     }
 }
