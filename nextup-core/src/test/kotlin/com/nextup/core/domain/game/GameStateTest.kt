@@ -478,4 +478,476 @@ class GameStateTest {
         // then
         assertThat(display).isEqualTo("3B-2S")
     }
+
+    // ── Inherited Runner Tracking Tests ──────────────────────────────────────
+
+    @Test
+    fun `should record responsible pitcher id when runner reaches base`() {
+        // given
+        val gameState = GameState(currentPitcherId = 10L)
+
+        // when
+        gameState.setRunner(Base.FIRST, 100L)
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isEqualTo(100L)
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(10L)
+    }
+
+    @Test
+    fun `should use currentPitcherId automatically when runner reaches base`() {
+        // given
+        val gameState = GameState(currentPitcherId = 20L)
+
+        // when
+        gameState.setRunner(Base.SECOND, 200L)
+        gameState.setRunner(Base.THIRD, 300L)
+
+        // then
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(20L)
+        assertThat(gameState.runnerOnThirdPitcherId).isEqualTo(20L)
+    }
+
+    @Test
+    fun `should preserve original pitcher id when runner advances bases`() {
+        // given - pitcher A(id=10) puts runner on first
+        val gameState = GameState(currentPitcherId = 10L)
+        gameState.setRunner(Base.FIRST, 100L)
+
+        // when - pitcher changes to B(id=99), runner advances to second
+        gameState.currentPitcherId = 99L
+        val originalPitcherId = gameState.getRunnerPitcherId(Base.FIRST)
+        gameState.setRunner(Base.FIRST, null)
+        gameState.setRunner(Base.SECOND, 100L, pitcherId = originalPitcherId)
+
+        // then - pitcher id on second should still be pitcher A(id=10)
+        assertThat(gameState.runnerOnSecondId).isEqualTo(100L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(10L)
+        assertThat(gameState.runnerOnFirstId).isNull()
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+    }
+
+    @Test
+    fun `should record new pitcher id for new runner after pitcher change`() {
+        // given - pitcher A(id=10) already has runner on first
+        val gameState = GameState(currentPitcherId = 10L)
+        gameState.setRunner(Base.FIRST, 100L)
+
+        // when - pitcher changes to B(id=99), new batter reaches base
+        gameState.currentPitcherId = 99L
+        gameState.setRunner(Base.SECOND, 200L)
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(10L) // original pitcher
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(99L) // new pitcher
+    }
+
+    @Test
+    fun `should clear pitcher ids when runner is removed`() {
+        // given
+        val gameState = GameState(currentPitcherId = 10L)
+        gameState.setRunner(Base.FIRST, 100L)
+        gameState.setRunner(Base.SECOND, 200L)
+
+        // when - runner on first is out
+        gameState.setRunner(Base.FIRST, null)
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isNull()
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        // second base unaffected
+        assertThat(gameState.runnerOnSecondId).isEqualTo(200L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(10L)
+    }
+
+    @Test
+    fun `should clear all pitcher ids when clearBases is called`() {
+        // given
+        val gameState = GameState(currentPitcherId = 10L)
+        gameState.setRunner(Base.FIRST, 100L)
+        gameState.setRunner(Base.SECOND, 200L)
+        gameState.setRunner(Base.THIRD, 300L)
+
+        // when
+        gameState.clearBases()
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+    }
+
+    @Test
+    fun `should clear all pitcher ids when resetForNewInning is called`() {
+        // given
+        val gameState =
+            GameState(
+                outs = 2,
+                currentPitcherId = 10L,
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondId = 200L,
+                runnerOnSecondPitcherId = 10L,
+            )
+
+        // when
+        gameState.resetForNewInning()
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+        assertThat(gameState.outs).isEqualTo(0)
+    }
+
+    @Test
+    fun `should get runner pitcher id by base`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondId = 200L,
+                runnerOnSecondPitcherId = 20L,
+                runnerOnThirdId = 300L,
+                runnerOnThirdPitcherId = 30L,
+            )
+
+        // when & then
+        assertThat(gameState.getRunnerPitcherId(Base.FIRST)).isEqualTo(10L)
+        assertThat(gameState.getRunnerPitcherId(Base.SECOND)).isEqualTo(20L)
+        assertThat(gameState.getRunnerPitcherId(Base.THIRD)).isEqualTo(30L)
+        assertThat(gameState.getRunnerPitcherId(Base.HOME)).isNull()
+    }
+
+    @Test
+    fun `should restore runner pitcher ids from json`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+            )
+
+        // when
+        gameState.restoreRunnerPitchers("1루:10,2루:20")
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(10L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(20L)
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+    }
+
+    @Test
+    fun `should clear all pitcher ids when restoreRunnerPitchers called with null`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondPitcherId = 20L,
+            )
+
+        // when
+        gameState.restoreRunnerPitchers(null)
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+    }
+
+    @Test
+    fun `should serialize runner pitcher ids to json`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondId = 200L,
+                runnerOnSecondPitcherId = 20L,
+            )
+
+        // when
+        val json = gameState.serializeRunnerPitchers()
+
+        // then
+        assertThat(json).isEqualTo("1루:10,2루:20")
+    }
+
+    @Test
+    fun `should return null when serializing with no pitcher assignments`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = null,
+            )
+
+        // when
+        val json = gameState.serializeRunnerPitchers()
+
+        // then
+        assertThat(json).isNull()
+    }
+
+    @Test
+    fun `should not set pitcher id for HOME base`() {
+        // given
+        val gameState = GameState(currentPitcherId = 10L)
+
+        // when
+        gameState.setRunner(Base.HOME, 400L)
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+    }
+
+    @Test
+    fun `should allow explicit pitcher id override when setting runner`() {
+        // given
+        val gameState = GameState(currentPitcherId = 99L)
+
+        // when - explicitly pass a different pitcher id
+        gameState.setRunner(Base.FIRST, 100L, pitcherId = 42L)
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(42L)
+    }
+
+    @Test
+    fun `should create GameState with inherited runner pitcher id fields`() {
+        // when
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondId = 200L,
+                runnerOnSecondPitcherId = 20L,
+                runnerOnThirdId = 300L,
+                runnerOnThirdPitcherId = 30L,
+            )
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(10L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(20L)
+        assertThat(gameState.runnerOnThirdPitcherId).isEqualTo(30L)
+    }
+
+    @Test
+    fun `should serialize runner pitcher ids including third base`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondId = 200L,
+                runnerOnSecondPitcherId = 20L,
+                runnerOnThirdId = 300L,
+                runnerOnThirdPitcherId = 30L,
+            )
+
+        // when
+        val json = gameState.serializeRunnerPitchers()
+
+        // then
+        assertThat(json).isEqualTo("1루:10,2루:20,3루:30")
+    }
+
+    @Test
+    fun `should restore runner pitcher ids including third base`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
+
+        // when
+        gameState.restoreRunnerPitchers("1루:10,2루:20,3루:30")
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(10L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(20L)
+        assertThat(gameState.runnerOnThirdPitcherId).isEqualTo(30L)
+    }
+
+    // ── RestoreRunners Tests ─────────────────────────────────────────────────
+
+    @Test
+    fun `should restore runners from json string`() {
+        // given
+        val gameState = GameState()
+
+        // when
+        gameState.restoreRunners("1루:100,2루:200,3루:300")
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isEqualTo(100L)
+        assertThat(gameState.runnerOnSecondId).isEqualTo(200L)
+        assertThat(gameState.runnerOnThirdId).isEqualTo(300L)
+    }
+
+    @Test
+    fun `should clear all runners when restoreRunners called with null`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+                runnerOnSecondId = 200L,
+                runnerOnThirdId = 300L,
+            )
+
+        // when
+        gameState.restoreRunners(null)
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isNull()
+        assertThat(gameState.runnerOnSecondId).isNull()
+        assertThat(gameState.runnerOnThirdId).isNull()
+    }
+
+    @Test
+    fun `should clear all runners when restoreRunners called with blank string`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstId = 100L,
+            )
+
+        // when
+        gameState.restoreRunners("")
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isNull()
+    }
+
+    @Test
+    fun `should restore partial runners from json string`() {
+        // given
+        val gameState = GameState()
+
+        // when
+        gameState.restoreRunners("1루:100,3루:300")
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isEqualTo(100L)
+        assertThat(gameState.runnerOnSecondId).isNull()
+        assertThat(gameState.runnerOnThirdId).isEqualTo(300L)
+    }
+
+    @Test
+    fun `should handle malformed entry in restoreRunners`() {
+        // given
+        val gameState = GameState()
+
+        // when
+        gameState.restoreRunners("1루:100,invalid,3루:300")
+
+        // then
+        assertThat(gameState.runnerOnFirstId).isEqualTo(100L)
+        assertThat(gameState.runnerOnSecondId).isNull()
+        assertThat(gameState.runnerOnThirdId).isEqualTo(300L)
+    }
+
+    // ── RevertBatter Tests ───────────────────────────────────────────────────
+
+    @Test
+    fun `should revert home team batter`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 5)
+
+        // when
+        gameState.revertBatter(isHomeTeam = true)
+
+        // then
+        assertThat(gameState.homeBattingOrder).isEqualTo(4)
+    }
+
+    @Test
+    fun `should revert away team batter`() {
+        // given
+        val gameState = GameState(awayBattingOrder = 7)
+
+        // when
+        gameState.revertBatter(isHomeTeam = false)
+
+        // then
+        assertThat(gameState.awayBattingOrder).isEqualTo(6)
+    }
+
+    @Test
+    fun `should wrap home team batter from 1 to 9 when reverting`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 1)
+
+        // when
+        gameState.revertBatter(isHomeTeam = true)
+
+        // then
+        assertThat(gameState.homeBattingOrder).isEqualTo(9)
+    }
+
+    @Test
+    fun `should wrap away team batter from 1 to 9 when reverting`() {
+        // given
+        val gameState = GameState(awayBattingOrder = 1)
+
+        // when
+        gameState.revertBatter(isHomeTeam = false)
+
+        // then
+        assertThat(gameState.awayBattingOrder).isEqualTo(9)
+    }
+
+    // ── RestoreOuts Tests ────────────────────────────────────────────────────
+
+    @Test
+    fun `should restore outs count`() {
+        // given
+        val gameState = GameState(outs = 0)
+
+        // when
+        gameState.restoreOuts(2)
+
+        // then
+        assertThat(gameState.outs).isEqualTo(2)
+    }
+
+    @Test
+    fun `should throw exception when restoring invalid outs`() {
+        // given
+        val gameState = GameState()
+
+        // when & then
+        assertThatThrownBy { gameState.restoreOuts(-1) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("아웃 카운트는 0-3 사이여야 합니다")
+
+        assertThatThrownBy { gameState.restoreOuts(4) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("아웃 카운트는 0-3 사이여야 합니다")
+    }
+
+    // ── RestoreRunnerPitchers edge case ──────────────────────────────────────
+
+    @Test
+    fun `should clear pitcher ids when restoreRunnerPitchers called with blank string`() {
+        // given
+        val gameState =
+            GameState(
+                runnerOnFirstPitcherId = 10L,
+                runnerOnSecondPitcherId = 20L,
+                runnerOnThirdPitcherId = 30L,
+            )
+
+        // when
+        gameState.restoreRunnerPitchers("")
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+    }
 }
