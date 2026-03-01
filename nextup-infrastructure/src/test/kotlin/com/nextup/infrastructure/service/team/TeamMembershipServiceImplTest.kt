@@ -881,6 +881,38 @@ class TeamMembershipServiceImplTest {
     }
 
     @Nested
+    @DisplayName("getTeamMemberCounts")
+    inner class GetTeamMemberCounts {
+        @Test
+        fun `should return empty map when teamIds is empty`() {
+            // when
+            val result = service.getTeamMemberCounts(emptyList())
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `should return member counts as Int map`() {
+            // given
+            every {
+                teamMemberRepository.countByTeamIdsAndStatus(
+                    listOf(1L, 2L),
+                    TeamMemberStatus.ACTIVE,
+                )
+            } returns mapOf(1L to 10L, 2L to 5L)
+
+            // when
+            val result = service.getTeamMemberCounts(listOf(1L, 2L))
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result[1L]).isEqualTo(10)
+            assertThat(result[2L]).isEqualTo(5)
+        }
+    }
+
+    @Nested
     @DisplayName("getMember")
     inner class GetMember {
         @Test
