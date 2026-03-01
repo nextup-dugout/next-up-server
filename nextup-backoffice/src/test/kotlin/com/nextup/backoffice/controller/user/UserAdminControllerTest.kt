@@ -134,7 +134,7 @@ class UserAdminControllerTest {
                     email = "new@example.com",
                     password = "password123",
                     nickname = "신규유저",
-                    roles = listOf("USER")
+                    roles = setOf("USER"),
                 )
             every { userService.createLocalUser(any(), any(), any()) } returns user
             every { userService.getById(any()) } returns user
