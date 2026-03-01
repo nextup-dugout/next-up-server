@@ -33,6 +33,16 @@ class GameState(
     var currentPitcherId: Long? = null,
     @Column(name = "current_batter_id")
     var currentBatterId: Long? = null,
+    /**
+     * 계승 주자(Inherited Runner) 추적: 각 베이스 주자가 출루할 당시의 담당 투수 ID.
+     * 투수 교체 후 남긴 주자가 득점할 경우 원래 투수의 책임을 추적하기 위해 사용됩니다.
+     */
+    @Column(name = "runner_on_first_pitcher_id")
+    var runnerOnFirstPitcherId: Long? = null,
+    @Column(name = "runner_on_second_pitcher_id")
+    var runnerOnSecondPitcherId: Long? = null,
+    @Column(name = "runner_on_third_pitcher_id")
+    var runnerOnThirdPitcherId: Long? = null,
 ) {
     init {
         require(outs in 0..3) { "아웃 카운트는 0-3 사이여야 합니다: $outs" }
@@ -82,18 +92,46 @@ class GameState(
 
     /**
      * 주자를 설정합니다.
+     * 주자가 출루할 때 현재 담당 투수 ID를 함께 기록합니다.
+     * playerId가 null이면(주자 제거) 담당 투수 ID도 함께 클리어합니다.
+     *
+     * @param base 베이스
+     * @param playerId 주자 GamePlayer ID (null이면 주자 제거)
+     * @param pitcherId 담당 투수 GamePlayer ID. null이면 currentPitcherId를 자동 사용.
+     *                 주자 진루 시 기존 pitcherId를 유지하려면 명시적으로 전달해야 합니다.
      */
     fun setRunner(
         base: Base,
         playerId: Long?,
+        pitcherId: Long? = if (playerId != null) currentPitcherId else null,
     ) {
         when (base) {
-            Base.FIRST -> runnerOnFirstId = playerId
-            Base.SECOND -> runnerOnSecondId = playerId
-            Base.THIRD -> runnerOnThirdId = playerId
+            Base.FIRST -> {
+                runnerOnFirstId = playerId
+                runnerOnFirstPitcherId = if (playerId != null) pitcherId else null
+            }
+            Base.SECOND -> {
+                runnerOnSecondId = playerId
+                runnerOnSecondPitcherId = if (playerId != null) pitcherId else null
+            }
+            Base.THIRD -> {
+                runnerOnThirdId = playerId
+                runnerOnThirdPitcherId = if (playerId != null) pitcherId else null
+            }
             Base.HOME -> {} // HOME은 득점이므로 무시
         }
     }
+
+    /**
+     * 특정 베이스 주자의 담당 투수 ID를 반환합니다.
+     */
+    fun getRunnerPitcherId(base: Base): Long? =
+        when (base) {
+            Base.FIRST -> runnerOnFirstPitcherId
+            Base.SECOND -> runnerOnSecondPitcherId
+            Base.THIRD -> runnerOnThirdPitcherId
+            Base.HOME -> null
+        }
 
     /**
      * 특정 베이스의 주자를 반환합니다.
@@ -108,11 +146,15 @@ class GameState(
 
     /**
      * 모든 베이스를 클리어합니다 (3아웃 시).
+     * 담당 투수 ID도 함께 클리어합니다.
      */
     fun clearBases() {
         runnerOnFirstId = null
         runnerOnSecondId = null
         runnerOnThirdId = null
+        runnerOnFirstPitcherId = null
+        runnerOnSecondPitcherId = null
+        runnerOnThirdPitcherId = null
     }
 
     /**
@@ -160,6 +202,7 @@ class GameState(
     /**
      * 주자를 JSON 문자열로부터 복원합니다 (Undo용).
      * JSON 형식: "1루:playerId,2루:playerId,3루:playerId" 또는 null
+     * 담당 투수 ID도 함께 클리어됩니다.
      */
     fun restoreRunners(runnersJson: String?) {
         clearBases()
@@ -177,6 +220,52 @@ class GameState(
                 }
             }
         }
+    }
+
+    /**
+     * 주자의 담당 투수 ID를 JSON 문자열로부터 복원합니다 (Undo용).
+     * JSON 형식: "1루:pitcherId,2루:pitcherId,3루:pitcherId" 또는 null
+     * restoreRunners 호출 후 사용하여 pitcher ID를 복원합니다.
+     */
+    fun restoreRunnerPitchers(runnerPitchersJson: String?) {
+        runnerOnFirstPitcherId = null
+        runnerOnSecondPitcherId = null
+        runnerOnThirdPitcherId = null
+        if (runnerPitchersJson.isNullOrBlank()) return
+
+        runnerPitchersJson.split(",").forEach { entry ->
+            val parts = entry.split(":")
+            if (parts.size == 2) {
+                val base = parts[0].trim()
+                val pitcherId = parts[1].trim().toLongOrNull()
+                when (base) {
+                    "1루" -> runnerOnFirstPitcherId = pitcherId
+                    "2루" -> runnerOnSecondPitcherId = pitcherId
+                    "3루" -> runnerOnThirdPitcherId = pitcherId
+                }
+            }
+        }
+    }
+
+    /**
+     * 현재 주자-담당투수 상태를 JSON 문자열로 직렬화합니다 (Undo 스냅샷 저장용).
+     * JSON 형식: "1루:pitcherId,2루:pitcherId,3루:pitcherId"
+     * 담당 투수가 없는 베이스는 포함되지 않습니다.
+     */
+    fun serializeRunnerPitchers(): String? {
+        val entries =
+            buildList {
+                runnerOnFirstId?.let {
+                    runnerOnFirstPitcherId?.let { p -> add("1루:$p") }
+                }
+                runnerOnSecondId?.let {
+                    runnerOnSecondPitcherId?.let { p -> add("2루:$p") }
+                }
+                runnerOnThirdId?.let {
+                    runnerOnThirdPitcherId?.let { p -> add("3루:$p") }
+                }
+            }
+        return if (entries.isEmpty()) null else entries.joinToString(",")
     }
 
     /**

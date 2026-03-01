@@ -80,4 +80,17 @@ interface TeamMemberRepository : JpaRepository<TeamMember, Long> {
         teamId: Long,
         status: TeamMemberStatus,
     ): Long
+
+    @Query(
+        """
+        SELECT tm.team.id AS teamId, COUNT(tm) AS memberCount
+        FROM TeamMember tm
+        WHERE tm.team.id IN :teamIds AND tm.status = :status
+        GROUP BY tm.team.id
+        """,
+    )
+    fun countByTeamIdsAndStatus(
+        teamIds: List<Long>,
+        status: TeamMemberStatus,
+    ): List<TeamMemberCountProjection>
 }

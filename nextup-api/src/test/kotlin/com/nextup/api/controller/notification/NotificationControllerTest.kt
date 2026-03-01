@@ -187,11 +187,16 @@ class NotificationControllerTest {
             )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data").isArray)
-            .andExpect(jsonPath("$.data[0].id").value(1))
-            .andExpect(jsonPath("$.data[0].userId").value(authenticatedUserId))
-            .andExpect(jsonPath("$.data[0].type").value("GAME_START"))
-            .andExpect(jsonPath("$.data[0].title").value("경기 시작"))
+            .andExpect(jsonPath("$.data.content").isArray)
+            .andExpect(jsonPath("$.data.content[0].id").value(1))
+            .andExpect(jsonPath("$.data.content[0].userId").value(authenticatedUserId))
+            .andExpect(jsonPath("$.data.content[0].type").value("GAME_START"))
+            .andExpect(jsonPath("$.data.content[0].title").value("경기 시작"))
+            .andExpect(jsonPath("$.data.totalElements").value(1))
+            .andExpect(jsonPath("$.data.totalPages").value(1))
+            .andExpect(jsonPath("$.data.currentPage").value(0))
+            .andExpect(jsonPath("$.data.size").value(20))
+            .andExpect(jsonPath("$.data.hasNext").value(false))
 
         verify(exactly = 1) { notificationService.getUserNotifications(authenticatedUserId, any()) }
     }

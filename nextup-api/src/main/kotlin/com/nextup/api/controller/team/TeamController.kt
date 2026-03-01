@@ -134,24 +134,19 @@ class TeamController(
         @RequestParam(required = false) name: String?,
         @RequestParam(required = false) city: String?,
     ): ApiResponse<List<TeamSummaryResponse>> {
-        val teams = teamRepository.findActiveTeams()
+        val teams = teamRepository.findActiveTeamsByFilter(name, city)
 
-        val filtered =
-            teams.filter { team ->
-                val nameMatch = name == null || team.name.contains(name, ignoreCase = true)
-                val cityMatch = city == null || team.city.contains(city, ignoreCase = true)
-                nameMatch && cityMatch
-            }
+        val teamIds = teams.map { it.id }
+        val memberCounts = teamMembershipService.getTeamMemberCounts(teamIds)
 
         val responses =
-            filtered.map { team ->
-                val memberCount = teamMembershipService.getTeamMemberCount(team.id)
+            teams.map { team ->
                 TeamSummaryResponse(
                     teamId = team.id,
                     name = team.name,
                     city = team.city,
                     abbreviation = team.abbreviation,
-                    memberCount = memberCount,
+                    memberCount = memberCounts[team.id] ?: 0,
                 )
             }
 

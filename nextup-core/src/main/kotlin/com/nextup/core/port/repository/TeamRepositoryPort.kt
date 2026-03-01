@@ -25,5 +25,10 @@ interface TeamRepositoryPort {
 
     fun findActiveTeams(): List<Team>
 
+    fun findActiveTeamsByFilter(
+        name: String?,
+        city: String?,
+    ): List<Team>
+
     fun findByIdWithLeague(id: Long): Team?
 }
