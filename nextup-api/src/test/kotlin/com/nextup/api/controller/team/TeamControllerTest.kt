@@ -226,9 +226,8 @@ class TeamControllerTest {
                     every { abbreviation } returns "EGL"
                     every { isActive } returns true
                 }
-            every { teamRepository.findActiveTeams() } returns listOf(team, team2)
-            every { teamMembershipService.getTeamMemberCount(10L) } returns 15
-            every { teamMembershipService.getTeamMemberCount(20L) } returns 12
+            every { teamRepository.findActiveTeamsByFilter(null, null) } returns listOf(team, team2)
+            every { teamMembershipService.getTeamMemberCounts(listOf(10L, 20L)) } returns mapOf(10L to 15, 20L to 12)
 
             // when
             val response = controller.getTeams(null, null)
@@ -241,8 +240,8 @@ class TeamControllerTest {
         @Test
         fun `should filter by name`() {
             // given
-            every { teamRepository.findActiveTeams() } returns listOf(team)
-            every { teamMembershipService.getTeamMemberCount(10L) } returns 15
+            every { teamRepository.findActiveTeamsByFilter("타이거", null) } returns listOf(team)
+            every { teamMembershipService.getTeamMemberCounts(listOf(10L)) } returns mapOf(10L to 15)
 
             // when
             val response = controller.getTeams(name = "타이거", city = null)
@@ -255,8 +254,8 @@ class TeamControllerTest {
         @Test
         fun `should filter by city`() {
             // given
-            every { teamRepository.findActiveTeams() } returns listOf(team)
-            every { teamMembershipService.getTeamMemberCount(10L) } returns 15
+            every { teamRepository.findActiveTeamsByFilter(null, "서울") } returns listOf(team)
+            every { teamMembershipService.getTeamMemberCounts(listOf(10L)) } returns mapOf(10L to 15)
 
             // when
             val response = controller.getTeams(name = null, city = "서울")
@@ -266,9 +265,39 @@ class TeamControllerTest {
         }
 
         @Test
+        fun `should default memberCount to zero when not in counts map`() {
+            // given
+            val team2 =
+                mockk<Team> {
+                    every { id } returns 20L
+                    every { name } returns "이글스"
+                    every { city } returns "부산"
+                    every { abbreviation } returns "EGL"
+                    every { isActive } returns true
+                }
+            every {
+                teamRepository.findActiveTeamsByFilter(null, null)
+            } returns listOf(team, team2)
+            // team2(20L)의 카운트가 map에 없음 → ?: 0 분기 커버
+            every {
+                teamMembershipService.getTeamMemberCounts(listOf(10L, 20L))
+            } returns mapOf(10L to 15)
+
+            // when
+            val response = controller.getTeams(null, null)
+
+            // then
+            assertThat(response.success).isTrue()
+            assertThat(response.data).hasSize(2)
+            val team2Response = response.data?.find { it.teamId == 20L }
+            assertThat(team2Response?.memberCount).isEqualTo(0)
+        }
+
+        @Test
         fun `should return empty when no match`() {
             // given
-            every { teamRepository.findActiveTeams() } returns listOf(team)
+            every { teamRepository.findActiveTeamsByFilter("없는팀", null) } returns emptyList()
+            every { teamMembershipService.getTeamMemberCounts(emptyList()) } returns emptyMap()
 
             // when
             val response = controller.getTeams(name = "없는팀", city = null)

@@ -73,4 +73,13 @@ class TeamMemberRepositoryAdapter(
         teamId: Long,
         status: TeamMemberStatus,
     ): Long = jpaRepository.countByTeamIdAndStatus(teamId, status)
+
+    override fun countByTeamIdsAndStatus(
+        teamIds: List<Long>,
+        status: TeamMemberStatus,
+    ): Map<Long, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+        return jpaRepository.countByTeamIdsAndStatus(teamIds, status)
+            .associate { it.getTeamId() to it.getMemberCount() }
+    }
 }
