@@ -376,4 +376,96 @@ class CompetitionTest {
             assertThat(competition.isActiveAt(LocalDate.of(2025, 4, 15))).isFalse()
         }
     }
+
+    @Nested
+    @DisplayName("경기 규칙 업데이트")
+    inner class UpdateGameRules {
+        @Test
+        fun `기본 GameRules가 설정된다`() {
+            // given
+            val competition = createCompetition()
+
+            // then
+            assertThat(competition.gameRules.defaultInnings).isEqualTo(9)
+            assertThat(competition.gameRules.forfeitScore).isEqualTo(7)
+        }
+
+        @Test
+        fun `예정 상태의 대회는 규칙을 변경할 수 있다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.SCHEDULED)
+            val newRules = GameRules(defaultInnings = 7, forfeitScore = 9)
+
+            // when
+            competition.updateGameRules(newRules)
+
+            // then
+            assertThat(competition.gameRules.defaultInnings).isEqualTo(7)
+            assertThat(competition.gameRules.forfeitScore).isEqualTo(9)
+        }
+
+        @Test
+        fun `진행 중인 대회는 규칙을 변경할 수 없다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.IN_PROGRESS)
+            val newRules = GameRules(defaultInnings = 7)
+
+            // when & then
+            assertThatThrownBy { competition.updateGameRules(newRules) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("예정 상태")
+        }
+
+        @Test
+        fun `완료된 대회는 규칙을 변경할 수 없다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.COMPLETED)
+            val newRules = GameRules(defaultInnings = 7)
+
+            // when & then
+            assertThatThrownBy { competition.updateGameRules(newRules) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("예정 상태")
+        }
+
+        @Test
+        fun `취소된 대회는 규칙을 변경할 수 없다`() {
+            // given
+            val competition = createCompetition(status = CompetitionStatus.CANCELLED)
+            val newRules = GameRules(defaultInnings = 7)
+
+            // when & then
+            assertThatThrownBy { competition.updateGameRules(newRules) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("예정 상태")
+        }
+
+        @Test
+        fun `사용자 정의 GameRules로 대회를 생성할 수 있다`() {
+            // given
+            val customRules =
+                GameRules(
+                    defaultInnings = 7,
+                    mercyRuleEnabled = true,
+                    mercyRunDifference = 10,
+                    mercyMinimumInning = 5,
+                    forfeitScore = 9,
+                )
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2025 사회인 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    gameRules = customRules,
+                )
+
+            // then
+            assertThat(competition.gameRules.defaultInnings).isEqualTo(7)
+            assertThat(competition.gameRules.mercyRuleEnabled).isTrue()
+            assertThat(competition.gameRules.forfeitScore).isEqualTo(9)
+        }
+    }
 }
