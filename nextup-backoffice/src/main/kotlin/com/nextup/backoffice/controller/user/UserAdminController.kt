@@ -62,8 +62,9 @@ class UserAdminController(
         )
 
     @GetMapping("/{id}")
-    fun getUser(@PathVariable id: Long): ApiResponse<UserAdminResponse> =
-        ApiResponse.success(UserAdminResponse.from(userService.getById(id)))
+    fun getUser(
+        @PathVariable id: Long,
+    ): ApiResponse<UserAdminResponse> = ApiResponse.success(UserAdminResponse.from(userService.getById(id)))
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -98,7 +99,11 @@ class UserAdminController(
         @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<UserAdminResponse> {
         val user =
-            userService.updateProfile(userId = id, nickname = request.nickname, profileImageUrl = request.profileImageUrl)
+            userService.updateProfile(
+                userId = id,
+                nickname = request.nickname,
+                profileImageUrl = request.profileImageUrl,
+            )
         request.roles?.let { newRoles ->
             val currentRoles = user.roles.map { it.name }.toSet()
             val targetRoles = newRoles.map { it.uppercase() }.toSet()
