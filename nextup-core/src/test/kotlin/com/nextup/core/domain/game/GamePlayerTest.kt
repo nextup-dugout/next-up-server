@@ -208,6 +208,163 @@ class GamePlayerTest {
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("이닝은 1 이상")
         }
+
+        @Test
+        fun `이미 퇴장한 선수는 재출전할 수 없다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                    battingOrder = 5,
+                )
+            gamePlayer.exitGame(3)
+
+            assertThatThrownBy {
+                gamePlayer.enterAsSubstitute(5, Position.LEFT_FIELD, 5)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 퇴장한 선수")
+        }
+
+        @Test
+        fun `퇴장하지 않은 벤치 선수는 교체 출전할 수 있다`() {
+            val gamePlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.CENTER_FIELD,
+                )
+
+            assertThat(gamePlayer.hasExited).isFalse()
+            gamePlayer.enterAsSubstitute(4, Position.CENTER_FIELD, 6)
+
+            assertThat(gamePlayer.isCurrentlyPlaying).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("재출전 방지 (hasExited)")
+    inner class HasExitedTest {
+        @Test
+        fun `퇴장하지 않은 선수의 hasExited는 false이다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 1,
+                )
+
+            assertThat(gamePlayer.hasExited).isFalse()
+        }
+
+        @Test
+        fun `퇴장한 선수의 hasExited는 true이다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 1,
+                )
+            gamePlayer.exitGame(5)
+
+            assertThat(gamePlayer.hasExited).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("DH 해제 규칙 검증")
+    inner class DhReleaseValidationTest {
+        @Test
+        fun `DH 선수를 투수로 교체할 때 타순이 일치하면 DH 해제가 필요하다`() {
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+
+            val pitcherPlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.RELIEF_PITCHER,
+                )
+
+            assertThat(dhPlayer.isDhReleaseRequired(pitcherPlayer)).isTrue()
+        }
+
+        @Test
+        fun `DH 선수를 야수로 교체할 때 DH 해제가 필요하지 않다`() {
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+
+            val outfielder =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.LEFT_FIELD,
+                )
+
+            assertThat(dhPlayer.isDhReleaseRequired(outfielder)).isFalse()
+        }
+
+        @Test
+        fun `투수가 DH 타순으로 교체되면 검증을 통과한다`() {
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+
+            val pitcherPlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.RELIEF_PITCHER,
+                )
+
+            // 4번 타순(DH 타순)으로 교체하면 검증 통과
+            dhPlayer.validateDhRelease(pitcherPlayer, incomingBattingOrder = 4)
+            // 예외 없이 통과해야 함
+        }
+
+        @Test
+        fun `투수가 DH 타순이 아닌 다른 타순으로 교체되면 예외가 발생한다`() {
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+
+            val pitcherPlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.STARTING_PITCHER,
+                )
+
+            // 4번이 아닌 다른 타순으로 교체 시도
+            assertThatThrownBy {
+                dhPlayer.validateDhRelease(pitcherPlayer, incomingBattingOrder = 5)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("DH 타순")
+        }
     }
 
     @Nested
