@@ -8,6 +8,8 @@ import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.service.standings.StandingsService
 import com.nextup.core.service.standings.dto.StandingsDto
 import com.nextup.core.service.standings.dto.TeamStandingDto
+import com.nextup.infrastructure.config.CacheConfig
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -23,6 +25,7 @@ class StandingsServiceImpl(
     private val competitionRepository: CompetitionRepositoryPort,
     private val gameTeamRepository: GameTeamRepositoryPort,
 ) : StandingsService {
+    @Cacheable(cacheNames = [CacheConfig.STANDINGS_CACHE], key = "#competitionId")
     override fun getStandings(competitionId: Long): StandingsDto {
         // 1. 대회 조회
         val competition =

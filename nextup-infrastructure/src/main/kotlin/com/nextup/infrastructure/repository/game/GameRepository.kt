@@ -33,4 +33,18 @@ interface GameRepository :
     override fun findByIdWithTeams(
         @Param("id") id: Long,
     ): Game?
+
+    @Query("SELECT COUNT(g) FROM Game g WHERE g.competition.id = :competitionId")
+    override fun countByCompetitionId(
+        @Param("competitionId") competitionId: Long,
+    ): Long
+
+    @Query(
+        "SELECT COUNT(g) FROM Game g " +
+            "WHERE g.competition.id = :competitionId " +
+            "AND g.status IN ('FINISHED', 'CALLED', 'FORFEITED', 'CANCELLED')",
+    )
+    override fun countCompletedOrCancelledByCompetitionId(
+        @Param("competitionId") competitionId: Long,
+    ): Long
 }

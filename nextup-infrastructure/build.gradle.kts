@@ -54,8 +54,11 @@ dependencies {
     // Rate Limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
 
-    // Caffeine Cache (for bounded rate limit buckets)
+    // Caffeine Cache (for bounded rate limit buckets + Spring Cache)
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
+    // Spring Cache
+    implementation("org.springframework.boot:spring-boot-starter-cache")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

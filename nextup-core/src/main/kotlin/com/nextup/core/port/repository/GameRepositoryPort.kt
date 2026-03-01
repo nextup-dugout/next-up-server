@@ -40,4 +40,15 @@ interface GameRepositoryPort {
      * Game을 GameTeam과 함께 조회합니다. (N+1 방지)
      */
     fun findByIdWithTeams(id: Long): Game?
+
+    /**
+     * 대회의 전체 경기 수를 반환합니다.
+     */
+    fun countByCompetitionId(competitionId: Long): Long
+
+    /**
+     * 대회에서 완료된 경기 수를 반환합니다.
+     * 완료 상태: FINISHED, CALLED, FORFEITED, CANCELLED
+     */
+    fun countCompletedOrCancelledByCompetitionId(competitionId: Long): Long
 }
