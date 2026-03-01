@@ -132,6 +132,34 @@ class TeamMemberAdminControllerTest {
 
             verify { teamMemberRepository.save(any()) }
         }
+
+        @Test
+        fun `should activate suspended member`() {
+            member.status = TeamMemberStatus.SUSPENDED
+            every { teamMemberRepository.findByIdOrNull(50L) } returns member
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+            val request = UpdateMemberStatusRequest(status = TeamMemberStatus.ACTIVE)
+
+            mockMvc.perform(
+                patch("/api/backoffice/teams/1/members/50/status")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
+
+            verify { teamMemberRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw for invalid status transition`() {
+            every { teamMemberRepository.findByIdOrNull(50L) } returns member
+            val request = UpdateMemberStatusRequest(status = TeamMemberStatus.LEFT)
+            val adminDetails = mockk<CustomUserDetails>()
+            every { adminDetails.id } returns 1L
+
+            org.junit.jupiter.api.assertThrows<com.nextup.common.exception.InvalidInputException> {
+                controller.updateMemberStatus(1L, 50L, request, adminDetails)
+            }
+        }
     }
 
     @Nested

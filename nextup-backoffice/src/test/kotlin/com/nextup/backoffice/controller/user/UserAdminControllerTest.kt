@@ -146,6 +146,30 @@ class UserAdminControllerTest {
             ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
         }
+
+        @Test
+        fun `ADMIN 역할로 사용자를 생성하면 addRole이 호출된다`() {
+            val user = createUser(1L, "admin@example.com", "관리자")
+            val request =
+                CreateUserRequest(
+                    email = "admin@example.com",
+                    password = "password123",
+                    nickname = "관리자",
+                    roles = setOf("USER", "ADMIN"),
+                )
+            every { userService.createLocalUser(any(), any(), any()) } returns user
+            every { userService.addRole(1L, Role.ADMIN) } returns user
+            every { userService.getById(any()) } returns user
+
+            mockMvc.perform(
+                post("/api/backoffice/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+
+            io.mockk.verify(exactly = 1) { userService.addRole(1L, Role.ADMIN) }
+        }
     }
 
     @Nested
@@ -163,6 +187,32 @@ class UserAdminControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        fun `역할 변경을 포함하여 사용자 정보를 수정할 수 있다`() {
+            val user = createUserWithRoles(1L, "test@example.com", "수정된이름", setOf(Role.USER, Role.SCORER))
+            val request =
+                UpdateUserRequest(
+                    nickname = "수정된이름",
+                    profileImageUrl = null,
+                    roles = setOf("USER", "ADMIN"),
+                )
+            every {
+                userService.updateProfile(userId = 1L, nickname = "수정된이름", profileImageUrl = null)
+            } returns user
+            every { userService.removeRole(1L, Role.SCORER) } returns user
+            every { userService.addRole(1L, Role.ADMIN) } returns user
+            every { userService.getById(1L) } returns user
+
+            mockMvc.perform(
+                put("/api/backoffice/users/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
+
+            io.mockk.verify(exactly = 1) { userService.removeRole(1L, Role.SCORER) }
+            io.mockk.verify(exactly = 1) { userService.addRole(1L, Role.ADMIN) }
         }
     }
 
@@ -225,12 +275,30 @@ class UserAdminControllerTest {
     private fun createUser(
         id: Long,
         email: String,
-        nickname: String
+        nickname: String,
     ): User {
         val user = User.createLocalUser(email = email, encodedPassword = "encoded_password", nickname = nickname)
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(user, id)
+        return user
+    }
+
+    private fun createUserWithRoles(
+        id: Long,
+        email: String,
+        nickname: String,
+        roles: Set<Role>,
+    ): User {
+        val user = User.createLocalUser(email = email, encodedPassword = "encoded_password", nickname = nickname)
+        val idField = User::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(user, id)
+        val rolesField = User::class.java.getDeclaredField("_roles")
+        rolesField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val userRoles = rolesField.get(user) as MutableSet<Role>
+        userRoles.addAll(roles)
         return user
     }
 }
