@@ -173,6 +173,11 @@ class NotificationService(
      */
     fun getUserPreferences(userId: Long): List<NotificationPreference> = preferenceRepository.findByUserId(userId)
 
+    /**
+     * 사용자의 미읽은 알림 개수를 조회합니다.
+     */
+    fun getUnreadCount(userId: Long): Long = notificationRepository.countUnreadByUserId(userId)
+
     private fun verifyNotificationOwnership(
         notification: Notification,
         authenticatedUserId: Long,

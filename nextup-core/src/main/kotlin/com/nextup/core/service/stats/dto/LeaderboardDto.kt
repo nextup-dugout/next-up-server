@@ -8,6 +8,7 @@ data class BattingLeaderDto(
     val value: Double,
     val games: Int,
     val plateAppearances: Int,
+    val profileImageUrl: String? = null,
 )
 
 data class PitchingLeaderDto(
@@ -18,6 +19,7 @@ data class PitchingLeaderDto(
     val value: Double,
     val games: Int,
     val inningsPitched: Double,
+    val profileImageUrl: String? = null,
 )
 
 enum class BattingCategory {
