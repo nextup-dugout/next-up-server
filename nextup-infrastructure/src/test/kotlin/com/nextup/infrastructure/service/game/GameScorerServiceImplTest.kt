@@ -884,7 +884,7 @@ class GameScorerServiceImplTest {
             fieldName = "1구장",
             gameNumber = 1,
             status = status,
-            currentInning = 1,
+            currentInning = 5,
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),

@@ -166,12 +166,12 @@ class GameScorerServiceImpl(
 
         when (reason) {
             GameEndReason.REGULATION -> game.finish()
-            GameEndReason.MERCY_RULE -> game.callGame("콜드게임 (점수차)")
-            GameEndReason.WEATHER -> game.callGame("콜드게임 (기상 조건)")
+            GameEndReason.MERCY_RULE -> game.callGame(reason = "콜드게임 (점수차)")
+            GameEndReason.WEATHER -> game.callGame(reason = "콜드게임 (기상 조건)")
             GameEndReason.FORFEIT -> throw InvalidGameStateException(
                 "몰수 처리는 전용 API를 사용해주세요.",
             )
-            GameEndReason.OTHER -> game.callGame("기타 사유")
+            GameEndReason.OTHER -> game.callGame(reason = "기타 사유")
         }
 
         val savedGame = gameRepository.save(game)
