@@ -9,6 +9,7 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.domain.user.User
 import com.nextup.core.port.attendance.ActivityScoreRepositoryPort
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
@@ -200,6 +201,54 @@ class ActivityServiceImplTest {
             // when & then
             assertThrows<TeamNotFoundException> {
                 activityService.listActivityScores(999L)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("listActiveActivityScores")
+    inner class ListActiveActivityScores {
+        @Test
+        fun `팀의 활성 멤버 활동 점수만 조회할 수 있다`() {
+            // given
+            every { teamRepository.existsById(1L) } returns true
+            every {
+                activityScoreRepository.findByTeamIdAndMemberStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(activityScore)
+
+            // when
+            val result = activityService.listActiveActivityScores(1L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].team).isEqualTo(team)
+            verify { activityScoreRepository.findByTeamIdAndMemberStatus(1L, TeamMemberStatus.ACTIVE) }
+        }
+
+        @Test
+        fun `탈퇴 멤버의 활동 점수는 활성 통계에서 제외된다`() {
+            // given
+            every { teamRepository.existsById(1L) } returns true
+            // LEFT/KICKED 멤버 점수는 findByTeamIdAndMemberStatus(ACTIVE)에 포함되지 않음
+            every {
+                activityScoreRepository.findByTeamIdAndMemberStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            val result = activityService.listActiveActivityScores(1L)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `팀이 존재하지 않으면 TeamNotFoundException 발생`() {
+            // given
+            every { teamRepository.existsById(999L) } returns false
+
+            // when & then
+            assertThrows<TeamNotFoundException> {
+                activityService.listActiveActivityScores(999L)
             }
         }
     }

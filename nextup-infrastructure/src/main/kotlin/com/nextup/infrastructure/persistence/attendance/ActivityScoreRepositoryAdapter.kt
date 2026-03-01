@@ -3,6 +3,7 @@ package com.nextup.infrastructure.persistence.attendance
 import com.nextup.core.domain.attendance.ActivityScore
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.attendance.ActivityScoreRepositoryPort
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
@@ -28,6 +29,11 @@ class ActivityScoreRepositoryAdapter(
     override fun findByTeam(team: Team): List<ActivityScore> = jpaRepository.findByTeamId(team.id)
 
     override fun findByTeamId(teamId: Long): List<ActivityScore> = jpaRepository.findByTeamId(teamId)
+
+    override fun findByTeamIdAndMemberStatus(
+        teamId: Long,
+        status: TeamMemberStatus,
+    ): List<ActivityScore> = jpaRepository.findByTeamIdAndMemberStatus(teamId, status)
 
     override fun delete(activityScore: ActivityScore) {
         jpaRepository.delete(activityScore)

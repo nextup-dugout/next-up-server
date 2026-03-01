@@ -45,4 +45,9 @@ class CompetitionPlayerRepositoryAdapter(
     ): Boolean = jpaRepository.existsByCompetitionIdAndPlayerId(competitionId, playerId)
 
     override fun deleteById(id: Long) = jpaRepository.deleteById(id)
+
+    override fun findByTeamIdAndStatus(
+        teamId: Long,
+        status: CompetitionPlayerStatus,
+    ): List<CompetitionPlayer> = jpaRepository.findByTeamIdAndStatus(teamId, status)
 }

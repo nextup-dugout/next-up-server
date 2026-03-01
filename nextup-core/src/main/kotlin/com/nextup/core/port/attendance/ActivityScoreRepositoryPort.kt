@@ -3,6 +3,7 @@ package com.nextup.core.port.attendance
 import com.nextup.core.domain.attendance.ActivityScore
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberStatus
 
 /**
  * 활동 점수 Repository Port
@@ -46,6 +47,15 @@ interface ActivityScoreRepositoryPort {
      * 팀 ID로 모든 활동 점수를 조회합니다.
      */
     fun findByTeamId(teamId: Long): List<ActivityScore>
+
+    /**
+     * 팀 ID와 멤버 상태로 활동 점수를 조회합니다.
+     * LEFT/KICKED 멤버의 점수는 이력으로 보존되지만 활성 통계에서 제외하는 데 사용합니다.
+     */
+    fun findByTeamIdAndMemberStatus(
+        teamId: Long,
+        status: TeamMemberStatus,
+    ): List<ActivityScore>
 
     /**
      * 활동 점수를 삭제합니다.
