@@ -7,15 +7,20 @@ import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.common.exception.NoEventToUndoException
 import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.UndoNotAvailableException
+import com.nextup.core.domain.event.BattingOrderViolationEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
+import com.nextup.core.domain.event.PitchCountWarningEvent
+import com.nextup.core.domain.event.PitchCountWarningType
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
+import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameResult
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
+import com.nextup.core.domain.game.PitchCountStatus
 import com.nextup.core.domain.game.PitchingDecisionCalculator
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
@@ -26,7 +31,9 @@ import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
+import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -46,6 +53,8 @@ class GameScorerServiceImpl(
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : GameScorerService {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     @Transactional
     override fun startGame(gameId: Long): Game {
         val game = findGame(gameId)
@@ -60,7 +69,7 @@ class GameScorerServiceImpl(
     override fun recordPlateAppearance(
         gameId: Long,
         request: PlateAppearanceRequest,
-    ): Game {
+    ): PlateAppearanceRecordResult {
         val game = findGame(gameId)
 
         // 경기가 진행 중인지 확인
@@ -75,6 +84,12 @@ class GameScorerServiceImpl(
         val pitcher =
             gamePlayerRepository.findByIdOrNull(request.pitcherId)
                 ?: throw GamePlayerNotFoundException(request.pitcherId)
+
+        // 경고 수집
+        val warnings = mutableListOf<String>()
+
+        // 타순 위반 감지 (차단하지 않음 — 사회인 야구 유연성)
+        detectBattingOrderViolation(game, batter, warnings)
 
         // 주자 이동 처리
         val scoredRunnerIds = mutableListOf<Long>()
@@ -132,11 +147,38 @@ class GameScorerServiceImpl(
             ),
         )
 
+        // 현재 주자 상태 스냅샷 (이벤트 기록용)
+        val outCountBefore = game.gameState.outs
+        val runnersBeforeJson = buildRunnersJson(game)
+
         // 다음 타자로 진행
         game.advanceBatter()
         game.resetCount()
 
-        return gameRepository.save(game)
+        val savedGame = gameRepository.save(game)
+
+        // D-15: 타석 이벤트 기록 (득점 주자 ID 포함)
+        val gameEvent =
+            GameEvent.createPlateAppearance(
+                game = savedGame,
+                batter = batter,
+                pitcher = pitcher,
+                result = request.result,
+                description = buildPlateAppearanceDescription(request.result, batter, scoredRunnerIds),
+                outCountBefore = outCountBefore,
+                outCountAfter = savedGame.gameState.outs,
+                runnersBeforeJson = runnersBeforeJson,
+                runnersAfterJson = buildRunnersJson(savedGame),
+                runsScored = scoredRunnerIds.size,
+                rbis = request.getActualRbis(),
+                scoringRunnerIds = scoredRunnerIds,
+            )
+        gameEventRepository.save(gameEvent)
+
+        // 투구 수 경고 감지 (저장 후 현재 투수 기록 기반으로 확인) (D-20)
+        detectPitchCountWarning(savedGame, pitcher, warnings)
+
+        return PlateAppearanceRecordResult(game = savedGame, warnings = warnings)
     }
 
     @Transactional
@@ -255,7 +297,7 @@ class GameScorerServiceImpl(
             GameEventType.PLATE_APPEARANCE -> undoPlateAppearance(game, lastEvent)
             GameEventType.INNING_CHANGE -> undoInningChange(game, lastEvent)
             else -> {
-                // GAME_STATUS, BASE_RUNNING 등은 단순 마킹만 처리
+                // GAME_STATUS, BASE_RUNNING, POSITION_CHANGE 등은 단순 마킹만 처리
             }
         }
 
@@ -397,6 +439,142 @@ class GameScorerServiceImpl(
         return savedGame
     }
 
+    /**
+     * 타순 위반을 감지하고 경고를 추가합니다 (D-17).
+     *
+     * 사회인 야구의 유연성을 위해 차단하지 않고 경고 이벤트를 발행합니다.
+     *
+     * @param game 현재 경기
+     * @param batter 타자 GamePlayer
+     * @param warnings 경고 메시지 수집 목록
+     */
+    private fun detectBattingOrderViolation(
+        game: Game,
+        batter: GamePlayer,
+        warnings: MutableList<String>,
+    ) {
+        val isHomeTeam = !game.isTopInning
+        val violation =
+            game.gameState.validateBattingOrder(
+                batterBattingOrder = batter.battingOrder,
+                isHomeTeam = isHomeTeam,
+            ) ?: return
+
+        val message =
+            "타순 위반 감지: 예상 타순 ${violation.expectedBattingOrder}번, " +
+                "실제 타자 타순 ${violation.actualBattingOrder}번 (타자 GamePlayer ID: ${batter.id})"
+        log.warn(message)
+        warnings.add(
+            "타순 위반: 예상 타순 ${violation.expectedBattingOrder}번이지만 " +
+                "${violation.actualBattingOrder}번 타자가 타석에 들어섰습니다.",
+        )
+
+        eventPublisher.publishEvent(
+            BattingOrderViolationEvent(
+                gameId = game.id,
+                gamePlayerId = batter.id,
+                playerId = batter.player.id,
+                expectedBattingOrder = violation.expectedBattingOrder,
+                actualBattingOrder = violation.actualBattingOrder,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+            ),
+        )
+    }
+
+    /**
+     * 현재 투수의 투구 수 경고를 감지합니다 (D-20).
+     *
+     * pitchesThrown이 기록된 경우에만 검사합니다.
+     * GameRules의 pitchCountLimit을 우선 사용하고, 없으면 기본값을 사용합니다.
+     *
+     * @param game 현재 경기
+     * @param pitcher 현재 투수 GamePlayer
+     * @param warnings 경고 메시지 수집 목록
+     */
+    private fun detectPitchCountWarning(
+        game: Game,
+        pitcher: GamePlayer,
+        warnings: MutableList<String>,
+    ) {
+        val pitchingRecord =
+            pitchingRecordRepository.findByGamePlayer(pitcher)
+                ?: return
+        val pitchesThrown = pitchingRecord.pitchesThrown ?: return
+
+        val gameRules = game.competition.gameRules
+        val limit = gameRules.pitchCountLimit ?: DEFAULT_PITCH_COUNT_WARNING_THRESHOLD
+        val threshold = gameRules.pitchCountWarningThreshold
+
+        val status = pitchingRecord.checkPitchCountStatus(limit, threshold) ?: return
+
+        when (status) {
+            PitchCountStatus.LIMIT_REACHED -> {
+                val logMessage =
+                    "투구 수 경고: 투수(ID: ${pitcher.id}) 투구 수 ${pitchesThrown}구 — 제한(${limit}구) 도달"
+                log.warn(logMessage)
+                warnings.add(
+                    "투구 수 경고: 현재 투수가 ${pitchesThrown}구를 던졌습니다. 투구 수 제한(${limit}구)에 도달했습니다.",
+                )
+                eventPublisher.publishEvent(
+                    PitchCountWarningEvent(
+                        gameId = game.id,
+                        gamePlayerId = pitcher.id,
+                        playerId = pitcher.player.id,
+                        pitchesThrown = pitchesThrown,
+                        pitchCountLimit = limit,
+                        warningType = PitchCountWarningType.LIMIT_REACHED,
+                    ),
+                )
+            }
+            PitchCountStatus.APPROACHING_LIMIT -> {
+                val remaining = limit - pitchesThrown
+                warnings.add(
+                    "투구 수 주의: 현재 투수가 ${pitchesThrown}구를 던졌습니다. " +
+                        "제한(${limit}구)까지 ${remaining}구 남았습니다.",
+                )
+                eventPublisher.publishEvent(
+                    PitchCountWarningEvent(
+                        gameId = game.id,
+                        gamePlayerId = pitcher.id,
+                        playerId = pitcher.player.id,
+                        pitchesThrown = pitchesThrown,
+                        pitchCountLimit = limit,
+                        warningType = PitchCountWarningType.APPROACHING_LIMIT,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * 현재 주자 상태를 JSON 문자열로 직렬화합니다.
+     * 형식: "1루:playerId,2루:playerId,3루:playerId"
+     */
+    private fun buildRunnersJson(game: Game): String? {
+        val parts = mutableListOf<String>()
+        game.gameState.runnerOnFirstId?.let { parts.add("1루:$it") }
+        game.gameState.runnerOnSecondId?.let { parts.add("2루:$it") }
+        game.gameState.runnerOnThirdId?.let { parts.add("3루:$it") }
+        return if (parts.isEmpty()) null else parts.joinToString(",")
+    }
+
+    /**
+     * 타석 결과 이벤트 설명 문자열을 생성합니다.
+     */
+    private fun buildPlateAppearanceDescription(
+        result: com.nextup.core.domain.game.PlateAppearanceResult,
+        batter: GamePlayer,
+        scoredRunnerIds: List<Long>,
+    ): String {
+        val base = "${batter.player.name} - ${result.displayName}"
+        return if (scoredRunnerIds.isNotEmpty()) {
+            "$base (득점: ${scoredRunnerIds.size}점)"
+        } else {
+            base
+        }
+    }
+
     private fun publishGameResultEvent(gameId: Long) {
         val gameTeams = gameTeamRepository.findAllByGameId(gameId)
         val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME } ?: return
@@ -415,4 +593,12 @@ class GameScorerServiceImpl(
     private fun findGame(id: Long): Game =
         gameRepository.findByIdOrNull(id)
             ?: throw GameNotFoundException(id)
+
+    companion object {
+        /** 투구 수 경고 기본 임계값 (D-20: 사회인 야구 기준 100구) */
+        const val DEFAULT_PITCH_COUNT_WARNING_THRESHOLD = 100
+
+        /** 투구 수 접근 경고 임계값 (임계값까지 이 구수 이하 남으면 주의 경고) */
+        const val PITCH_COUNT_APPROACHING_THRESHOLD = 20
+    }
 }

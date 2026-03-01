@@ -15,6 +15,7 @@ import com.nextup.core.domain.game.GameResult
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
+import com.nextup.core.domain.game.PitchCountStatus
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
@@ -67,6 +68,8 @@ class GameScorerServiceImplTest {
         eventPublisher = mockk(relaxed = true)
         every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
+        every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+        every { gameEventRepository.save(any()) } answers { firstArg() }
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
@@ -362,7 +365,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.runnerOnFirstId).isEqualTo(10L)
+            assertThat(result.game.gameState.runnerOnFirstId).isEqualTo(10L)
             verify { boxScoreService.updateOnPlateAppearance(any(), any(), any(), any(), any(), any(), any()) }
         }
 
@@ -392,7 +395,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.runnerOnSecondId).isEqualTo(10L)
+            assertThat(result.game.gameState.runnerOnSecondId).isEqualTo(10L)
         }
 
         @Test
@@ -421,7 +424,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.runnerOnThirdId).isEqualTo(10L)
+            assertThat(result.game.gameState.runnerOnThirdId).isEqualTo(10L)
         }
 
         @Test
@@ -489,7 +492,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.runnerOnFirstId).isEqualTo(10L)
+            assertThat(result.game.gameState.runnerOnFirstId).isEqualTo(10L)
         }
 
         @Test
@@ -518,7 +521,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.outs).isEqualTo(1)
+            assertThat(result.game.gameState.outs).isEqualTo(1)
         }
 
         @Test
@@ -610,7 +613,7 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.outs).isEqualTo(1)
+            assertThat(result.game.gameState.outs).isEqualTo(1)
         }
 
         @Test
@@ -650,8 +653,177 @@ class GameScorerServiceImplTest {
             val result = gameScorerService.recordPlateAppearance(1L, request)
 
             // then
-            assertThat(result.gameState.runnerOnThirdId).isEqualTo(5L)
-            assertThat(result.gameState.runnerOnFirstId).isEqualTo(10L)
+            assertThat(result.game.gameState.runnerOnThirdId).isEqualTo(5L)
+            assertThat(result.game.gameState.runnerOnFirstId).isEqualTo(10L)
+        }
+
+        @Test
+        fun `should return no warnings when batting order is correct`() {
+            // given
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    isTopInning = true
+                    gameState.awayBattingOrder = 3
+                }
+            val batter = createGamePlayer(10L)
+            every { batter.battingOrder } returns 3
+            val pitcher = createGamePlayer(20L)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayer(pitcher) } returns null
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = gameScorerService.recordPlateAppearance(1L, request)
+
+            // then
+            assertThat(result.warnings).isEmpty()
+        }
+
+        @Test
+        fun `should return batting order warning when batter order does not match expected`() {
+            // given
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    isTopInning = true
+                    gameState.awayBattingOrder = 3
+                }
+            val batter = createGamePlayer(10L)
+            every { batter.battingOrder } returns 5 // expected 3, actual 5
+            val pitcher = createGamePlayer(20L)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayer(pitcher) } returns null
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = gameScorerService.recordPlateAppearance(1L, request)
+
+            // then
+            assertThat(result.warnings).isNotEmpty()
+            assertThat(result.warnings[0]).contains("타순 위반")
+            assertThat(result.warnings[0]).contains("3")
+            assertThat(result.warnings[0]).contains("5")
+        }
+
+        @Test
+        fun `should return pitch count warning when pitcher exceeds threshold`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val batter = createGamePlayer(10L)
+            val pitcher = createGamePlayer(20L)
+            val pitchingRecord = mockk<PitchingRecord>(relaxed = true)
+            every { pitchingRecord.pitchesThrown } returns 105
+            every { pitchingRecord.checkPitchCountStatus(any(), any()) } returns PitchCountStatus.LIMIT_REACHED
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayer(pitcher) } returns pitchingRecord
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = gameScorerService.recordPlateAppearance(1L, request)
+
+            // then
+            assertThat(result.warnings).isNotEmpty()
+            assertThat(result.warnings[0]).contains("투구 수 경고")
+            assertThat(result.warnings[0]).contains("105")
+        }
+
+        @Test
+        fun `should return pitch count approaching warning when pitcher is near threshold`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val batter = createGamePlayer(10L)
+            val pitcher = createGamePlayer(20L)
+            val pitchingRecord = mockk<PitchingRecord>(relaxed = true)
+            every { pitchingRecord.pitchesThrown } returns 95 // 100 - 95 = 5 remaining (< threshold 10)
+            every { pitchingRecord.checkPitchCountStatus(any(), any()) } returns PitchCountStatus.APPROACHING_LIMIT
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayer(pitcher) } returns pitchingRecord
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = gameScorerService.recordPlateAppearance(1L, request)
+
+            // then
+            assertThat(result.warnings).isNotEmpty()
+            assertThat(result.warnings[0]).contains("투구 수 주의")
+            assertThat(result.warnings[0]).contains("5")
+        }
+
+        @Test
+        fun `should return no pitch count warning when pitcher has no pitch count recorded`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val batter = createGamePlayer(10L)
+            val pitcher = createGamePlayer(20L)
+            val pitchingRecord = mockk<PitchingRecord>(relaxed = true)
+            every { pitchingRecord.pitchesThrown } returns null
+            every { pitchingRecord.checkPitchCountStatus(any(), any()) } returns null
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayer(pitcher) } returns pitchingRecord
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.SINGLE,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = gameScorerService.recordPlateAppearance(1L, request)
+
+            // then
+            assertThat(result.warnings).isEmpty()
         }
     }
 
@@ -1149,6 +1321,7 @@ class GameScorerServiceImplTest {
     private fun createGamePlayer(id: Long): GamePlayer {
         val gamePlayer = mockk<GamePlayer>(relaxed = true)
         every { gamePlayer.id } returns id
+        every { gamePlayer.battingOrder } returns 1
         return gamePlayer
     }
 

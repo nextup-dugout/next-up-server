@@ -70,6 +70,14 @@ class GamePlayer(
         protected set
 
     /**
+     * 포지션 변경 이력 (JSON 형식: "이닝:포지션,이닝:포지션,...")
+     * 예: "1:PITCHER,3:FIRST_BASE"
+     */
+    @Column(name = "position_history", columnDefinition = "TEXT")
+    var positionHistory: String? = null
+        protected set
+
+    /**
      * 선발 출전 선수인지 확인합니다.
      */
     val isStartingLineup: Boolean
@@ -115,10 +123,59 @@ class GamePlayer(
 
     /**
      * 포지션을 변경합니다.
+     * 변경 전 포지션과 이닝을 이력에 기록합니다.
+     *
+     * @param newPosition 새 포지션
+     * @param currentInning 현재 이닝 (이력 기록용, null이면 이력 미기록)
      */
-    fun changePosition(newPosition: Position) {
+    fun changePosition(
+        newPosition: Position,
+        currentInning: Int? = null,
+    ) {
         require(isCurrentlyPlaying) { "현재 출전 중인 선수만 포지션을 변경할 수 있습니다." }
+        if (currentInning != null) {
+            recordPositionHistory(currentInning, this.position)
+        }
         this.position = newPosition
+    }
+
+    /**
+     * 포지션 이력을 추가합니다.
+     * 형식: "이닝:포지션명" (예: "1:PITCHER,3:FIRST_BASE")
+     */
+    private fun recordPositionHistory(
+        inning: Int,
+        previousPosition: Position,
+    ) {
+        val entry = "$inning:${previousPosition.name}"
+        positionHistory =
+            if (positionHistory.isNullOrBlank()) {
+                entry
+            } else {
+                "$positionHistory,$entry"
+            }
+    }
+
+    /**
+     * 포지션 이력을 파싱하여 반환합니다.
+     * @return 이닝-포지션 쌍의 목록 (이닝 오름차순)
+     */
+    fun getPositionHistoryList(): List<Pair<Int, Position>> {
+        if (positionHistory.isNullOrBlank()) return emptyList()
+        return positionHistory!!
+            .split(",")
+            .mapNotNull { entry ->
+                val parts = entry.split(":")
+                if (parts.size == 2) {
+                    val inning = parts[0].trim().toIntOrNull() ?: return@mapNotNull null
+                    val position =
+                        runCatching { Position.valueOf(parts[1].trim()) }.getOrNull() ?: return@mapNotNull null
+                    Pair(inning, position)
+                } else {
+                    null
+                }
+            }
+            .sortedBy { it.first }
     }
 
     /**
