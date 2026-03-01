@@ -7,6 +7,7 @@ import com.nextup.common.exception.InvalidStateException
 import com.nextup.infrastructure.exception.BaseExceptionHandler
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -28,6 +29,14 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         return ResponseEntity
             .status(HttpStatus.FORBIDDEN)
             .body(ApiResponse.error(ex.code, ex.message))
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(ex: AccessDeniedException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("AccessDeniedException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
+            .body(ApiResponse.error("ACCESS_DENIED", "접근 권한이 없습니다"))
     }
 
     @ExceptionHandler(InvalidStateException::class)

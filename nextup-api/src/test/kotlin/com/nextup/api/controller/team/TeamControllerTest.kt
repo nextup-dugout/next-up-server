@@ -2,14 +2,11 @@ package com.nextup.api.controller.team
 
 import com.nextup.api.dto.team.CreateTeamRequest
 import com.nextup.api.dto.team.UpdateTeamRequest
-import com.nextup.common.exception.InsufficientTeamRoleException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
-import com.nextup.core.domain.team.TeamMember
-import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.LeagueRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.team.TeamMembershipService
@@ -129,15 +126,9 @@ class TeamControllerTest {
     @DisplayName("PUT /api/v1/teams/{teamId}")
     inner class UpdateTeam {
         @Test
-        fun `should update team when owner`() {
+        fun `should update team`() {
             // given
             val request = UpdateTeamRequest(name = "뉴타이거즈")
-            val ownerMember =
-                mockk<TeamMember> {
-                    every { isOwner() } returns true
-                    every { role } returns TeamMemberRole.OWNER
-                }
-            every { teamMembershipService.getMember(10L, 100L) } returns ownerMember
             every { teamRepository.findByIdWithLeague(10L) } returns team
             every { team.updateBasicInfo(name = "뉴타이거즈", city = null, abbreviation = null) } returns Unit
             every { teamRepository.save(team) } returns team
@@ -152,30 +143,13 @@ class TeamControllerTest {
         }
 
         @Test
-        fun `should throw when not owner`() {
+        fun `should throw when team not found`() {
             // given
             val request = UpdateTeamRequest(name = "뉴타이거즈")
-            val memberMock =
-                mockk<TeamMember> {
-                    every { isOwner() } returns false
-                    every { role } returns TeamMemberRole.MEMBER
-                }
-            every { teamMembershipService.getMember(10L, 100L) } returns memberMock
+            every { teamRepository.findByIdWithLeague(10L) } returns null
 
             // when & then
-            assertThrows<InsufficientTeamRoleException> {
-                controller.updateTeam(10L, request, 100L)
-            }
-        }
-
-        @Test
-        fun `should throw when not a member`() {
-            // given
-            val request = UpdateTeamRequest(name = "뉴타이거즈")
-            every { teamMembershipService.getMember(10L, 100L) } returns null
-
-            // when & then
-            assertThrows<InsufficientTeamRoleException> {
+            assertThrows<TeamNotFoundException> {
                 controller.updateTeam(10L, request, 100L)
             }
         }
