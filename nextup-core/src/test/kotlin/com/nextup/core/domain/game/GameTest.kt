@@ -304,6 +304,70 @@ class GameTest {
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("진행 중인 경기만")
         }
+
+        @Test
+        fun `최소 이닝이 1 미만이면 예외가 발생한다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+
+            // when & then
+            assertThatThrownBy { game.callGame(minimumInning = 0) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 이닝은 1 이상이어야 합니다")
+        }
+
+        @Test
+        fun `3회에서 기본 최소이닝 5이닝 기준 콜드게임 선언이 불가하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 3
+                    isTopInning = true
+                }
+
+            // when & then
+            assertThatThrownBy { game.callGame() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 5이닝")
+        }
+
+        @Test
+        fun `기존 note가 있는 경기에 콜드게임 사유가 추가된다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                    note = "기존 메모"
+                }
+
+            // when
+            game.callGame(reason = "우천")
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CALLED)
+            assertThat(game.note).contains("기존 메모")
+            assertThat(game.note).contains("우천")
+        }
+
+        @Test
+        fun `4회초에서 홈팀 리드여도 콜드게임 선언이 불가하다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 4
+                    isTopInning = true
+                }
+
+            // when & then
+            assertThatThrownBy { game.callGame(isHomeTeamLeading = true) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 5이닝")
+        }
     }
 
     @Nested
