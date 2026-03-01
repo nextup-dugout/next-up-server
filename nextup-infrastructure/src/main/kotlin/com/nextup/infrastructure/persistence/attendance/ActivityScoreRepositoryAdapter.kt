@@ -43,4 +43,12 @@ class ActivityScoreRepositoryAdapter(
         team: Team,
         member: TeamMember,
     ): Boolean = jpaRepository.existsByTeamIdAndMemberId(team.id, member.id)
+
+    override fun deleteByMemberId(memberId: Long) {
+        jpaRepository.deleteByMemberId(memberId)
+    }
+
+    override fun deleteByTeamId(teamId: Long) {
+        jpaRepository.deleteByTeamId(teamId)
+    }
 }

@@ -69,4 +69,16 @@ interface ActivityScoreRepositoryPort {
         team: Team,
         member: TeamMember,
     ): Boolean
+
+    /**
+     * 팀원 ID로 활동 점수를 삭제합니다.
+     * 팀원 탈퇴/강퇴 시 orphan 방지를 위해 호출됩니다.
+     */
+    fun deleteByMemberId(memberId: Long)
+
+    /**
+     * 팀 ID로 모든 활동 점수를 삭제합니다.
+     * 팀 해산 시 orphan 방지를 위해 호출됩니다.
+     */
+    fun deleteByTeamId(teamId: Long)
 }

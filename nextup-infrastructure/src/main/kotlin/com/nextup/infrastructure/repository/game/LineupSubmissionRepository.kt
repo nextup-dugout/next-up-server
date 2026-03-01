@@ -34,4 +34,10 @@ interface LineupSubmissionRepository :
         gameId: Long,
         status: LineupSubmissionStatus,
     ): List<LineupSubmission>
+
+    @Query("SELECT ls FROM LineupSubmission ls WHERE ls.team.id = :teamId AND ls.status IN :statuses")
+    override fun findAllByTeamIdAndStatusIn(
+        teamId: Long,
+        statuses: List<LineupSubmissionStatus>,
+    ): List<LineupSubmission>
 }

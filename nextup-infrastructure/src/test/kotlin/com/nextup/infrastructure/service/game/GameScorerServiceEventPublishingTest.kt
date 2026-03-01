@@ -23,6 +23,7 @@ import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
+import com.nextup.core.service.game.PitchingDecisionService
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -46,6 +47,7 @@ class GameScorerServiceEventPublishingTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var pitchingDecisionService: PitchingDecisionService
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var gameScorerService: GameScorerServiceImpl
 
@@ -58,6 +60,7 @@ class GameScorerServiceEventPublishingTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
+        pitchingDecisionService = mockk(relaxed = true)
         eventPublisher = mockk(relaxed = true)
         gameScorerService =
             GameScorerServiceImpl(
@@ -68,6 +71,7 @@ class GameScorerServiceEventPublishingTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                pitchingDecisionService,
                 eventPublisher,
             )
     }

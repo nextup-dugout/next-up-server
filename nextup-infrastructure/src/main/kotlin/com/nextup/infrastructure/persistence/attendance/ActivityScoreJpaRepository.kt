@@ -36,4 +36,8 @@ interface ActivityScoreJpaRepository : JpaRepository<ActivityScore, Long> {
         @Param("teamId") teamId: Long,
         @Param("status") status: TeamMemberStatus,
     ): List<ActivityScore>
+
+    fun deleteByMemberId(memberId: Long)
+
+    fun deleteByTeamId(teamId: Long)
 }
