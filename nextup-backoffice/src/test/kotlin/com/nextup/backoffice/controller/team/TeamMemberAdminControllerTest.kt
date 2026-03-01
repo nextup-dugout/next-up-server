@@ -148,7 +148,11 @@ class TeamMemberAdminControllerTest {
         }
     }
 
-    private fun <T> setId(entity: T, clazz: Class<*>, id: Long) {
+    private fun <T> setId(
+        entity: T,
+        clazz: Class<*>,
+        id: Long
+    ) {
         val idField = clazz.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(entity, id)

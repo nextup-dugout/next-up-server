@@ -129,7 +129,13 @@ class UserAdminControllerTest {
         @Test
         fun `새 사용자를 생성할 수 있다`() {
             val user = createUser(1L, "new@example.com", "신규유저")
-            val request = CreateUserRequest(email = "new@example.com", password = "password123", nickname = "신규유저", roles = listOf("USER"))
+            val request =
+                CreateUserRequest(
+                    email = "new@example.com",
+                    password = "password123",
+                    nickname = "신규유저",
+                    roles = listOf("USER")
+                )
             every { userService.createLocalUser(any(), any(), any()) } returns user
             every { userService.getById(any()) } returns user
 
@@ -216,7 +222,11 @@ class UserAdminControllerTest {
         }
     }
 
-    private fun createUser(id: Long, email: String, nickname: String): User {
+    private fun createUser(
+        id: Long,
+        email: String,
+        nickname: String
+    ): User {
         val user = User.createLocalUser(email = email, encodedPassword = "encoded_password", nickname = nickname)
         val idField = User::class.java.getDeclaredField("id")
         idField.isAccessible = true

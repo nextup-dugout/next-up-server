@@ -233,7 +233,10 @@ class OrganizationAdminControllerTest {
         }
     }
 
-    private fun createUser(id: Long, email: String): User {
+    private fun createUser(
+        id: Long,
+        email: String
+    ): User {
         val user = User.createLocalUser(email = email, encodedPassword = "password", nickname = "Test User")
         val idField = user::class.java.getDeclaredField("id")
         idField.isAccessible = true
@@ -248,7 +251,13 @@ class OrganizationAdminControllerTest {
         organizationId: Long,
         role: OrganizationRole = OrganizationRole.ADMIN,
     ): OrganizationAdmin {
-        val admin = OrganizationAdmin.create(user = user, organizationType = organizationType, organizationId = organizationId, role = role)
+        val admin =
+            OrganizationAdmin.create(
+                user = user,
+                organizationType = organizationType,
+                organizationId = organizationId,
+                role = role
+            )
         val idField = admin::class.java.getDeclaredField("id")
         idField.isAccessible = true
         idField.set(admin, id)
