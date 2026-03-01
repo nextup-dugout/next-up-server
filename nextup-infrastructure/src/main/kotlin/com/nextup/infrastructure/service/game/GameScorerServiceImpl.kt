@@ -7,6 +7,7 @@ import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.common.exception.NoEventToUndoException
 import com.nextup.common.exception.PitchingRecordNotFoundException
 import com.nextup.common.exception.UndoNotAvailableException
+import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
@@ -394,6 +395,27 @@ class GameScorerServiceImpl(
 
         val savedGame = gameRepository.save(game)
         publishGameResultEvent(gameId)
+        return savedGame
+    }
+
+    @Transactional
+    override fun cancelGame(
+        gameId: Long,
+        reason: String?,
+    ): Game {
+        val game = findGame(gameId)
+
+        if (game.status != GameStatus.SCHEDULED && game.status != GameStatus.POSTPONED) {
+            throw InvalidGameStateException(
+                "예정 또는 연기 상태의 경기만 취소할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        game.cancel(reason)
+        val savedGame = gameRepository.save(game)
+
+        eventPublisher.publishEvent(GameCancelledEvent(gameId = gameId))
+
         return savedGame
     }
 

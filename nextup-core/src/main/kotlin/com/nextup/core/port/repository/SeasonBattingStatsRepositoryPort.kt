@@ -88,4 +88,10 @@ interface SeasonBattingStatsRepositoryPort {
         minPlateAppearances: Int,
         limit: Int,
     ): List<SeasonBattingStats>
+
+    /**
+     * 특정 경기에 출전하여 타격 기록이 있는 선수들의 시즌 타격 통계를 조회합니다.
+     * 경기 취소 시 스탯 롤백에 사용됩니다.
+     */
+    fun findAllByGameId(gameId: Long): List<SeasonBattingStats>
 }

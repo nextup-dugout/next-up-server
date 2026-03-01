@@ -76,4 +76,10 @@ interface SeasonPitchingStatsRepositoryPort {
         minInningsPitchedOuts: Int,
         limit: Int,
     ): List<SeasonPitchingStats>
+
+    /**
+     * 특정 경기에 등판하여 투구 기록이 있는 선수들의 시즌 투구 통계를 조회합니다.
+     * 경기 취소 시 스탯 롤백에 사용됩니다.
+     */
+    fun findAllByGameId(gameId: Long): List<SeasonPitchingStats>
 }

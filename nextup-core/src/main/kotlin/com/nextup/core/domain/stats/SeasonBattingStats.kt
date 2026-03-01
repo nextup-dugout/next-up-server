@@ -295,6 +295,34 @@ class SeasonBattingStats(
     }
 
     /**
+     * 경기 타격 기여분을 시즌 통계에서 차감합니다 (경기 취소 롤백).
+     *
+     * 취소된 경기의 BattingRecord에 집계된 값을 역산하여
+     * 해당 경기의 기여분 전체를 시즌 통계에서 제거합니다.
+     * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
+     */
+    fun revertGameRecord(record: BattingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        plateAppearances = maxOf(0, plateAppearances - record.plateAppearances)
+        atBats = maxOf(0, atBats - record.atBats)
+        hits = maxOf(0, hits - record.hits)
+        doubles = maxOf(0, doubles - record.doubles)
+        triples = maxOf(0, triples - record.triples)
+        homeRuns = maxOf(0, homeRuns - record.homeRuns)
+        runs = maxOf(0, runs - record.runs)
+        runsBattedIn = maxOf(0, runsBattedIn - record.runsBattedIn)
+        walks = maxOf(0, walks - record.walks)
+        intentionalWalks = maxOf(0, intentionalWalks - record.intentionalWalks)
+        hitByPitch = maxOf(0, hitByPitch - record.hitByPitch)
+        strikeouts = maxOf(0, strikeouts - record.strikeouts)
+        sacrificeBunts = maxOf(0, sacrificeBunts - record.sacrificeBunts)
+        sacrificeFlies = maxOf(0, sacrificeFlies - record.sacrificeFlies)
+        stolenBases = maxOf(0, stolenBases - record.stolenBases)
+        caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
+        groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays - record.groundedIntoDoublePlays)
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

@@ -92,6 +92,7 @@ class GameScorerController(
      * 경기를 몰수 처리합니다.
      *
      * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
+     * 몰수 시점까지의 개인 타격/투구 기록은 공식 기록으로 유효합니다 (KBO/MLB 기준).
      */
     @PostMapping("/{gameId}/forfeit")
     @ResponseStatus(HttpStatus.OK)
@@ -104,6 +105,26 @@ class GameScorerController(
                 gameId = gameId,
                 winnerTeamId = request.winnerTeamId!!,
                 reason = request.reason!!,
+            )
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 경기를 취소합니다.
+     *
+     * 예정(SCHEDULED) 또는 연기(POSTPONED) 상태의 경기만 취소 가능합니다.
+     * 취소된 경기에 실시간 반영된 시즌 타격/투구 통계는 자동으로 롤백됩니다.
+     */
+    @PostMapping("/{gameId}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    fun cancelGame(
+        @PathVariable gameId: Long,
+        @RequestBody request: CancelGameRequestDto = CancelGameRequestDto()
+    ): ApiResponse<GameResponse> {
+        val game =
+            gameScorerService.cancelGame(
+                gameId = gameId,
+                reason = request.reason,
             )
         return ApiResponse.success(game.toResponse())
     }
