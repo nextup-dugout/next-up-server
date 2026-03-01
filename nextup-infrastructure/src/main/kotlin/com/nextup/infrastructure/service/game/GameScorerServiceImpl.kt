@@ -181,6 +181,7 @@ class GameScorerServiceImpl(
         // 투수 승/패/세이브/홀드 자동 결정
         assignPitchingDecisions(gameId)
 
+
         publishGameResultEvent(gameId)
         return savedGame
     }
