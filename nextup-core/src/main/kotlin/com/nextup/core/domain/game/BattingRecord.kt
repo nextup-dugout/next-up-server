@@ -432,6 +432,52 @@ class BattingRecord(
         }
     }
 
+    /**
+     * 관리자 기록 정정: 특정 필드 값을 직접 설정합니다.
+     *
+     * 경기 상태와 무관하게 관리자 권한으로 정정 가능합니다.
+     * 정정 후 validate()를 호출하여 일관성을 검증합니다.
+     *
+     * @param fieldName 정정할 필드명
+     * @param newValue 새로운 값 (문자열, 파싱하여 적용)
+     * @throws IllegalArgumentException 유효하지 않은 필드명 또는 값
+     */
+    fun correctField(
+        fieldName: String,
+        newValue: String,
+    ): String {
+        val intValue = newValue.toIntOrNull()
+            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+        require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+
+        val oldValue =
+            when (fieldName) {
+                "plateAppearances" -> plateAppearances.also { plateAppearances = intValue }
+                "atBats" -> atBats.also { atBats = intValue }
+                "hits" -> hits.also { hits = intValue }
+                "doubles" -> doubles.also { doubles = intValue }
+                "triples" -> triples.also { triples = intValue }
+                "homeRuns" -> homeRuns.also { homeRuns = intValue }
+                "runs" -> runs.also { runs = intValue }
+                "runsBattedIn" -> runsBattedIn.also { runsBattedIn = intValue }
+                "walks" -> walks.also { walks = intValue }
+                "intentionalWalks" -> intentionalWalks.also { intentionalWalks = intValue }
+                "hitByPitch" -> hitByPitch.also { hitByPitch = intValue }
+                "strikeouts" -> strikeouts.also { strikeouts = intValue }
+                "sacrificeBunts" -> sacrificeBunts.also { sacrificeBunts = intValue }
+                "sacrificeFlies" -> sacrificeFlies.also { sacrificeFlies = intValue }
+                "stolenBases" -> stolenBases.also { stolenBases = intValue }
+                "caughtStealing" -> caughtStealing.also { caughtStealing = intValue }
+                "groundedIntoDoublePlays" ->
+                    groundedIntoDoublePlays.also { groundedIntoDoublePlays = intValue }
+                "triplePlays" -> triplePlays.also { triplePlays = intValue }
+                else -> throw IllegalArgumentException("유효하지 않은 타격 기록 필드입니다: $fieldName")
+            }
+
+        validate()
+        return oldValue.toString()
+    }
+
     companion object {
         /**
          * 경기 출전 선수의 타격 기록을 생성합니다.
