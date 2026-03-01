@@ -67,6 +67,6 @@ data class PitcherLineDto(
     val era: String,
 ) {
     companion object {
-        fun formatERA(era: BigDecimal): String = era.setScale(2, RoundingMode.HALF_UP).toString()
+        fun formatERA(era: BigDecimal?): String = era?.setScale(2, RoundingMode.HALF_UP)?.toString() ?: "∞"
     }
 }

@@ -9,6 +9,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -280,5 +281,61 @@ class TeamMemberRepositoryAdapterTest {
         // then
         assertThat(result).isEqualTo(5L)
         verify(exactly = 1) { jpaRepository.countByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) }
+    }
+
+    @Nested
+    @DisplayName("countByTeamIdsAndStatus")
+    inner class CountByTeamIdsAndStatus {
+        @Test
+        @DisplayName("빈 teamIds 목록이면 빈 Map을 반환한다")
+        fun `should return empty map when teamIds is empty`() {
+            // when
+            val result =
+                adapter.countByTeamIdsAndStatus(emptyList(), TeamMemberStatus.ACTIVE)
+
+            // then
+            assertThat(result).isEmpty()
+            verify(exactly = 0) { jpaRepository.countByTeamIdsAndStatus(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("teamIds 목록으로 배치 조회 시 JPA repository에 위임한다")
+        fun `should delegate to jpa repository and map projection results`() {
+            // given
+            val projection1 =
+                mockk<TeamMemberCountProjection> {
+                    every { getTeamId() } returns 1L
+                    every { getMemberCount() } returns 10L
+                }
+            val projection2 =
+                mockk<TeamMemberCountProjection> {
+                    every { getTeamId() } returns 2L
+                    every { getMemberCount() } returns 5L
+                }
+            every {
+                jpaRepository.countByTeamIdsAndStatus(
+                    listOf(1L, 2L),
+                    TeamMemberStatus.ACTIVE,
+                )
+            } returns listOf(projection1, projection2)
+
+            // when
+            val result =
+                adapter.countByTeamIdsAndStatus(
+                    listOf(1L, 2L),
+                    TeamMemberStatus.ACTIVE,
+                )
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result[1L]).isEqualTo(10L)
+            assertThat(result[2L]).isEqualTo(5L)
+            verify(exactly = 1) {
+                jpaRepository.countByTeamIdsAndStatus(
+                    listOf(1L, 2L),
+                    TeamMemberStatus.ACTIVE,
+                )
+            }
+        }
     }
 }

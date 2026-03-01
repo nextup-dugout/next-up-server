@@ -367,7 +367,7 @@ class PlayerStatsServiceTest {
             // given
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerBattingStatsRepository.findByPlayerId(playerId) } returns null
-            every { battingRecordRepository.findAllByPlayerId(playerId) } returns emptyList()
+            every { battingRecordRepository.findAllByPlayerIdWithGameInfo(playerId) } returns emptyList()
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -392,7 +392,7 @@ class PlayerStatsServiceTest {
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerBattingStatsRepository.findByPlayerId(playerId) } returns existingStats
-            every { battingRecordRepository.findAllByPlayerId(playerId) } returns listOf(record1, record2)
+            every { battingRecordRepository.findAllByPlayerIdWithGameInfo(playerId) } returns listOf(record1, record2)
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -415,7 +415,7 @@ class PlayerStatsServiceTest {
             // given
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerPitchingStatsRepository.findByPlayerId(playerId) } returns null
-            every { pitchingRecordRepository.findAllByPlayerId(playerId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByPlayerIdWithGameInfo(playerId) } returns emptyList()
             every { careerPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -440,7 +440,7 @@ class PlayerStatsServiceTest {
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { careerPitchingStatsRepository.findByPlayerId(playerId) } returns existingStats
-            every { pitchingRecordRepository.findAllByPlayerId(playerId) } returns listOf(record1, record2)
+            every { pitchingRecordRepository.findAllByPlayerIdWithGameInfo(playerId) } returns listOf(record1, record2)
             every { careerPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             // when

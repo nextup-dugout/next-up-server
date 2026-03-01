@@ -230,7 +230,7 @@ class SeasonPitchingStatsTest {
         }
 
         @Test
-        fun `should return zero ERA when no innings pitched`() {
+        fun `should return zero ERA when no innings pitched and no earned runs`() {
             // given
             val stats = SeasonPitchingStats.create(testPlayer, 2024)
 
@@ -238,7 +238,20 @@ class SeasonPitchingStatsTest {
             val era = stats.earnedRunAverage
 
             // then
-            assertThat(era).isEqualByComparingTo(BigDecimal("0.00"))
+            assertThat(era).isNotNull().isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `should return null ERA when no innings pitched but earned runs exist`() {
+            // given: 0이닝이지만 자책점이 있는 경우 (무한대)
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, inningsPitchedOuts = 0, earnedRuns = 3)
+
+            // when
+            val era = stats.earnedRunAverage
+
+            // then
+            assertThat(era).isNull()
         }
 
         @Test

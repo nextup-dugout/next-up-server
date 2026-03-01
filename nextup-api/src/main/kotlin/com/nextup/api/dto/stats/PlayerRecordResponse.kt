@@ -57,6 +57,6 @@ data class PitchingStatsResponse(
     val walksAllowed: Int,
     val strikeouts: Int,
     val homeRunsAllowed: Int,
-    val era: BigDecimal,
+    val era: BigDecimal?,
     val whip: BigDecimal,
 )

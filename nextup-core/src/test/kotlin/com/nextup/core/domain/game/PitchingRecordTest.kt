@@ -228,8 +228,17 @@ class PitchingRecordTest {
     @DisplayName("ERA 계산")
     inner class EarnedRunAverageTest {
         @Test
-        fun `이닝이 0이면 ERA는 0이다`() {
+        fun `0이닝 0자책점이면 ERA는 0_00이다`() {
             assertThat(pitchingRecord.earnedRunAverage).isEqualTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `0이닝이지만 자책점이 있으면 ERA는 null이다`() {
+            // given: 아웃 없이 자책점만 기록된 투수 (등판 후 즉시 교체)
+            pitchingRecord.recordRun(isEarned = true)
+
+            // then: 계산 불가 (무한대)
+            assertThat(pitchingRecord.earnedRunAverage).isNull()
         }
 
         @Test

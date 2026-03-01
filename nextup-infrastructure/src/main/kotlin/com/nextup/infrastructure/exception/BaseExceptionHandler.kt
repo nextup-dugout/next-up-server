@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 
@@ -65,6 +66,16 @@ abstract class BaseExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error("INVALID_ARGUMENT", ex.message ?: "Invalid argument"))
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException::class)
+    fun handleOptimisticLockingFailureException(
+        ex: ObjectOptimisticLockingFailureException,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("OptimisticLockingFailureException: {}", ex.message)
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(ApiResponse.error("CONCURRENT_BOOKING", "다른 사용자가 먼저 예약했습니다. 다시 시도해주세요."))
     }
 
     @ExceptionHandler(Exception::class)

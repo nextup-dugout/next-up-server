@@ -93,4 +93,10 @@ interface BattingRecordRepositoryPort {
         teamId: Long,
         gameIds: List<Long>,
     ): List<BattingRecord>
+
+    /**
+     * 선수 ID로 모든 타격 기록을 조회합니다. (FETCH JOIN으로 N+1 방지)
+     * gamePlayer, gameTeam, game을 함께 로딩하여 커리어 통계 계산에 사용합니다.
+     */
+    fun findAllByPlayerIdWithGameInfo(playerId: Long): List<BattingRecord>
 }

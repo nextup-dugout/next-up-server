@@ -47,6 +47,8 @@ class Competition(
     val maxTeams: Int? = null,
     @Column(name = "playoff_teams")
     var playoffTeams: Int? = null,
+    @Embedded
+    var gameRules: GameRules = GameRules(),
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -101,6 +103,17 @@ class Competition(
         }
         name?.let { this.name = it }
         description?.let { this.description = it }
+    }
+
+    /**
+     * 경기 규칙을 업데이트합니다.
+     * 첫 경기가 시작된 이후에는 규칙을 변경할 수 없습니다.
+     */
+    fun updateGameRules(newRules: GameRules) {
+        require(status == CompetitionStatus.SCHEDULED) {
+            "경기가 시작되기 전(예정 상태)에만 규칙을 변경할 수 있습니다."
+        }
+        this.gameRules = newRules
     }
 
     /**

@@ -136,7 +136,7 @@ class IndividualRankingServiceImpl(
         val teamName = resolveTeamName(this.player.id)
         val value =
             when (category) {
-                PitchingCategory.ERA -> this.earnedRunAverage.toDouble()
+                PitchingCategory.ERA -> this.earnedRunAverage?.toDouble() ?: Double.MAX_VALUE
                 PitchingCategory.WHIP -> this.whip.toDouble()
                 PitchingCategory.WINS -> this.wins.toDouble()
                 PitchingCategory.SAVES -> this.saves.toDouble()
