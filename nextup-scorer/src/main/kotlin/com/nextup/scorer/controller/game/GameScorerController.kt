@@ -89,6 +89,21 @@ class GameScorerController(
     }
 
     /**
+     * 주루 플레이를 기록합니다.
+     *
+     * 도루, 도루 실패, 견제사, 폭투 진루 등 타석 외 주루 이벤트를 기록합니다.
+     */
+    @PostMapping("/{gameId}/base-running")
+    @ResponseStatus(HttpStatus.OK)
+    fun recordBaseRunning(
+        @PathVariable gameId: Long,
+        @RequestBody @Valid request: BaseRunningRequestDto
+    ): ApiResponse<BaseRunningResponse> {
+        val event = gameScorerService.recordBaseRunning(gameId, request.toDomain())
+        return ApiResponse.success(event.toBaseRunningResponse())
+    }
+
+    /**
      * 경기를 몰수 처리합니다.
      *
      * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.

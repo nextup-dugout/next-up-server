@@ -48,6 +48,18 @@ class GameEvent(
     @Enumerated(EnumType.STRING)
     @Column(name = "plate_appearance_result", length = 30)
     val plateAppearanceResult: PlateAppearanceResult? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "runner_player_id")
+    val runnerPlayer: GamePlayer? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "from_base", length = 10)
+    val fromBase: Base? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "to_base", length = 10)
+    val toBase: Base? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "base_running_result", length = 30)
+    val baseRunningResult: BaseRunningResult? = null,
     @Column(name = "runs_scored", nullable = false)
     val runsScored: Int = 0,
     @Column(nullable = false)
@@ -113,6 +125,37 @@ class GameEvent(
                 outCountAfter = 0,
                 eventType = GameEventType.INNING_CHANGE,
                 description = description,
+            )
+
+        /**
+         * 주루 플레이 이벤트를 생성합니다.
+         */
+        fun createBaseRunning(
+            game: Game,
+            runner: GamePlayer,
+            fromBase: Base,
+            toBase: Base,
+            result: BaseRunningResult,
+            description: String,
+            outCountBefore: Int,
+            outCountAfter: Int,
+            runnersBeforeJson: String?,
+            runnersAfterJson: String?,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = outCountBefore,
+                outCountAfter = outCountAfter,
+                eventType = GameEventType.BASE_RUNNING,
+                description = description,
+                runnerPlayer = runner,
+                fromBase = fromBase,
+                toBase = toBase,
+                baseRunningResult = result,
+                runnersBeforeJson = runnersBeforeJson,
+                runnersAfterJson = runnersAfterJson,
             )
 
         /**

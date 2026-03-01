@@ -10,6 +10,8 @@ import com.nextup.common.exception.UndoNotAvailableException
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
+import com.nextup.core.domain.game.Base
+import com.nextup.core.domain.game.BaseRunningResult
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
@@ -25,6 +27,7 @@ import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameScorerService
+import com.nextup.core.service.game.dto.BaseRunningRequest
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import org.springframework.context.ApplicationEventPublisher
@@ -360,6 +363,113 @@ class GameScorerServiceImpl(
         )
         game.gameState.restoreRunners(event.runnersBeforeJson)
     }
+
+    @Transactional
+    override fun recordBaseRunning(
+        gameId: Long,
+        request: BaseRunningRequest,
+    ): GameEvent {
+        val game = findGame(gameId)
+
+        if (game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "진행 중인 경기만 주루 기록을 입력할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        val runner =
+            gamePlayerRepository.findByIdOrNull(request.runnerId)
+                ?: throw GamePlayerNotFoundException(request.runnerId)
+
+        val outCountBefore = game.gameState.outs
+
+        // 주루 플레이 전 주자 상태 스냅샷
+        val runnersBeforeJson = serializeRunners(game.gameState)
+
+        // 주루 플레이 결과에 따른 처리
+        val outCountAfter: Int
+        when (request.result) {
+            BaseRunningResult.STOLEN_BASE,
+            BaseRunningResult.ADVANCED_ON_ERROR,
+            BaseRunningResult.ADVANCED_ON_WILD_PITCH,
+            BaseRunningResult.ADVANCED_ON_PASSED_BALL,
+            BaseRunningResult.ADVANCED_ON_BALK,
+            -> {
+                // 진루: 출발 베이스 비우고 도착 베이스에 주자 배치
+                game.gameState.setRunner(request.fromBase, null)
+                if (request.toBase != Base.HOME) {
+                    game.gameState.setRunner(request.toBase, runner.id)
+                }
+                if (request.result == BaseRunningResult.STOLEN_BASE) {
+                    val battingRecord =
+                        battingRecordRepository.findByGamePlayer(runner)
+                            ?: throw BattingRecordNotFoundException(runner.id)
+                    battingRecord.recordStolenBase()
+                }
+                outCountAfter = game.gameState.outs
+            }
+            BaseRunningResult.CAUGHT_STEALING,
+            BaseRunningResult.PICKED_OFF,
+            -> {
+                // 아웃: 출발 베이스 비우고 아웃 카운트 증가
+                game.gameState.setRunner(request.fromBase, null)
+                game.recordOut()
+                if (request.result == BaseRunningResult.CAUGHT_STEALING) {
+                    val battingRecord =
+                        battingRecordRepository.findByGamePlayer(runner)
+                            ?: throw BattingRecordNotFoundException(runner.id)
+                    battingRecord.recordCaughtStealing()
+                }
+                outCountAfter = game.gameState.outs
+            }
+        }
+
+        val runnersAfterJson = serializeRunners(game.gameState)
+
+        val description = buildBaseRunningDescription(request)
+
+        val event =
+            GameEvent.createBaseRunning(
+                game = game,
+                runner = runner,
+                fromBase = request.fromBase,
+                toBase = request.toBase,
+                result = request.result,
+                description = description,
+                outCountBefore = outCountBefore,
+                outCountAfter = outCountAfter,
+                runnersBeforeJson = runnersBeforeJson,
+                runnersAfterJson = runnersAfterJson,
+            )
+
+        val savedEvent = gameEventRepository.save(event)
+        gameRepository.save(game)
+        return savedEvent
+    }
+
+    private fun serializeRunners(gameState: com.nextup.core.domain.game.GameState): String? {
+        val entries =
+            buildList {
+                gameState.runnerOnFirstId?.let { add("1루:$it") }
+                gameState.runnerOnSecondId?.let { add("2루:$it") }
+                gameState.runnerOnThirdId?.let { add("3루:$it") }
+            }
+        return if (entries.isEmpty()) null else entries.joinToString(",")
+    }
+
+    private fun buildBaseRunningDescription(request: BaseRunningRequest): String {
+        val fromDisplay = baseDisplay(request.fromBase)
+        val toDisplay = baseDisplay(request.toBase)
+        return "${request.result.displayName}: $fromDisplay → $toDisplay"
+    }
+
+    private fun baseDisplay(base: Base): String =
+        when (base) {
+            Base.FIRST -> "1루"
+            Base.SECOND -> "2루"
+            Base.THIRD -> "3루"
+            Base.HOME -> "홈"
+        }
 
     @Transactional
     override fun forfeitGame(
