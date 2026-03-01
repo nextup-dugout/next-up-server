@@ -350,6 +350,27 @@ class IndividualRankingServiceImplTest {
         }
 
         @Test
+        fun `should return MAX_VALUE for null ERA pitcher`() {
+            // given
+            val stats1 = createPitchingStats(player1, 2026, ipOuts = 0, earnedRuns = 1, games = 1)
+            val qualifyingIPOuts =
+                (IndividualRankingServiceImpl.DEFAULT_TEAM_GAMES *
+                    IndividualRankingServiceImpl.QUALIFYING_IP_FACTOR *
+                    3).toInt()
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every { seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10) } returns listOf(stats1)
+            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+
+            // when
+            val result = service.getPitchingLeaders(1L, PitchingCategory.ERA)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].value).isEqualTo(Double.MAX_VALUE)
+        }
+
+        @Test
         fun `should return wins leaders`() {
             // given
             val stats1 = createPitchingStats(player1, 2026, ipOuts = 50, earnedRuns = 10, games = 12, wins = 8)

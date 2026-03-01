@@ -42,7 +42,7 @@ data class SeasonPitchingStatsResponse(
     val remainingOuts: Int,
     val inningsPitched: String, // "5.33"
     val inningsPitchedDisplay: String, // "5.1"
-    val earnedRunAverage: String, // "3.50"
+    val earnedRunAverage: String?, // "3.50" or null (0이닝 + 자책점 있는 경우 계산 불가)
     val whip: String, // "1.20"
     val strikeoutsPer9: String, // "9.00"
     val walksPer9: String, // "2.50"

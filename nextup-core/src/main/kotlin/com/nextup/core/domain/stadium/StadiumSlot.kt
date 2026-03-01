@@ -39,6 +39,9 @@ class StadiumSlot private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+
     companion object {
         fun create(
             stadium: Stadium,

@@ -119,12 +119,13 @@ class PitchingRecord(
 
     /**
      * 자책점 평균자책점 (ERA) = (자책점 / 이닝) * 9
-     * 이닝이 0이면 0.00
+     * 이닝이 0이고 자책점이 있으면 null (계산 불가 - 무한대)
+     * 이닝이 0이고 자책점이 없으면 0.00
      */
-    val earnedRunAverage: BigDecimal
+    val earnedRunAverage: BigDecimal?
         get() =
             if (inningsPitchedOuts == 0) {
-                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                if (earnedRuns > 0) null else BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
             } else {
                 val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
                 BigDecimal(earnedRuns)
