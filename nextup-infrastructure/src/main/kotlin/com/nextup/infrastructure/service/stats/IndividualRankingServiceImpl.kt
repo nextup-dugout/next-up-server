@@ -66,8 +66,10 @@ class IndividualRankingServiceImpl(
                     seasonBattingStatsRepository.findTopByStolenBases(year, limit)
             }
 
+        val teamNameMap = resolveTeamNames(stats.map { it.player.id })
+
         return stats.mapIndexed { index, stat ->
-            stat.toBattingLeaderDto(index + 1, category)
+            stat.toBattingLeaderDto(index + 1, category, teamNameMap)
         }
     }
 
@@ -97,16 +99,19 @@ class IndividualRankingServiceImpl(
                     seasonPitchingStatsRepository.findTopByStrikeouts(year, limit)
             }
 
+        val teamNameMap = resolveTeamNames(stats.map { it.player.id })
+
         return stats.mapIndexed { index, stat ->
-            stat.toPitchingLeaderDto(index + 1, category)
+            stat.toPitchingLeaderDto(index + 1, category, teamNameMap)
         }
     }
 
     private fun SeasonBattingStats.toBattingLeaderDto(
         rank: Int,
         category: BattingCategory,
+        teamNameMap: Map<Long, String>,
     ): BattingLeaderDto {
-        val teamName = resolveTeamName(this.player.id)
+        val teamName = teamNameMap[this.player.id] ?: "-"
         val value =
             when (category) {
                 BattingCategory.BATTING_AVG -> this.battingAverage.toDouble()
@@ -132,8 +137,9 @@ class IndividualRankingServiceImpl(
     private fun SeasonPitchingStats.toPitchingLeaderDto(
         rank: Int,
         category: PitchingCategory,
+        teamNameMap: Map<Long, String>,
     ): PitchingLeaderDto {
-        val teamName = resolveTeamName(this.player.id)
+        val teamName = teamNameMap[this.player.id] ?: "-"
         val value =
             when (category) {
                 PitchingCategory.ERA -> this.earnedRunAverage?.toDouble() ?: Double.MAX_VALUE
@@ -153,8 +159,17 @@ class IndividualRankingServiceImpl(
         )
     }
 
-    private fun resolveTeamName(playerId: Long): String {
-        val members = teamMemberRepository.findByPlayerIdActive(playerId)
-        return members.firstOrNull()?.team?.name ?: "-"
+    /**
+     * 선수 ID 목록에 대한 활성 팀명을 한 번의 IN 쿼리로 일괄 조회한다.
+     * N+1 문제 방지: 랭킹 리스트 크기와 무관하게 단 1번의 쿼리만 실행된다.
+     *
+     * @param playerIds 조회할 선수 ID 목록
+     * @return 선수 ID -> 팀명 맵 (활성 팀이 없으면 해당 ID 없음)
+     */
+    private fun resolveTeamNames(playerIds: List<Long>): Map<Long, String> {
+        if (playerIds.isEmpty()) return emptyMap()
+        return teamMemberRepository.findByPlayerIdsActive(playerIds)
+            .groupBy { it.player.id }
+            .mapValues { (_, members) -> members.first().team.name }
     }
 }

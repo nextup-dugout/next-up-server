@@ -59,6 +59,8 @@ interface TeamMemberRepositoryPort {
 
     fun findByPlayerIdActive(playerId: Long): List<TeamMember>
 
+    fun findByPlayerIdsActive(playerIds: List<Long>): List<TeamMember>
+
     fun countByTeamIdAndStatus(
         teamId: Long,
         status: TeamMemberStatus,

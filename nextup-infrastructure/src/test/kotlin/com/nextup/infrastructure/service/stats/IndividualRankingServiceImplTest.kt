@@ -19,6 +19,7 @@ import com.nextup.core.service.stats.dto.BattingCategory
 import com.nextup.core.service.stats.dto.PitchingCategory
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -109,10 +110,12 @@ class IndividualRankingServiceImplTest {
                     IndividualRankingServiceImpl.QUALIFYING_PA_FACTOR).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10) } returns
-                listOf(stats1, stats2)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
-            every { teamMemberRepository.findByPlayerIdActive(20L) } returns listOf(createTeamMember(player2))
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10)
+            } returns listOf(stats1, stats2)
+            every {
+                teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L))
+            } returns listOf(createTeamMember(player1), createTeamMember(player2))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.BATTING_AVG)
@@ -133,7 +136,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.HOME_RUNS)
@@ -150,7 +153,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.RBI)
@@ -167,7 +170,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByHits(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.HITS)
@@ -185,7 +188,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByStolenBases(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.STOLEN_BASES)
@@ -204,9 +207,10 @@ class IndividualRankingServiceImplTest {
                     IndividualRankingServiceImpl.QUALIFYING_PA_FACTOR).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonBattingStatsRepository.findTopByOnBasePercentage(2026, qualifyingPA, 10) } returns
-                listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every {
+                seasonBattingStatsRepository.findTopByOnBasePercentage(2026, qualifyingPA, 10)
+            } returns listOf(stats1)
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.OBP)
@@ -225,7 +229,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopBySlugging(2026, qualifyingPA, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.SLG)
@@ -244,7 +248,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByOps(2026, qualifyingPA, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.OPS)
@@ -261,7 +265,9 @@ class IndividualRankingServiceImplTest {
                     IndividualRankingServiceImpl.QUALIFYING_PA_FACTOR).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10) } returns emptyList()
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10)
+            } returns emptyList()
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.BATTING_AVG)
@@ -279,9 +285,10 @@ class IndividualRankingServiceImplTest {
                     IndividualRankingServiceImpl.QUALIFYING_PA_FACTOR).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10) } returns
-                listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns emptyList()
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10)
+            } returns listOf(stats1)
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns emptyList()
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.BATTING_AVG)
@@ -298,13 +305,38 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 5) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getBattingLeaders(1L, BattingCategory.HOME_RUNS, limit = 5)
 
             // then
             assertThat(result).hasSize(1)
+        }
+
+        @Test
+        fun `should call findByPlayerIdsActive only once for multiple players`() {
+            // given: N+1 방지 검증 - 선수 2명에 대해 단 1번의 배치 쿼리만 실행되어야 함
+            val stats1 = createBattingStats(player1, 2026, atBats = 50, hits = 18, pa = 55, games = 12)
+            val stats2 = createBattingStats(player2, 2026, atBats = 45, hits = 14, pa = 50, games = 10)
+            val qualifyingPA =
+                (IndividualRankingServiceImpl.DEFAULT_TEAM_GAMES *
+                    IndividualRankingServiceImpl.QUALIFYING_PA_FACTOR).toInt()
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, qualifyingPA, 10)
+            } returns listOf(stats1, stats2)
+            every {
+                teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L))
+            } returns listOf(createTeamMember(player1), createTeamMember(player2))
+
+            // when
+            service.getBattingLeaders(1L, BattingCategory.BATTING_AVG)
+
+            // then: 배치 메서드가 정확히 1번 호출되고, 단건 메서드는 호출되지 않아야 함
+            verify(exactly = 1) { teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L)) }
+            verify(exactly = 0) { teamMemberRepository.findByPlayerIdActive(any()) }
         }
     }
 
@@ -333,10 +365,12 @@ class IndividualRankingServiceImplTest {
                     3).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10) } returns
-                listOf(stats1, stats2)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
-            every { teamMemberRepository.findByPlayerIdActive(20L) } returns listOf(createTeamMember(player2))
+            every {
+                seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10)
+            } returns listOf(stats1, stats2)
+            every {
+                teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L))
+            } returns listOf(createTeamMember(player1), createTeamMember(player2))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.ERA)
@@ -359,8 +393,10 @@ class IndividualRankingServiceImplTest {
                     3).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every {
+                seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10)
+            } returns listOf(stats1)
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.ERA)
@@ -377,7 +413,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonPitchingStatsRepository.findTopByWins(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.WINS)
@@ -394,7 +430,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonPitchingStatsRepository.findTopBySaves(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.SAVES)
@@ -411,7 +447,7 @@ class IndividualRankingServiceImplTest {
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
             every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.STRIKEOUTS)
@@ -431,8 +467,10 @@ class IndividualRankingServiceImplTest {
                     3).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonPitchingStatsRepository.findTopByWhip(2026, qualifyingIPOuts, 10) } returns listOf(stats1)
-            every { teamMemberRepository.findByPlayerIdActive(10L) } returns listOf(createTeamMember(player1))
+            every {
+                seasonPitchingStatsRepository.findTopByWhip(2026, qualifyingIPOuts, 10)
+            } returns listOf(stats1)
+            every { teamMemberRepository.findByPlayerIdsActive(listOf(10L)) } returns listOf(createTeamMember(player1))
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.WHIP)
@@ -450,13 +488,41 @@ class IndividualRankingServiceImplTest {
                     3).toInt()
 
             every { competitionRepository.findByIdOrNull(1L) } returns competition
-            every { seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10) } returns emptyList()
+            every {
+                seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10)
+            } returns emptyList()
 
             // when
             val result = service.getPitchingLeaders(1L, PitchingCategory.ERA)
 
             // then
             assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `should call findByPlayerIdsActive only once for multiple pitchers`() {
+            // given: N+1 방지 검증 - 투수 2명에 대해 단 1번의 배치 쿼리만 실행되어야 함
+            val stats1 = createPitchingStats(player1, 2026, ipOuts = 36, earnedRuns = 3, games = 10)
+            val stats2 = createPitchingStats(player2, 2026, ipOuts = 30, earnedRuns = 5, games = 8)
+            val qualifyingIPOuts =
+                (IndividualRankingServiceImpl.DEFAULT_TEAM_GAMES *
+                    IndividualRankingServiceImpl.QUALIFYING_IP_FACTOR *
+                    3).toInt()
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+            every {
+                seasonPitchingStatsRepository.findTopByEra(2026, qualifyingIPOuts, 10)
+            } returns listOf(stats1, stats2)
+            every {
+                teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L))
+            } returns listOf(createTeamMember(player1), createTeamMember(player2))
+
+            // when
+            service.getPitchingLeaders(1L, PitchingCategory.ERA)
+
+            // then: 배치 메서드가 정확히 1번 호출되고, 단건 메서드는 호출되지 않아야 함
+            verify(exactly = 1) { teamMemberRepository.findByPlayerIdsActive(listOf(10L, 20L)) }
+            verify(exactly = 0) { teamMemberRepository.findByPlayerIdActive(any()) }
         }
     }
 
@@ -511,6 +577,7 @@ class IndividualRankingServiceImplTest {
     private fun createTeamMember(player: Player): TeamMember {
         val member =
             mockk<TeamMember> {
+                every { this@mockk.player } returns player
                 every { this@mockk.team } returns this@IndividualRankingServiceImplTest.team
                 every { role } returns TeamMemberRole.MEMBER
             }
@@ -520,7 +587,7 @@ class IndividualRankingServiceImplTest {
     private fun setField(
         target: Any,
         fieldName: String,
-        value: Any
+        value: Any,
     ) {
         val field = target::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
@@ -530,7 +597,7 @@ class IndividualRankingServiceImplTest {
     private fun <T> setId(
         target: T,
         clazz: Class<T>,
-        id: Long
+        id: Long,
     ) {
         val idField = clazz.getDeclaredField("id")
         idField.isAccessible = true
