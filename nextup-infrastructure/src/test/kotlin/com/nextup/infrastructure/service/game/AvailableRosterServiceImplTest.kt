@@ -56,7 +56,7 @@ class AvailableRosterServiceImplTest {
             val player = mockk<Player>()
             every { player.id } returns 1L
             every { player.name } returns "홍길동"
-            every { player.primaryPosition } returns Position.PITCHER
+            every { player.primaryPosition } returns Position.STARTING_PITCHER
             every { player.profileImageUrl } returns "http://img.png"
 
             val competitionPlayer = mockk<CompetitionPlayer>()
@@ -80,7 +80,7 @@ class AvailableRosterServiceImplTest {
             assertThat(result.players).hasSize(1)
             assertThat(result.players[0].playerId).isEqualTo(1L)
             assertThat(result.players[0].playerName).isEqualTo("홍길동")
-            assertThat(result.players[0].primaryPosition).isEqualTo(Position.PITCHER)
+            assertThat(result.players[0].primaryPosition).isEqualTo(Position.STARTING_PITCHER)
             assertThat(result.players[0].profileImageUrl).isEqualTo("http://img.png")
             assertThat(result.players[0].competitionPlayerStatus)
                 .isEqualTo(CompetitionPlayerStatus.ACTIVE)
@@ -189,7 +189,7 @@ class AvailableRosterServiceImplTest {
 
             val players =
                 listOf(
-                    createMockCompetitionPlayer(1L, "선수1", Position.PITCHER, true),
+                    createMockCompetitionPlayer(1L, "선수1", Position.STARTING_PITCHER, true),
                     createMockCompetitionPlayer(2L, "선수2", Position.CATCHER, true),
                     createMockCompetitionPlayer(3L, "선수3", Position.FIRST_BASE, false),
                 )

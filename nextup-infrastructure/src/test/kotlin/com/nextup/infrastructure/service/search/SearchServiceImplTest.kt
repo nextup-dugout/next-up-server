@@ -44,7 +44,7 @@ class SearchServiceImplTest {
             val player = mockk<Player>()
             every { player.id } returns 1L
             every { player.name } returns "홍길동"
-            every { player.primaryPosition } returns Position.PITCHER
+            every { player.primaryPosition } returns Position.STARTING_PITCHER
             every { player.profileImageUrl } returns null
 
             val team = mockk<Team>()
@@ -76,7 +76,7 @@ class SearchServiceImplTest {
             assertThat(result.players).hasSize(1)
             assertThat(result.players[0].playerId).isEqualTo(1L)
             assertThat(result.players[0].playerName).isEqualTo("홍길동")
-            assertThat(result.players[0].primaryPosition).isEqualTo(Position.PITCHER)
+            assertThat(result.players[0].primaryPosition).isEqualTo(Position.STARTING_PITCHER)
             assertThat(result.teams).hasSize(1)
             assertThat(result.teams[0].teamId).isEqualTo(1L)
             assertThat(result.teams[0].teamName).isEqualTo("홍팀")
@@ -119,7 +119,7 @@ class SearchServiceImplTest {
                     val p = mockk<Player>()
                     every { p.id } returns i.toLong()
                     every { p.name } returns "선수$i"
-                    every { p.primaryPosition } returns Position.PITCHER
+                    every { p.primaryPosition } returns Position.STARTING_PITCHER
                     every { p.profileImageUrl } returns null
                     p
                 }
