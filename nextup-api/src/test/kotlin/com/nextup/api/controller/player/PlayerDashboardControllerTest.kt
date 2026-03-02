@@ -1,7 +1,6 @@
 package com.nextup.api.controller.player
 
 import com.nextup.api.exception.GlobalExceptionHandler
-import com.nextup.api.mapper.player.toResponse
 import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.PlayerTeamHistory
