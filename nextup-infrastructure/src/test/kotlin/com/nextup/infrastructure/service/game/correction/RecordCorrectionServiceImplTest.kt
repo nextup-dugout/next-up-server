@@ -3,7 +3,6 @@ package com.nextup.infrastructure.service.game.correction
 import com.nextup.common.exception.BattingRecordNotFoundByIdException
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PitchingRecordNotFoundByIdException
-import com.nextup.core.domain.audit.AuditLog
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.Game
