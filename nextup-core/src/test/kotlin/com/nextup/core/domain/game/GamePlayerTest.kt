@@ -342,6 +342,51 @@ class GamePlayerTest {
         }
 
         @Test
+        fun `DH가 아닌 선수에 대해 validateDhRelease를 호출하면 예외 없이 통과한다`() {
+            val normalPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.LEFT_FIELD,
+                    battingOrder = 5,
+                )
+
+            val pitcherPlayer =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.RELIEF_PITCHER,
+                )
+
+            // DH가 아닌 선수는 검증을 무조건 통과 (if 조건 false)
+            normalPlayer.validateDhRelease(pitcherPlayer, incomingBattingOrder = 5)
+            // 예외 없이 통과해야 함
+        }
+
+        @Test
+        fun `DH 선수에 대해 야수로 교체하면 validateDhRelease가 예외 없이 통과한다`() {
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+
+            val outfielder =
+                GamePlayer.createBench(
+                    gameTeam = gameTeam,
+                    player = mockk(relaxed = true),
+                    position = Position.LEFT_FIELD,
+                )
+
+            // DH이지만 들어오는 선수가 투수가 아니면 검증 통과 (if 조건의 incomingPlayer.isPitcher == false)
+            dhPlayer.validateDhRelease(outfielder, incomingBattingOrder = 7)
+            // 예외 없이 통과해야 함
+        }
+
+        @Test
         fun `투수가 DH 타순이 아닌 다른 타순으로 교체되면 예외가 발생한다`() {
             val dhPlayer =
                 GamePlayer.createStarter(

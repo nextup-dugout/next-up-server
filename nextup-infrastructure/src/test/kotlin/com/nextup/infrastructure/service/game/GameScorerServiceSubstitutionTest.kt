@@ -338,6 +338,79 @@ class GameScorerServiceSubstitutionTest {
         }
 
         @Test
+        fun `하위 이닝(말)에서 교체하면 설명에 '말'이 포함된다`() {
+            // given
+            val game =
+                createGame(1L, GameStatus.IN_PROGRESS).apply {
+                    isTopInning = false
+                }
+            val outgoingPlayer = createStartingPlayer(10L, Position.LEFT_FIELD, 5)
+            val incomingPlayer = createBenchPlayer(20L, Position.CENTER_FIELD)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPlayer
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPlayer
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+
+            var capturedEvent: GameEvent? = null
+            every { gameEventRepository.save(any()) } answers {
+                capturedEvent = firstArg()
+                firstArg()
+            }
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.LEFT_FIELD,
+                    newBattingOrder = 5,
+                )
+
+            // when
+            gameScorerService.substitutePlayer(1L, request)
+
+            // then
+            assertThat(capturedEvent).isNotNull()
+            assertThat(capturedEvent!!.description).contains("말")
+        }
+
+        @Test
+        fun `DH 해제 시 설명에 DH 규칙 해제가 포함된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val dhPlayer = createDhPlayer(10L, battingOrder = 4)
+            val reliefPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns dhPlayer
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+
+            var capturedEvent: GameEvent? = null
+            every { gameEventRepository.save(any()) } answers {
+                capturedEvent = firstArg()
+                firstArg()
+            }
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 4, // DH 타순과 일치
+                )
+
+            // when
+            gameScorerService.substitutePlayer(1L, request)
+
+            // then
+            assertThat(capturedEvent).isNotNull()
+            assertThat(capturedEvent!!.description).contains("DH 규칙 해제")
+        }
+
+        @Test
         fun `투수가 DH 타순이 아닌 타순으로 교체되면 예외가 발생한다`() {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
