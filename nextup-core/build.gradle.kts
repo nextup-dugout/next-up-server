@@ -33,7 +33,10 @@ dependencies {
     api(project(":nextup-common"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    api("jakarta.persistence:jakarta.persistence-api")
+    implementation("org.hibernate.orm:hibernate-core")
+    implementation("org.springframework:spring-tx")
+    implementation("org.springframework:spring-context")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")

@@ -1,6 +1,8 @@
 package com.nextup.core.service.user
 
 import com.nextup.common.exception.*
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.OAuthAccount
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.Role
@@ -16,8 +18,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import java.util.*
 
 @DisplayName("UserService")
@@ -348,11 +348,18 @@ class UserServiceTest {
                     createTestUser(1L, "user1@example.com"),
                     createTestUser(2L, "user2@example.com"),
                 )
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAllActive(pageable) } returns PageImpl(users)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.findAllActive(pageCommand) } returns
+                PageResult(
+                    content = users,
+                    page = 0,
+                    size = 10,
+                    totalElements = 2,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.getAllActive(pageable)
+            val result = userService.getAllActive(pageCommand)
 
             // then
             assertThat(result.content).hasSize(2)
@@ -371,11 +378,18 @@ class UserServiceTest {
                     createTestUser(2L, "user2@example.com"),
                     createTestUser(3L, "user3@example.com"),
                 )
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAllByIsActive(true, pageable) } returns PageImpl(users)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.findAllByIsActive(true, pageCommand) } returns
+                PageResult(
+                    content = users,
+                    page = 0,
+                    size = 10,
+                    totalElements = 3,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.getAll(pageable)
+            val result = userService.getAll(pageCommand)
 
             // then
             assertThat(result.content).hasSize(3)
@@ -389,11 +403,18 @@ class UserServiceTest {
         fun `should return active users only`() {
             // given
             val activeUsers = listOf(createTestUser(1L, "active@example.com"))
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAllByIsActive(true, pageable) } returns PageImpl(activeUsers)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.findAllByIsActive(true, pageCommand) } returns
+                PageResult(
+                    content = activeUsers,
+                    page = 0,
+                    size = 10,
+                    totalElements = 1,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.getAllByStatus(true, pageable)
+            val result = userService.getAllByStatus(true, pageCommand)
 
             // then
             assertThat(result.content).hasSize(1)
@@ -406,11 +427,18 @@ class UserServiceTest {
                 listOf(
                     createTestUser(1L, "inactive@example.com").apply { deactivate() },
                 )
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAllByIsActive(false, pageable) } returns PageImpl(inactiveUsers)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.findAllByIsActive(false, pageCommand) } returns
+                PageResult(
+                    content = inactiveUsers,
+                    page = 0,
+                    size = 10,
+                    totalElements = 1,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.getAllByStatus(false, pageable)
+            val result = userService.getAllByStatus(false, pageCommand)
 
             // then
             assertThat(result.content).hasSize(1)
@@ -424,11 +452,18 @@ class UserServiceTest {
         fun `should search users by keyword`() {
             // given
             val users = listOf(createTestUser(1L, "test@example.com"))
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.searchByKeyword("test", pageable) } returns PageImpl(users)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.searchByKeyword("test", pageCommand) } returns
+                PageResult(
+                    content = users,
+                    page = 0,
+                    size = 10,
+                    totalElements = 1,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.search("test", pageable)
+            val result = userService.search("test", pageCommand)
 
             // then
             assertThat(result.content).hasSize(1)
@@ -445,11 +480,18 @@ class UserServiceTest {
                 listOf(
                     createTestUser(1L, "admin@example.com").apply { addRole(Role.ADMIN) },
                 )
-            val pageable = PageRequest.of(0, 10)
-            every { userRepository.findAllByRole(Role.ADMIN, pageable) } returns PageImpl(admins)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            every { userRepository.findAllByRole(Role.ADMIN, pageCommand) } returns
+                PageResult(
+                    content = admins,
+                    page = 0,
+                    size = 10,
+                    totalElements = 1,
+                    totalPages = 1,
+                )
 
             // when
-            val result = userService.getAllByRole(Role.ADMIN, pageable)
+            val result = userService.getAllByRole(Role.ADMIN, pageCommand)
 
             // then
             assertThat(result.content).hasSize(1)

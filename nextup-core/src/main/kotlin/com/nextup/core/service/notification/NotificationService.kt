@@ -3,6 +3,8 @@ package com.nextup.core.service.notification
 import com.nextup.common.exception.DeviceTokenNotFoundException
 import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.NotificationNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.notification.DeviceToken
 import com.nextup.core.domain.notification.Notification
 import com.nextup.core.domain.notification.NotificationPreference
@@ -12,8 +14,6 @@ import com.nextup.core.port.repository.NotificationRepositoryPort
 import com.nextup.core.service.notification.dto.RegisterDeviceRequest
 import com.nextup.core.service.notification.dto.SendNotificationRequest
 import com.nextup.core.service.notification.dto.UpdatePreferenceRequest
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -52,8 +52,8 @@ class NotificationService(
      */
     fun getUserNotifications(
         userId: Long,
-        pageable: Pageable,
-    ): Page<Notification> = notificationRepository.findByUserId(userId, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<Notification> = notificationRepository.findByUserId(userId, pageCommand)
 
     /**
      * 사용자의 알림 목록을 조회합니다.

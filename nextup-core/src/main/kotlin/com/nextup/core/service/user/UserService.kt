@@ -1,13 +1,13 @@
 package com.nextup.core.service.user
 
 import com.nextup.common.exception.*
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.OAuthAccountRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -131,36 +131,36 @@ class UserService(
     /**
      * 활성화된 모든 사용자를 페이징으로 조회합니다.
      */
-    fun getAllActive(pageable: Pageable): Page<User> = userRepository.findAllActive(pageable)
+    fun getAllActive(pageCommand: PageCommand): PageResult<User> = userRepository.findAllActive(pageCommand)
 
     /**
      * 모든 사용자를 페이징으로 조회합니다 (관리자용).
      */
-    fun getAll(pageable: Pageable): Page<User> = userRepository.findAllByIsActive(true, pageable)
+    fun getAll(pageCommand: PageCommand): PageResult<User> = userRepository.findAllByIsActive(true, pageCommand)
 
     /**
      * 활성 상태별로 사용자를 조회합니다 (관리자용).
      */
     fun getAllByStatus(
         isActive: Boolean,
-        pageable: Pageable,
-    ): Page<User> = userRepository.findAllByIsActive(isActive, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<User> = userRepository.findAllByIsActive(isActive, pageCommand)
 
     /**
      * 키워드로 사용자를 검색합니다 (관리자용).
      */
     fun search(
         keyword: String,
-        pageable: Pageable,
-    ): Page<User> = userRepository.searchByKeyword(keyword, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<User> = userRepository.searchByKeyword(keyword, pageCommand)
 
     /**
      * 역할별로 사용자를 조회합니다 (관리자용).
      */
     fun getAllByRole(
         role: Role,
-        pageable: Pageable,
-    ): Page<User> = userRepository.findAllByRole(role, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<User> = userRepository.findAllByRole(role, pageCommand)
 
     // ========== UPDATE ==========
 

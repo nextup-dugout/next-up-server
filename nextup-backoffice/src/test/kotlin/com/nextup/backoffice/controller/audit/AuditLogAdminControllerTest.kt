@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.audit
 
 import com.nextup.backoffice.exception.GlobalExceptionHandler
 import com.nextup.common.exception.AuditLogNotFoundException
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.audit.AuditLog
 import com.nextup.core.service.audit.AuditLogQueryService
 import io.mockk.every
@@ -10,8 +11,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -64,10 +63,17 @@ class AuditLogAdminControllerTest {
         @Test
         fun `감사 로그 목록을 페이징 조회할 수 있다`() {
             val log = createAuditLog(id = 1L)
-            val page = PageImpl(listOf(log), PageRequest.of(0, 20), 1)
+            val pageResult =
+                PageResult(
+                    content = listOf(log),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
             every {
                 auditLogQueryService.findAll(null, null, null, null, null, any())
-            } returns page
+            } returns pageResult
 
             mockMvc
                 .perform(get("/api/backoffice/audit-logs"))
@@ -81,10 +87,17 @@ class AuditLogAdminControllerTest {
         @Test
         fun `adminUserId 필터로 조회할 수 있다`() {
             val log = createAuditLog(id = 1L, adminUserId = 5L)
-            val page = PageImpl(listOf(log), PageRequest.of(0, 20), 1)
+            val pageResult =
+                PageResult(
+                    content = listOf(log),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
             every {
                 auditLogQueryService.findAll(5L, null, null, null, null, any())
-            } returns page
+            } returns pageResult
 
             mockMvc
                 .perform(get("/api/backoffice/audit-logs").param("adminUserId", "5"))
@@ -96,10 +109,17 @@ class AuditLogAdminControllerTest {
         @Test
         fun `action 필터로 조회할 수 있다`() {
             val log = createAuditLog(id = 2L, action = "DELETE_USER")
-            val page = PageImpl(listOf(log), PageRequest.of(0, 20), 1)
+            val pageResult =
+                PageResult(
+                    content = listOf(log),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
             every {
                 auditLogQueryService.findAll(null, "DELETE_USER", null, null, null, any())
-            } returns page
+            } returns pageResult
 
             mockMvc
                 .perform(get("/api/backoffice/audit-logs").param("action", "DELETE_USER"))
@@ -111,10 +131,17 @@ class AuditLogAdminControllerTest {
         @Test
         fun `targetEntity 필터로 조회할 수 있다`() {
             val log = createAuditLog(id = 3L, targetEntity = "Team")
-            val page = PageImpl(listOf(log), PageRequest.of(0, 20), 1)
+            val pageResult =
+                PageResult(
+                    content = listOf(log),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
             every {
                 auditLogQueryService.findAll(null, null, "Team", null, null, any())
-            } returns page
+            } returns pageResult
 
             mockMvc
                 .perform(get("/api/backoffice/audit-logs").param("targetEntity", "Team"))
@@ -125,10 +152,17 @@ class AuditLogAdminControllerTest {
 
         @Test
         fun `결과가 없으면 빈 페이지를 반환한다`() {
-            val page = PageImpl(emptyList<AuditLog>(), PageRequest.of(0, 20), 0)
+            val pageResult =
+                PageResult(
+                    content = emptyList<AuditLog>(),
+                    page = 0,
+                    size = 20,
+                    totalElements = 0L,
+                    totalPages = 0,
+                )
             every {
                 auditLogQueryService.findAll(null, null, null, null, null, any())
-            } returns page
+            } returns pageResult
 
             mockMvc
                 .perform(get("/api/backoffice/audit-logs"))

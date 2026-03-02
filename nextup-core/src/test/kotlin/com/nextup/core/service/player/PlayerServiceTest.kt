@@ -1,6 +1,8 @@
 package com.nextup.core.service.player
 
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.PlayerRepositoryPort
@@ -12,8 +14,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 
 @DisplayName("PlayerService")
 class PlayerServiceTest {
@@ -37,17 +37,23 @@ class PlayerServiceTest {
                     name = "김철수",
                     primaryPosition = Position.STARTING_PITCHER,
                 )
-            val pageable = PageRequest.of(0, 20)
-            val page = PageImpl(listOf(player), pageable, 1)
+            val pageCommand = PageCommand(page = 0, size = 20)
 
             every {
                 playerRepository.search(
                     name = "김",
                     teamId = null,
                     position = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
-            } returns page
+            } returns
+                PageResult(
+                    content = listOf(player),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1,
+                    totalPages = 1,
+                )
 
             // when
             val result =
@@ -55,7 +61,7 @@ class PlayerServiceTest {
                     name = "김",
                     teamId = null,
                     position = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
 
             // then
@@ -66,17 +72,23 @@ class PlayerServiceTest {
         @Test
         fun `should pass all filter parameters to repository`() {
             // given
-            val pageable = PageRequest.of(0, 10)
-            val page = PageImpl<Player>(emptyList(), pageable, 0)
+            val pageCommand = PageCommand(page = 0, size = 10)
 
             every {
                 playerRepository.search(
                     name = "이",
                     teamId = 5L,
                     position = Position.SHORTSTOP,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
-            } returns page
+            } returns
+                PageResult(
+                    content = emptyList(),
+                    page = 0,
+                    size = 10,
+                    totalElements = 0,
+                    totalPages = 0,
+                )
 
             // when
             val result =
@@ -84,7 +96,7 @@ class PlayerServiceTest {
                     name = "이",
                     teamId = 5L,
                     position = Position.SHORTSTOP,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
 
             // then

@@ -1,13 +1,14 @@
 package com.nextup.api.controller.stadium
 
+import com.nextup.api.dto.common.PagedResponse
 import com.nextup.api.dto.stadium.BookingResponse
 import com.nextup.api.dto.stadium.StadiumResponse
 import com.nextup.api.dto.stadium.StadiumSlotResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumService
 import com.nextup.core.service.stadium.dto.BookSlotRequest
+import com.nextup.infrastructure.common.toPageCommand
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.format.annotation.DateTimeFormat
@@ -44,9 +45,9 @@ class StadiumController(
         @RequestParam longitude: Double,
         @RequestParam(defaultValue = "10") radiusKm: Double,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ApiResponse<Page<StadiumResponse>> {
-        val page = stadiumService.findNearbyStadiums(latitude, longitude, radiusKm, pageable)
-        return ApiResponse.success(page.map { StadiumResponse.from(it) })
+    ): ApiResponse<PagedResponse<StadiumResponse>> {
+        val page = stadiumService.findNearbyStadiums(latitude, longitude, radiusKm, pageable.toPageCommand())
+        return ApiResponse.success(PagedResponse.from(page.map { StadiumResponse.from(it) }))
     }
 
     /**

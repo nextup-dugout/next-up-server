@@ -1,9 +1,11 @@
 package com.nextup.infrastructure.persistence.stadium
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.stadium.Stadium
 import com.nextup.core.port.repository.StadiumRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
 
@@ -32,9 +34,14 @@ class StadiumRepositoryAdapter(
         latitude: Double,
         longitude: Double,
         radiusKm: Double,
-        pageable: Pageable,
-    ): Page<Stadium> {
+        pageCommand: PageCommand,
+    ): PageResult<Stadium> {
         val radiusMeters = radiusKm * 1000.0
-        return jpaRepository.findNearbyOrderByDistance(latitude, longitude, radiusMeters, pageable)
+        return jpaRepository.findNearbyOrderByDistance(
+            latitude,
+            longitude,
+            radiusMeters,
+            pageCommand.toPageable()
+        ).toPageResult()
     }
 }

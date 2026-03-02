@@ -1,8 +1,12 @@
 package com.nextup.infrastructure.repository.user
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.UserRepositoryPort
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -16,13 +20,21 @@ interface UserRepository :
     override fun existsByEmail(email: String): Boolean
 
     @Query("SELECT u FROM User u WHERE u.isActive = true")
-    override fun findAllActive(pageable: Pageable): Page<User>
+    fun findAllActiveByPageable(pageable: Pageable): Page<User>
+
+    override fun findAllActive(pageCommand: PageCommand): PageResult<User> =
+        findAllActiveByPageable(pageCommand.toPageable()).toPageResult()
 
     @Query("SELECT u FROM User u WHERE u.isActive = :isActive")
-    override fun findAllByIsActive(
+    fun findAllByIsActiveByPageable(
         isActive: Boolean,
         pageable: Pageable,
     ): Page<User>
+
+    override fun findAllByIsActive(
+        isActive: Boolean,
+        pageCommand: PageCommand,
+    ): PageResult<User> = findAllByIsActiveByPageable(isActive, pageCommand.toPageable()).toPageResult()
 
     @Query(
         """
@@ -31,10 +43,15 @@ interface UserRepository :
         OR u.email LIKE %:keyword%
     """,
     )
-    override fun searchByKeyword(
+    fun searchByKeywordByPageable(
         keyword: String,
         pageable: Pageable,
     ): Page<User>
+
+    override fun searchByKeyword(
+        keyword: String,
+        pageCommand: PageCommand,
+    ): PageResult<User> = searchByKeywordByPageable(keyword, pageCommand.toPageable()).toPageResult()
 
     @Query(
         """
@@ -43,10 +60,15 @@ interface UserRepository :
         WHERE r = :role
     """,
     )
-    override fun findAllByRole(
+    fun findAllByRoleByPageable(
         role: Role,
         pageable: Pageable,
     ): Page<User>
+
+    override fun findAllByRole(
+        role: Role,
+        pageCommand: PageCommand,
+    ): PageResult<User> = findAllByRoleByPageable(role, pageCommand.toPageable()).toPageResult()
 
     @Query(
         """
@@ -55,10 +77,15 @@ interface UserRepository :
         WHERE r IN :roles
     """,
     )
-    override fun findAllByRolesIn(
+    fun findAllByRolesInByPageable(
         roles: Set<Role>,
         pageable: Pageable,
     ): Page<User>
+
+    override fun findAllByRolesIn(
+        roles: Set<Role>,
+        pageCommand: PageCommand,
+    ): PageResult<User> = findAllByRolesInByPageable(roles, pageCommand.toPageable()).toPageResult()
 
     @Query("SELECT u FROM User u WHERE u.player.id = :playerId")
     override fun findByPlayerId(playerId: Long): User?

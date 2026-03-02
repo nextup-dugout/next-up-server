@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.team
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
@@ -21,8 +22,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -94,9 +93,15 @@ class TeamMemberAdminControllerTest {
     inner class GetAllMembers {
         @Test
         fun `should return paged members without status filter`() {
-            val pageable = PageRequest.of(0, 20)
-            val page = PageImpl(listOf(member), pageable, 1)
-            every { teamMemberRepository.findByTeamIdWithUserAndPlayer(1L, any()) } returns page
+            val pageResult =
+                PageResult(
+                    content = listOf(member),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
+            every { teamMemberRepository.findByTeamIdWithUserAndPlayer(1L, any()) } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/teams/1/members"))
                 .andExpect(status().isOk)

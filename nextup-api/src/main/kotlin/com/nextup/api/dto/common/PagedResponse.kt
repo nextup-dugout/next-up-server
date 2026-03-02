@@ -1,11 +1,12 @@
 package com.nextup.api.dto.common
 
+import com.nextup.core.common.PageResult
 import org.springframework.data.domain.Page
 
 /**
  * 페이징된 목록 응답 래퍼
  *
- * Spring Data [Page]를 클라이언트 친화적인 형태로 변환합니다.
+ * Spring Data [Page] 또는 Core [PageResult]를 클라이언트 친화적인 형태로 변환합니다.
  *
  * @param T 응답 데이터 원소 타입
  * @property content 현재 페이지의 데이터 목록
@@ -35,6 +36,19 @@ data class PagedResponse<T>(
                 currentPage = page.number,
                 size = page.size,
                 hasNext = page.hasNext(),
+            )
+
+        /**
+         * Core [PageResult]로부터 [PagedResponse]를 생성합니다.
+         */
+        fun <T> from(pageResult: PageResult<T>): PagedResponse<T> =
+            PagedResponse(
+                content = pageResult.content,
+                totalElements = pageResult.totalElements,
+                totalPages = pageResult.totalPages,
+                currentPage = pageResult.page,
+                size = pageResult.size,
+                hasNext = pageResult.hasNext,
             )
     }
 }

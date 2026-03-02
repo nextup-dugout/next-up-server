@@ -1,8 +1,8 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.stadium.Stadium
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 
 /**
  * 구장 리포지토리 포트 인터페이스
@@ -36,13 +36,13 @@ interface StadiumRepositoryPort {
      * @param latitude 위도 (-90 ~ 90)
      * @param longitude 경도 (-180 ~ 180)
      * @param radiusKm 검색 반경 (킬로미터, 0 초과)
-     * @param pageable 페이징 정보
+     * @param pageCommand 페이징 정보
      * @return 거리 순으로 정렬된 구장 페이지
      */
     fun findNearbyStadiums(
         latitude: Double,
         longitude: Double,
         radiusKm: Double,
-        pageable: Pageable,
-    ): Page<Stadium>
+        pageCommand: PageCommand,
+    ): PageResult<Stadium>
 }

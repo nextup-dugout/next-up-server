@@ -4,6 +4,8 @@ import com.nextup.common.exception.BookingNotFoundException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.SlotNotFoundException
 import com.nextup.common.exception.StadiumNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.domain.stadium.SlotStatus
 import com.nextup.core.domain.stadium.Stadium
@@ -22,8 +24,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -53,12 +53,18 @@ class StadiumServiceTest {
                     createStadium(1L, "잠실 야구장", 37.5121, 127.0717),
                     createStadium(2L, "고척 야구장", 37.4981, 126.8671),
                 )
-            val pageable = PageRequest.of(0, 20)
-            val page = PageImpl(stadiums, pageable, 2)
-            every { stadiumRepository.findNearbyStadiums(37.5, 127.0, 10.0, pageable) } returns page
+            val pageCommand = PageCommand(page = 0, size = 20)
+            every { stadiumRepository.findNearbyStadiums(37.5, 127.0, 10.0, pageCommand) } returns
+                PageResult(
+                    content = stadiums,
+                    page = 0,
+                    size = 20,
+                    totalElements = 2,
+                    totalPages = 1,
+                )
 
             // when
-            val result = stadiumService.findNearbyStadiums(37.5, 127.0, 10.0, pageable)
+            val result = stadiumService.findNearbyStadiums(37.5, 127.0, 10.0, pageCommand)
 
             // then
             assertThat(result.content).hasSize(2)
@@ -69,11 +75,11 @@ class StadiumServiceTest {
         @Test
         fun `should throw InvalidInputException when latitude is out of range`() {
             // given
-            val pageable = PageRequest.of(0, 20)
+            val pageCommand = PageCommand(page = 0, size = 20)
 
             // when & then
             assertThatThrownBy {
-                stadiumService.findNearbyStadiums(91.0, 127.0, 10.0, pageable)
+                stadiumService.findNearbyStadiums(91.0, 127.0, 10.0, pageCommand)
             }.isInstanceOf(InvalidInputException::class.java)
                 .hasMessageContaining("위도는 -90 ~ 90 범위여야 합니다")
         }
@@ -81,11 +87,11 @@ class StadiumServiceTest {
         @Test
         fun `should throw InvalidInputException when longitude is out of range`() {
             // given
-            val pageable = PageRequest.of(0, 20)
+            val pageCommand = PageCommand(page = 0, size = 20)
 
             // when & then
             assertThatThrownBy {
-                stadiumService.findNearbyStadiums(37.5, 181.0, 10.0, pageable)
+                stadiumService.findNearbyStadiums(37.5, 181.0, 10.0, pageCommand)
             }.isInstanceOf(InvalidInputException::class.java)
                 .hasMessageContaining("경도는 -180 ~ 180 범위여야 합니다")
         }
@@ -93,11 +99,11 @@ class StadiumServiceTest {
         @Test
         fun `should throw InvalidInputException when radiusKm is zero`() {
             // given
-            val pageable = PageRequest.of(0, 20)
+            val pageCommand = PageCommand(page = 0, size = 20)
 
             // when & then
             assertThatThrownBy {
-                stadiumService.findNearbyStadiums(37.5, 127.0, 0.0, pageable)
+                stadiumService.findNearbyStadiums(37.5, 127.0, 0.0, pageCommand)
             }.isInstanceOf(InvalidInputException::class.java)
                 .hasMessageContaining("검색 반경은 0보다 커야 합니다")
         }
@@ -105,11 +111,11 @@ class StadiumServiceTest {
         @Test
         fun `should throw InvalidInputException when radiusKm is negative`() {
             // given
-            val pageable = PageRequest.of(0, 20)
+            val pageCommand = PageCommand(page = 0, size = 20)
 
             // when & then
             assertThatThrownBy {
-                stadiumService.findNearbyStadiums(37.5, 127.0, -5.0, pageable)
+                stadiumService.findNearbyStadiums(37.5, 127.0, -5.0, pageCommand)
             }.isInstanceOf(InvalidInputException::class.java)
                 .hasMessageContaining("검색 반경은 0보다 커야 합니다")
         }
@@ -117,12 +123,18 @@ class StadiumServiceTest {
         @Test
         fun `should accept boundary latitude values`() {
             // given
-            val pageable = PageRequest.of(0, 20)
-            val page = PageImpl(emptyList<Stadium>(), pageable, 0)
-            every { stadiumRepository.findNearbyStadiums(90.0, 180.0, 10.0, pageable) } returns page
+            val pageCommand = PageCommand(page = 0, size = 20)
+            every { stadiumRepository.findNearbyStadiums(90.0, 180.0, 10.0, pageCommand) } returns
+                PageResult(
+                    content = emptyList(),
+                    page = 0,
+                    size = 20,
+                    totalElements = 0,
+                    totalPages = 0,
+                )
 
             // when
-            val result = stadiumService.findNearbyStadiums(90.0, 180.0, 10.0, pageable)
+            val result = stadiumService.findNearbyStadiums(90.0, 180.0, 10.0, pageCommand)
 
             // then
             assertThat(result.content).isEmpty()

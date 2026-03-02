@@ -1,7 +1,11 @@
 package com.nextup.infrastructure.repository.audit
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.audit.AuditLog
 import com.nextup.core.port.repository.AuditLogRepositoryPort
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -35,7 +39,7 @@ interface AuditLogRepository :
         ORDER BY a.createdAt DESC
         """,
     )
-    override fun findAllByCondition(
+    fun findAllByConditionByPageable(
         @Param("adminUserId") adminUserId: Long?,
         @Param("action") action: String?,
         @Param("targetEntity") targetEntity: String?,
@@ -43,4 +47,21 @@ interface AuditLogRepository :
         @Param("toDate") toDate: Instant?,
         pageable: Pageable,
     ): Page<AuditLog>
+
+    override fun findAllByCondition(
+        adminUserId: Long?,
+        action: String?,
+        targetEntity: String?,
+        fromDate: Instant?,
+        toDate: Instant?,
+        pageCommand: PageCommand,
+    ): PageResult<AuditLog> =
+        findAllByConditionByPageable(
+            adminUserId,
+            action,
+            targetEntity,
+            fromDate,
+            toDate,
+            pageCommand.toPageable()
+        ).toPageResult()
 }

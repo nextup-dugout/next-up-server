@@ -5,13 +5,14 @@ import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.TeamMemberNotFoundException
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.team.TeamMembershipService
+import com.nextup.infrastructure.common.toPageCommand
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -36,19 +37,24 @@ class TeamMemberAdminController(
         @PathVariable teamId: Long,
         @RequestParam(required = false) status: TeamMemberStatus?,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ApiResponse<Page<TeamMemberAdminResponse>> {
+    ): ApiResponse<PageResult<TeamMemberAdminResponse>> {
+        val pageCommand = pageable.toPageCommand()
         val members =
             if (status != null) {
                 val list = teamMemberRepository.findByTeamIdAndStatus(teamId, status)
-                val start = pageable.offset.toInt()
-                val end = minOf(start + pageable.pageSize, list.size)
-                org.springframework.data.domain.PageImpl(
-                    if (start < list.size) list.subList(start, end) else emptyList(),
-                    pageable,
-                    list.size.toLong(),
+                val start = pageCommand.page * pageCommand.size
+                val end = minOf(start + pageCommand.size, list.size)
+                val totalPages =
+                    if (pageCommand.size == 0) 0 else (list.size + pageCommand.size - 1) / pageCommand.size
+                PageResult(
+                    content = if (start < list.size) list.subList(start, end) else emptyList(),
+                    page = pageCommand.page,
+                    size = pageCommand.size,
+                    totalElements = list.size.toLong(),
+                    totalPages = totalPages,
                 )
             } else {
-                teamMemberRepository.findByTeamIdWithUserAndPlayer(teamId, pageable)
+                teamMemberRepository.findByTeamIdWithUserAndPlayer(teamId, pageCommand)
             }
         return ApiResponse.success(members.map { TeamMemberAdminResponse.from(it) })
     }

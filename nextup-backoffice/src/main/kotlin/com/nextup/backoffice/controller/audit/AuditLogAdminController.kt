@@ -2,8 +2,9 @@ package com.nextup.backoffice.controller.audit
 
 import com.nextup.backoffice.dto.audit.AuditLogResponse
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.common.PageResult
 import com.nextup.core.service.audit.AuditLogQueryService
-import org.springframework.data.domain.Page
+import com.nextup.infrastructure.common.toPageCommand
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
@@ -35,7 +36,7 @@ class AuditLogAdminController(
         toDate: Instant?,
         @PageableDefault(size = 20, sort = ["createdAt"], direction = Sort.Direction.DESC)
         pageable: Pageable,
-    ): ApiResponse<Page<AuditLogResponse>> {
+    ): ApiResponse<PageResult<AuditLogResponse>> {
         val page =
             auditLogQueryService.findAll(
                 adminUserId = adminUserId,
@@ -43,7 +44,7 @@ class AuditLogAdminController(
                 targetEntity = targetEntity,
                 fromDate = fromDate,
                 toDate = toDate,
-                pageable = pageable,
+                pageCommand = pageable.toPageCommand(),
             )
         return ApiResponse.success(page.map { AuditLogResponse.from(it) })
     }

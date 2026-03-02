@@ -1,5 +1,6 @@
 package com.nextup.api.controller.player
 
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.service.player.PlayerService
@@ -10,9 +11,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -50,18 +48,23 @@ class PlayerControllerTest {
                     createPlayer(1L, "김철수", Position.STARTING_PITCHER),
                     createPlayer(2L, "이영희", Position.CATCHER),
                 )
-            val pageable =
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "name"))
-            val page = PageImpl(players, pageable, 2)
+            val pageResult =
+                PageResult(
+                    content = players,
+                    page = 0,
+                    size = 20,
+                    totalElements = 2L,
+                    totalPages = 1,
+                )
 
             every {
                 playerService.search(
                     name = null,
                     teamId = null,
                     position = null,
-                    pageable = any(),
+                    pageCommand = any(),
                 )
-            } returns page
+            } returns pageResult
             every { playerTeamService.getActiveAffiliationsByPlayer(any()) } returns emptyList()
 
             // when & then
@@ -81,18 +84,23 @@ class PlayerControllerTest {
                 listOf(
                     createPlayer(1L, "김철수", Position.STARTING_PITCHER),
                 )
-            val pageable =
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "name"))
-            val page = PageImpl(players, pageable, 1)
+            val pageResult =
+                PageResult(
+                    content = players,
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
 
             every {
                 playerService.search(
                     name = "김철수",
                     teamId = null,
                     position = null,
-                    pageable = any(),
+                    pageCommand = any(),
                 )
-            } returns page
+            } returns pageResult
             every { playerTeamService.getActiveAffiliationsByPlayer(any()) } returns emptyList()
 
             // when & then

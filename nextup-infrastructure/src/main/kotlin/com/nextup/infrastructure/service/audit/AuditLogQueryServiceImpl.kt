@@ -1,11 +1,11 @@
 package com.nextup.infrastructure.service.audit
 
 import com.nextup.common.exception.AuditLogNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.audit.AuditLog
 import com.nextup.core.port.repository.AuditLogRepositoryPort
 import com.nextup.core.service.audit.AuditLogQueryService
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -21,15 +21,15 @@ class AuditLogQueryServiceImpl(
         targetEntity: String?,
         fromDate: Instant?,
         toDate: Instant?,
-        pageable: Pageable,
-    ): Page<AuditLog> =
+        pageCommand: PageCommand,
+    ): PageResult<AuditLog> =
         auditLogRepository.findAllByCondition(
             adminUserId = adminUserId,
             action = action,
             targetEntity = targetEntity,
             fromDate = fromDate,
             toDate = toDate,
-            pageable = pageable,
+            pageCommand = pageCommand,
         )
 
     override fun findById(id: Long): AuditLog =

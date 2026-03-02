@@ -9,6 +9,7 @@ import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.common.exception.DeviceTokenNotFoundException
 import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.NotificationNotFoundException
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.notification.*
 import com.nextup.core.service.notification.NotificationService
 import io.mockk.every
@@ -17,8 +18,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -173,10 +172,16 @@ class NotificationControllerTest {
     @Test
     fun `should get notifications successfully`() {
         // given
-        val pageable = PageRequest.of(0, 20)
-        val page = PageImpl(listOf(mockNotification), pageable, 1)
+        val pageResult =
+            PageResult(
+                content = listOf(mockNotification),
+                page = 0,
+                size = 20,
+                totalElements = 1L,
+                totalPages = 1,
+            )
 
-        every { notificationService.getUserNotifications(authenticatedUserId, any()) } returns page
+        every { notificationService.getUserNotifications(authenticatedUserId, any()) } returns pageResult
 
         // when & then
         mockMvc
