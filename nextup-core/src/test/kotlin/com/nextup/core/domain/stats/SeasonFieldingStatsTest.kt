@@ -128,5 +128,114 @@ class SeasonFieldingStatsTest {
             assertThat(seasonFieldingStats.totalChances).isEqualTo(13)
             assertThat(seasonFieldingStats.fieldingPercentage).isNotNull
         }
+
+        @Test
+        fun `실책이 없으면 수비율은 1이다`() {
+            // given: PO=5, A=3, E=0 -> TC=8, FPCT=8/8=1.000
+            val record = mockk<FieldingRecord>()
+            every { record.putOuts } returns 5
+            every { record.assists } returns 3
+            every { record.errors } returns 0
+            every { record.doublePlays } returns 0
+            every { record.passedBalls } returns 0
+
+            seasonFieldingStats.addGameRecord(record)
+
+            // then
+            assertThat(seasonFieldingStats.fieldingPercentage)
+                .isEqualByComparingTo(java.math.BigDecimal("1.000"))
+        }
+
+        @Test
+        fun `수비율은 소수점 3자리로 계산된다`() {
+            // given: PO=2, A=1, E=1 -> TC=4, FPCT=3/4=0.750
+            val record = mockk<FieldingRecord>()
+            every { record.putOuts } returns 2
+            every { record.assists } returns 1
+            every { record.errors } returns 1
+            every { record.doublePlays } returns 0
+            every { record.passedBalls } returns 0
+
+            seasonFieldingStats.addGameRecord(record)
+
+            // then
+            assertThat(seasonFieldingStats.fieldingPercentage)
+                .isEqualByComparingTo(java.math.BigDecimal("0.750"))
+        }
+    }
+
+    @Nested
+    @DisplayName("유효성 검증")
+    inner class ValidateTest {
+        @Test
+        fun `정상 상태에서 validate는 예외를 발생시키지 않는다`() {
+            val record = mockk<FieldingRecord>()
+            every { record.putOuts } returns 3
+            every { record.assists } returns 1
+            every { record.errors } returns 0
+            every { record.doublePlays } returns 0
+            every { record.passedBalls } returns 0
+            seasonFieldingStats.addGameRecord(record)
+
+            seasonFieldingStats.validate()
+        }
+
+        @Test
+        fun `초기 상태에서 validate는 예외를 발생시키지 않는다`() {
+            seasonFieldingStats.validate()
+        }
+
+        @Test
+        fun `gamesPlayed가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "gamesPlayed", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `putOuts가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "putOuts", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `assists가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "assists", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `errors가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "errors", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `doublePlays가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "doublePlays", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `passedBalls가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(seasonFieldingStats, "passedBalls", -1)
+            assertThatThrownBy { seasonFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+    }
+
+    private fun setFieldDirectly(
+        obj: Any,
+        fieldName: String,
+        value: Int,
+    ) {
+        val clazz = obj.javaClass
+        val field = clazz.getDeclaredField(fieldName)
+        field.isAccessible = true
+        field.set(obj, value)
     }
 }

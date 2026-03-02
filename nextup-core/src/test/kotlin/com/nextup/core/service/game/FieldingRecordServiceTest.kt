@@ -135,6 +135,34 @@ class FieldingRecordServiceTest {
     }
 
     @Test
+    fun `should record double play`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        every { mockFieldingRecord.recordDoublePlay() } returns Unit
+
+        // when
+        fieldingRecordService.recordDoublePlay(gamePlayerId)
+
+        // then
+        verify(exactly = 1) { mockFieldingRecord.recordDoublePlay() }
+    }
+
+    @Test
+    fun `should record passed ball`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        every { mockFieldingRecord.recordPassedBall() } returns Unit
+
+        // when
+        fieldingRecordService.recordPassedBall(gamePlayerId)
+
+        // then
+        verify(exactly = 1) { mockFieldingRecord.recordPassedBall() }
+    }
+
+    @Test
     fun `should return all fielding records by game id`() {
         // given
         val gameId = 10L
@@ -145,5 +173,47 @@ class FieldingRecordServiceTest {
 
         // then
         assertThat(result).hasSize(1)
+    }
+
+    @Test
+    fun `should return all fielding records by player id`() {
+        // given
+        val playerId = 5L
+        every { fieldingRecordRepository.findAllByPlayerId(playerId) } returns
+            listOf(mockFieldingRecord, mockFieldingRecord)
+
+        // when
+        val result = fieldingRecordService.getAllByPlayerId(playerId)
+
+        // then
+        assertThat(result).hasSize(2)
+    }
+
+    @Test
+    fun `should get fielding record by gamePlayerId successfully`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        every { mockFieldingRecord.id } returns 100L
+
+        // when
+        val result = fieldingRecordService.getByGamePlayerId(gamePlayerId)
+
+        // then
+        assertThat(result).isNotNull
+        assertThat(result.id).isEqualTo(100L)
+    }
+
+    @Test
+    fun `should return empty list when no fielding records exist for game`() {
+        // given
+        val gameId = 99L
+        every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+
+        // when
+        val result = fieldingRecordService.getAllByGameId(gameId)
+
+        // then
+        assertThat(result).isEmpty()
     }
 }

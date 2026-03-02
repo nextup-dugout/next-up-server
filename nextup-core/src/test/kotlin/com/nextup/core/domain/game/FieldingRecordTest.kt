@@ -233,6 +233,34 @@ class FieldingRecordTest {
     }
 
     @Nested
+    @DisplayName("Undo 실패 케이스")
+    inner class RevertFailureTest {
+        @Test
+        fun `보살 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertAssist() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `실책 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertError() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `병살 관여 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertDoublePlay() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `포일 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertPassedBall() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("유효성 검증")
     inner class ValidateTest {
         @Test
@@ -244,6 +272,21 @@ class FieldingRecordTest {
 
             // when & then (no exception)
             fieldingRecord.validate()
+        }
+
+        @Test
+        fun `초기 상태에서 validate는 예외를 발생시키지 않는다`() {
+            fieldingRecord.validate()
+        }
+    }
+
+    @Nested
+    @DisplayName("팩토리 메서드")
+    inner class FactoryTest {
+        @Test
+        fun `create로 생성된 FieldingRecord는 gamePlayer를 올바르게 설정한다`() {
+            val record = FieldingRecord.create(gamePlayer)
+            assertThat(record.gamePlayer).isEqualTo(gamePlayer)
         }
     }
 }
