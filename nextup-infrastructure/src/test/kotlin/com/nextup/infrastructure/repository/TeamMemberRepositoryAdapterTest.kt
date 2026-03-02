@@ -269,6 +269,33 @@ class TeamMemberRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("findByPlayerIdsActive - 선수 ID 목록으로 활성 멤버 일괄 조회 시 JPA repository에 위임한다")
+    fun `should delegate findByPlayerIdsActive to jpa repository`() {
+        // given
+        val members = listOf(mockk<TeamMember>(), mockk<TeamMember>())
+        every { jpaRepository.findByPlayerIdsActive(listOf(10L, 20L)) } returns members
+
+        // when
+        val result = adapter.findByPlayerIdsActive(listOf(10L, 20L))
+
+        // then
+        assertThat(result).hasSize(2)
+        assertThat(result).isEqualTo(members)
+        verify(exactly = 1) { jpaRepository.findByPlayerIdsActive(listOf(10L, 20L)) }
+    }
+
+    @Test
+    @DisplayName("findByPlayerIdsActive - 빈 목록 전달 시 JPA 호출 없이 빈 리스트를 반환한다")
+    fun `should return empty list without jpa call when playerIds is empty`() {
+        // when
+        val result = adapter.findByPlayerIdsActive(emptyList())
+
+        // then
+        assertThat(result).isEmpty()
+        verify(exactly = 0) { jpaRepository.findByPlayerIdsActive(any()) }
+    }
+
+    @Test
     @DisplayName("countByTeamIdAndStatus - 팀 상태별 멤버 수 조회 시 JPA repository에 위임한다")
     fun `should delegate countByTeamIdAndStatus to jpa repository`() {
         // given
