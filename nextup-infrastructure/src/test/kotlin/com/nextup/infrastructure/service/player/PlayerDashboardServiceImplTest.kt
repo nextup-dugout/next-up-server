@@ -36,12 +36,13 @@ class PlayerDashboardServiceImplTest {
         playerTeamHistoryRepository = mockk()
         playerStatsService = mockk()
         recentFormService = mockk()
-        service = PlayerDashboardServiceImpl(
-            playerRepository,
-            playerTeamHistoryRepository,
-            playerStatsService,
-            recentFormService,
-        )
+        service =
+            PlayerDashboardServiceImpl(
+                playerRepository,
+                playerTeamHistoryRepository,
+                playerStatsService,
+                recentFormService,
+            )
     }
 
     @Nested
