@@ -45,14 +45,15 @@ class AuditLogQueryServiceImplTest {
                 )
             } returns page
 
-            val result = service.findAll(
-                adminUserId = 1L,
-                action = "CREATE",
-                targetEntity = "Team",
-                fromDate = null,
-                toDate = null,
-                pageable = pageable,
-            )
+            val result =
+                service.findAll(
+                    adminUserId = 1L,
+                    action = "CREATE",
+                    targetEntity = "Team",
+                    fromDate = null,
+                    toDate = null,
+                    pageable = pageable,
+                )
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0]).isEqualTo(auditLog)
@@ -74,14 +75,15 @@ class AuditLogQueryServiceImplTest {
                 )
             } returns page
 
-            val result = service.findAll(
-                adminUserId = null,
-                action = null,
-                targetEntity = null,
-                fromDate = null,
-                toDate = null,
-                pageable = pageable,
-            )
+            val result =
+                service.findAll(
+                    adminUserId = null,
+                    action = null,
+                    targetEntity = null,
+                    fromDate = null,
+                    toDate = null,
+                    pageable = pageable,
+                )
 
             assertThat(result.content).isEmpty()
         }
