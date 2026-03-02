@@ -160,6 +160,10 @@ class TeamDashboardServiceImplTest {
             every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(homeGameTeam)
             every { gameRepository.findAllByIds(listOf(10L)) } returns listOf(futureGame)
             every { gameTeamRepository.findAllByGameIds(listOf(10L)) } returns listOf(homeGameTeam, awayGameTeam)
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(homeGameTeam, awayGameTeam)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
 
             // when
