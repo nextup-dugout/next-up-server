@@ -7,8 +7,8 @@ import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.BattingRecordService
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class BattingRecordControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var battingRecordService: BattingRecordService
-    private lateinit var gamePlayerRepository: GamePlayerRepository
+    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var objectMapper: ObjectMapper
 
     private val gameId = 1L

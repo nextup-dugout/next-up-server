@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.FieldingRecordService
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
 import com.nextup.scorer.dto.fielding.FieldingEventRequest
 import com.nextup.scorer.dto.fielding.FieldingEventType
 import com.nextup.scorer.exception.GlobalExceptionHandler
@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class FieldingRecordScorerControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var fieldingRecordService: FieldingRecordService
-    private lateinit var gamePlayerRepository: GamePlayerRepository
+    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var objectMapper: ObjectMapper
 
     private val gameId = 1L
