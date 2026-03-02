@@ -26,6 +26,5 @@ interface NotificationRepository :
         @Param("userId") userId: Long,
     ): Long
 
-    override fun countUnreadByUserId(userId: Long): Long =
-        countUnreadNotificationsByUserId(userId)
+    override fun countUnreadByUserId(userId: Long): Long = countUnreadNotificationsByUserId(userId)
 }
