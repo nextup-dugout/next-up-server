@@ -96,7 +96,14 @@ class GamePlayer(
         get() = battingOrder != null
 
     /**
+     * 이미 퇴장한 선수인지 확인합니다 (재출전 불가 검증용).
+     */
+    val hasExited: Boolean
+        get() = exitInning != null
+
+    /**
      * 교체 선수로 출전합니다.
+     * 이미 퇴장한 선수는 재출전할 수 없습니다.
      */
     fun enterAsSubstitute(
         inning: Int,
@@ -104,6 +111,9 @@ class GamePlayer(
         newBattingOrder: Int?,
     ) {
         require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
+        require(!hasExited) {
+            "이미 퇴장한 선수는 재출전할 수 없습니다. (선수 ID: $id)"
+        }
         this.isStarter = false
         this.isCurrentlyPlaying = true
         this.entryInning = inning
@@ -198,10 +208,48 @@ class GamePlayer(
     /**
      * DH 해제 시 처리합니다 (DH 규칙 해제).
      * 투수가 타순에 들어가게 됩니다.
+     *
+     * DH 해제 조건:
+     * - 투수가 DH(지명타자) 자리 타순에 직접 들어올 때만 가능
+     * - 또는 DH가 수비 포지션으로 이동할 때
+     * - 이 메서드 호출 전 도메인 서비스에서 조건 검증 필수
      */
     fun releaseDH() {
         this.isDesignatedHitter = false
         this.pitcherBattingOrder = null
+    }
+
+    /**
+     * 이 선수가 DH 자리에 투수로 교체될 수 있는지 검증합니다.
+     * 투수가 DH 타순으로 들어오면 DH 규칙이 해제됩니다.
+     *
+     * @param incomingPlayer 교체 들어오는 선수
+     * @return DH 규칙 해제가 필요한 경우 true
+     */
+    fun isDhReleaseRequired(incomingPlayer: GamePlayer): Boolean {
+        // 현재 선수가 DH이고, 들어오는 선수가 투수일 때 DH 해제
+        return this.isDesignatedHitter && incomingPlayer.isPitcher
+    }
+
+    /**
+     * DH 해제 규칙을 검증합니다.
+     * 투수가 DH 자리 이외의 타순으로 들어오는 경우 DH 해제는 허용되지 않습니다.
+     *
+     * @param incomingPlayer 교체 들어오는 선수
+     * @param incomingBattingOrder 들어오는 선수의 타순
+     * @throws IllegalArgumentException DH 해제 규칙 위반 시
+     */
+    fun validateDhRelease(
+        incomingPlayer: GamePlayer,
+        incomingBattingOrder: Int?,
+    ) {
+        if (this.isDesignatedHitter && incomingPlayer.isPitcher) {
+            // 투수가 DH 타순으로 들어오는 경우만 허용
+            val dhBattingOrder = this.battingOrder
+            require(incomingBattingOrder == dhBattingOrder) {
+                "투수는 DH 타순(${dhBattingOrder}번)으로만 교체될 수 있습니다. 요청 타순: $incomingBattingOrder"
+            }
+        }
     }
 
     companion object {

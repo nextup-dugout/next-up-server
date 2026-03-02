@@ -33,6 +33,7 @@ import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
+import com.nextup.core.service.game.dto.SubstitutionRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -437,6 +438,90 @@ class GameScorerServiceImpl(
         val savedGame = gameRepository.save(game)
         publishGameResultEvent(gameId)
         return savedGame
+    }
+
+    @Transactional
+    override fun substitutePlayer(
+        gameId: Long,
+        request: SubstitutionRequest,
+    ): GameEvent {
+        val game = findGame(gameId)
+
+        // 경기가 진행 중인지 확인
+        if (game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "진행 중인 경기만 선수 교체를 할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        // 교체 나가는 선수 조회
+        val outgoingPlayer =
+            gamePlayerRepository.findByIdOrNull(request.outgoingPlayerId)
+                ?: throw GamePlayerNotFoundException(request.outgoingPlayerId)
+
+        // 교체 들어오는 선수 조회
+        val incomingPlayer =
+            gamePlayerRepository.findByIdOrNull(request.incomingPlayerId)
+                ?: throw GamePlayerNotFoundException(request.incomingPlayerId)
+
+        // 퇴장한 선수 재출전 방지 (enterAsSubstitute 호출 전 사전 검증)
+        if (incomingPlayer.hasExited) {
+            throw InvalidGameStateException(
+                "이미 퇴장한 선수는 재출전할 수 없습니다. (GamePlayer ID: ${request.incomingPlayerId})",
+            )
+        }
+
+        // 나가는 선수가 현재 출전 중인지 확인
+        if (!outgoingPlayer.isCurrentlyPlaying) {
+            throw InvalidGameStateException(
+                "현재 출전 중인 선수만 교체할 수 있습니다. (GamePlayer ID: ${request.outgoingPlayerId})",
+            )
+        }
+
+        // DH 해제 규칙 검증
+        if (outgoingPlayer.isDesignatedHitter) {
+            try {
+                outgoingPlayer.validateDhRelease(incomingPlayer, request.newBattingOrder)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidGameStateException(e.message ?: "DH 해제 규칙 위반")
+            }
+        }
+
+        // DH 해제 처리
+        val dhReleaseRequired = outgoingPlayer.isDhReleaseRequired(incomingPlayer)
+        if (dhReleaseRequired) {
+            outgoingPlayer.releaseDH()
+            gamePlayerRepository.save(outgoingPlayer)
+        }
+
+        // 교체 나가는 선수 퇴장 처리
+        outgoingPlayer.exitGame(game.currentInning)
+        gamePlayerRepository.save(outgoingPlayer)
+
+        // 교체 들어오는 선수 출전 처리
+        incomingPlayer.enterAsSubstitute(
+            inning = game.currentInning,
+            newPosition = request.newPosition,
+            newBattingOrder = request.newBattingOrder,
+        )
+        gamePlayerRepository.save(incomingPlayer)
+
+        // 교체 이벤트 설명 생성
+        val halfInning = if (game.isTopInning) "초" else "말"
+        val dhReleaseNote = if (dhReleaseRequired) " (DH 규칙 해제)" else ""
+        val description =
+            "${game.currentInning}회$halfInning: ${outgoingPlayer.player.name} → ${incomingPlayer.player.name} (${request.newPosition.displayName})$dhReleaseNote"
+
+        // 교체 이벤트 생성 및 저장
+        val substitutionEvent =
+            GameEvent.createSubstitution(
+                game = game,
+                incomingPlayer = incomingPlayer,
+                outgoingPlayer = outgoingPlayer,
+                description = description,
+            )
+
+        return gameEventRepository.save(substitutionEvent)
     }
 
     /**
