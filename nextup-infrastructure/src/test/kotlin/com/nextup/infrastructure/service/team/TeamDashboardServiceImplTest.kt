@@ -284,5 +284,290 @@ class TeamDashboardServiceImplTest {
             assertThat(result.teamStats!!.wins).isEqualTo(1)
             assertThat(result.teamStats!!.losses).isEqualTo(0)
         }
+
+        @Test
+        @DisplayName("취소된 경기(CANCELLED)가 recentResults에 포함된다")
+        fun `취소된 경기가 최근 결과에 포함된다`() {
+            // given
+            val cancelledGame =
+                makeGame(
+                    id = 20L,
+                    scheduledAt = LocalDateTime.now().minusDays(1),
+                    status = GameStatus.CANCELLED,
+                )
+            val homeGameTeam = makeGameTeam(cancelledGame, team, HomeAway.HOME)
+            val awayTeam =
+                Team(league = league, name = "상대팀", city = "부산", foundedYear = 2021, id = 2L)
+            val awayGameTeam = makeGameTeam(cancelledGame, awayTeam, HomeAway.AWAY)
+
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(homeGameTeam)
+            every { gameRepository.findAllByIds(listOf(20L)) } returns listOf(cancelledGame)
+            every { gameTeamRepository.findAllByGameIds(listOf(20L)) } returns listOf(homeGameTeam, awayGameTeam)
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(homeGameTeam, awayGameTeam)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then
+            assertThat(result.recentResults).hasSize(1)
+            assertThat(result.recentResults[0].gameId).isEqualTo(20L)
+            assertThat(result.recentResults[0].status).isEqualTo(GameStatus.CANCELLED)
+        }
+
+        @Test
+        @DisplayName("homeTeam/awayTeam이 없는 경기 요약은 기본값(0L, 빈문자열)을 사용한다")
+        fun `gameTeams가 없을 때 game summary는 기본값을 반환한다`() {
+            // given
+            val futureGame =
+                makeGame(
+                    id = 30L,
+                    scheduledAt = LocalDateTime.now().plusDays(5),
+                )
+
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            // allGameTeams에 gameId=30 포함 (team 참여 표시)
+            val dummyGameTeam = makeGameTeam(futureGame, team, HomeAway.HOME)
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(dummyGameTeam)
+            every { gameRepository.findAllByIds(listOf(30L)) } returns listOf(futureGame)
+            // findAllByGameIds 결과는 빈 리스트 — homeTeam/awayTeam 모두 null
+            every { gameTeamRepository.findAllByGameIds(listOf(30L)) } returns emptyList()
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(dummyGameTeam)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then
+            assertThat(result.nextGame).isNotNull
+            assertThat(result.nextGame!!.homeTeamId).isEqualTo(0L)
+            assertThat(result.nextGame!!.homeTeamName).isEqualTo("")
+            assertThat(result.nextGame!!.awayTeamId).isEqualTo(0L)
+            assertThat(result.nextGame!!.awayTeamName).isEqualTo("")
+        }
+
+        @Test
+        @DisplayName("무승부만 있을 때 winningPercentage는 0.000이다")
+        fun `무승부만 있을 때 팀 통계의 winningPercentage는 0이다`() {
+            // given
+            val finishedGame =
+                makeGame(
+                    id = 40L,
+                    scheduledAt = LocalDateTime.now().minusDays(2),
+                    status = GameStatus.FINISHED,
+                )
+            val homeGameTeam =
+                makeGameTeam(finishedGame, team, HomeAway.HOME, score = 3, result = GameResult.DRAW)
+            val awayTeam =
+                Team(league = league, name = "상대팀", city = "부산", foundedYear = 2021, id = 2L)
+            val awayGameTeam =
+                makeGameTeam(finishedGame, awayTeam, HomeAway.AWAY, score = 3, result = GameResult.DRAW)
+
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(homeGameTeam)
+            every { gameRepository.findAllByIds(listOf(40L)) } returns listOf(finishedGame)
+            every { gameTeamRepository.findAllByGameIds(listOf(40L)) } returns listOf(homeGameTeam, awayGameTeam)
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(homeGameTeam, awayGameTeam)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns listOf(homeGameTeam, awayGameTeam)
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then
+            assertThat(result.teamStats).isNotNull
+            assertThat(result.teamStats!!.draws).isEqualTo(1)
+            assertThat(result.teamStats!!.wins).isEqualTo(0)
+            assertThat(result.teamStats!!.losses).isEqualTo(0)
+            // wins + losses == 0 분기 → winningPercentage == 0.000
+            assertThat(result.teamStats!!.winningPercentage.toPlainString()).isEqualTo("0.000")
+        }
+
+        @Test
+        @DisplayName("팀이 리더가 아닐 때 gamesBehind가 올바르게 계산된다")
+        fun `순위에서 리더가 아닌 팀의 gamesBehind가 계산된다`() {
+            // given
+            val leaderTeam =
+                Team(league = league, name = "1위팀", city = "서울", foundedYear = 2019, id = 10L)
+            val game1 =
+                makeGame(
+                    id = 50L,
+                    scheduledAt = LocalDateTime.now().minusDays(5),
+                    status = GameStatus.FINISHED,
+                )
+            val game2 =
+                makeGame(
+                    id = 51L,
+                    scheduledAt = LocalDateTime.now().minusDays(4),
+                    status = GameStatus.FINISHED,
+                )
+
+            // leaderTeam: 2승 0패 / team(id=1): 0승 2패
+            val gt1Home =
+                makeGameTeam(game1, leaderTeam, HomeAway.HOME, score = 5, result = GameResult.WIN)
+            val gt1Away =
+                makeGameTeam(game1, team, HomeAway.AWAY, score = 1, result = GameResult.LOSS)
+            val gt2Home =
+                makeGameTeam(game2, leaderTeam, HomeAway.HOME, score = 4, result = GameResult.WIN)
+            val gt2Away =
+                makeGameTeam(game2, team, HomeAway.AWAY, score = 2, result = GameResult.LOSS)
+
+            // team(id=1)이 참가한 gameTeams
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gt1Away, gt2Away)
+            every { gameRepository.findAllByIds(listOf(50L, 51L)) } returns listOf(game1, game2)
+            every {
+                gameTeamRepository.findAllByGameIds(listOf(50L, 51L))
+            } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away)
+            // 대회 전체 gameTeams
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns
+                listOf(gt1Home, gt1Away, gt2Home, gt2Away)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away)
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then
+            assertThat(result.standing).isNotNull
+            // leaderTeam: 2W 0L, team: 0W 2L → gamesBehind = (2-0 + 2-0)/2 = 2.0
+            assertThat(result.standing!!.gamesBehind).isEqualByComparingTo("2.0")
+            assertThat(result.standing!!.rank).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("팀이 대회 순위 목록에 없을 때 standing은 null이다")
+        fun `대회 순위에서 팀을 찾을 수 없으면 standing은 null이다`() {
+            // given
+            val otherTeam1 =
+                Team(league = league, name = "다른팀A", city = "인천", foundedYear = 2018, id = 20L)
+            val otherTeam2 =
+                Team(league = league, name = "다른팀B", city = "수원", foundedYear = 2019, id = 21L)
+            val game =
+                makeGame(
+                    id = 60L,
+                    scheduledAt = LocalDateTime.now().minusDays(1),
+                    status = GameStatus.FINISHED,
+                )
+
+            // team(id=1)은 allGameTeams에는 있지만 competition의 전체 gameTeams에는 없는 상황
+            val teamGt = makeGameTeam(game, team, HomeAway.HOME, score = 3, result = GameResult.WIN)
+            val gt1 =
+                makeGameTeam(game, otherTeam1, HomeAway.HOME, score = 5, result = GameResult.WIN)
+            val gt2 =
+                makeGameTeam(game, otherTeam2, HomeAway.AWAY, score = 2, result = GameResult.LOSS)
+
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(teamGt)
+            every { gameRepository.findAllByIds(listOf(60L)) } returns listOf(game)
+            every { gameTeamRepository.findAllByGameIds(listOf(60L)) } returns listOf(gt1, gt2)
+            // competitionId 100L의 전체 목록에는 team(id=1)이 없음
+            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(gt1, gt2)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
+            } returns listOf(gt1, gt2)
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then — teamIndex < 0 분기 → standing == null
+            assertThat(result.standing).isNull()
+        }
+
+        @Test
+        @DisplayName("두 개의 대회에 참여 중일 때 경기 수가 많은 대회를 기준으로 순위를 반환한다")
+        fun `여러 대회 참여 시 경기가 많은 대회 기준으로 standing을 반환한다`() {
+            // given
+            val competition2 =
+                Competition(
+                    league = league,
+                    name = "여름리그",
+                    type = CompetitionType.LEAGUE,
+                    year = 2026,
+                    startDate = LocalDate.of(2026, 6, 1),
+                    id = 200L,
+                )
+
+            // competition(id=100): 1경기, competition2(id=200): 2경기
+            val game1 =
+                makeGame(
+                    id = 70L,
+                    scheduledAt = LocalDateTime.now().minusDays(10),
+                    status = GameStatus.FINISHED,
+                )
+            val game2 =
+                makeGame(
+                    id = 71L,
+                    scheduledAt = LocalDateTime.now().minusDays(5),
+                    status = GameStatus.FINISHED,
+                )
+            val game3 =
+                makeGame(
+                    id = 72L,
+                    scheduledAt = LocalDateTime.now().minusDays(3),
+                    status = GameStatus.FINISHED,
+                )
+            // game2, game3은 competition2 소속으로 field override
+            val field = game2::class.java.getDeclaredField("competition")
+            field.isAccessible = true
+            field.set(game2, competition2)
+            field.set(game3, competition2)
+
+            val awayTeam =
+                Team(league = league, name = "상대팀", city = "부산", foundedYear = 2021, id = 2L)
+
+            val gt1Home = makeGameTeam(game1, team, HomeAway.HOME, score = 3, result = GameResult.WIN)
+            val gt1Away = makeGameTeam(game1, awayTeam, HomeAway.AWAY, score = 1, result = GameResult.LOSS)
+            val gt2Home = makeGameTeam(game2, team, HomeAway.HOME, score = 4, result = GameResult.WIN)
+            val gt2Away = makeGameTeam(game2, awayTeam, HomeAway.AWAY, score = 2, result = GameResult.LOSS)
+            val gt3Home = makeGameTeam(game3, team, HomeAway.HOME, score = 5, result = GameResult.WIN)
+            val gt3Away = makeGameTeam(game3, awayTeam, HomeAway.AWAY, score = 0, result = GameResult.LOSS)
+
+            every { teamRepository.findByIdWithLeague(1L) } returns team
+            every { teamMembershipService.getTeamMemberCount(1L) } returns 10
+            // team이 참여한 gameTeams: comp100 1경기, comp200 2경기
+            every {
+                gameTeamRepository.findAllByTeamId(1L)
+            } returns listOf(gt1Home, gt2Home, gt3Home)
+            every {
+                gameRepository.findAllByIds(listOf(70L, 71L, 72L))
+            } returns listOf(game1, game2, game3)
+            every {
+                gameTeamRepository.findAllByGameIds(listOf(70L, 71L, 72L))
+            } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away, gt3Home, gt3Away)
+            // primaryCompetition은 경기 수가 많은 200L
+            every { gameTeamRepository.findAllByCompetitionId(200L) } returns
+                listOf(gt2Home, gt2Away, gt3Home, gt3Away)
+            every {
+                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(200L)
+            } returns listOf(gt2Home, gt2Away, gt3Home, gt3Away)
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+
+            // when
+            val result = service.getTeamDashboard(1L)
+
+            // then — competition2(id=200, "여름리그") 기준
+            assertThat(result.standing).isNotNull
+            assertThat(result.standing!!.competitionId).isEqualTo(200L)
+            assertThat(result.standing!!.competitionName).isEqualTo("여름리그")
+            assertThat(result.standing!!.wins).isEqualTo(2)
+        }
     }
 }
