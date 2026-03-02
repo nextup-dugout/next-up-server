@@ -77,8 +77,9 @@ class RecordCorrectionServiceImpl(
                 action = "CORRECT_BATTING_RECORD",
                 targetEntity = "BattingRecord",
                 targetId = recordId,
-                details = "gameId=$gameId, field=${request.fieldName}, " +
-                    "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
+                details =
+                    "gameId=$gameId, field=${request.fieldName}, " +
+                        "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
             )
         auditLogRepository.save(auditLog)
 
@@ -127,8 +128,9 @@ class RecordCorrectionServiceImpl(
                 action = "CORRECT_PITCHING_RECORD",
                 targetEntity = "PitchingRecord",
                 targetId = recordId,
-                details = "gameId=$gameId, field=${request.fieldName}, " +
-                    "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
+                details =
+                    "gameId=$gameId, field=${request.fieldName}, " +
+                        "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
             )
         auditLogRepository.save(auditLog)
 
