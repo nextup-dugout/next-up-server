@@ -180,6 +180,38 @@ class TeamMemberEventListenerTest {
         }
 
         @Test
+        @DisplayName("SUBMITTED 라인업에서 마지막 선수 제거 시 경고 로그를 남긴다")
+        fun `should log warning when last entry removed from SUBMITTED lineup`() {
+            // given
+            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+
+            val submission = mockk<LineupSubmission>(relaxed = true)
+            every { submission.id } returns 10L
+            every { submission.status } returns LineupSubmissionStatus.SUBMITTED
+
+            val entry = mockk<LineupEntry>(relaxed = true)
+
+            every {
+                lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
+                    1L,
+                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                )
+            } returns listOf(submission)
+            every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry
+            justRun { lineupEntryRepository.delete(entry) }
+            every { lineupEntryRepository.findAllBySubmissionId(10L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByMemberId(100L) }
+
+            // when
+            listener.handleTeamMemberLeft(event)
+
+            // then
+            verify(exactly = 1) { lineupEntryRepository.delete(entry) }
+            verify(exactly = 1) { lineupEntryRepository.findAllBySubmissionId(10L) }
+            verify(exactly = 1) { activityScoreRepository.deleteByMemberId(100L) }
+        }
+
+        @Test
         @DisplayName("팀원 탈퇴 시 활동 점수를 삭제한다")
         fun `should delete activity score on member left`() {
             // given
