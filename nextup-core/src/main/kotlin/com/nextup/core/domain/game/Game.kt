@@ -74,9 +74,34 @@ class Game(
 
     /**
      * 다음 이닝으로 진행합니다.
+     *
+     * 연장전 타이브레이크 활성화 시 초(원정팀 공격) 시작마다 무사 1,2루 상태를 자동 설정합니다.
+     * 최대 연장 이닝 도달 시 무승부로 경기를 종료합니다.
+     *
+     * @param tiebreakerFirstRunnerId  타이브레이크 1루 배치 주자 GamePlayer ID
+     * @param tiebreakerSecondRunnerId 타이브레이크 2루 배치 주자 GamePlayer ID
+     * @param gameTeams 무승부 자동 처리용 GameTeam 목록 (최대 연장 이닝 도달 시 DRAW 설정)
+     * @return [TiebreakerResult] 이닝 전환 처리 결과
      */
-    fun nextHalfInning() {
+    fun nextHalfInning(
+        tiebreakerFirstRunnerId: Long? = null,
+        tiebreakerSecondRunnerId: Long? = null,
+        gameTeams: List<GameTeam> = emptyList(),
+    ): TiebreakerResult {
         require(status.isOngoing()) { "진행 중인 경기만 이닝을 진행할 수 있습니다." }
+
+        val rules = competition.gameRules
+
+        // 말(홈팀 공격) 종료 후 다음 이닝으로 넘어가기 전에 최대 연장 이닝 제한 확인
+        if (!isTopInning) {
+            val maxExtra = rules.maxExtraInnings
+            if (maxExtra != null && currentInning >= totalInnings + maxExtra) {
+                status = GameStatus.FINISHED
+                endedAt = LocalDateTime.now()
+                gameTeams.forEach { it.updateResult(GameResult.DRAW) }
+                return TiebreakerResult.DRAW_BY_INNINGS_LIMIT
+            }
+        }
 
         if (isTopInning) {
             isTopInning = false
@@ -85,6 +110,48 @@ class Game(
             isTopInning = true
         }
         gameState.resetForNewInning()
+
+        // 연장전 타이브레이크: 초(원정팀 공격) 시작 시에만 적용
+        if (rules.tiebreakerEnabled && isTopInning && currentInning > totalInnings) {
+            gameState.setupTiebreaker(
+                firstRunnerId = tiebreakerFirstRunnerId,
+                secondRunnerId = tiebreakerSecondRunnerId,
+            )
+            return TiebreakerResult.TIEBREAKER_APPLIED
+        }
+
+        return TiebreakerResult.NORMAL
+    }
+
+    /**
+     * 투수 교체 가능 여부를 검증합니다 (한 타자 최소 대면 규칙).
+     *
+     * 사회인 야구 유연성을 위해 규칙 위반 시 예외를 던지지 않고 경고를 반환합니다.
+     * - 이닝이 종료된 경우(아웃 3개) 교체는 자유롭습니다.
+     * - 현재 투수의 대면 타자 수([battersFaced])가 [minBattersFaced] 미만이면 경고를 반환합니다.
+     *
+     * @param currentPitcherBattersFaced 현재 투수의 이번 경기 대면 타자 수
+     * @param minBattersFaced 최소 대면 타자 수 (기본값 1)
+     * @return [PitcherChangeWarning] 교체 가능 시 null, 경고 시 해당 경고 객체
+     */
+    fun checkPitcherChangeAllowed(
+        currentPitcherBattersFaced: Int,
+        minBattersFaced: Int = DEFAULT_MIN_BATTERS_FACED,
+    ): PitcherChangeWarning? {
+        require(status.isOngoing()) { "진행 중인 경기에서만 투수 교체를 확인할 수 있습니다." }
+        require(minBattersFaced >= 1) { "최소 대면 타자 수는 1 이상이어야 합니다." }
+
+        // 이닝 종료 후(아웃 3개) 교체는 항상 허용
+        if (gameState.outs >= 3) return null
+
+        return if (currentPitcherBattersFaced < minBattersFaced) {
+            PitcherChangeWarning(
+                currentBattersFaced = currentPitcherBattersFaced,
+                minBattersFaced = minBattersFaced,
+            )
+        } else {
+            null
+        }
     }
 
     /**
@@ -247,6 +314,9 @@ class Game(
 
         /** Mercy Rule 기본 최소 이닝 */
         const val DEFAULT_MERCY_MINIMUM_INNING = 5
+
+        /** 투수 교체 시 최소 대면 타자 수 기본값 */
+        const val DEFAULT_MIN_BATTERS_FACED = 1
     }
 
     /**
