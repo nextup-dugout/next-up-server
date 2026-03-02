@@ -12,6 +12,8 @@ interface BattingRecordRepositoryPort {
 
     fun findAll(): List<BattingRecord>
 
+    fun findByIdOrNull(id: Long): BattingRecord?
+
     fun delete(battingRecord: BattingRecord)
 
     fun deleteById(id: Long)

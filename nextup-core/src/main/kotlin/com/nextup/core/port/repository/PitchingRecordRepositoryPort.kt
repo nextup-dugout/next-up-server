@@ -13,6 +13,8 @@ interface PitchingRecordRepositoryPort {
 
     fun findAll(): List<PitchingRecord>
 
+    fun findByIdOrNull(id: Long): PitchingRecord?
+
     fun delete(pitchingRecord: PitchingRecord)
 
     fun deleteById(id: Long)

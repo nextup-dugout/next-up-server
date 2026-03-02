@@ -11,6 +11,11 @@ interface BattingRecordRepository :
     JpaRepository<BattingRecord, Long>,
     BattingRecordRepositoryPort {
     /**
+     * ID로 타격 기록을 조회합니다.
+     */
+    override fun findByIdOrNull(id: Long): BattingRecord? = findById(id).orElse(null)
+
+    /**
      * GamePlayer로 타격 기록을 조회합니다.
      */
     override fun findByGamePlayer(gamePlayer: GamePlayer): BattingRecord?
