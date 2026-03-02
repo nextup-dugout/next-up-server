@@ -105,7 +105,7 @@ class SecurityConfig(
                         }
                     }
                     // Actuator endpoints
-                    .requestMatchers("/actuator/health")
+                    .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics")
                     .permitAll()
                     // Admin endpoints
                     .requestMatchers("/api/admin/**")

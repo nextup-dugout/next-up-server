@@ -432,5 +432,22 @@ class CompetitionPlayerRepositoryAdapterTest {
             // then
             assertThat(result).isEmpty()
         }
+
+        @Test
+        fun `should return withdrawn players for given team`() {
+            // given
+            val teamId = 1L
+            competitionPlayer.withdraw()
+            every {
+                jpaRepository.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.WITHDRAWN)
+            } returns listOf(competitionPlayer)
+
+            // when
+            val result = adapter.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.WITHDRAWN)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].status).isEqualTo(CompetitionPlayerStatus.WITHDRAWN)
+        }
     }
 }

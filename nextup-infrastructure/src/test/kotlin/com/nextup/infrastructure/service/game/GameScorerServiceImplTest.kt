@@ -250,6 +250,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
             every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
             every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findAllByTeamIdAndGameId(any(), any()) } returns emptyList()
 
             val eventSlot = slot<GameResultConfirmedEvent>()
             every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit

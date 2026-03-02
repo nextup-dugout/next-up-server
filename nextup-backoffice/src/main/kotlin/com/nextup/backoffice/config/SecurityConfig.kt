@@ -64,8 +64,8 @@ class SecurityConfig(
                 it.accessDeniedHandler(customAccessDeniedHandler)
             }.authorizeHttpRequests { auth ->
                 auth
-                    // Health check
-                    .requestMatchers("/actuator/health")
+                    // Actuator endpoints
+                    .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics")
                     .permitAll()
                     // Swagger/OpenAPI - 프로덕션 환경에서는 비활성화
                     .let { registry ->

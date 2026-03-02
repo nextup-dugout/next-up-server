@@ -24,6 +24,24 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: next-up-scorer
+    version: 0.0.1-SNAPSHOT
+    description: NEXT-UP 사회인 야구 기록 서비스 실시간 경기 기록 API
+
 app:
   websocket:
     allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000}
