@@ -63,6 +63,9 @@ class GameScorerServiceConcurrencyTest {
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
+        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
+        every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+        every { gameEventRepository.save(any()) } answers { firstArg() }
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
@@ -801,6 +804,7 @@ class GameScorerServiceConcurrencyTest {
     private fun createGamePlayer(id: Long): GamePlayer {
         val gamePlayer = mockk<GamePlayer>(relaxed = true)
         every { gamePlayer.id } returns id
+        every { gamePlayer.battingOrder } returns 1
         return gamePlayer
     }
 

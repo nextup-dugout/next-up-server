@@ -950,4 +950,84 @@ class GameStateTest {
         assertThat(gameState.runnerOnSecondPitcherId).isNull()
         assertThat(gameState.runnerOnThirdPitcherId).isNull()
     }
+
+    @Test
+    fun `should return null when batting order is correct for home team`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 3)
+
+        // when
+        val violation = gameState.validateBattingOrder(batterBattingOrder = 3, isHomeTeam = true)
+
+        // then
+        assertThat(violation).isNull()
+    }
+
+    @Test
+    fun `should return null when batting order is correct for away team`() {
+        // given
+        val gameState = GameState(awayBattingOrder = 5)
+
+        // when
+        val violation = gameState.validateBattingOrder(batterBattingOrder = 5, isHomeTeam = false)
+
+        // then
+        assertThat(violation).isNull()
+    }
+
+    @Test
+    fun `should return violation when home team batting order is wrong`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 3)
+
+        // when
+        val violation = gameState.validateBattingOrder(batterBattingOrder = 5, isHomeTeam = true)
+
+        // then
+        assertThat(violation).isNotNull()
+        assertThat(violation!!.expectedBattingOrder).isEqualTo(3)
+        assertThat(violation.actualBattingOrder).isEqualTo(5)
+    }
+
+    @Test
+    fun `should return violation when away team batting order is wrong`() {
+        // given
+        val gameState = GameState(awayBattingOrder = 2)
+
+        // when
+        val violation = gameState.validateBattingOrder(batterBattingOrder = 4, isHomeTeam = false)
+
+        // then
+        assertThat(violation).isNotNull()
+        assertThat(violation!!.expectedBattingOrder).isEqualTo(2)
+        assertThat(violation.actualBattingOrder).isEqualTo(4)
+    }
+
+    @Test
+    fun `should return null when batterBattingOrder is null`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 3)
+
+        // when
+        val violation = gameState.validateBattingOrder(batterBattingOrder = null, isHomeTeam = true)
+
+        // then
+        assertThat(violation).isNull()
+    }
+
+    @Test
+    fun `should not confuse home and away batting orders`() {
+        // given
+        val gameState = GameState(homeBattingOrder = 3, awayBattingOrder = 7)
+
+        // when: correct order for home team but wrong for away team
+        val homeViolation = gameState.validateBattingOrder(batterBattingOrder = 3, isHomeTeam = true)
+        val awayViolation = gameState.validateBattingOrder(batterBattingOrder = 3, isHomeTeam = false)
+
+        // then
+        assertThat(homeViolation).isNull()
+        assertThat(awayViolation).isNotNull()
+        assertThat(awayViolation!!.expectedBattingOrder).isEqualTo(7)
+        assertThat(awayViolation.actualBattingOrder).isEqualTo(3)
+    }
 }

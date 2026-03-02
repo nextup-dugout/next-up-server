@@ -16,7 +16,8 @@ data class GameResponse(
     val gameState: GameStateResponse,
     val scheduledAt: LocalDateTime,
     val startedAt: LocalDateTime?,
-    val endedAt: LocalDateTime?
+    val endedAt: LocalDateTime?,
+    val warnings: List<String> = emptyList(),
 )
 
 /**

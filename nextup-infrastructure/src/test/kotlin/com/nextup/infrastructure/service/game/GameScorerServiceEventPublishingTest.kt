@@ -59,6 +59,9 @@ class GameScorerServiceEventPublishingTest {
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
+        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
+        every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+        every { gameEventRepository.save(any()) } answers { firstArg() }
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,

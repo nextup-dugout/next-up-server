@@ -52,6 +52,13 @@ class GameEvent(
     val runsScored: Int = 0,
     @Column(nullable = false)
     val rbis: Int = 0,
+    /**
+     * 득점 주자 ID 목록 (D-15: 타점 경로 상세 기록)
+     * 형식: "playerId1,playerId2,..." (CSV)
+     * 홈런 타자 자신은 타자 ID로 포함됨
+     */
+    @Column(name = "scoring_runner_ids", columnDefinition = "TEXT")
+    val scoringRunnerIds: String? = null,
     @Column(name = "event_timestamp", nullable = false)
     val eventTimestamp: Instant = Instant.now(),
     @Column(nullable = false)
@@ -63,6 +70,11 @@ class GameEvent(
     fun markUndone() {
         undone = true
     }
+
+    /**
+     * 득점 주자 ID 목록을 반환합니다 (D-15: 타점 경로).
+     */
+    fun getScoringRunnerIdList(): List<Long> = parseScoringRunnerIds(scoringRunnerIds)
 
     companion object {
         /**
@@ -80,6 +92,7 @@ class GameEvent(
             runnersAfterJson: String?,
             runsScored: Int = 0,
             rbis: Int = 0,
+            scoringRunnerIds: List<Long> = emptyList(),
         ): GameEvent =
             GameEvent(
                 game = game,
@@ -96,7 +109,16 @@ class GameEvent(
                 plateAppearanceResult = result,
                 runsScored = runsScored,
                 rbis = rbis,
+                scoringRunnerIds = scoringRunnerIds.joinToString(",").ifEmpty { null },
             )
+
+        /**
+         * 득점 주자 ID 목록을 파싱합니다.
+         */
+        fun parseScoringRunnerIds(scoringRunnerIds: String?): List<Long> {
+            if (scoringRunnerIds.isNullOrBlank()) return emptyList()
+            return scoringRunnerIds.split(",").mapNotNull { it.trim().toLongOrNull() }
+        }
 
         /**
          * 이닝 전환 이벤트를 생성합니다.

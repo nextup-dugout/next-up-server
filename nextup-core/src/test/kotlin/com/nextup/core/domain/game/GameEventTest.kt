@@ -141,6 +141,113 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("createPlateAppearance - scoringRunnerIds (D-15)")
+    inner class CreatePlateAppearanceWithScoringRunnerIds {
+        @Test
+        fun `should record scoring runner ids for home run`() {
+            // given
+            val scoringRunnerIds = listOf(100L, 101L)
+
+            // when
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.HOME_RUN,
+                    description = "2점 홈런",
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                    runsScored = 2,
+                    rbis = 2,
+                    scoringRunnerIds = scoringRunnerIds,
+                )
+
+            // then
+            assertThat(event.getScoringRunnerIdList()).containsExactly(100L, 101L)
+            assertThat(event.scoringRunnerIds).isEqualTo("100,101")
+        }
+
+        @Test
+        fun `should return empty list when no scoring runners`() {
+            // when
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.SINGLE,
+                    description = "우전 안타",
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                    runsScored = 0,
+                    rbis = 0,
+                )
+
+            // then
+            assertThat(event.getScoringRunnerIdList()).isEmpty()
+            assertThat(event.scoringRunnerIds).isNull()
+        }
+
+        @Test
+        fun `should record single scoring runner for RBI single`() {
+            // given
+            val scoringRunnerIds = listOf(200L)
+
+            // when
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.SINGLE,
+                    description = "중전 적시타",
+                    outCountBefore = 1,
+                    outCountAfter = 1,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                    runsScored = 1,
+                    rbis = 1,
+                    scoringRunnerIds = scoringRunnerIds,
+                )
+
+            // then
+            assertThat(event.getScoringRunnerIdList()).containsExactly(200L)
+        }
+
+        @Test
+        fun `parseScoringRunnerIds should handle null input`() {
+            // when
+            val result = GameEvent.parseScoringRunnerIds(null)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `parseScoringRunnerIds should handle blank input`() {
+            // when
+            val result = GameEvent.parseScoringRunnerIds("  ")
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `parseScoringRunnerIds should parse comma-separated ids`() {
+            // when
+            val result = GameEvent.parseScoringRunnerIds("10,20,30")
+
+            // then
+            assertThat(result).containsExactly(10L, 20L, 30L)
+        }
+    }
+
+    @Nested
     @DisplayName("createSubstitution")
     inner class CreateSubstitution {
         @Test

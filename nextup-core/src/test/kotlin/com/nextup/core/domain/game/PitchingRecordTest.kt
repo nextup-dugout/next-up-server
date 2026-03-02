@@ -196,6 +196,93 @@ class PitchingRecordTest {
     }
 
     @Nested
+    @DisplayName("투구 수 제한 상태 확인 (D-20)")
+    inner class CheckPitchCountStatusTest {
+        @Test
+        fun `투구 수 미기록 시 null을 반환한다`() {
+            // given: pitchesThrown is null by default
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100)
+
+            // then
+            assertThat(status).isNull()
+        }
+
+        @Test
+        fun `투구 수가 제한 미만이고 경고 범위 밖이면 null을 반환한다`() {
+            // given: 100구 제한, 10구 경고 임박 기준, 현재 85구 (경고 범위 밖)
+            pitchingRecord.recordPitchCount(totalPitches = 85, strikes = 50)
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100, warningThreshold = 10)
+
+            // then
+            assertThat(status).isNull()
+        }
+
+        @Test
+        fun `투구 수가 경고 임박 범위에 들어오면 APPROACHING_LIMIT을 반환한다`() {
+            // given: 100구 제한, 10구 경고 임박 기준, 현재 91구 (제한까지 9구 남음)
+            pitchingRecord.recordPitchCount(totalPitches = 91, strikes = 55)
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100, warningThreshold = 10)
+
+            // then
+            assertThat(status).isEqualTo(PitchCountStatus.APPROACHING_LIMIT)
+        }
+
+        @Test
+        fun `투구 수가 경고 임박 기준 경계값이면 APPROACHING_LIMIT을 반환한다`() {
+            // given: 100구 제한, 10구 경고 임박 기준, 현재 정확히 90구
+            pitchingRecord.recordPitchCount(totalPitches = 90, strikes = 55)
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100, warningThreshold = 10)
+
+            // then
+            assertThat(status).isEqualTo(PitchCountStatus.APPROACHING_LIMIT)
+        }
+
+        @Test
+        fun `투구 수가 제한에 도달하면 LIMIT_REACHED를 반환한다`() {
+            // given: 100구 제한, 현재 정확히 100구
+            pitchingRecord.recordPitchCount(totalPitches = 100, strikes = 65)
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100)
+
+            // then
+            assertThat(status).isEqualTo(PitchCountStatus.LIMIT_REACHED)
+        }
+
+        @Test
+        fun `투구 수가 제한을 초과하면 LIMIT_REACHED를 반환한다`() {
+            // given: 100구 제한, 현재 105구 (초과)
+            pitchingRecord.recordPitchCount(totalPitches = 105, strikes = 65)
+
+            // when
+            val status = pitchingRecord.checkPitchCountStatus(limit = 100)
+
+            // then
+            assertThat(status).isEqualTo(PitchCountStatus.LIMIT_REACHED)
+        }
+
+        @Test
+        fun `기본 경고 임박 기준은 10구이다`() {
+            // given: 80구 제한, 현재 72구 (제한까지 8구 남음 - 기본 10구 기준 내)
+            pitchingRecord.recordPitchCount(totalPitches = 72, strikes = 45)
+
+            // when: warningThreshold 기본값 사용
+            val status = pitchingRecord.checkPitchCountStatus(limit = 80)
+
+            // then
+            assertThat(status).isEqualTo(PitchCountStatus.APPROACHING_LIMIT)
+        }
+    }
+
+    @Nested
     @DisplayName("이닝 계산")
     inner class InningsCalculationTest {
         @Test
