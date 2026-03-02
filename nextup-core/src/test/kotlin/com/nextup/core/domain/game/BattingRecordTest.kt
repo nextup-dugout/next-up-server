@@ -1362,4 +1362,292 @@ class BattingRecordTest {
                 .hasMessageContaining("삼중살")
         }
     }
+
+    @Nested
+    @DisplayName("apply → revert 단일 왕복 검증")
+    inner class ApplyRevertRoundTripTest {
+
+        private fun assertAllFieldsZero(record: BattingRecord) {
+            assertThat(record.plateAppearances).isEqualTo(0)
+            assertThat(record.atBats).isEqualTo(0)
+            assertThat(record.hits).isEqualTo(0)
+            assertThat(record.doubles).isEqualTo(0)
+            assertThat(record.triples).isEqualTo(0)
+            assertThat(record.homeRuns).isEqualTo(0)
+            assertThat(record.runs).isEqualTo(0)
+            assertThat(record.runsBattedIn).isEqualTo(0)
+            assertThat(record.walks).isEqualTo(0)
+            assertThat(record.intentionalWalks).isEqualTo(0)
+            assertThat(record.hitByPitch).isEqualTo(0)
+            assertThat(record.strikeouts).isEqualTo(0)
+            assertThat(record.sacrificeBunts).isEqualTo(0)
+            assertThat(record.sacrificeFlies).isEqualTo(0)
+            assertThat(record.groundedIntoDoublePlays).isEqualTo(0)
+            assertThat(record.triplePlays).isEqualTo(0)
+        }
+
+        @Test
+        fun `단타 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `2루타 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `3루타 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.TRIPLE)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `홈런 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.HOME_RUN)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `삼진 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `땅볼아웃 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `플라이아웃 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.FLY_OUT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.FLY_OUT)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `라인아웃 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.LINE_OUT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.LINE_OUT)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `야수선택 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.FIELDERS_CHOICE)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.FIELDERS_CHOICE)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `실책 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.ERROR)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.ERROR)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `병살타 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE_PLAY)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.DOUBLE_PLAY)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `삼중살 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.TRIPLE_PLAY)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `볼넷 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.WALK)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `고의4구 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INTENTIONAL_WALK)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.INTENTIONAL_WALK)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `사구 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HIT_BY_PITCH)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.HIT_BY_PITCH)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `희생번트 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_BUNT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_BUNT)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `희생플라이 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `방해 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INTERFERENCE)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.INTERFERENCE)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `타점 포함 단타 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 2)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 2)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `타점 포함 홈런 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 4)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 4)
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `타점 포함 희생플라이 apply 후 revert하면 초기 상태로 복원된다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY, rbis = 1)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY, rbis = 1)
+            assertAllFieldsZero(battingRecord)
+        }
+    }
+
+    @Nested
+    @DisplayName("apply → revert 복합 왕복 검증")
+    inner class MultipleApplyRevertRoundTripTest {
+
+        private fun assertAllFieldsZero(record: BattingRecord) {
+            assertThat(record.plateAppearances).isEqualTo(0)
+            assertThat(record.atBats).isEqualTo(0)
+            assertThat(record.hits).isEqualTo(0)
+            assertThat(record.doubles).isEqualTo(0)
+            assertThat(record.triples).isEqualTo(0)
+            assertThat(record.homeRuns).isEqualTo(0)
+            assertThat(record.runs).isEqualTo(0)
+            assertThat(record.runsBattedIn).isEqualTo(0)
+            assertThat(record.walks).isEqualTo(0)
+            assertThat(record.intentionalWalks).isEqualTo(0)
+            assertThat(record.hitByPitch).isEqualTo(0)
+            assertThat(record.strikeouts).isEqualTo(0)
+            assertThat(record.sacrificeBunts).isEqualTo(0)
+            assertThat(record.sacrificeFlies).isEqualTo(0)
+            assertThat(record.groundedIntoDoublePlays).isEqualTo(0)
+            assertThat(record.triplePlays).isEqualTo(0)
+        }
+
+        @Test
+        fun `단타, 삼진, 볼넷 순서로 apply 후 역순 revert하면 초기 상태로 복원된다`() {
+            // apply
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+
+            // revert (역순)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.WALK)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `홈런(2타점), 2루타(1타점) apply 후 역순 revert하면 초기 상태로 복원된다`() {
+            // apply
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 2)
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE, rbis = 1)
+
+            // revert (역순)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.DOUBLE, rbis = 1)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.HOME_RUN, rbis = 2)
+
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `18개 전체 타석 결과 apply 후 역순 전체 revert하면 초기 상태로 복원된다`() {
+            val resultsWithRbis =
+                listOf(
+                    PlateAppearanceResult.SINGLE to 1,
+                    PlateAppearanceResult.DOUBLE to 0,
+                    PlateAppearanceResult.TRIPLE to 2,
+                    PlateAppearanceResult.HOME_RUN to 3,
+                    PlateAppearanceResult.STRIKEOUT to 0,
+                    PlateAppearanceResult.GROUND_OUT to 0,
+                    PlateAppearanceResult.FLY_OUT to 0,
+                    PlateAppearanceResult.LINE_OUT to 0,
+                    PlateAppearanceResult.FIELDERS_CHOICE to 1,
+                    PlateAppearanceResult.ERROR to 0,
+                    PlateAppearanceResult.DOUBLE_PLAY to 0,
+                    PlateAppearanceResult.TRIPLE_PLAY to 0,
+                    PlateAppearanceResult.WALK to 0,
+                    PlateAppearanceResult.INTENTIONAL_WALK to 0,
+                    PlateAppearanceResult.HIT_BY_PITCH to 0,
+                    PlateAppearanceResult.SACRIFICE_BUNT to 0,
+                    PlateAppearanceResult.SACRIFICE_FLY to 1,
+                    PlateAppearanceResult.INTERFERENCE to 0,
+                )
+
+            // apply (순서대로)
+            for ((result, rbis) in resultsWithRbis) {
+                battingRecord.applyPlateAppearanceResult(result, rbis)
+            }
+
+            // revert (역순)
+            for ((result, rbis) in resultsWithRbis.reversed()) {
+                battingRecord.revertPlateAppearanceResult(result, rbis)
+            }
+
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `동일 결과 여러 번 apply 후 동일 횟수 revert하면 초기 상태로 복원된다`() {
+            // 단타 3번
+            repeat(3) { battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 1) }
+
+            // revert 3번
+            repeat(3) { battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 1) }
+
+            assertAllFieldsZero(battingRecord)
+        }
+
+        @Test
+        fun `실전 시나리오 - 한 이닝 타석 결과 apply 후 전체 revert하면 초기 상태로 복원된다`() {
+            // 1번타자: 볼넷
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK)
+            // 같은 타자 2번째 타석: 2루타 1타점
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE, rbis = 1)
+            // 같은 타자 3번째 타석: 희생플라이 1타점
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY, rbis = 1)
+
+            // 전체 revert (역순)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.SACRIFICE_FLY, rbis = 1)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.DOUBLE, rbis = 1)
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.WALK)
+
+            assertAllFieldsZero(battingRecord)
+        }
+    }
 }
