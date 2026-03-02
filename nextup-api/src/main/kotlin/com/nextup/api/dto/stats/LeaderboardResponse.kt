@@ -8,6 +8,7 @@ data class BattingLeaderResponse(
     val value: Double,
     val games: Int,
     val plateAppearances: Int,
+    val profileImageUrl: String? = null,
 )
 
 data class PitchingLeaderResponse(
@@ -18,4 +19,5 @@ data class PitchingLeaderResponse(
     val value: Double,
     val games: Int,
     val inningsPitched: Double,
+    val profileImageUrl: String? = null,
 )

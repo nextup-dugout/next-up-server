@@ -1,8 +1,10 @@
 package com.nextup.api.controller.game
 
+import com.nextup.api.dto.game.AvailableRosterResponse
 import com.nextup.api.dto.game.GameDetailResponse
 import com.nextup.api.dto.game.GameSummaryResponse
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.service.game.AvailableRosterService
 import com.nextup.core.service.game.GameScheduleService
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,6 +21,7 @@ import java.time.LocalDate
 @RequestMapping("/api/v1")
 class GameScheduleController(
     private val gameScheduleService: GameScheduleService,
+    private val availableRosterService: AvailableRosterService,
 ) {
     /**
      * 경기 목록을 조회합니다. (날짜/팀/대회 필터, 페이징)
@@ -74,5 +77,34 @@ class GameScheduleController(
     ): ApiResponse<List<GameSummaryResponse>> {
         val games = gameScheduleService.getUpcomingGamesByTeam(teamId, limit)
         return ApiResponse.success(games.map { GameSummaryResponse.from(it) })
+    }
+
+    /**
+     * 특정 연월의 경기 있는 날짜(일) 목록을 반환합니다. (A-05: 캘린더 뷰)
+     *
+     * GET /api/v1/games/calendar?year={year}&month={month}&teamId={teamId}
+     */
+    @GetMapping("/games/calendar")
+    fun getGameCalendar(
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam(required = false) teamId: Long?,
+    ): ApiResponse<List<Int>> {
+        val days = gameScheduleService.getGameDaysInMonth(year, month, teamId)
+        return ApiResponse.success(days)
+    }
+
+    /**
+     * 라인업 제출용 출전 가능 선수 목록을 조회합니다. (A-07: 로스터)
+     *
+     * GET /api/v1/games/{gameId}/available-roster?teamId={teamId}
+     */
+    @GetMapping("/games/{gameId}/available-roster")
+    fun getAvailableRoster(
+        @PathVariable gameId: Long,
+        @RequestParam teamId: Long,
+    ): ApiResponse<AvailableRosterResponse> {
+        val roster = availableRosterService.getAvailableRoster(gameId, teamId)
+        return ApiResponse.success(AvailableRosterResponse.from(roster))
     }
 }

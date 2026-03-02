@@ -15,4 +15,9 @@ interface NotificationRepositoryPort {
     ): Page<Notification>
 
     fun findByUserId(userId: Long): List<Notification>
+
+    /**
+     * 사용자의 미읽은 알림 개수를 조회합니다.
+     */
+    fun countUnreadByUserId(userId: Long): Long
 }
