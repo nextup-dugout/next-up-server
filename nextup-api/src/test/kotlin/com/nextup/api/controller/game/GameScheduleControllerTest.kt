@@ -2,10 +2,16 @@ package com.nextup.api.controller.game
 
 import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.common.exception.TeamNotFoundException
+import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.player.Position
+import com.nextup.core.service.game.AvailableRosterService
 import com.nextup.core.service.game.GameScheduleService
+import com.nextup.core.service.game.dto.AvailableRosterDto
 import com.nextup.core.service.game.dto.GameDetailDto
 import com.nextup.core.service.game.dto.GameSummaryDto
+import com.nextup.core.service.game.dto.RosterPlayerDto
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
@@ -23,12 +29,14 @@ import java.time.LocalDateTime
 class GameScheduleControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var gameScheduleService: GameScheduleService
+    private lateinit var availableRosterService: AvailableRosterService
 
     @BeforeEach
     fun setUp() {
         gameScheduleService = mockk()
+        availableRosterService = mockk()
 
-        val controller = GameScheduleController(gameScheduleService)
+        val controller = GameScheduleController(gameScheduleService, availableRosterService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
@@ -235,6 +243,147 @@ class GameScheduleControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/games/calendar")
+    inner class GetGameCalendar {
+        @Test
+        fun `캘린더 뷰 - 경기 있는 날짜 목록을 반환한다`() {
+            // given
+            every { gameScheduleService.getGameDaysInMonth(2025, 4, null) } returns listOf(5, 12, 19, 26)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/calendar")
+                        .param("year", "2025")
+                        .param("month", "4"),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(4))
+                .andExpect(jsonPath("$.data[0]").value(5))
+                .andExpect(jsonPath("$.data[1]").value(12))
+        }
+
+        @Test
+        fun `캘린더 뷰 - 팀 필터와 함께 경기 있는 날짜 목록을 반환한다`() {
+            // given
+            every { gameScheduleService.getGameDaysInMonth(2025, 4, 100L) } returns listOf(12, 26)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/calendar")
+                        .param("year", "2025")
+                        .param("month", "4")
+                        .param("teamId", "100"),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(2))
+        }
+
+        @Test
+        fun `캘린더 뷰 - 경기가 없으면 빈 리스트를 반환한다`() {
+            // given
+            every { gameScheduleService.getGameDaysInMonth(2025, 1, null) } returns emptyList()
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/calendar")
+                        .param("year", "2025")
+                        .param("month", "1"),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/games/{gameId}/available-roster")
+    inner class GetAvailableRoster {
+        @Test
+        fun `라인업 제출용 로스터를 정상적으로 반환한다`() {
+            // given
+            val roster =
+                AvailableRosterDto(
+                    players =
+                        listOf(
+                            RosterPlayerDto(
+                                playerId = 1L,
+                                playerName = "홍길동",
+                                primaryPosition = Position.STARTING_PITCHER,
+                                profileImageUrl = null,
+                                competitionPlayerStatus = CompetitionPlayerStatus.ACTIVE,
+                                isEligible = true,
+                            ),
+                            RosterPlayerDto(
+                                playerId = 2L,
+                                playerName = "김철수",
+                                primaryPosition = Position.CATCHER,
+                                profileImageUrl = "https://example.com/player2.jpg",
+                                competitionPlayerStatus = CompetitionPlayerStatus.SUSPENDED,
+                                isEligible = false,
+                            ),
+                        ),
+                )
+            every { availableRosterService.getAvailableRoster(1L, 100L) } returns roster
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/1/available-roster")
+                        .param("teamId", "100"),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.players").isArray)
+                .andExpect(jsonPath("$.data.players.length()").value(2))
+                .andExpect(jsonPath("$.data.players[0].playerId").value(1))
+                .andExpect(jsonPath("$.data.players[0].playerName").value("홍길동"))
+                .andExpect(jsonPath("$.data.players[0].isEligible").value(true))
+                .andExpect(jsonPath("$.data.players[1].isEligible").value(false))
+                .andExpect(jsonPath("$.data.players[1].competitionPlayerStatus").value("SUSPENDED"))
+        }
+
+        @Test
+        fun `존재하지 않는 경기 로스터 조회 시 404를 반환한다`() {
+            // given
+            every { availableRosterService.getAvailableRoster(999L, 100L) } throws GameNotFoundException(999L)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/999/available-roster")
+                        .param("teamId", "100"),
+                )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("GAME_NOT_FOUND"))
+        }
+
+        @Test
+        fun `존재하지 않는 팀으로 로스터 조회 시 404를 반환한다`() {
+            // given
+            every { availableRosterService.getAvailableRoster(1L, 999L) } throws TeamNotFoundException(999L)
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/games/1/available-roster")
+                        .param("teamId", "999"),
+                )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("TEAM_NOT_FOUND"))
         }
     }
 }

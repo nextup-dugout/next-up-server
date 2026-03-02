@@ -47,4 +47,24 @@ interface GameRepository :
     override fun countCompletedOrCancelledByCompetitionId(
         @Param("competitionId") competitionId: Long,
     ): Long
+
+    @Query(
+        "SELECT DISTINCT FUNCTION('DAY', g.scheduledAt) FROM Game g " +
+            "JOIN GameTeam gt ON gt.game.id = g.id " +
+            "WHERE FUNCTION('YEAR', g.scheduledAt) = :year " +
+            "AND FUNCTION('MONTH', g.scheduledAt) = :month " +
+            "AND (:teamId IS NULL OR gt.team.id = :teamId) " +
+            "ORDER BY FUNCTION('DAY', g.scheduledAt) ASC",
+    )
+    fun findGameDaysByYearAndMonth(
+        @Param("year") year: Int,
+        @Param("month") month: Int,
+        @Param("teamId") teamId: Long?,
+    ): List<Int>
+
+    override fun findGameDaysInMonth(
+        year: Int,
+        month: Int,
+        teamId: Long?,
+    ): List<Int> = findGameDaysByYearAndMonth(year, month, teamId)
 }

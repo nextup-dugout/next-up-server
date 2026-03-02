@@ -51,4 +51,14 @@ interface GameRepositoryPort {
      * 완료 상태: FINISHED, CALLED, FORFEITED, CANCELLED
      */
     fun countCompletedOrCancelledByCompetitionId(competitionId: Long): Long
+
+    /**
+     * 특정 연월의 경기 날짜(일) 목록을 조회합니다. (캘린더 뷰용)
+     * teamId가 제공되면 해당 팀의 경기만 조회합니다.
+     */
+    fun findGameDaysInMonth(
+        year: Int,
+        month: Int,
+        teamId: Long?,
+    ): List<Int>
 }

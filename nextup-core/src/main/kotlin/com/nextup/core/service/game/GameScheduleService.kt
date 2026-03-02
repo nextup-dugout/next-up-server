@@ -36,4 +36,13 @@ interface GameScheduleService {
         teamId: Long,
         limit: Int = 5,
     ): List<GameSummaryDto>
+
+    /**
+     * 특정 연월에 경기가 있는 날짜(일) 목록을 반환합니다. (캘린더 뷰용)
+     */
+    fun getGameDaysInMonth(
+        year: Int,
+        month: Int,
+        teamId: Long?,
+    ): List<Int>
 }

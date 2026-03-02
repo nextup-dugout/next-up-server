@@ -289,6 +289,36 @@ class NotificationControllerTest {
 
         verify(exactly = 1) { notificationService.getUserPreferences(authenticatedUserId) }
     }
+
+    @Test
+    fun `should get unread count successfully`() {
+        // given
+        every { notificationService.getUnreadCount(authenticatedUserId) } returns 5L
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/notifications/unread-count"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.count").value(5))
+
+        verify(exactly = 1) { notificationService.getUnreadCount(authenticatedUserId) }
+    }
+
+    @Test
+    fun `should return zero unread count when all notifications are read`() {
+        // given
+        every { notificationService.getUnreadCount(authenticatedUserId) } returns 0L
+
+        // when & then
+        mockMvc
+            .perform(get("/api/v1/notifications/unread-count"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.count").value(0))
+
+        verify(exactly = 1) { notificationService.getUnreadCount(authenticatedUserId) }
+    }
 }
 
 /**
