@@ -446,8 +446,9 @@ class BattingRecord(
         fieldName: String,
         newValue: String,
     ): String {
-        val intValue = newValue.toIntOrNull()
-            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+        val intValue =
+            newValue.toIntOrNull()
+                ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
         require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
 
         val oldValue =
