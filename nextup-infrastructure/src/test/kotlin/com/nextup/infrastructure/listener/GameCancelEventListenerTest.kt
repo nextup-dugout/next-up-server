@@ -154,6 +154,21 @@ class GameCancelEventListenerTest {
         }
 
         @Test
+        fun `시즌 투구 통계가 없는 선수는 건너뜀`() {
+            // given
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then: 통계가 없으므로 save 호출 없음
+            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
+        }
+
+        @Test
         fun `투구 기록이 있는 경우 시즌 투구 통계가 롤백됨`() {
             // given
             val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)

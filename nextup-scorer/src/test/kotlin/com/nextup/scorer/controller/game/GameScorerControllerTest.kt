@@ -357,6 +357,52 @@ class GameScorerControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/cancel")
+    inner class CancelGame {
+
+        @Test
+        fun `should cancel game successfully`() {
+            // given
+            val gameId = 1L
+            val game = createGame(gameId, GameStatus.CANCELLED)
+            every { gameScorerService.cancelGame(gameId, "우천 취소") } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(mapOf("reason" to "우천 취소")))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+
+            verify(exactly = 1) { gameScorerService.cancelGame(gameId, "우천 취소") }
+        }
+
+        @Test
+        fun `should cancel game without reason`() {
+            // given
+            val gameId = 1L
+            val game = createGame(gameId, GameStatus.CANCELLED)
+            every { gameScorerService.cancelGame(gameId, null) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(mapOf<String, String?>()))
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+
+            verify(exactly = 1) { gameScorerService.cancelGame(gameId, null) }
+        }
+    }
+
     private fun createAssociation(
         id: Long,
         name: String
