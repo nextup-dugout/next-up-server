@@ -414,7 +414,7 @@ class BoxScoreServiceImplTest {
             )
 
             // then
-            verify { pitchingRecord.recordOut() }
+            verify { pitchingRecord.recordInningOut() }
         }
 
         @Test

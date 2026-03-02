@@ -378,7 +378,7 @@ class GameScorerServiceImpl(
 
             // 아웃이었으면 아웃 카운트도 롤백
             if (!result.isOnBase) {
-                pitchingRecord.revertOut()
+                pitchingRecord.revertInningOut()
             }
 
             // 득점이 있었으면 투수 실점도 롤백

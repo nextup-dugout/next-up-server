@@ -86,7 +86,7 @@ class BoxScoreServiceImpl(
 
         // 아웃인 경우 아웃 카운트 증가
         if (!result.isOnBase) {
-            pitchingRecord.recordOut()
+            pitchingRecord.recordInningOut()
         }
 
         // 득점이 발생한 경우 팀 점수 및 이닝별 점수 갱신

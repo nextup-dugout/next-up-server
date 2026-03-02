@@ -786,12 +786,12 @@ class PitchingRecordTest {
     }
 
     @Nested
-    @DisplayName("recordOut - 아웃 카운트 기록")
-    inner class RecordOutOnlyTest {
+    @DisplayName("recordInningOut - 이닝 아웃 카운트 기록")
+    inner class RecordInningOutTest {
         @Test
-        fun `recordOut()은 이닝 아웃만 증가시킨다`() {
+        fun `recordInningOut()은 이닝 아웃만 증가시킨다`() {
             // when
-            pitchingRecord.recordOut()
+            pitchingRecord.recordInningOut()
 
             // then
             assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(1)
@@ -959,21 +959,21 @@ class PitchingRecordTest {
     }
 
     @Nested
-    @DisplayName("revertOut - 아웃 카운트 롤백")
-    inner class RevertOutTest {
+    @DisplayName("revertInningOut - 이닝 아웃 카운트 롤백")
+    inner class RevertInningOutTest {
         @Test
         fun `아웃 카운트를 롤백할 수 있다`() {
-            pitchingRecord.recordOut()
+            pitchingRecord.recordInningOut()
             assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(1)
 
-            pitchingRecord.revertOut()
+            pitchingRecord.revertInningOut()
             assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(0)
         }
 
         @Test
         fun `롤백할 아웃 카운트가 없으면 예외가 발생한다`() {
             assertThatThrownBy {
-                pitchingRecord.revertOut()
+                pitchingRecord.revertInningOut()
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("롤백할 아웃 카운트가 없습니다")
         }
