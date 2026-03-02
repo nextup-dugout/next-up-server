@@ -20,7 +20,9 @@ interface AuditLogRepository :
     ): List<AuditLog>
 
     @Query("SELECT a FROM AuditLog a WHERE a.id = :id")
-    override fun findAuditLogById(@Param("id") id: Long): AuditLog?
+    override fun findAuditLogById(
+        @Param("id") id: Long,
+    ): AuditLog?
 
     @Query(
         """
