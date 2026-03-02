@@ -2,8 +2,8 @@ package com.nextup.scorer.controller.fielding
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.FieldingRecordService
-import com.nextup.infrastructure.repository.game.GamePlayerRepository
 import com.nextup.scorer.dto.fielding.FieldingEventRequest
 import com.nextup.scorer.dto.fielding.FieldingEventType
 import com.nextup.scorer.dto.fielding.FieldingRecordResponse
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/scorer/games/{gameId}/fielding")
 class FieldingRecordScorerController(
     private val fieldingRecordService: FieldingRecordService,
-    private val gamePlayerRepository: GamePlayerRepository,
+    private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
     /**
      * 수비 기록을 생성합니다 (경기 시작 시 선수별 초기화).
