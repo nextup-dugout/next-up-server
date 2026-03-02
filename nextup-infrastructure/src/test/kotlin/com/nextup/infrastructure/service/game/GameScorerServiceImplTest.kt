@@ -7,6 +7,7 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
@@ -1315,6 +1316,110 @@ class GameScorerServiceImplTest {
             // then - winnerTeam==homeTeam → loserTeam==awayTeam
             verify { winnerPitcher.assignWin() }
             verify { loserPitcher.assignLoss() }
+            verify(exactly = 2) { pitchingRecordRepository.save(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelGame")
+    inner class CancelGame {
+        @Test
+        fun `should cancel game when status is SCHEDULED`() {
+            // given
+            val game = createGame(1L, GameStatus.SCHEDULED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = gameScorerService.cancelGame(1L, "우천 취소")
+
+            // then
+            assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
+            verify { gameRepository.save(any()) }
+            verify { eventPublisher.publishEvent(any<GameCancelledEvent>()) }
+        }
+
+        @Test
+        fun `should cancel game when status is POSTPONED`() {
+            // given
+            val game = createGame(1L, GameStatus.POSTPONED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = gameScorerService.cancelGame(1L, "대회 취소")
+
+            // then
+            assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
+            verify { gameRepository.save(any()) }
+            verify { eventPublisher.publishEvent(any<GameCancelledEvent>()) }
+        }
+
+        @Test
+        fun `should cancel game without reason`() {
+            // given
+            val game = createGame(1L, GameStatus.SCHEDULED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = gameScorerService.cancelGame(1L, null)
+
+            // then
+            assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
+            verify { gameRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw exception when game is IN_PROGRESS`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+
+            // when & then
+            assertThatThrownBy { gameScorerService.cancelGame(1L, "사유") }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("예정 또는 연기 상태의 경기만 취소할 수 있습니다")
+        }
+
+        @Test
+        fun `should throw exception when game is FINISHED`() {
+            // given
+            val game = createGame(1L, GameStatus.FINISHED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+
+            // when & then
+            assertThatThrownBy { gameScorerService.cancelGame(1L, "사유") }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("예정 또는 연기 상태의 경기만 취소할 수 있습니다")
+        }
+
+        @Test
+        fun `should throw exception when game not found`() {
+            // given
+            every { gameRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy { gameScorerService.cancelGame(999L, "사유") }
+                .isInstanceOf(GameNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should publish GameCancelledEvent with correct gameId`() {
+            // given
+            val game = createGame(1L, GameStatus.SCHEDULED)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<GameCancelledEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            gameScorerService.cancelGame(1L, "우천 취소")
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<GameCancelledEvent>()) }
+            assertThat(eventSlot.captured.gameId).isEqualTo(1L)
         }
     }
 
