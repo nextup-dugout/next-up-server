@@ -195,5 +195,101 @@ class PlayerBulkImportServiceImplTest {
             assertThat(result.importedPlayers).isEmpty()
             assertThat(result.errors).isEmpty()
         }
+
+        @Test
+        fun `유효하지 않은 투구 손은 오류로 처리한다`() {
+            // given
+            val rows =
+                listOf(
+                    PlayerImportRow(
+                        rowNumber = 2,
+                        name = "홍길동",
+                        primaryPosition = "SHORTSTOP",
+                        birthDate = null,
+                        height = null,
+                        weight = null,
+                        throwingHand = "INVALID_HAND",
+                        battingHand = null,
+                    ),
+                )
+
+            // when
+            val result = service.importPlayers(rows)
+
+            // then
+            assertThat(result.successCount).isEqualTo(0)
+            assertThat(result.errorCount).isEqualTo(1)
+            assertThat(result.errors[0].rowNumber).isEqualTo(2)
+            assertThat(result.errors[0].reason).contains("투구 손")
+        }
+
+        @Test
+        fun `유효하지 않은 타격 손은 오류로 처리한다`() {
+            // given
+            val rows =
+                listOf(
+                    PlayerImportRow(
+                        rowNumber = 2,
+                        name = "홍길동",
+                        primaryPosition = "SHORTSTOP",
+                        birthDate = null,
+                        height = null,
+                        weight = null,
+                        throwingHand = "RIGHT",
+                        battingHand = "INVALID_HAND",
+                    ),
+                )
+
+            // when
+            val result = service.importPlayers(rows)
+
+            // then
+            assertThat(result.successCount).isEqualTo(0)
+            assertThat(result.errorCount).isEqualTo(1)
+            assertThat(result.errors[0].rowNumber).isEqualTo(2)
+            assertThat(result.errors[0].reason).contains("타격 손")
+        }
+
+        @Test
+        fun `여러 행 중 일부가 저장 시 예외 발생하면 해당 행만 오류로 처리한다`() {
+            // given
+            val rows =
+                listOf(
+                    PlayerImportRow(
+                        rowNumber = 2,
+                        name = "정상선수",
+                        primaryPosition = "CATCHER",
+                        birthDate = null,
+                        height = null,
+                        weight = null,
+                        throwingHand = null,
+                        battingHand = null,
+                    ),
+                    PlayerImportRow(
+                        rowNumber = 3,
+                        name = "오류선수",
+                        primaryPosition = "SHORTSTOP",
+                        birthDate = null,
+                        height = null,
+                        weight = null,
+                        throwingHand = null,
+                        battingHand = null,
+                    ),
+                )
+            val savedPlayer = Player(name = "정상선수", primaryPosition = Position.CATCHER)
+            every { playerRepository.save(match { it.name == "정상선수" }) } returns savedPlayer
+            every { playerRepository.save(match { it.name == "오류선수" }) } throws
+                RuntimeException("DB 저장 실패")
+
+            // when
+            val result = service.importPlayers(rows)
+
+            // then
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.errorCount).isEqualTo(1)
+            assertThat(result.errors[0].rowNumber).isEqualTo(3)
+            assertThat(result.errors[0].reason).isEqualTo("DB 저장 실패")
+            verify(exactly = 2) { playerRepository.save(any()) }
+        }
     }
 }

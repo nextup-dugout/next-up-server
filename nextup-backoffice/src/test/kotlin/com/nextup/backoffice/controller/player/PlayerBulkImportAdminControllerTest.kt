@@ -162,5 +162,203 @@ class PlayerBulkImportAdminControllerTest {
             ).andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
         }
+
+        @Test
+        fun `잘못된 파일 형식을 업로드하면 400 오류가 반환된다`() {
+            // given
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.json",
+                    "application/json",
+                    """{"name": "test"}""".toByteArray(Charsets.UTF_8),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+
+        @Test
+        fun `application-vnd-ms-excel 형식은 허용된다`() {
+            // given
+            val csvContent =
+                """
+                name,primary_position,birth_date,height,weight,throwing_hand,batting_hand
+                홍길동,SHORTSTOP,,,,,
+                """.trimIndent()
+
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.csv",
+                    "application/vnd.ms-excel",
+                    csvContent.toByteArray(Charsets.UTF_8),
+                )
+
+            val importedPlayer = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
+            every { playerBulkImportService.importPlayers(any()) } returns
+                PlayerImportResult(
+                    successCount = 1,
+                    errorCount = 0,
+                    importedPlayers = listOf(importedPlayer),
+                    errors = emptyList(),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.successCount").value(1))
+        }
+
+        @Test
+        fun `contentType이 null인 파일도 허용된다`() {
+            // given
+            val csvContent =
+                """
+                name,primary_position,birth_date,height,weight,throwing_hand,batting_hand
+                홍길동,SHORTSTOP,,,,,
+                """.trimIndent()
+
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.csv",
+                    null,
+                    csvContent.toByteArray(Charsets.UTF_8),
+                )
+
+            val importedPlayer = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
+            every { playerBulkImportService.importPlayers(any()) } returns
+                PlayerImportResult(
+                    successCount = 1,
+                    errorCount = 0,
+                    importedPlayers = listOf(importedPlayer),
+                    errors = emptyList(),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        fun `text-plain 형식은 허용된다`() {
+            // given
+            val csvContent =
+                """
+                name,primary_position,birth_date,height,weight,throwing_hand,batting_hand
+                홍길동,SHORTSTOP,,,,,
+                """.trimIndent()
+
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.csv",
+                    "text/plain",
+                    csvContent.toByteArray(Charsets.UTF_8),
+                )
+
+            val importedPlayer = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
+            every { playerBulkImportService.importPlayers(any()) } returns
+                PlayerImportResult(
+                    successCount = 1,
+                    errorCount = 0,
+                    importedPlayers = listOf(importedPlayer),
+                    errors = emptyList(),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        fun `CSV에서 빈 줄이 포함되어 있어도 필터링하여 처리한다`() {
+            // given
+            val csvContent =
+                "name,primary_position,birth_date,height,weight,throwing_hand,batting_hand\n" +
+                    "\n" +
+                    "홍길동,SHORTSTOP,,,,,\n" +
+                    "\n"
+
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.csv",
+                    "text/csv",
+                    csvContent.toByteArray(Charsets.UTF_8),
+                )
+
+            val rowsSlot = slot<List<PlayerImportRow>>()
+            val importedPlayer = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
+            every { playerBulkImportService.importPlayers(capture(rowsSlot)) } returns
+                PlayerImportResult(
+                    successCount = 1,
+                    errorCount = 0,
+                    importedPlayers = listOf(importedPlayer),
+                    errors = emptyList(),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+
+            val capturedRows = rowsSlot.captured
+            assertThat(capturedRows).hasSize(1)
+            assertThat(capturedRows[0].name).isEqualTo("홍길동")
+        }
+
+        @Test
+        fun `CSV의 컬럼이 부족해도 기본값으로 처리한다`() {
+            // given
+            val csvContent =
+                """
+                name,primary_position,birth_date,height,weight,throwing_hand,batting_hand
+                홍길동,SHORTSTOP
+                """.trimIndent()
+
+            val file =
+                MockMultipartFile(
+                    "file",
+                    "players.csv",
+                    "text/csv",
+                    csvContent.toByteArray(Charsets.UTF_8),
+                )
+
+            val rowsSlot = slot<List<PlayerImportRow>>()
+            val importedPlayer = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
+            every { playerBulkImportService.importPlayers(capture(rowsSlot)) } returns
+                PlayerImportResult(
+                    successCount = 1,
+                    errorCount = 0,
+                    importedPlayers = listOf(importedPlayer),
+                    errors = emptyList(),
+                )
+
+            // when & then
+            mockMvc.perform(
+                multipart("/api/backoffice/import/players").file(file),
+            ).andExpect(status().isOk)
+
+            val capturedRows = rowsSlot.captured
+            assertThat(capturedRows).hasSize(1)
+            assertThat(capturedRows[0].name).isEqualTo("홍길동")
+            assertThat(capturedRows[0].birthDate).isNull()
+            assertThat(capturedRows[0].height).isNull()
+            assertThat(capturedRows[0].weight).isNull()
+            assertThat(capturedRows[0].throwingHand).isNull()
+            assertThat(capturedRows[0].battingHand).isNull()
+        }
     }
 }
