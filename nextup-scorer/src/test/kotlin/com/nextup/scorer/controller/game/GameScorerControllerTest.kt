@@ -8,15 +8,20 @@ import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameEvent
+import com.nextup.core.domain.game.GameEventType
+import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.player.Position
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
 import com.nextup.scorer.dto.game.RunnerMovementDto
+import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -400,6 +405,69 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
             verify(exactly = 1) { gameScorerService.cancelGame(gameId, null) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/substitutions")
+    inner class SubstitutePlayer {
+
+        @Test
+        fun `선수 교체 요청이 성공적으로 처리된다`() {
+            // given
+            val gameId = 1L
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+            val incomingPlayer = mockk<GamePlayer>(relaxed = true)
+            val outgoingPlayer = mockk<GamePlayer>(relaxed = true)
+            every { incomingPlayer.id } returns 20L
+            every { outgoingPlayer.id } returns 10L
+
+            val substitutionEvent =
+                GameEvent(
+                    game = game,
+                    inning = 5,
+                    isTopInning = true,
+                    outCountBefore = 1,
+                    outCountAfter = 1,
+                    eventType = GameEventType.SUBSTITUTION,
+                    description = "5회초: 홍길동 → 김철수 (좌익수)",
+                    batter = incomingPlayer,
+                    pitcher = outgoingPlayer,
+                ).apply {
+                    val idField = GameEvent::class.java.getDeclaredField("id")
+                    idField.isAccessible = true
+                    idField.set(this, 100L)
+                }
+
+            every { gameScorerService.substitutePlayer(gameId, any()) } returns substitutionEvent
+
+            val request =
+                SubstitutionRequestDto(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.LEFT_FIELD,
+                    newBattingOrder = 5,
+                )
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/substitutions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.eventId").value(100))
+                .andExpect(jsonPath("$.data.inning").value(5))
+                .andExpect(jsonPath("$.data.isTopInning").value(true))
+                .andExpect(jsonPath("$.data.description").value("5회초: 홍길동 → 김철수 (좌익수)"))
+
+            verify(exactly = 1) { gameScorerService.substitutePlayer(gameId, any()) }
         }
     }
 

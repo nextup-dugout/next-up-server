@@ -2,7 +2,16 @@ package com.nextup.scorer.controller.game
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameScorerService
-import com.nextup.scorer.dto.game.*
+import com.nextup.scorer.dto.game.ForfeitRequestDto
+import com.nextup.scorer.dto.game.GameEndRequestDto
+import com.nextup.scorer.dto.game.GameResponse
+import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
+import com.nextup.scorer.dto.game.SubstitutionRequestDto
+import com.nextup.scorer.dto.game.SubstitutionResponse
+import com.nextup.scorer.dto.game.UndoResponse
+import com.nextup.scorer.dto.game.toDomain
+import com.nextup.scorer.dto.game.toResponse
+import com.nextup.scorer.dto.game.toSubstitutionResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
@@ -98,7 +107,7 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun forfeitGame(
         @PathVariable gameId: Long,
-        @RequestBody @Valid request: ForfeitRequestDto
+        @RequestBody @Valid request: ForfeitRequestDto,
     ): ApiResponse<GameResponse> {
         val game =
             gameScorerService.forfeitGame(
@@ -127,5 +136,22 @@ class GameScorerController(
                 reason = request.reason,
             )
         return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 선수를 교체합니다.
+     *
+     * 교체 이벤트를 기록하고 다음을 검증합니다:
+     * - 퇴장한 선수의 재출전 방지
+     * - DH 해제 규칙 (투수가 DH 타순으로만 교체 가능)
+     */
+    @PostMapping("/{gameId}/substitutions")
+    @ResponseStatus(HttpStatus.OK)
+    fun substitutePlayer(
+        @PathVariable gameId: Long,
+        @RequestBody @Valid request: SubstitutionRequestDto,
+    ): ApiResponse<SubstitutionResponse> {
+        val event = gameScorerService.substitutePlayer(gameId, request.toDomain())
+        return ApiResponse.success(event.toSubstitutionResponse())
     }
 }

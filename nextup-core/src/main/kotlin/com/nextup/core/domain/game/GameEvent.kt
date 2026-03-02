@@ -131,5 +131,31 @@ class GameEvent(
                 eventType = GameEventType.GAME_STATUS,
                 description = description,
             )
+
+        /**
+         * 선수 교체 이벤트를 생성합니다.
+         *
+         * @param game 경기
+         * @param incomingPlayer 교체 들어오는 선수
+         * @param outgoingPlayer 교체 나가는 선수
+         * @param description 교체 설명
+         */
+        fun createSubstitution(
+            game: Game,
+            incomingPlayer: GamePlayer,
+            outgoingPlayer: GamePlayer,
+            description: String,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = game.gameState.outs,
+                outCountAfter = game.gameState.outs,
+                eventType = GameEventType.SUBSTITUTION,
+                description = description,
+                batter = incomingPlayer,
+                pitcher = outgoingPlayer,
+            )
     }
 }
