@@ -141,6 +141,38 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("createSubstitution")
+    inner class CreateSubstitution {
+        @Test
+        fun `선수 교체 이벤트를 생성한다`() {
+            // given
+            val incomingPlayer = mockk<GamePlayer>(relaxed = true)
+            val outgoingPlayer = mockk<GamePlayer>(relaxed = true)
+
+            // when
+            val event =
+                GameEvent.createSubstitution(
+                    game = game,
+                    incomingPlayer = incomingPlayer,
+                    outgoingPlayer = outgoingPlayer,
+                    description = "5회초: 홍길동 → 김철수 (좌익수)",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.SUBSTITUTION)
+            assertThat(event.description).isEqualTo("5회초: 홍길동 → 김철수 (좌익수)")
+            assertThat(event.inning).isEqualTo(game.currentInning)
+            assertThat(event.isTopInning).isEqualTo(game.isTopInning)
+            assertThat(event.outCountBefore).isEqualTo(game.gameState.outs)
+            assertThat(event.outCountAfter).isEqualTo(game.gameState.outs)
+            assertThat(event.batter).isEqualTo(incomingPlayer)
+            assertThat(event.pitcher).isEqualTo(outgoingPlayer)
+            assertThat(event.plateAppearanceResult).isNull()
+            assertThat(event.runsScored).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("createGameStatus")
     inner class CreateGameStatus {
         @Test
