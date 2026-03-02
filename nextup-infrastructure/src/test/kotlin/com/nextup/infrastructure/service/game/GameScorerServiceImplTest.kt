@@ -11,9 +11,12 @@ import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.domain.game.GameResult
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
+import com.nextup.core.domain.game.PitchingDecision
+import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -63,6 +66,7 @@ class GameScorerServiceImplTest {
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
         every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
+        every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
         gameScorerService =
             GameScorerServiceImpl(
                 gameRepository,
@@ -783,6 +787,362 @@ class GameScorerServiceImplTest {
                 )
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("정확히 2개의 팀이 필요합니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("assignPitchingDecisions - endGame 시 투수 결정 할당")
+    inner class AssignPitchingDecisions {
+
+        @Test
+        fun `경기 종료 시 승리팀 투수에게 WIN, 패전팀 투수에게 LOSS를 할당한다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 5
+            every { awayGameTeam.totalScore } returns 2
+            every { homeGameTeam.result } returns GameResult.WIN
+            every { awayGameTeam.result } returns GameResult.LOSS
+            every { homeGameTeam.inningScores } returns "5,0,0,0,0,0,0,0,0"
+            every { awayGameTeam.inningScores } returns "0,0,0,0,0,0,2,0,0"
+
+            val winnerPitcher = mockk<PitchingRecord>(relaxed = true)
+            val winnerGamePlayer = mockk<GamePlayer>(relaxed = true)
+            every { winnerGamePlayer.gameTeam } returns homeGameTeam
+            every { winnerGamePlayer.entryInning } returns 1
+            every { winnerGamePlayer.exitInning } returns null
+            every { winnerPitcher.gamePlayer } returns winnerGamePlayer
+            every { winnerPitcher.isStartingPitcher } returns true
+            every { winnerPitcher.inningsPitchedOuts } returns 27
+            every { winnerPitcher.completeInnings } returns 9
+            every { winnerPitcher.decision } returns PitchingDecision.NONE
+
+            val loserPitcher = mockk<PitchingRecord>(relaxed = true)
+            val loserGamePlayer = mockk<GamePlayer>(relaxed = true)
+            every { loserGamePlayer.gameTeam } returns awayGameTeam
+            every { loserGamePlayer.entryInning } returns 1
+            every { loserGamePlayer.exitInning } returns null
+            every { loserPitcher.gamePlayer } returns loserGamePlayer
+            every { loserPitcher.isStartingPitcher } returns true
+            every { loserPitcher.inningsPitchedOuts } returns 27
+            every { loserPitcher.completeInnings } returns 9
+            every { loserPitcher.decision } returns PitchingDecision.NONE
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns listOf(winnerPitcher, loserPitcher)
+            every { pitchingRecordRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify { winnerPitcher.assignWin() }
+            verify { loserPitcher.assignLoss() }
+            verify(exactly = 2) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `gameTeams가 2개가 아니면 투수 결정을 할당하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam)
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify(exactly = 0) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `투수 기록이 없으면 결정을 할당하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 3
+            every { awayGameTeam.totalScore } returns 1
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns emptyList()
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify(exactly = 0) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `무승부(동점)이면 모든 투수에게 결정을 부여하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 3
+            every { awayGameTeam.totalScore } returns 3
+            every { homeGameTeam.result } returns GameResult.DRAW
+            every { awayGameTeam.result } returns GameResult.DRAW
+
+            val pitcher = mockk<PitchingRecord>(relaxed = true)
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns listOf(pitcher)
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then - 무승부이므로 PitchingDecisionCalculator.calculate가 emptyMap 반환
+            // → save 호출 없음
+            verify(exactly = 0) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `homeTeam이 없으면 투수 결정을 할당하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            // 홈팀이 없는 비정상 케이스 (두 팀 모두 AWAY)
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(awayGameTeam, awayGameTeam)
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify(exactly = 0) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `awayTeam이 없으면 투수 결정을 할당하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+
+            // 원정팀이 없는 비정상 케이스 (두 팀 모두 HOME)
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, homeGameTeam)
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify(exactly = 0) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `세이브, 홀드, 블론세이브 결정도 올바르게 할당된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 5
+            every { awayGameTeam.totalScore } returns 3
+            every { homeGameTeam.result } returns GameResult.WIN
+            every { awayGameTeam.result } returns GameResult.LOSS
+            every { homeGameTeam.inningScores } returns "5,0,0,0,0,0,0,0,0"
+            every { awayGameTeam.inningScores } returns "0,0,0,0,0,0,0,3,0"
+
+            // 홈팀 선발: 7이닝 (승리 투수)
+            val homeStarter = mockk<PitchingRecord>(relaxed = true)
+            val homeStarterGp = mockk<GamePlayer>(relaxed = true)
+            every { homeStarterGp.gameTeam } returns homeGameTeam
+            every { homeStarterGp.entryInning } returns 1
+            every { homeStarterGp.exitInning } returns 7
+            every { homeStarter.gamePlayer } returns homeStarterGp
+            every { homeStarter.isStartingPitcher } returns true
+            every { homeStarter.inningsPitchedOuts } returns 21
+            every { homeStarter.completeInnings } returns 7
+            every { homeStarter.decision } returns PitchingDecision.NONE
+
+            // 홈팀 마무리: 2이닝 (2점 리드 → 세이브)
+            val homeCloser = mockk<PitchingRecord>(relaxed = true)
+            val homeCloserGp = mockk<GamePlayer>(relaxed = true)
+            every { homeCloserGp.gameTeam } returns homeGameTeam
+            every { homeCloserGp.entryInning } returns 8
+            every { homeCloserGp.exitInning } returns null
+            every { homeCloser.gamePlayer } returns homeCloserGp
+            every { homeCloser.isStartingPitcher } returns false
+            every { homeCloser.inningsPitchedOuts } returns 6
+            every { homeCloser.completeInnings } returns 2
+            every { homeCloser.decision } returns PitchingDecision.NONE
+
+            // 원정팀 선발 (패전 투수)
+            val awayStarter = mockk<PitchingRecord>(relaxed = true)
+            val awayStarterGp = mockk<GamePlayer>(relaxed = true)
+            every { awayStarterGp.gameTeam } returns awayGameTeam
+            every { awayStarterGp.entryInning } returns 1
+            every { awayStarterGp.exitInning } returns null
+            every { awayStarter.gamePlayer } returns awayStarterGp
+            every { awayStarter.isStartingPitcher } returns true
+            every { awayStarter.inningsPitchedOuts } returns 27
+            every { awayStarter.completeInnings } returns 9
+            every { awayStarter.decision } returns PitchingDecision.NONE
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns
+                listOf(homeStarter, homeCloser, awayStarter)
+            every { pitchingRecordRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then
+            verify { homeStarter.assignWin() }
+            verify { homeCloser.assignSave() }
+            verify { awayStarter.assignLoss() }
+            verify(exactly = 3) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `MERCY_RULE로 경기 종료 시에도 투수 결정이 할당된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 15
+            every { awayGameTeam.totalScore } returns 2
+            every { homeGameTeam.result } returns GameResult.WIN
+            every { awayGameTeam.result } returns GameResult.LOSS
+            every { homeGameTeam.inningScores } returns "5,5,5,0,0"
+            every { awayGameTeam.inningScores } returns "1,1,0,0,0"
+
+            val winnerPitcher = mockk<PitchingRecord>(relaxed = true)
+            val winnerGp = mockk<GamePlayer>(relaxed = true)
+            every { winnerGp.gameTeam } returns homeGameTeam
+            every { winnerGp.entryInning } returns 1
+            every { winnerGp.exitInning } returns null
+            every { winnerPitcher.gamePlayer } returns winnerGp
+            every { winnerPitcher.isStartingPitcher } returns true
+            every { winnerPitcher.inningsPitchedOuts } returns 15
+            every { winnerPitcher.completeInnings } returns 5
+            every { winnerPitcher.decision } returns PitchingDecision.NONE
+
+            val loserPitcher = mockk<PitchingRecord>(relaxed = true)
+            val loserGp = mockk<GamePlayer>(relaxed = true)
+            every { loserGp.gameTeam } returns awayGameTeam
+            every { loserGp.entryInning } returns 1
+            every { loserGp.exitInning } returns null
+            every { loserPitcher.gamePlayer } returns loserGp
+            every { loserPitcher.isStartingPitcher } returns true
+            every { loserPitcher.inningsPitchedOuts } returns 15
+            every { loserPitcher.completeInnings } returns 5
+            every { loserPitcher.decision } returns PitchingDecision.NONE
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns listOf(winnerPitcher, loserPitcher)
+            every { pitchingRecordRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.MERCY_RULE)
+
+            // then
+            verify { winnerPitcher.assignWin() }
+            verify { loserPitcher.assignLoss() }
+        }
+
+        @Test
+        fun `loserTeam이 result로 결정되지 않으면 winnerTeam 기반으로 유추한다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val homeTeam = createMockTeam(10L, "홈팀")
+            val awayTeam = createMockTeam(20L, "원정팀")
+            val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
+            val awayGameTeam = createMockGameTeam(2L, game, awayTeam)
+
+            every { homeGameTeam.homeAway } returns HomeAway.HOME
+            every { awayGameTeam.homeAway } returns HomeAway.AWAY
+            every { homeGameTeam.totalScore } returns 5
+            every { awayGameTeam.totalScore } returns 2
+            // result가 UNDECIDED인 경우 → winnerTeam 기반으로 loserTeam 유추
+            every { homeGameTeam.result } returns GameResult.UNDECIDED
+            every { awayGameTeam.result } returns GameResult.UNDECIDED
+            every { homeGameTeam.inningScores } returns "5,0,0,0,0,0,0,0,0"
+            every { awayGameTeam.inningScores } returns "0,0,0,0,0,0,2,0,0"
+
+            val winnerPitcher = mockk<PitchingRecord>(relaxed = true)
+            val winnerGp = mockk<GamePlayer>(relaxed = true)
+            every { winnerGp.gameTeam } returns homeGameTeam
+            every { winnerGp.entryInning } returns 1
+            every { winnerGp.exitInning } returns null
+            every { winnerPitcher.gamePlayer } returns winnerGp
+            every { winnerPitcher.isStartingPitcher } returns true
+            every { winnerPitcher.inningsPitchedOuts } returns 27
+            every { winnerPitcher.completeInnings } returns 9
+            every { winnerPitcher.decision } returns PitchingDecision.NONE
+
+            val loserPitcher = mockk<PitchingRecord>(relaxed = true)
+            val loserGp = mockk<GamePlayer>(relaxed = true)
+            every { loserGp.gameTeam } returns awayGameTeam
+            every { loserGp.entryInning } returns 1
+            every { loserGp.exitInning } returns null
+            every { loserPitcher.gamePlayer } returns loserGp
+            every { loserPitcher.isStartingPitcher } returns true
+            every { loserPitcher.inningsPitchedOuts } returns 27
+            every { loserPitcher.completeInnings } returns 9
+            every { loserPitcher.decision } returns PitchingDecision.NONE
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam, awayGameTeam)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns listOf(winnerPitcher, loserPitcher)
+            every { pitchingRecordRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            gameScorerService.endGame(1L, GameEndReason.REGULATION)
+
+            // then - winnerTeam==homeTeam → loserTeam==awayTeam
+            verify { winnerPitcher.assignWin() }
+            verify { loserPitcher.assignLoss() }
         }
     }
 

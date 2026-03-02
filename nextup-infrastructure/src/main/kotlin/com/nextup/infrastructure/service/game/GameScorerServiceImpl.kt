@@ -13,8 +13,10 @@ import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
+import com.nextup.core.domain.game.GameResult
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
+import com.nextup.core.domain.game.PitchingDecisionCalculator
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -175,8 +177,61 @@ class GameScorerServiceImpl(
         }
 
         val savedGame = gameRepository.save(game)
+
+        // 투수 승/패/세이브/홀드 자동 결정
+        assignPitchingDecisions(gameId)
+
         publishGameResultEvent(gameId)
         return savedGame
+    }
+
+    /**
+     * 경기 종료 시 투수 결정(승/패/세이브/홀드)을 자동으로 할당합니다.
+     */
+    private fun assignPitchingDecisions(gameId: Long) {
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        if (gameTeams.size != 2) return
+
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME } ?: return
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY } ?: return
+
+        // 무승부 여부 판단
+        val winnerTeam =
+            when {
+                homeTeam.totalScore > awayTeam.totalScore -> homeTeam
+                awayTeam.totalScore > homeTeam.totalScore -> awayTeam
+                else -> null
+            }
+        val loserTeam =
+            when {
+                homeTeam.result == GameResult.LOSS -> homeTeam
+                awayTeam.result == GameResult.LOSS -> awayTeam
+                winnerTeam == homeTeam -> awayTeam
+                winnerTeam == awayTeam -> homeTeam
+                else -> null
+            }
+
+        val allPitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
+        if (allPitchingRecords.isEmpty()) return
+
+        val decisions =
+            PitchingDecisionCalculator.calculate(
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                allPitchingRecords = allPitchingRecords,
+            )
+
+        decisions.forEach { (record, decision) ->
+            when (decision) {
+                com.nextup.core.domain.game.PitchingDecision.WIN -> record.assignWin()
+                com.nextup.core.domain.game.PitchingDecision.LOSS -> record.assignLoss()
+                com.nextup.core.domain.game.PitchingDecision.SAVE -> record.assignSave()
+                com.nextup.core.domain.game.PitchingDecision.HOLD -> record.assignHold()
+                com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> record.assignBlownSave()
+                com.nextup.core.domain.game.PitchingDecision.NONE -> { /* no-op */ }
+            }
+            pitchingRecordRepository.save(record)
+        }
     }
 
     @Transactional
