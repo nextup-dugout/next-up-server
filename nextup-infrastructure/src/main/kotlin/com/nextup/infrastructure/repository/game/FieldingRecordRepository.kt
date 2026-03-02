@@ -1,0 +1,54 @@
+package com.nextup.infrastructure.repository.game
+
+import com.nextup.core.domain.game.FieldingRecord
+import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.port.repository.FieldingRecordRepositoryPort
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
+
+interface FieldingRecordRepository :
+    JpaRepository<FieldingRecord, Long>,
+    FieldingRecordRepositoryPort {
+    /**
+     * GamePlayer로 수비 기록을 조회합니다.
+     */
+    override fun findByGamePlayer(gamePlayer: GamePlayer): FieldingRecord?
+
+    /**
+     * GamePlayer ID로 수비 기록을 조회합니다.
+     */
+    @Query("SELECT fr FROM FieldingRecord fr WHERE fr.gamePlayer.id = :gamePlayerId")
+    override fun findByGamePlayerId(
+        @Param("gamePlayerId") gamePlayerId: Long,
+    ): FieldingRecord?
+
+    /**
+     * 경기 ID로 모든 수비 기록을 조회합니다.
+     */
+    @Query(
+        """
+        SELECT fr FROM FieldingRecord fr
+        JOIN fr.gamePlayer gp
+        WHERE gp.gameTeam.game.id = :gameId
+    """,
+    )
+    override fun findAllByGameId(
+        @Param("gameId") gameId: Long,
+    ): List<FieldingRecord>
+
+    /**
+     * 선수 ID로 모든 수비 기록을 조회합니다.
+     */
+    @Query(
+        """
+        SELECT fr FROM FieldingRecord fr
+        JOIN fr.gamePlayer gp
+        WHERE gp.player.id = :playerId
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
+    """,
+    )
+    override fun findAllByPlayerId(
+        @Param("playerId") playerId: Long,
+    ): List<FieldingRecord>
+}
