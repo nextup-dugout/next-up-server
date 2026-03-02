@@ -58,6 +58,7 @@ data class TeamStandingResponse(
     val runsAllowed: Int,
     val runDifferential: Int,
     val isPlayoffPosition: Boolean,
+    val logoUrl: String? = null,
 ) {
     companion object {
         fun from(
@@ -79,6 +80,7 @@ data class TeamStandingResponse(
                 runsAllowed = dto.runsAllowed,
                 runDifferential = dto.runDifferential,
                 isPlayoffPosition = isPlayoffPosition,
+                logoUrl = dto.logoUrl,
             )
     }
 }
