@@ -1,9 +1,9 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberStatus
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 
 /**
  * TeamMember Repository Port
@@ -37,8 +37,8 @@ interface TeamMemberRepositoryPort {
 
     fun findByTeamIdWithUserAndPlayer(
         teamId: Long,
-        pageable: Pageable,
-    ): Page<TeamMember>
+        pageCommand: PageCommand,
+    ): PageResult<TeamMember>
 
     fun existsByTeamIdAndUserId(
         teamId: Long,

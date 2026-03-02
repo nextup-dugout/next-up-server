@@ -1,10 +1,12 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.JoinRequestStatus
 import com.nextup.core.domain.team.TeamJoinRequest
 import com.nextup.core.port.repository.TeamJoinRequestRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
 
@@ -25,8 +27,9 @@ class TeamJoinRequestRepositoryAdapter(
     override fun findByTeamIdAndStatus(
         teamId: Long,
         status: JoinRequestStatus,
-        pageable: Pageable,
-    ): Page<TeamJoinRequest> = jpaRepository.findByTeamIdAndStatus(teamId, status, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<TeamJoinRequest> =
+        jpaRepository.findByTeamIdAndStatus(teamId, status, pageCommand.toPageable()).toPageResult()
 
     override fun findByUserId(userId: Long): List<TeamJoinRequest> = jpaRepository.findByUserId(userId)
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nextup.backoffice.dto.user.CreateUserRequest
 import com.nextup.backoffice.dto.user.RoleChangeRequest
 import com.nextup.backoffice.dto.user.UpdateUserRequest
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
 import com.nextup.core.service.audit.AuditService
@@ -15,8 +16,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -73,8 +72,15 @@ class UserAdminControllerTest {
         @Test
         fun `모든 사용자를 페이징 조회할 수 있다`() {
             val user = createUser(1L, "test@example.com", "테스터")
-            val page = PageImpl(listOf(user), PageRequest.of(0, 20), 1)
-            every { userService.getAll(any()) } returns page
+            val pageResult =
+                PageResult(
+                    content = listOf(user),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
+            every { userService.getAll(any()) } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/users"))
                 .andExpect(status().isOk)
@@ -85,8 +91,15 @@ class UserAdminControllerTest {
         @Test
         fun `활성 상태로 필터링하여 조회할 수 있다`() {
             val user = createUser(1L, "test@example.com", "테스터")
-            val page = PageImpl(listOf(user), PageRequest.of(0, 20), 1)
-            every { userService.getAllByStatus(true, any()) } returns page
+            val pageResult =
+                PageResult(
+                    content = listOf(user),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
+            every { userService.getAllByStatus(true, any()) } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/users").param("isActive", "true"))
                 .andExpect(status().isOk)
@@ -100,8 +113,15 @@ class UserAdminControllerTest {
         @Test
         fun `키워드로 사용자를 검색할 수 있다`() {
             val user = createUser(1L, "test@example.com", "테스터")
-            val page = PageImpl(listOf(user), PageRequest.of(0, 20), 1)
-            every { userService.search("test", any()) } returns page
+            val pageResult =
+                PageResult(
+                    content = listOf(user),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
+            every { userService.search("test", any()) } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/users/search").param("keyword", "test"))
                 .andExpect(status().isOk)

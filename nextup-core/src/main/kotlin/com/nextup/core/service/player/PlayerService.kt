@@ -1,11 +1,11 @@
 package com.nextup.core.service.player
 
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.PlayerRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -52,19 +52,19 @@ class PlayerService(
      * @param name 이름 부분 검색 (null이면 조건 무시)
      * @param teamId 팀 ID 필터 (null이면 조건 무시)
      * @param position 포지션 필터 (null이면 조건 무시)
-     * @param pageable 페이징 정보
+     * @param pageCommand 페이징 정보
      * @return 검색 결과 페이지
      */
     fun search(
         name: String?,
         teamId: Long?,
         position: Position?,
-        pageable: Pageable,
-    ): Page<Player> =
+        pageCommand: PageCommand,
+    ): PageResult<Player> =
         playerRepository.search(
             name = name,
             teamId = teamId,
             position = position,
-            pageable = pageable,
+            pageCommand = pageCommand,
         )
 }

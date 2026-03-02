@@ -1,10 +1,12 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
 
@@ -43,8 +45,9 @@ class TeamMemberRepositoryAdapter(
 
     override fun findByTeamIdWithUserAndPlayer(
         teamId: Long,
-        pageable: Pageable,
-    ): Page<TeamMember> = jpaRepository.findByTeamIdWithUserAndPlayer(teamId, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<TeamMember> =
+        jpaRepository.findByTeamIdWithUserAndPlayer(teamId, pageCommand.toPageable()).toPageResult()
 
     override fun existsByTeamIdAndUserId(
         teamId: Long,

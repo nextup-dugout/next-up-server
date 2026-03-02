@@ -1,8 +1,8 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.notification.Notification
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 
 interface NotificationRepositoryPort {
     fun save(notification: Notification): Notification
@@ -11,8 +11,8 @@ interface NotificationRepositoryPort {
 
     fun findByUserId(
         userId: Long,
-        pageable: Pageable,
-    ): Page<Notification>
+        pageCommand: PageCommand,
+    ): PageResult<Notification>
 
     fun findByUserId(userId: Long): List<Notification>
 

@@ -1,8 +1,8 @@
 package com.nextup.core.service.audit
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.audit.AuditLog
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import java.time.Instant
 
 interface AuditLogQueryService {
@@ -12,8 +12,8 @@ interface AuditLogQueryService {
         targetEntity: String?,
         fromDate: Instant?,
         toDate: Instant?,
-        pageable: Pageable,
-    ): Page<AuditLog>
+        pageCommand: PageCommand,
+    ): PageResult<AuditLog>
 
     fun findById(id: Long): AuditLog
 }

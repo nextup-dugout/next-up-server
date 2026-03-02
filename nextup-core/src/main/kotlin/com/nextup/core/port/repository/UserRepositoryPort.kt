@@ -1,9 +1,9 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 
 /**
  * User Repository Port
@@ -22,27 +22,27 @@ interface UserRepositoryPort {
 
     fun deleteById(id: Long)
 
-    fun findAllActive(pageable: Pageable): Page<User>
+    fun findAllActive(pageCommand: PageCommand): PageResult<User>
 
     fun findAllByIsActive(
         isActive: Boolean,
-        pageable: Pageable,
-    ): Page<User>
+        pageCommand: PageCommand,
+    ): PageResult<User>
 
     fun searchByKeyword(
         keyword: String,
-        pageable: Pageable,
-    ): Page<User>
+        pageCommand: PageCommand,
+    ): PageResult<User>
 
     fun findAllByRole(
         role: Role,
-        pageable: Pageable,
-    ): Page<User>
+        pageCommand: PageCommand,
+    ): PageResult<User>
 
     fun findAllByRolesIn(
         roles: Set<Role>,
-        pageable: Pageable,
-    ): Page<User>
+        pageCommand: PageCommand,
+    ): PageResult<User>
 
     fun findByPlayerId(playerId: Long): User?
 }

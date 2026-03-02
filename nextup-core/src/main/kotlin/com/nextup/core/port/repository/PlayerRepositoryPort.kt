@@ -1,9 +1,9 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import java.time.LocalDate
 
 /**
@@ -44,6 +44,6 @@ interface PlayerRepositoryPort {
         name: String?,
         teamId: Long?,
         position: Position?,
-        pageable: Pageable,
-    ): Page<Player>
+        pageCommand: PageCommand,
+    ): PageResult<Player>
 }

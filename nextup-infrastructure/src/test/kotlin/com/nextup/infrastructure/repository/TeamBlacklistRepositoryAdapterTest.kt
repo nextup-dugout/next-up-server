@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
 import com.nextup.core.domain.team.TeamBlacklist
 import io.mockk.every
 import io.mockk.justRun
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import java.time.LocalDateTime
 
@@ -73,18 +73,18 @@ class TeamBlacklistRepositoryAdapterTest {
     @DisplayName("findByTeamId - teamId로 페이지 조회 시 JPA repository에 위임한다")
     fun `should delegate findByTeamId to jpa repository`() {
         // given
-        val pageable = mockk<Pageable>()
+        val pageCommand = PageCommand(page = 0, size = 10)
         val blacklist = mockk<TeamBlacklist>()
         val page = PageImpl(listOf(blacklist))
-        every { jpaRepository.findByTeamId(1L, pageable) } returns page
+        every { jpaRepository.findByTeamId(1L, any()) } returns page
 
         // when
-        val result = adapter.findByTeamId(1L, pageable)
+        val result = adapter.findByTeamId(1L, pageCommand)
 
         // then
         assertThat(result.content).hasSize(1)
         assertThat(result.content[0]).isEqualTo(blacklist)
-        verify(exactly = 1) { jpaRepository.findByTeamId(1L, pageable) }
+        verify(exactly = 1) { jpaRepository.findByTeamId(1L, any()) }
     }
 
     @Test

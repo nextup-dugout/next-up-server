@@ -4,6 +4,8 @@ import com.nextup.common.exception.BookingNotFoundException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.SlotNotFoundException
 import com.nextup.common.exception.StadiumNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.domain.stadium.SlotStatus
 import com.nextup.core.domain.stadium.Stadium
@@ -13,8 +15,6 @@ import com.nextup.core.port.repository.StadiumBookingRepositoryPort
 import com.nextup.core.port.repository.StadiumRepositoryPort
 import com.nextup.core.port.repository.StadiumSlotRepositoryPort
 import com.nextup.core.service.stadium.dto.BookSlotRequest
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -46,15 +46,15 @@ class StadiumService(
      * @param latitude 위도 (-90 ~ 90)
      * @param longitude 경도 (-180 ~ 180)
      * @param radiusKm 검색 반경 킬로미터 (0 초과)
-     * @param pageable 페이징 정보
+     * @param pageCommand 페이징 정보
      * @return 거리 순으로 정렬된 구장 페이지
      */
     fun findNearbyStadiums(
         latitude: Double,
         longitude: Double,
         radiusKm: Double,
-        pageable: Pageable,
-    ): Page<Stadium> {
+        pageCommand: PageCommand,
+    ): PageResult<Stadium> {
         if (latitude !in -90.0..90.0) {
             throw InvalidInputException(
                 "INVALID_LATITUDE",
@@ -73,7 +73,7 @@ class StadiumService(
                 "검색 반경은 0보다 커야 합니다: $radiusKm",
             )
         }
-        return stadiumRepository.findNearbyStadiums(latitude, longitude, radiusKm, pageable)
+        return stadiumRepository.findNearbyStadiums(latitude, longitude, radiusKm, pageCommand)
     }
 
     /**

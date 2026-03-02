@@ -1,8 +1,8 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamBlacklist
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 
 /**
  * TeamBlacklist Repository Port
@@ -15,8 +15,8 @@ interface TeamBlacklistRepositoryPort {
 
     fun findByTeamId(
         teamId: Long,
-        pageable: Pageable,
-    ): Page<TeamBlacklist>
+        pageCommand: PageCommand,
+    ): PageResult<TeamBlacklist>
 
     fun findByTeamIdAndUserId(
         teamId: Long,

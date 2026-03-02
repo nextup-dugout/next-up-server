@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberStatus
 import io.mockk.every
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 
 @DisplayName("TeamMemberRepositoryAdapter 테스트")
@@ -167,18 +167,18 @@ class TeamMemberRepositoryAdapterTest {
     @DisplayName("findByTeamIdWithUserAndPlayer - 페이지 조회 시 JPA repository에 위임한다")
     fun `should delegate findByTeamIdWithUserAndPlayer to jpa repository`() {
         // given
-        val pageable = mockk<Pageable>()
+        val pageCommand = PageCommand(page = 0, size = 10)
         val member = mockk<TeamMember>()
         val page = PageImpl(listOf(member))
-        every { jpaRepository.findByTeamIdWithUserAndPlayer(1L, pageable) } returns page
+        every { jpaRepository.findByTeamIdWithUserAndPlayer(1L, any()) } returns page
 
         // when
-        val result = adapter.findByTeamIdWithUserAndPlayer(1L, pageable)
+        val result = adapter.findByTeamIdWithUserAndPlayer(1L, pageCommand)
 
         // then
         assertThat(result.content).hasSize(1)
         assertThat(result.content[0]).isEqualTo(member)
-        verify(exactly = 1) { jpaRepository.findByTeamIdWithUserAndPlayer(1L, pageable) }
+        verify(exactly = 1) { jpaRepository.findByTeamIdWithUserAndPlayer(1L, any()) }
     }
 
     @Test

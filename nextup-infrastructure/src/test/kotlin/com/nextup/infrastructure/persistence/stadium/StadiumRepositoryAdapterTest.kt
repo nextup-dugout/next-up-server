@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.persistence.stadium
 
+import com.nextup.core.common.PageCommand
 import com.nextup.core.domain.stadium.Stadium
 import io.mockk.every
 import io.mockk.mockk
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 
 @DisplayName("StadiumRepositoryAdapter")
@@ -150,33 +150,33 @@ class StadiumRepositoryAdapterTest {
         fun `should convert km to meters and return paged result`() {
             // given
             val stadiums = listOf(createStadium("잠실 야구장", 37.5121, 127.0717))
-            val pageable = PageRequest.of(0, 20)
-            val page = PageImpl(stadiums, pageable, 1)
+            val pageCommand = PageCommand(page = 0, size = 20)
+            val page = PageImpl(stadiums)
             // 10km -> 10000.0 meters
             every {
-                jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 10000.0, pageable)
+                jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 10000.0, any())
             } returns page
 
             // when
-            val result = adapter.findNearbyStadiums(37.5, 127.0, 10.0, pageable)
+            val result = adapter.findNearbyStadiums(37.5, 127.0, 10.0, pageCommand)
 
             // then
             assertThat(result.content).hasSize(1)
             assertThat(result.totalElements).isEqualTo(1)
-            verify { jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 10000.0, pageable) }
+            verify { jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 10000.0, any()) }
         }
 
         @Test
         fun `should return empty page when no stadiums found`() {
             // given
-            val pageable = PageRequest.of(0, 20)
-            val emptyPage = PageImpl(emptyList<Stadium>(), pageable, 0)
+            val pageCommand = PageCommand(page = 0, size = 20)
+            val emptyPage = PageImpl(emptyList<Stadium>())
             every {
-                jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 1000.0, pageable)
+                jpaRepository.findNearbyOrderByDistance(37.5, 127.0, 1000.0, any())
             } returns emptyPage
 
             // when
-            val result = adapter.findNearbyStadiums(37.5, 127.0, 1.0, pageable)
+            val result = adapter.findNearbyStadiums(37.5, 127.0, 1.0, pageCommand)
 
             // then
             assertThat(result.content).isEmpty()

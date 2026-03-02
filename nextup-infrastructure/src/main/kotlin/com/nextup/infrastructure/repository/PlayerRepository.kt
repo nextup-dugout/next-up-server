@@ -1,8 +1,12 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -52,10 +56,17 @@ interface PlayerRepository :
         AND (:position IS NULL OR p.primaryPosition = :position)
     """,
     )
-    override fun search(
+    fun searchByPageable(
         @Param("name") name: String?,
         @Param("teamId") teamId: Long?,
         @Param("position") position: Position?,
         pageable: Pageable,
     ): Page<Player>
+
+    override fun search(
+        name: String?,
+        teamId: Long?,
+        position: Position?,
+        pageCommand: PageCommand,
+    ): PageResult<Player> = searchByPageable(name, teamId, position, pageCommand.toPageable()).toPageResult()
 }

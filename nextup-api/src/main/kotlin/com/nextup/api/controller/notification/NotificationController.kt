@@ -11,6 +11,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.notification.NotificationService
 import com.nextup.core.service.notification.dto.RegisterDeviceRequest
 import com.nextup.core.service.notification.dto.UpdatePreferenceRequest
+import com.nextup.infrastructure.common.toPageCommand
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -70,7 +71,7 @@ class NotificationController(
         @AuthenticationPrincipal userId: Long,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<PagedResponse<NotificationResponse>> {
-        val notifications = notificationService.getUserNotifications(userId, pageable)
+        val notifications = notificationService.getUserNotifications(userId, pageable.toPageCommand())
         return ApiResponse.success(PagedResponse.from(notifications.map { NotificationResponse.from(it) }))
     }
 

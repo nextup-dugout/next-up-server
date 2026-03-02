@@ -3,6 +3,8 @@ package com.nextup.core.service.notification
 import com.nextup.common.exception.DeviceTokenNotFoundException
 import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.NotificationNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.notification.DevicePlatform
 import com.nextup.core.domain.notification.DeviceToken
 import com.nextup.core.domain.notification.Notification
@@ -21,8 +23,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 
 class NotificationServiceTest {
     private lateinit var notificationRepository: NotificationRepositoryPort
@@ -101,7 +101,7 @@ class NotificationServiceTest {
     fun `사용자의 알림 목록을 페이징으로 조회할 수 있다`() {
         // given
         val userId = 1L
-        val pageable = PageRequest.of(0, 10)
+        val pageCommand = PageCommand(page = 0, size = 10)
 
         val notifications =
             listOf(
@@ -119,12 +119,17 @@ class NotificationServiceTest {
                 ),
             )
 
-        val page = PageImpl(notifications, pageable, notifications.size.toLong())
-
-        every { notificationRepository.findByUserId(userId, pageable) } returns page
+        every { notificationRepository.findByUserId(userId, pageCommand) } returns
+            PageResult(
+                content = notifications,
+                page = 0,
+                size = 10,
+                totalElements = notifications.size.toLong(),
+                totalPages = 1,
+            )
 
         // when
-        val result = notificationService.getUserNotifications(userId, pageable)
+        val result = notificationService.getUserNotifications(userId, pageCommand)
 
         // then
         assertThat(result.content).hasSize(2)
@@ -132,20 +137,26 @@ class NotificationServiceTest {
         assertThat(result.content[1].title).isEqualTo("알림 2")
         assertThat(result.totalElements).isEqualTo(2)
 
-        verify(exactly = 1) { notificationRepository.findByUserId(userId, pageable) }
+        verify(exactly = 1) { notificationRepository.findByUserId(userId, pageCommand) }
     }
 
     @Test
     fun `알림이 없는 사용자의 페이징 조회는 빈 페이지를 반환한다`() {
         // given
         val userId = 1L
-        val pageable = PageRequest.of(0, 10)
-        val emptyPage = PageImpl<Notification>(emptyList(), pageable, 0)
+        val pageCommand = PageCommand(page = 0, size = 10)
 
-        every { notificationRepository.findByUserId(userId, pageable) } returns emptyPage
+        every { notificationRepository.findByUserId(userId, pageCommand) } returns
+            PageResult(
+                content = emptyList(),
+                page = 0,
+                size = 10,
+                totalElements = 0,
+                totalPages = 0,
+            )
 
         // when
-        val result = notificationService.getUserNotifications(userId, pageable)
+        val result = notificationService.getUserNotifications(userId, pageCommand)
 
         // then
         assertThat(result.content).isEmpty()

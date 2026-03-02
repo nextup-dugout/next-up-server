@@ -5,10 +5,11 @@ import com.nextup.api.dto.player.PlayerSearchResponse
 import com.nextup.api.dto.player.toDetailResponse
 import com.nextup.api.dto.player.toSearchResponse
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.player.Position
 import com.nextup.core.service.player.PlayerService
 import com.nextup.core.service.player.PlayerTeamService
-import org.springframework.data.domain.Page
+import com.nextup.infrastructure.common.toPageCommand
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
@@ -48,13 +49,13 @@ class PlayerController(
         @RequestParam(required = false) position: Position?,
         @PageableDefault(size = 20, sort = ["name"], direction = Sort.Direction.ASC)
         pageable: Pageable,
-    ): ApiResponse<Page<PlayerSearchResponse>> {
+    ): ApiResponse<PageResult<PlayerSearchResponse>> {
         val players =
             playerService.search(
                 name = name,
                 teamId = teamId,
                 position = position,
-                pageable = pageable,
+                pageCommand = pageable.toPageCommand(),
             )
         val result =
             players.map { player ->

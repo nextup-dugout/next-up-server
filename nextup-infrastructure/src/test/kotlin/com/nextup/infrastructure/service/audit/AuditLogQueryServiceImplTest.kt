@@ -1,6 +1,8 @@
 package com.nextup.infrastructure.service.audit
 
 import com.nextup.common.exception.AuditLogNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.audit.AuditLog
 import com.nextup.core.port.repository.AuditLogRepositoryPort
 import io.mockk.every
@@ -11,8 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
 
 @DisplayName("AuditLogQueryServiceImpl")
 class AuditLogQueryServiceImplTest {
@@ -30,9 +30,16 @@ class AuditLogQueryServiceImplTest {
     inner class FindAll {
         @Test
         fun `조건에 맞는 감사 로그를 페이지로 반환한다`() {
-            val pageable = PageRequest.of(0, 10)
+            val pageCommand = PageCommand(page = 0, size = 10)
             val auditLog = mockk<AuditLog>()
-            val page = PageImpl(listOf(auditLog), pageable, 1)
+            val pageResult =
+                PageResult(
+                    content = listOf(auditLog),
+                    page = 0,
+                    size = 10,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
 
             every {
                 auditLogRepository.findAllByCondition(
@@ -41,9 +48,9 @@ class AuditLogQueryServiceImplTest {
                     targetEntity = "Team",
                     fromDate = null,
                     toDate = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
-            } returns page
+            } returns pageResult
 
             val result =
                 service.findAll(
@@ -52,7 +59,7 @@ class AuditLogQueryServiceImplTest {
                     targetEntity = "Team",
                     fromDate = null,
                     toDate = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
 
             assertThat(result.content).hasSize(1)
@@ -61,8 +68,15 @@ class AuditLogQueryServiceImplTest {
 
         @Test
         fun `모든 조건이 null이어도 정상 동작한다`() {
-            val pageable = PageRequest.of(0, 10)
-            val page = PageImpl<AuditLog>(emptyList(), pageable, 0)
+            val pageCommand = PageCommand(page = 0, size = 10)
+            val pageResult =
+                PageResult<AuditLog>(
+                    content = emptyList(),
+                    page = 0,
+                    size = 10,
+                    totalElements = 0L,
+                    totalPages = 0,
+                )
 
             every {
                 auditLogRepository.findAllByCondition(
@@ -71,9 +85,9 @@ class AuditLogQueryServiceImplTest {
                     targetEntity = null,
                     fromDate = null,
                     toDate = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
-            } returns page
+            } returns pageResult
 
             val result =
                 service.findAll(
@@ -82,7 +96,7 @@ class AuditLogQueryServiceImplTest {
                     targetEntity = null,
                     fromDate = null,
                     toDate = null,
-                    pageable = pageable,
+                    pageCommand = pageCommand,
                 )
 
             assertThat(result.content).isEmpty()

@@ -1,9 +1,11 @@
 package com.nextup.infrastructure.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamBlacklist
 import com.nextup.core.port.repository.TeamBlacklistRepositoryPort
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
+import com.nextup.infrastructure.common.toPageResult
+import com.nextup.infrastructure.common.toPageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -22,8 +24,8 @@ class TeamBlacklistRepositoryAdapter(
 
     override fun findByTeamId(
         teamId: Long,
-        pageable: Pageable,
-    ): Page<TeamBlacklist> = jpaRepository.findByTeamId(teamId, pageable)
+        pageCommand: PageCommand,
+    ): PageResult<TeamBlacklist> = jpaRepository.findByTeamId(teamId, pageCommand.toPageable()).toPageResult()
 
     override fun findByTeamIdAndUserId(
         teamId: Long,

@@ -6,12 +6,13 @@ import com.nextup.backoffice.dto.user.UpdateUserRequest
 import com.nextup.backoffice.dto.user.UserAdminResponse
 import com.nextup.backoffice.dto.user.UserListResponse
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.Role
 import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.user.UserService
+import com.nextup.infrastructure.common.toPageCommand
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
@@ -39,9 +40,13 @@ class UserAdminController(
     fun getAllUsers(
         @PageableDefault(size = 20) pageable: Pageable,
         @RequestParam(required = false) isActive: Boolean?,
-    ): ApiResponse<Page<UserListResponse>> {
+    ): ApiResponse<PageResult<UserListResponse>> {
         val users =
-            if (isActive != null) userService.getAllByStatus(isActive, pageable) else userService.getAll(pageable)
+            if (isActive != null) {
+                userService.getAllByStatus(isActive, pageable.toPageCommand())
+            } else {
+                userService.getAll(pageable.toPageCommand())
+            }
         return ApiResponse.success(users.map { UserListResponse.from(it) })
     }
 
@@ -49,16 +54,18 @@ class UserAdminController(
     fun searchUsers(
         @RequestParam keyword: String,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ApiResponse<Page<UserListResponse>> =
-        ApiResponse.success(userService.search(keyword, pageable).map { UserListResponse.from(it) })
+    ): ApiResponse<PageResult<UserListResponse>> =
+        ApiResponse.success(userService.search(keyword, pageable.toPageCommand()).map { UserListResponse.from(it) })
 
     @GetMapping("/by-role/{role}")
     fun getUsersByRole(
         @PathVariable role: String,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ApiResponse<Page<UserListResponse>> =
+    ): ApiResponse<PageResult<UserListResponse>> =
         ApiResponse.success(
-            userService.getAllByRole(Role.valueOf(role.uppercase()), pageable).map { UserListResponse.from(it) },
+            userService.getAllByRole(Role.valueOf(role.uppercase()), pageable.toPageCommand()).map {
+                UserListResponse.from(it)
+            },
         )
 
     @GetMapping("/{id}")
