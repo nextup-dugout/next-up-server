@@ -14,6 +14,7 @@ fun BattingLeaderDto.toResponse(): BattingLeaderResponse =
         value = this.value,
         games = this.games,
         plateAppearances = this.plateAppearances,
+        profileImageUrl = this.profileImageUrl,
     )
 
 fun PitchingLeaderDto.toResponse(): PitchingLeaderResponse =
@@ -25,6 +26,7 @@ fun PitchingLeaderDto.toResponse(): PitchingLeaderResponse =
         value = this.value,
         games = this.games,
         inningsPitched = this.inningsPitched,
+        profileImageUrl = this.profileImageUrl,
     )
 
 fun List<BattingLeaderDto>.toBattingLeaderResponse(): List<BattingLeaderResponse> = this.map { it.toResponse() }

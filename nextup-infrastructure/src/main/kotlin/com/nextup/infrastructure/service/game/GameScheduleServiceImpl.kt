@@ -120,6 +120,12 @@ class GameScheduleServiceImpl(
         return toSummaryDtos(games)
     }
 
+    override fun getGameDaysInMonth(
+        year: Int,
+        month: Int,
+        teamId: Long?,
+    ): List<Int> = gameRepository.findGameDaysInMonth(year, month, teamId)
+
     private fun toSummaryDtos(games: List<Game>): List<GameSummaryDto> {
         if (games.isEmpty()) return emptyList()
 

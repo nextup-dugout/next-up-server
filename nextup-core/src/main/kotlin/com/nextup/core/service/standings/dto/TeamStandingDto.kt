@@ -19,4 +19,5 @@ data class TeamStandingDto(
     val runsScored: Int,
     val runsAllowed: Int,
     val runDifferential: Int,
+    val logoUrl: String? = null,
 )
