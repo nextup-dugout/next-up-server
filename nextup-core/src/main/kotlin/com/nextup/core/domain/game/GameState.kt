@@ -301,4 +301,41 @@ class GameState(
      */
     val countDisplay: String
         get() = "${balls}B-${strikes}S"
+
+    /**
+     * 타자의 타순이 올바른지 검증합니다 (D-17: 타순 위반 감지).
+     *
+     * 사회인 야구의 유연성을 고려하여 예외가 아닌 검증 결과를 반환합니다.
+     * 위반 시 호출자(Service)가 경고 이벤트를 발행합니다.
+     *
+     * @param batterBattingOrder 타석에 들어선 타자의 타순
+     * @param isHomeTeam 홈팀 여부
+     * @return 타순 위반 결과 (null이면 정상)
+     */
+    fun validateBattingOrder(
+        batterBattingOrder: Int?,
+        isHomeTeam: Boolean,
+    ): BattingOrderViolation? {
+        if (batterBattingOrder == null) return null
+        val expectedOrder = if (isHomeTeam) homeBattingOrder else awayBattingOrder
+        return if (batterBattingOrder != expectedOrder) {
+            BattingOrderViolation(
+                expectedBattingOrder = expectedOrder,
+                actualBattingOrder = batterBattingOrder,
+            )
+        } else {
+            null
+        }
+    }
 }
+
+/**
+ * 타순 위반 정보
+ *
+ * @property expectedBattingOrder 예상 타순
+ * @property actualBattingOrder 실제 입력된 타순
+ */
+data class BattingOrderViolation(
+    val expectedBattingOrder: Int,
+    val actualBattingOrder: Int,
+)

@@ -18,6 +18,7 @@ import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
 import com.nextup.core.service.game.GameScorerService
 import com.nextup.core.service.game.dto.GameEndReason
+import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
 import com.nextup.scorer.dto.game.RunnerMovementDto
@@ -106,7 +107,7 @@ class GameScorerControllerTest {
                     isTopInning = false
                     gameState.runnerOnFirstId = 10L
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
+            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
@@ -152,7 +153,7 @@ class GameScorerControllerTest {
                     gameState.runnerOnSecondId = 10L
                     gameState.runnerOnThirdId = 5L
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
+            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
@@ -189,7 +190,7 @@ class GameScorerControllerTest {
                     isTopInning = true
                     gameState.outs = 1
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns game
+            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(

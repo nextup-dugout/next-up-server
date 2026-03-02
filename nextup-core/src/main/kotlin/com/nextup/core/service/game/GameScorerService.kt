@@ -4,6 +4,7 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.service.game.dto.BaseRunningRequest
 import com.nextup.core.service.game.dto.GameEndReason
+import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.core.service.game.dto.SubstitutionRequest
 
@@ -24,14 +25,16 @@ interface GameScorerService {
     /**
      * 타석 결과를 기록합니다.
      *
+     * 타석 기록 후 투구 수 경고, 타순 위반 경고 등을 함께 반환합니다.
+     *
      * @param gameId 경기 ID
      * @param request 타석 결과 요청
-     * @return 업데이트된 경기
+     * @return 업데이트된 경기와 경고 목록
      */
     fun recordPlateAppearance(
         gameId: Long,
         request: PlateAppearanceRequest,
-    ): Game
+    ): PlateAppearanceRecordResult
 
     /**
      * 반 이닝을 진행합니다 (공수 교대).

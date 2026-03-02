@@ -297,6 +297,25 @@ class PitchingRecord(
     }
 
     /**
+     * 투구 수 한계 상태를 확인합니다 (D-20: 투구 수 경고).
+     *
+     * @param limit 투구 수 제한
+     * @param warningThreshold 경고 임박 기준 (제한 대비 몇 구 전에 경고할지)
+     * @return 투구 수 경고 상태 (null이면 정상 또는 투구 수 미기록)
+     */
+    fun checkPitchCountStatus(
+        limit: Int,
+        warningThreshold: Int = 10,
+    ): PitchCountStatus? {
+        val thrown = pitchesThrown ?: return null
+        return when {
+            thrown >= limit -> PitchCountStatus.LIMIT_REACHED
+            thrown >= limit - warningThreshold -> PitchCountStatus.APPROACHING_LIMIT
+            else -> null
+        }
+    }
+
+    /**
      * 선발 투수로 설정합니다.
      */
     fun setAsStartingPitcher() {

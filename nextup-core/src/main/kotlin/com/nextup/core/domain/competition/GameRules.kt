@@ -50,6 +50,12 @@ data class GameRules(
     /** 시간 제한 (분, null이면 무제한) */
     @Column(name = "time_limit_minutes")
     val timeLimitMinutes: Int? = null,
+    /** 투구 수 제한 (null이면 무제한, 사회인 야구 투구 수 보호 규칙) */
+    @Column(name = "pitch_count_limit")
+    val pitchCountLimit: Int? = null,
+    /** 투구 수 경고 임박 기준 (제한 대비 몇 구 전에 경고할지, 기본 10구) */
+    @Column(name = "pitch_count_warning_threshold")
+    val pitchCountWarningThreshold: Int = 10,
 ) {
     init {
         require(defaultInnings in 3..12) { "기본 이닝은 3~12 사이여야 합니다." }
@@ -76,5 +82,11 @@ data class GameRules(
         timeLimitMinutes?.let {
             require(it > 0) { "시간 제한은 양수여야 합니다." }
         }
+
+        pitchCountLimit?.let {
+            require(it > 0) { "투구 수 제한은 양수여야 합니다." }
+        }
+
+        require(pitchCountWarningThreshold > 0) { "투구 수 경고 임박 기준은 양수여야 합니다." }
     }
 }

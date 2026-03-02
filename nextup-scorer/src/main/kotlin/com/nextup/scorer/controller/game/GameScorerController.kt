@@ -49,6 +49,8 @@ class GameScorerController(
 
     /**
      * 타석 결과를 입력합니다.
+     *
+     * 응답에 경고 메시지(투구 수 경고, 타순 위반 경고)가 포함될 수 있습니다.
      */
     @PostMapping("/{gameId}/plate-appearances")
     @ResponseStatus(HttpStatus.OK)
@@ -56,8 +58,8 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: PlateAppearanceRequestDto,
     ): ApiResponse<GameResponse> {
-        val game = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
-        return ApiResponse.success(game.toResponse())
+        val result = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
+        return ApiResponse.success(result.game.toResponse(warnings = result.warnings))
     }
 
     /**
