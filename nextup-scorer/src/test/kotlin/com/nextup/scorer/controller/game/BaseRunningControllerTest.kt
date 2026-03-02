@@ -228,7 +228,11 @@ class BaseRunningControllerTest {
         }
     }
 
-    private fun createCompetition(id: Long, name: String, league: League): Competition {
+    private fun createCompetition(
+        id: Long,
+        name: String,
+        league: League,
+    ): Competition {
         return Competition(
             league = league,
             name = name,
@@ -247,7 +251,10 @@ class BaseRunningControllerTest {
         }
     }
 
-    private fun createGame(id: Long, status: GameStatus): Game {
+    private fun createGame(
+        id: Long,
+        status: GameStatus,
+    ): Game {
         val association = createAssociation(1L, "서울시야구협회")
         val league = createLeague(1L, "1부 리그", association)
         val competition = createCompetition(1L, "2025 춘계대회", league)
