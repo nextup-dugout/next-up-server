@@ -10,7 +10,6 @@ import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.BaseRunningResult
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
-import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
@@ -56,12 +55,13 @@ class BaseRunningControllerTest {
         fun `도루 성공을 기록하면 200 OK와 이벤트 정보를 반환한다`() {
             // given
             val gameId = 1L
-            val request = BaseRunningRequestDto(
-                runnerId = 5L,
-                fromBase = Base.FIRST,
-                toBase = Base.SECOND,
-                result = BaseRunningResult.STOLEN_BASE,
-            )
+            val request =
+                BaseRunningRequestDto(
+                    runnerId = 5L,
+                    fromBase = Base.FIRST,
+                    toBase = Base.SECOND,
+                    result = BaseRunningResult.STOLEN_BASE,
+                )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.STOLEN_BASE)
             every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
@@ -85,15 +85,17 @@ class BaseRunningControllerTest {
         fun `도루 실패를 기록하면 200 OK와 CAUGHT_STEALING 결과를 반환한다`() {
             // given
             val gameId = 1L
-            val request = BaseRunningRequestDto(
-                runnerId = 5L,
-                fromBase = Base.FIRST,
-                toBase = Base.SECOND,
-                result = BaseRunningResult.CAUGHT_STEALING,
-            )
-            val game = createGame(gameId, GameStatus.IN_PROGRESS).apply {
-                gameState.outs = 1
-            }
+            val request =
+                BaseRunningRequestDto(
+                    runnerId = 5L,
+                    fromBase = Base.FIRST,
+                    toBase = Base.SECOND,
+                    result = BaseRunningResult.CAUGHT_STEALING,
+                )
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    gameState.outs = 1
+                }
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.CAUGHT_STEALING)
             every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
 
@@ -114,12 +116,13 @@ class BaseRunningControllerTest {
         fun `견제사를 기록하면 200 OK와 PICKED_OFF 결과를 반환한다`() {
             // given
             val gameId = 1L
-            val request = BaseRunningRequestDto(
-                runnerId = 7L,
-                fromBase = Base.SECOND,
-                toBase = Base.SECOND,
-                result = BaseRunningResult.PICKED_OFF,
-            )
+            val request =
+                BaseRunningRequestDto(
+                    runnerId = 7L,
+                    fromBase = Base.SECOND,
+                    toBase = Base.SECOND,
+                    result = BaseRunningResult.PICKED_OFF,
+                )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.SECOND, BaseRunningResult.PICKED_OFF)
             every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
@@ -141,12 +144,13 @@ class BaseRunningControllerTest {
         fun `폭투 진루를 기록하면 200 OK와 ADVANCED_ON_WILD_PITCH 결과를 반환한다`() {
             // given
             val gameId = 1L
-            val request = BaseRunningRequestDto(
-                runnerId = 9L,
-                fromBase = Base.SECOND,
-                toBase = Base.THIRD,
-                result = BaseRunningResult.ADVANCED_ON_WILD_PITCH,
-            )
+            val request =
+                BaseRunningRequestDto(
+                    runnerId = 9L,
+                    fromBase = Base.SECOND,
+                    toBase = Base.THIRD,
+                    result = BaseRunningResult.ADVANCED_ON_WILD_PITCH,
+                )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.THIRD, BaseRunningResult.ADVANCED_ON_WILD_PITCH)
             every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
@@ -168,12 +172,13 @@ class BaseRunningControllerTest {
         fun `runnerId가 없으면 400 Bad Request를 반환한다`() {
             // given
             val gameId = 1L
-            val request = BaseRunningRequestDto(
-                runnerId = null,
-                fromBase = Base.FIRST,
-                toBase = Base.SECOND,
-                result = BaseRunningResult.STOLEN_BASE,
-            )
+            val request =
+                BaseRunningRequestDto(
+                    runnerId = null,
+                    fromBase = Base.FIRST,
+                    toBase = Base.SECOND,
+                    result = BaseRunningResult.STOLEN_BASE,
+                )
 
             // when & then
             mockMvc.perform(
@@ -185,7 +190,10 @@ class BaseRunningControllerTest {
         }
     }
 
-    private fun createAssociation(id: Long, name: String): Association {
+    private fun createAssociation(
+        id: Long,
+        name: String,
+    ): Association {
         return Association(
             name = name,
             abbreviation = null,
@@ -200,7 +208,11 @@ class BaseRunningControllerTest {
         }
     }
 
-    private fun createLeague(id: Long, name: String, association: Association): League {
+    private fun createLeague(
+        id: Long,
+        name: String,
+        association: Association,
+    ): League {
         return League(
             association = association,
             name = name,
