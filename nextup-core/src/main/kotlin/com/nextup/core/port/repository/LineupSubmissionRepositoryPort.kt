@@ -34,4 +34,12 @@ interface LineupSubmissionRepositoryPort {
     fun delete(submission: LineupSubmission)
 
     fun deleteById(id: Long)
+
+    /**
+     * 팀 ID와 상태 목록으로 라인업 제출을 조회합니다.
+     */
+    fun findAllByTeamIdAndStatusIn(
+        teamId: Long,
+        statuses: List<LineupSubmissionStatus>,
+    ): List<LineupSubmission>
 }

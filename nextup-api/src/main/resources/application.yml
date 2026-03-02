@@ -73,6 +73,15 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: next-up-api
+    version: 0.0.1-SNAPSHOT
+    description: NEXT-UP 사회인 야구 기록 서비스 API
 
 app:
   oauth2:
