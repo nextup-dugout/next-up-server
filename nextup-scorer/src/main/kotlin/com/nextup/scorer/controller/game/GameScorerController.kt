@@ -2,6 +2,8 @@ package com.nextup.scorer.controller.game
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameScorerService
+import com.nextup.scorer.dto.game.BaseRunningRequestDto
+import com.nextup.scorer.dto.game.BaseRunningResponse
 import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
@@ -10,11 +12,17 @@ import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import com.nextup.scorer.dto.game.SubstitutionResponse
 import com.nextup.scorer.dto.game.UndoResponse
 import com.nextup.scorer.dto.game.toDomain
+import com.nextup.scorer.dto.game.toBaseRunningResponse
 import com.nextup.scorer.dto.game.toResponse
 import com.nextup.scorer.dto.game.toSubstitutionResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
 /**
  * 기록원 전용 경기 기록 컨트롤러
@@ -24,16 +32,15 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/scorer/games")
 class GameScorerController(
-    private val gameScorerService: GameScorerService
+    private val gameScorerService: GameScorerService,
 ) {
-
     /**
      * 경기를 시작합니다.
      */
     @PostMapping("/{gameId}/start")
     @ResponseStatus(HttpStatus.OK)
     fun startGame(
-        @PathVariable gameId: Long
+        @PathVariable gameId: Long,
     ): ApiResponse<GameResponse> {
         val game = gameScorerService.startGame(gameId)
         return ApiResponse.success(game.toResponse())
@@ -46,7 +53,7 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun recordPlateAppearance(
         @PathVariable gameId: Long,
-        @RequestBody @Valid request: PlateAppearanceRequestDto
+        @RequestBody @Valid request: PlateAppearanceRequestDto,
     ): ApiResponse<GameResponse> {
         val game = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
         return ApiResponse.success(game.toResponse())
@@ -58,7 +65,7 @@ class GameScorerController(
     @PostMapping("/{gameId}/half-inning")
     @ResponseStatus(HttpStatus.OK)
     fun advanceHalfInning(
-        @PathVariable gameId: Long
+        @PathVariable gameId: Long,
     ): ApiResponse<GameResponse> {
         val game = gameScorerService.advanceHalfInning(gameId)
         return ApiResponse.success(game.toResponse())
@@ -71,7 +78,7 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun endGame(
         @PathVariable gameId: Long,
-        @RequestBody @Valid request: GameEndRequestDto
+        @RequestBody @Valid request: GameEndRequestDto,
     ): ApiResponse<GameResponse> {
         val game = gameScorerService.endGame(gameId, request.reason!!)
         return ApiResponse.success(game.toResponse())
@@ -83,7 +90,7 @@ class GameScorerController(
     @PostMapping("/{gameId}/undo")
     @ResponseStatus(HttpStatus.OK)
     fun undoLastEvent(
-        @PathVariable gameId: Long
+        @PathVariable gameId: Long,
     ): ApiResponse<UndoResponse> {
         val undoneEvent = gameScorerService.undoLastEvent(gameId)
         val game = undoneEvent.game
@@ -93,7 +100,7 @@ class GameScorerController(
                 eventType = undoneEvent.eventType.displayName,
                 restoredState = game.gameState.toResponse(),
                 message = "${undoneEvent.eventType.displayName} 이벤트가 되돌려졌습니다.",
-            )
+            ),
         )
     }
 
@@ -106,7 +113,7 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun recordBaseRunning(
         @PathVariable gameId: Long,
-        @RequestBody @Valid request: BaseRunningRequestDto
+        @RequestBody @Valid request: BaseRunningRequestDto,
     ): ApiResponse<BaseRunningResponse> {
         val event = gameScorerService.recordBaseRunning(gameId, request.toDomain())
         return ApiResponse.success(event.toBaseRunningResponse())
