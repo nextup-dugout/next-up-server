@@ -287,6 +287,47 @@ class SeasonPitchingStats(
     }
 
     /**
+     * 경기 투수 기여분을 시즌 통계에서 차감합니다 (경기 취소 롤백).
+     *
+     * 취소된 경기의 PitchingRecord에 집계된 값을 역산하여
+     * 해당 경기의 기여분 전체를 시즌 통계에서 제거합니다.
+     * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
+     */
+    fun revertGameRecord(record: PitchingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        if (record.isStartingPitcher) {
+            gamesStarted = maxOf(0, gamesStarted - 1)
+        }
+        inningsPitchedOuts = maxOf(0, inningsPitchedOuts - record.inningsPitchedOuts)
+        earnedRuns = maxOf(0, earnedRuns - record.earnedRuns)
+        runsAllowed = maxOf(0, runsAllowed - record.runsAllowed)
+        hitsAllowed = maxOf(0, hitsAllowed - record.hitsAllowed)
+        walksAllowed = maxOf(0, walksAllowed - record.walksAllowed)
+        strikeouts = maxOf(0, strikeouts - record.strikeouts)
+        homeRunsAllowed = maxOf(0, homeRunsAllowed - record.homeRunsAllowed)
+        hitBatsmen = maxOf(0, hitBatsmen - record.hitBatsmen)
+        wildPitches = maxOf(0, wildPitches - record.wildPitches)
+        balks = maxOf(0, balks - record.balks)
+        battersFaced = maxOf(0, battersFaced - record.battersFaced)
+
+        if (record.pitchesThrown != null) {
+            pitchesThrown = maxOf(0, (pitchesThrown ?: 0) - record.pitchesThrown!!)
+        }
+        if (record.strikesThrown != null) {
+            strikesThrown = maxOf(0, (strikesThrown ?: 0) - record.strikesThrown!!)
+        }
+
+        when (record.decision) {
+            com.nextup.core.domain.game.PitchingDecision.WIN -> wins = maxOf(0, wins - 1)
+            com.nextup.core.domain.game.PitchingDecision.LOSS -> losses = maxOf(0, losses - 1)
+            com.nextup.core.domain.game.PitchingDecision.SAVE -> saves = maxOf(0, saves - 1)
+            com.nextup.core.domain.game.PitchingDecision.HOLD -> holds = maxOf(0, holds - 1)
+            com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> blownSaves = maxOf(0, blownSaves - 1)
+            else -> { /* NONE */ }
+        }
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

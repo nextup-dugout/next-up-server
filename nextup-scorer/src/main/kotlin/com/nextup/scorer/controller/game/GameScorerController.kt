@@ -2,6 +2,7 @@ package com.nextup.scorer.controller.game
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameScorerService
+import com.nextup.scorer.dto.game.CancelGameRequestDto
 import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
@@ -41,6 +42,8 @@ class GameScorerController(
 
     /**
      * 타석 결과를 입력합니다.
+     *
+     * 응답에 경고 메시지(투구 수 경고, 타순 위반 경고)가 포함될 수 있습니다.
      */
     @PostMapping("/{gameId}/plate-appearances")
     @ResponseStatus(HttpStatus.OK)
@@ -48,8 +51,8 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: PlateAppearanceRequestDto
     ): ApiResponse<GameResponse> {
-        val game = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
-        return ApiResponse.success(game.toResponse())
+        val result = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
+        return ApiResponse.success(result.game.toResponse(warnings = result.warnings))
     }
 
     /**
@@ -101,6 +104,7 @@ class GameScorerController(
      * 경기를 몰수 처리합니다.
      *
      * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
+     * 몰수 시점까지의 개인 타격/투구 기록은 공식 기록으로 유효합니다 (KBO/MLB 기준).
      */
     @PostMapping("/{gameId}/forfeit")
     @ResponseStatus(HttpStatus.OK)
@@ -113,6 +117,26 @@ class GameScorerController(
                 gameId = gameId,
                 winnerTeamId = request.winnerTeamId!!,
                 reason = request.reason!!,
+            )
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 경기를 취소합니다.
+     *
+     * 예정(SCHEDULED) 또는 연기(POSTPONED) 상태의 경기만 취소 가능합니다.
+     * 취소된 경기에 실시간 반영된 시즌 타격/투구 통계는 자동으로 롤백됩니다.
+     */
+    @PostMapping("/{gameId}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    fun cancelGame(
+        @PathVariable gameId: Long,
+        @RequestBody request: CancelGameRequestDto = CancelGameRequestDto()
+    ): ApiResponse<GameResponse> {
+        val game =
+            gameScorerService.cancelGame(
+                gameId = gameId,
+                reason = request.reason,
             )
         return ApiResponse.success(game.toResponse())
     }

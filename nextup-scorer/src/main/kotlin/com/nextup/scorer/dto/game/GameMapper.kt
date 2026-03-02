@@ -5,8 +5,10 @@ import com.nextup.core.domain.game.GameState
 
 /**
  * Game Entity를 GameResponse DTO로 변환합니다.
+ *
+ * @param warnings 경고 메시지 목록 (투구 수 경고, 타순 위반 경고 등)
  */
-fun Game.toResponse(): GameResponse {
+fun Game.toResponse(warnings: List<String> = emptyList()): GameResponse {
     return GameResponse(
         id = this.id,
         competitionId = this.competition.id,
@@ -17,7 +19,8 @@ fun Game.toResponse(): GameResponse {
         gameState = this.gameState.toResponse(),
         scheduledAt = this.scheduledAt,
         startedAt = this.startedAt,
-        endedAt = this.endedAt
+        endedAt = this.endedAt,
+        warnings = warnings,
     )
 }
 

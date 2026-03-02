@@ -119,4 +119,24 @@ interface SeasonPitchingStatsRepository :
         @Param("minInningsPitchedOuts") minInningsPitchedOuts: Int,
         @Param("limit") limit: Int,
     ): List<SeasonPitchingStats>
+
+    /**
+     * 특정 경기에 등판하여 투구 기록이 있는 선수들의 시즌 투구 통계를 조회합니다.
+     * 경기 연도를 기준으로 해당 선수들의 시즌 투구 통계를 반환합니다.
+     */
+    @Query(
+        """
+        SELECT DISTINCT sps FROM SeasonPitchingStats sps
+        WHERE sps.player.id IN (
+            SELECT pr.gamePlayer.player.id FROM PitchingRecord pr
+            WHERE pr.gamePlayer.game.id = :gameId
+        )
+        AND sps.year = (
+            SELECT FUNCTION('YEAR', g.scheduledAt) FROM Game g WHERE g.id = :gameId
+        )
+    """,
+    )
+    override fun findAllByGameId(
+        @Param("gameId") gameId: Long
+    ): List<SeasonPitchingStats>
 }

@@ -495,6 +495,111 @@ class GamePlayerTest {
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("현재 출전 중인 선수만")
         }
+
+        @Test
+        fun `이닝 정보를 포함하여 포지션을 변경하면 이전 포지션이 이력에 기록된다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            gamePlayer.changePosition(Position.SECOND_BASE, currentInning = 3)
+
+            assertThat(gamePlayer.position).isEqualTo(Position.SECOND_BASE)
+            assertThat(gamePlayer.positionHistory).isEqualTo("3:SHORTSTOP")
+        }
+
+        @Test
+        fun `포지션을 여러 번 변경하면 모든 이력이 누적된다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            gamePlayer.changePosition(Position.SECOND_BASE, currentInning = 3)
+            gamePlayer.changePosition(Position.THIRD_BASE, currentInning = 6)
+
+            assertThat(gamePlayer.position).isEqualTo(Position.THIRD_BASE)
+            assertThat(gamePlayer.positionHistory).isEqualTo("3:SHORTSTOP,6:SECOND_BASE")
+        }
+
+        @Test
+        fun `이닝 정보 없이 포지션을 변경하면 이력에 기록되지 않는다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            gamePlayer.changePosition(Position.SECOND_BASE)
+
+            assertThat(gamePlayer.position).isEqualTo(Position.SECOND_BASE)
+            assertThat(gamePlayer.positionHistory).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("포지션 이력 조회")
+    inner class GetPositionHistoryTest {
+        @Test
+        fun `이력이 없으면 빈 목록을 반환한다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            assertThat(gamePlayer.getPositionHistoryList()).isEmpty()
+        }
+
+        @Test
+        fun `포지션 이력을 이닝-포지션 쌍으로 반환한다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            gamePlayer.changePosition(Position.SECOND_BASE, currentInning = 3)
+            gamePlayer.changePosition(Position.THIRD_BASE, currentInning = 6)
+
+            val history = gamePlayer.getPositionHistoryList()
+
+            assertThat(history).hasSize(2)
+            assertThat(history[0]).isEqualTo(Pair(3, Position.SHORTSTOP))
+            assertThat(history[1]).isEqualTo(Pair(6, Position.SECOND_BASE))
+        }
+
+        @Test
+        fun `이력이 이닝 오름차순으로 정렬되어 반환된다`() {
+            val gamePlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = player,
+                    position = Position.SHORTSTOP,
+                    battingOrder = 2,
+                )
+
+            gamePlayer.changePosition(Position.SECOND_BASE, currentInning = 6)
+            gamePlayer.changePosition(Position.THIRD_BASE, currentInning = 3)
+
+            val history = gamePlayer.getPositionHistoryList()
+
+            assertThat(history[0].first).isEqualTo(3)
+            assertThat(history[1].first).isEqualTo(6)
+        }
     }
 
     @Nested
