@@ -11,13 +11,10 @@ data class CorrectBattingRecordRequest(
     @field:NotNull(message = "관리자 ID는 필수입니다")
     @field:Positive(message = "관리자 ID는 양수여야 합니다")
     val adminUserId: Long,
-
     @field:NotBlank(message = "정정할 필드명은 필수입니다")
     val fieldName: String,
-
     @field:NotBlank(message = "정정할 새로운 값은 필수입니다")
     val newValue: String,
-
     @field:NotBlank(message = "정정 사유는 필수입니다")
     val reason: String,
 )
@@ -29,13 +26,10 @@ data class CorrectPitchingRecordRequest(
     @field:NotNull(message = "관리자 ID는 필수입니다")
     @field:Positive(message = "관리자 ID는 양수여야 합니다")
     val adminUserId: Long,
-
     @field:NotBlank(message = "정정할 필드명은 필수입니다")
     val fieldName: String,
-
     @field:NotBlank(message = "정정할 새로운 값은 필수입니다")
     val newValue: String,
-
     @field:NotBlank(message = "정정 사유는 필수입니다")
     val reason: String,
 )
