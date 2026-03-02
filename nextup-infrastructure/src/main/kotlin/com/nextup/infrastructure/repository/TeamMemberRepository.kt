@@ -75,6 +75,9 @@ interface TeamMemberRepository : JpaRepository<TeamMember, Long> {
     @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.team WHERE tm.player.id = :playerId AND tm.status = 'ACTIVE'")
     fun findByPlayerIdActive(playerId: Long): List<TeamMember>
 
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.team WHERE tm.player.id IN :playerIds AND tm.status = 'ACTIVE'")
+    fun findByPlayerIdsActive(playerIds: List<Long>): List<TeamMember>
+
     @Query("SELECT COUNT(tm) FROM TeamMember tm WHERE tm.team.id = :teamId AND tm.status = :status")
     fun countByTeamIdAndStatus(
         teamId: Long,

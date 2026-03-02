@@ -69,6 +69,11 @@ class TeamMemberRepositoryAdapter(
 
     override fun findByPlayerIdActive(playerId: Long): List<TeamMember> = jpaRepository.findByPlayerIdActive(playerId)
 
+    override fun findByPlayerIdsActive(playerIds: List<Long>): List<TeamMember> {
+        if (playerIds.isEmpty()) return emptyList()
+        return jpaRepository.findByPlayerIdsActive(playerIds)
+    }
+
     override fun countByTeamIdAndStatus(
         teamId: Long,
         status: TeamMemberStatus,
