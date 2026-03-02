@@ -279,6 +279,24 @@ class GameState(
     fun isBasesLoaded(): Boolean = runnerOnFirstId != null && runnerOnSecondId != null && runnerOnThirdId != null
 
     /**
+     * 연장전 타이브레이크 주자를 배치합니다 (무사 1,2루).
+     *
+     * 사회인 야구 타이브레이크 규칙에 따라 이닝 시작 시 자동으로
+     * 1루와 2루에 주자를 배치합니다.
+     *
+     * @param firstRunnerId  1루에 배치할 주자 GamePlayer ID (null 허용)
+     * @param secondRunnerId 2루에 배치할 주자 GamePlayer ID (null 허용)
+     */
+    fun setupTiebreaker(
+        firstRunnerId: Long? = null,
+        secondRunnerId: Long? = null,
+    ) {
+        runnerOnFirstId = firstRunnerId
+        runnerOnSecondId = secondRunnerId
+        runnerOnThirdId = null
+    }
+
+    /**
      * 현재 볼카운트 문자열을 반환합니다 (예: "2B-1S").
      */
     val countDisplay: String
