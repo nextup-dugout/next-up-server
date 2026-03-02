@@ -4,12 +4,9 @@ import com.nextup.api.dto.player.PlayerDashboardResponse
 import com.nextup.api.dto.player.PlayerProfileResponse
 import com.nextup.api.dto.player.TeamHistoryItemResponse
 import com.nextup.api.mapper.stats.toResponse
-import com.nextup.api.mapper.stats.toSeasonBattingResponse
-import com.nextup.api.mapper.stats.toSeasonPitchingResponse
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.PlayerTeamHistory
 import com.nextup.core.service.player.dto.PlayerDashboardDto
-import com.nextup.core.service.stats.dto.RecentFormDto
 
 /**
  * PlayerDashboardDto -> PlayerDashboardResponse 변환
