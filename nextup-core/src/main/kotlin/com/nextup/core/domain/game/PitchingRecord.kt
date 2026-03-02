@@ -413,9 +413,11 @@ class PitchingRecord(
     }
 
     /**
-     * 아웃 카운트를 기록합니다 (이닝 소화).
+     * 아웃 카운트를 기록합니다 (이닝 소화 전용).
+     * battersFaced는 증가시키지 않으므로, applyBatterFaced()와 함께 사용합니다.
+     * 단독으로 아웃을 기록하려면 recordOut(isStrikeout)을 사용하세요.
      */
-    fun recordOut() {
+    fun recordInningOut() {
         inningsPitchedOuts++
     }
 
@@ -480,8 +482,9 @@ class PitchingRecord(
 
     /**
      * 아웃 카운트를 롤백합니다 (Undo용).
+     * recordInningOut()의 역연산입니다.
      */
-    fun revertOut() {
+    fun revertInningOut() {
         require(inningsPitchedOuts > 0) { "롤백할 아웃 카운트가 없습니다." }
         inningsPitchedOuts--
     }
