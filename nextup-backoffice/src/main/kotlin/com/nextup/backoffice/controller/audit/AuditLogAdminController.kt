@@ -51,6 +51,5 @@ class AuditLogAdminController(
     @GetMapping("/{id}")
     fun getAuditLog(
         @PathVariable id: Long,
-    ): ApiResponse<AuditLogResponse> =
-        ApiResponse.success(AuditLogResponse.from(auditLogQueryService.findById(id)))
+    ): ApiResponse<AuditLogResponse> = ApiResponse.success(AuditLogResponse.from(auditLogQueryService.findById(id)))
 }
