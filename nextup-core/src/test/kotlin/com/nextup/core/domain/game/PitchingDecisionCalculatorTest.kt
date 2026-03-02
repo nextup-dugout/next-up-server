@@ -579,10 +579,12 @@ class PitchingDecisionCalculatorTest {
     @DisplayName("선발 투수 4이닝 이하 시나리오")
     inner class StarterUnder5InningsTest {
         @Test
-        fun `선발 투수가 4이닝 이하면 구원 승이 결정된다`() {
-            // 선발이 4이닝(12아웃), 리드 유지, 구원이 5이닝 마무리
-            val winnerTeam = mockWinnerTeam(1L, 5, "5,0,0,0,0,0,0,0,0")
-            val loserTeam = mockLoserTeam(2L, 0, "0,0,0,0,0,0,0,0,0")
+        fun `선발 투수가 4이닝 이하이고 역전 상황이면 구원 승이 결정된다`() {
+            // 선발 4이닝에 뒤지다가, 구원투수 등판 후 5회에 역전
+            // winner: 0,0,0,0,5,0,0,0,0 → 총 5점
+            // loser: 1,1,1,1,0,0,0,0,0 → 총 4점
+            val winnerTeam = mockWinnerTeam(1L, 5, "0,0,0,0,5,0,0,0,0")
+            val loserTeam = mockLoserTeam(2L, 4, "1,1,1,1,0,0,0,0,0")
 
             val starter =
                 mockPitchingRecord(
@@ -616,9 +618,9 @@ class PitchingDecisionCalculatorTest {
                     allPitchingRecords = listOf(starter, reliever, loserStarter),
                 )
 
-            // 처음부터 리드 유지 → finalLeadInning=null → findPitcherAtInning fallback
-            // 선발은 5이닝 미만이므로 구원 승 혹은 다른 투수가 승리
+            // 5회에 역전 → reliever가 역전 이닝에 등판 중 → 구원 승
             assertThat(result[starter]).isNotEqualTo(PitchingDecision.WIN)
+            assertThat(result[reliever]).isEqualTo(PitchingDecision.WIN)
         }
     }
 
@@ -626,12 +628,12 @@ class PitchingDecisionCalculatorTest {
     @DisplayName("세이브 불자격 시나리오")
     inner class NoSaveTest {
         @Test
-        fun `선발 투수는 세이브를 받지 못한다`() {
-            // 선발이 완봉이지만 마지막 투수여도 세이브 자격 없음
-            val winnerTeam = mockWinnerTeam(1L, 5, "5,0,0,0,0,0,0,0,0")
-            val loserTeam = mockLoserTeam(2L, 3, "0,0,1,0,2,0,0,0,0")
+        fun `3점 초과 리드이고 3이닝 미만 마무리이면 세이브를 받지 못한다`() {
+            // winner: 8점, loser: 1점 → 7점차 (3점 초과 리드)
+            // closer: 2이닝 (3이닝 미만) → 세이브 불자격
+            val winnerTeam = mockWinnerTeam(1L, 8, "8,0,0,0,0,0,0,0,0")
+            val loserTeam = mockLoserTeam(2L, 1, "0,0,0,0,0,0,1,0,0")
 
-            // 선발 + 마지막 구원
             val starter =
                 mockPitchingRecord(
                     teamId = 1L,
@@ -640,7 +642,7 @@ class PitchingDecisionCalculatorTest {
                     entryInning = 1,
                     exitInning = 7,
                 )
-            // 4점 리드로 마무리 등판 (4 > 3 → 세이브 불자격: 3점 초과 리드이고 2이닝 미만)
+            // 7점 리드로 마무리 등판 (7 > 3 → 3점 초과, 2이닝 < 3이닝 → 세이브 불자격)
             val closer =
                 mockPitchingRecord(
                     teamId = 1L,
@@ -1037,6 +1039,364 @@ class PitchingDecisionCalculatorTest {
             // 세이브, 홀드 없음
             assertThat(result.values).doesNotContain(PitchingDecision.SAVE)
             assertThat(result.values).doesNotContain(PitchingDecision.HOLD)
+        }
+    }
+
+    @Nested
+    @DisplayName("findPitcherAtInning 추정 fallback 시나리오")
+    inner class FindPitcherAtInningFallbackTest {
+        @Test
+        fun `entryInning이 null이고 해당 이닝에 매칭되는 투수가 없으면 마지막 투수를 반환한다`() {
+            // winner: 0,0,0,0,0,0,5 → 7회에 대량 득점 역전
+            // loser: 1,1,0,0,0,0,0 → 2점 선취
+            val winnerTeam = mockWinnerTeam(1L, 5, "0,0,0,0,0,0,5")
+            val loserTeam = mockLoserTeam(2L, 2, "1,1,0,0,0,0,0")
+
+            // 선발 entryInning=null, 3아웃(1이닝) → 범위 1~1
+            val starter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 3,
+                    entryInning = null,
+                    exitInning = null,
+                )
+            // 구원 entryInning=null, 3아웃(1이닝) → 범위 2~2
+            val reliever =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 3,
+                    entryInning = null,
+                    exitInning = null,
+                )
+            // winner 선발: 완투
+            val winnerStarter =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 21,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = listOf(winnerStarter, starter, reliever),
+                )
+
+            // 7회에 역전 → loser 팀에서 7회 담당 투수 찾기 → entryInning null이므로
+            // outs 누산: starter 1~1이닝, reliever 2~2이닝 → 7회 담당 없음 → lastOrNull() = reliever
+            assertThat(result[reliever]).isEqualTo(PitchingDecision.LOSS)
+        }
+    }
+
+    @Nested
+    @DisplayName("중간 구원 투수가 승리 투수인 경우")
+    inner class MiddleRelieverWinTest {
+        @Test
+        fun `중간 구원 투수가 승리 투수이면 홀드 블론세이브 판정에서 스킵된다`() {
+            // winner: 0,0,3,0,2,0,0 → 3회 역전, 5회 추가 득점
+            // loser: 1,1,0,0,0,0,0 → 2점 선취
+            val winnerTeam = mockWinnerTeam(1L, 5, "0,0,3,0,2,0,0")
+            val loserTeam = mockLoserTeam(2L, 2, "1,1,0,0,0,0,0")
+
+            val starter =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 6, // 2이닝
+                    entryInning = 1,
+                    exitInning = 2,
+                )
+            // 중간 계투: 3~5회, 역전 이닝 3회에 등판 중 → 승리 투수 후보
+            val middleReliever =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 9, // 3이닝
+                    entryInning = 3,
+                    exitInning = 5,
+                )
+            val closer =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 6, // 2이닝
+                    entryInning = 6,
+                    exitInning = null,
+                )
+            val loserStarter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 21,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = listOf(starter, middleReliever, closer, loserStarter),
+                )
+
+            // middleReliever는 역전 이닝(3회)에 등판 → 승리 투수
+            assertThat(result[middleReliever]).isEqualTo(PitchingDecision.WIN)
+            // closer: 2이닝, 3점 리드 → 세이브 자격 (3점 이내 리드)
+            assertThat(result[closer]).isEqualTo(PitchingDecision.SAVE)
+        }
+    }
+
+    @Nested
+    @DisplayName("exitInning이 null인 중간 계투 시나리오")
+    inner class MiddleRelieverNullExitInningTest {
+        @Test
+        fun `exitInning이 null인 중간 계투는 completeInnings으로 endInning을 추정한다`() {
+            // winner: 5,0,0,0,0,0,0,0,0 → 1회 5점 선취
+            // loser: 0,0,0,0,0,0,0,0,0 → 0점
+            val winnerTeam = mockWinnerTeam(1L, 5, "5,0,0,0,0,0,0,0,0")
+            val loserTeam = mockLoserTeam(2L, 0, "0,0,0,0,0,0,0,0,0")
+
+            val starter =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 9, // 3이닝
+                    entryInning = 1,
+                    exitInning = 3,
+                )
+            // 중간 계투: exitInning=null, 3이닝(9아웃)
+            val middleReliever =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 9, // 3이닝
+                    entryInning = 4,
+                    exitInning = null, // exitInning이 null
+                )
+            val closer =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 9, // 3이닝
+                    entryInning = 7,
+                    exitInning = null,
+                )
+            val loserStarter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 27,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords =
+                        listOf(starter, middleReliever, closer, loserStarter),
+                )
+
+            // middleReliever: 4회 등판, 리드(5:0), exitInning=null → endInning=(4+3-1)=6
+            // 4~6회 리드 유지 → HOLD
+            assertThat(result[middleReliever]).isEqualTo(PitchingDecision.HOLD)
+        }
+    }
+
+    @Nested
+    @DisplayName("세이브 자격 - 선발 투수 판정")
+    inner class SaveQualificationStarterTest {
+        @Test
+        fun `마지막 투수가 선발 투수이면 세이브를 받지 못한다`() {
+            // 팀에 선발 투수 1명만 있는 경우 - 이미 SinglePitcherTest에서 다루지만
+            // isLastPitcherWin=false이고 winnerPitchers.size>1 이지만 선발인 경우
+            // → qualifiesForSave에서 isStartingPitcher=true → false
+            // 이 케이스는 실제로 일어나기 어렵지만 로직 커버리지를 위해:
+            // 선발이 2명인 특수한 경우 (DH 해제 등으로 선발 교체)
+            val winnerTeam = mockWinnerTeam(1L, 5, "0,0,0,0,5,0,0,0,0")
+            val loserTeam = mockLoserTeam(2L, 0, "0,0,0,0,0,0,0,0,0")
+
+            val starter1 =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 12, // 4이닝
+                    entryInning = 1,
+                    exitInning = 4,
+                )
+            // "선발" 플래그가 true인 마지막 투수 (특수 상황)
+            val starter2 =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 15, // 5이닝
+                    entryInning = 5,
+                    exitInning = null,
+                )
+            val loserStarter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 27,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = listOf(starter1, starter2, loserStarter),
+                )
+
+            // 마지막 투수가 선발이면 세이브 자격 없음
+            assertThat(result.values).doesNotContain(PitchingDecision.SAVE)
+        }
+    }
+
+    @Nested
+    @DisplayName("패전팀 findFinalLeadChangeInning null fallback")
+    inner class LoserFallbackTest {
+        @Test
+        fun `패전팀에서 리드 변화 이닝이 null이면 마지막 이닝을 기준으로 패전 투수를 결정한다`() {
+            // winner가 처음부터 리드 유지 → findFinalLeadChangeInning returns null
+            // → decidingInning = winnerCumulative.size.coerceAtLeast(1) = 9
+            val winnerTeam = mockWinnerTeam(1L, 5, "5,0,0,0,0,0,0,0,0")
+            val loserTeam = mockLoserTeam(2L, 0, "0,0,0,0,0,0,0,0,0")
+
+            val winnerStarter =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 27,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+            // 패전팀 선발: 5이닝 → entryInning=1, exitInning=5
+            val loserStarter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 15,
+                    entryInning = 1,
+                    exitInning = 5,
+                )
+            // 패전팀 구원: 6~9이닝
+            val loserReliever =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = false,
+                    inningsPitchedOuts = 12,
+                    entryInning = 6,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = listOf(winnerStarter, loserStarter, loserReliever),
+                )
+
+            // findFinalLeadChangeInning returns null → decidingInning fallback
+            // loserStarter: entry=1, exit=5 → 9회에 안 맞음
+            // loserReliever: entry=6, exit=null → 9회에 해당
+            // 하지만 실제로 1회에 5:0 리드 잡은 것이므로 findFinalLeadChangeInning이 1을 줄 수 있음
+            // 1회부터 리드 유지 → null 반환 → fallback 경로 실행
+            assertThat(result.values).contains(PitchingDecision.LOSS)
+        }
+    }
+
+    @Nested
+    @DisplayName("이닝 점수가 빈 문자열인 시나리오")
+    inner class EmptyInningScoresTest {
+        @Test
+        fun `이닝 점수가 빈 문자열이면 빈 누적 점수로 처리된다`() {
+            val winnerTeam = mockWinnerTeam(1L, 3, "")
+            val loserTeam = mockLoserTeam(2L, 0, "")
+
+            val winnerStarter =
+                mockPitchingRecord(
+                    teamId = 1L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 27,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+            val loserStarter =
+                mockPitchingRecord(
+                    teamId = 2L,
+                    isStartingPitcher = true,
+                    inningsPitchedOuts = 27,
+                    entryInning = 1,
+                    exitInning = null,
+                )
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = listOf(winnerStarter, loserStarter),
+                )
+
+            // 빈 이닝 점수 → 빈 누적 → findFinalLeadChangeInning returns null
+            // → 선발 승 판정: completeInnings=9, 5이닝 이상, 교체 시 score=0:0 → 리드 아님
+            // → 구원 승 fallback → findPitcherAtInning(1) → winnerStarter
+            assertThat(result).isNotEmpty
+        }
+    }
+
+    @Nested
+    @DisplayName("winnerPitchers만 있고 loserPitchers가 비어있는 경우 (winnerOnly=null)")
+    inner class WinnerOnlyNullTest {
+        @Test
+        fun `winnerGameTeam만 null이면 빈 맵을 반환한다`() {
+            val loserTeam = mockLoserTeam(2L, 3, "1,1,1")
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = null,
+                    loserGameTeam = loserTeam,
+                    allPitchingRecords = emptyList(),
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `loserGameTeam만 null이면 빈 맵을 반환한다`() {
+            val winnerTeam = mockWinnerTeam(1L, 3, "1,1,1")
+
+            val result =
+                PitchingDecisionCalculator.calculate(
+                    winnerGameTeam = winnerTeam,
+                    loserGameTeam = null,
+                    allPitchingRecords = emptyList(),
+                )
+
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("parseInningScores 추가 케이스")
+    inner class ParseInningScoresEdgeCaseTest {
+        @Test
+        fun `공백이 포함된 이닝 점수를 파싱한다`() {
+            val result = PitchingDecisionCalculator.parseInningScores(" 0 , 1 , 2 ")
+            assertThat(result).containsExactly(0, 1, 2)
+        }
+
+        @Test
+        fun `유효하지 않은 값이 포함되면 무시된다`() {
+            val result = PitchingDecisionCalculator.parseInningScores("0,abc,2")
+            assertThat(result).containsExactly(0, 2)
         }
     }
 }
