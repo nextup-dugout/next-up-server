@@ -2,6 +2,7 @@ package com.nextup.scorer.controller.game
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameScorerService
+import com.nextup.scorer.dto.game.CancelGameRequestDto
 import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
