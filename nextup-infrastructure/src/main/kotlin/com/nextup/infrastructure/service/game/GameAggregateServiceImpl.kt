@@ -1,6 +1,5 @@
 package com.nextup.infrastructure.service.game
 
-import com.nextup.common.exception.GameNotFoundException
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.GameAggregateService
 import com.nextup.core.service.game.GameScheduleService
