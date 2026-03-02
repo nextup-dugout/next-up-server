@@ -11,8 +11,8 @@ import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
 import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import com.nextup.scorer.dto.game.SubstitutionResponse
 import com.nextup.scorer.dto.game.UndoResponse
-import com.nextup.scorer.dto.game.toDomain
 import com.nextup.scorer.dto.game.toBaseRunningResponse
+import com.nextup.scorer.dto.game.toDomain
 import com.nextup.scorer.dto.game.toResponse
 import com.nextup.scorer.dto.game.toSubstitutionResponse
 import jakarta.validation.Valid
