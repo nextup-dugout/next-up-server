@@ -107,7 +107,8 @@ Kotlin의 `require()`, `check()` 함수도 내부적으로 `IllegalArgumentExcep
 
 ## Exceptions
 
-1. **Entity init 블록의 require/check** — 도메인 불변조건을 보호하기 위한 `require()`, `check()`는 허용 (Entity 생성 시 빠른 실패)
+1. **Entity/data class init 블록의 require/check** — 도메인 불변조건을 보호하기 위한 `require()`, `check()`는 허용 (Entity 생성 시 빠른 실패, `PageCommand` 등 Value Object/data class도 포함)
 2. **테스트 코드** — `src/test/` 내 파일은 테스트 편의를 위해 표준 예외를 사용할 수 있음
 3. **프레임워크 어댑터 코드** — Spring Security 등 프레임워크가 요구하는 특정 예외 타입은 허용
 4. **companion object의 팩토리 메서드** — Entity의 `create()` 등에서 입력 검증에 `require()`를 사용하는 것은 허용
+5. **Core common 유틸 클래스** — `PageCommand`, `PageResult` 등 Core 공통 타입의 init 블록에서 `require()`를 사용하는 것은 허용 (입력 범위 검증)

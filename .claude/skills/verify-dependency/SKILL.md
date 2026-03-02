@@ -114,7 +114,43 @@ api ↔ backoffice ↔ scorer 간 상호 import가 없는지 검사합니다.
 **PASS 기준:** 매칭 결과 0건
 **FAIL 기준:** 1건 이상 매칭 시 의존성 방향 위반 (🔴 즉시 REJECT)
 
-### Step 5: Gradle 의존성 검사
+### Step 5: Core → Spring Data 프레임워크 의존 검사
+
+`nextup-core`가 Spring Data를 import하는지 검사합니다. Core는 프레임워크에 독립적이어야 합니다.
+
+**도구:** Grep
+
+**패턴:**
+```
+^import org\.springframework\.data
+```
+
+**대상:** `nextup-core/src/main/kotlin/**/*.kt`
+
+**PASS 기준:** 매칭 결과 0건 (Core가 Spring Data를 사용하지 않음)
+**FAIL 기준:** 1건 이상 매칭 시 프레임워크 의존성 위반 (🔴 즉시 REJECT)
+
+**수정 방법:** `Page`/`Pageable` → Core의 `PageCommand`/`PageResult` 커스텀 타입 사용, `JpaRepository` → `RepositoryPort` 인터페이스 사용
+
+### Step 6: Core Gradle에서 Spring Data 의존성 금지 검사
+
+`nextup-core/build.gradle.kts`에 `spring-boot-starter-data-jpa` 또는 `spring-data` 계열 의존성이 없는지 검사합니다.
+
+**도구:** Grep
+
+**패턴:**
+```
+spring-boot-starter-data-jpa|spring-data
+```
+
+**대상:** `nextup-core/build.gradle.kts`
+
+**PASS 기준:** 매칭 결과 0건
+**FAIL 기준:** Spring Data 계열 의존성 발견 (🔴 즉시 REJECT)
+
+**수정 방법:** `spring-boot-starter-data-jpa` → `jakarta.persistence-api` + `hibernate-core` + `spring-tx` + `spring-context`로 교체
+
+### Step 7: Gradle 프로젝트 의존성 검사
 
 각 모듈의 `build.gradle.kts`에서 금지된 프로젝트 의존성이 없는지 검사합니다.
 
