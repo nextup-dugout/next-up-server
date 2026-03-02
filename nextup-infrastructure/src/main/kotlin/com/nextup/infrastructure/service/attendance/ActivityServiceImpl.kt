@@ -3,6 +3,7 @@ package com.nextup.infrastructure.service.attendance
 import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.attendance.ActivityScore
+import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.port.attendance.ActivityScoreRepositoryPort
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -55,6 +56,14 @@ class ActivityServiceImpl(
         }
 
         return activityScoreRepository.findByTeamId(teamId)
+    }
+
+    override fun listActiveActivityScores(teamId: Long): List<ActivityScore> {
+        if (!teamRepository.existsById(teamId)) {
+            throw TeamNotFoundException(teamId)
+        }
+
+        return activityScoreRepository.findByTeamIdAndMemberStatus(teamId, TeamMemberStatus.ACTIVE)
     }
 
     @Transactional

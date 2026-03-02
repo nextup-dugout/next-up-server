@@ -397,4 +397,40 @@ class CompetitionPlayerRepositoryAdapterTest {
             verify { jpaRepository.deleteById(id) }
         }
     }
+
+    @Nested
+    @DisplayName("findByTeamIdAndStatus")
+    inner class FindByTeamIdAndStatus {
+        @Test
+        fun `팀 ID와 상태로 대회 선수를 조회할 수 있다`() {
+            // given
+            val teamId = 1L
+            every {
+                jpaRepository.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE)
+            } returns listOf(competitionPlayer)
+
+            // when
+            val result = adapter.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0]).isEqualTo(competitionPlayer)
+            verify { jpaRepository.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE) }
+        }
+
+        @Test
+        fun `해당 팀의 대회 선수가 없으면 빈 목록을 반환한다`() {
+            // given
+            val teamId = 999L
+            every {
+                jpaRepository.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            val result = adapter.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
 }

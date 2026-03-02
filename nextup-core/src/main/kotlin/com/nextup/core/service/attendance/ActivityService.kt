@@ -23,12 +23,21 @@ interface ActivityService {
     ): ActivityScore
 
     /**
-     * 팀의 모든 활동 점수를 조회합니다.
+     * 팀의 모든 활동 점수를 조회합니다. (탈퇴/강퇴 멤버 포함)
      *
      * @param teamId 팀 ID
      * @return 활동 점수 목록
      */
     fun listActivityScores(teamId: Long): List<ActivityScore>
+
+    /**
+     * 팀의 활성(ACTIVE) 멤버 활동 점수만 조회합니다.
+     * LEFT/KICKED 멤버의 점수는 이력으로 보존되지만 활성 통계에서 제외됩니다.
+     *
+     * @param teamId 팀 ID
+     * @return 활성 멤버의 활동 점수 목록
+     */
+    fun listActiveActivityScores(teamId: Long): List<ActivityScore>
 
     /**
      * 경기 참여율을 업데이트합니다.

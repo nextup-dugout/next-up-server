@@ -46,4 +46,13 @@ interface CompetitionPlayerRepositoryPort {
     ): Boolean
 
     fun deleteById(id: Long)
+
+    /**
+     * 팀 ID와 상태로 대회 선수를 조회합니다.
+     * 팀 해산 시 해당 팀의 활성 대회 선수를 처리하는 데 사용합니다.
+     */
+    fun findByTeamIdAndStatus(
+        teamId: Long,
+        status: CompetitionPlayerStatus,
+    ): List<CompetitionPlayer>
 }
