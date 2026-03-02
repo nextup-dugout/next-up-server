@@ -2,6 +2,7 @@ package com.nextup.core.service.game
 
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
+import com.nextup.core.service.game.dto.BaseRunningRequest
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
@@ -54,6 +55,20 @@ interface GameScorerService {
         gameId: Long,
         reason: GameEndReason,
     ): Game
+
+    /**
+     * 주루 플레이를 기록합니다.
+     *
+     * 도루, 도루 실패, 견제사, 폭투 진루 등 타석 외 주루 이벤트를 기록합니다.
+     *
+     * @param gameId 경기 ID
+     * @param request 주루 플레이 요청
+     * @return 생성된 GameEvent
+     */
+    fun recordBaseRunning(
+        gameId: Long,
+        request: BaseRunningRequest,
+    ): GameEvent
 
     /**
      * 마지막 이벤트를 되돌립니다.
