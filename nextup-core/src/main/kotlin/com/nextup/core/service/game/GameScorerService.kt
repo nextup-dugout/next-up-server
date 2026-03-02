@@ -5,6 +5,7 @@ import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.service.game.dto.BaseRunningRequest
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
+import com.nextup.core.service.game.dto.SubstitutionRequest
 
 /**
  * 기록원 전용 경기 기록 서비스 인터페이스
@@ -89,4 +90,20 @@ interface GameScorerService {
         winnerTeamId: Long,
         reason: String,
     ): Game
+
+    /**
+     * 선수를 교체합니다.
+     *
+     * 교체 이벤트를 기록하고 다음 규칙을 검증합니다:
+     * - 퇴장한 선수의 재출전 방지
+     * - DH 해제 조건 검증 (투수가 DH 타순으로 들어오는 경우만 허용)
+     *
+     * @param gameId 경기 ID
+     * @param request 선수 교체 요청
+     * @return 교체 이벤트
+     */
+    fun substitutePlayer(
+        gameId: Long,
+        request: SubstitutionRequest,
+    ): GameEvent
 }

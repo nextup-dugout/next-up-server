@@ -5,6 +5,7 @@ import com.nextup.api.dto.notification.DeviceTokenResponse
 import com.nextup.api.dto.notification.NotificationPreferenceResponse
 import com.nextup.api.dto.notification.NotificationResponse
 import com.nextup.api.dto.notification.RegisterDeviceApiRequest
+import com.nextup.api.dto.notification.UnreadCountResponse
 import com.nextup.api.dto.notification.UpdatePreferenceApiRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.notification.NotificationService
@@ -114,5 +115,18 @@ class NotificationController(
     ): ApiResponse<List<NotificationPreferenceResponse>> {
         val preferences = notificationService.getUserPreferences(userId)
         return ApiResponse.success(preferences.map { NotificationPreferenceResponse.from(it) })
+    }
+
+    /**
+     * 미읽은 알림 개수를 조회합니다. (A-06)
+     *
+     * GET /api/v1/notifications/unread-count
+     */
+    @GetMapping("/notifications/unread-count")
+    fun getUnreadCount(
+        @AuthenticationPrincipal userId: Long,
+    ): ApiResponse<UnreadCountResponse> {
+        val count = notificationService.getUnreadCount(userId)
+        return ApiResponse.success(UnreadCountResponse(count = count))
     }
 }
