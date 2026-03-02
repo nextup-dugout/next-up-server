@@ -31,12 +31,13 @@ class GameAggregateServiceImplTest {
         boxScoreService = mockk()
         gameTimelineService = mockk()
         scoresheetService = mockk()
-        service = GameAggregateServiceImpl(
-            gameScheduleService,
-            boxScoreService,
-            gameTimelineService,
-            scoresheetService,
-        )
+        service =
+            GameAggregateServiceImpl(
+                gameScheduleService,
+                boxScoreService,
+                gameTimelineService,
+                scoresheetService,
+            )
     }
 
     @Nested
