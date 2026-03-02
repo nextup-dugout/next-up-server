@@ -26,7 +26,6 @@ import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
-import com.nextup.core.service.game.PitchingDecisionService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.core.service.game.dto.RunnerMovement
@@ -53,7 +52,6 @@ class GameScorerServiceImplTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
-    private lateinit var pitchingDecisionService: PitchingDecisionService
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var gameScorerService: GameScorerServiceImpl
 
@@ -66,7 +64,6 @@ class GameScorerServiceImplTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
-        pitchingDecisionService = mockk(relaxed = true)
         eventPublisher = mockk(relaxed = true)
         every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
@@ -79,7 +76,6 @@ class GameScorerServiceImplTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
-                pitchingDecisionService,
                 eventPublisher,
             )
     }
