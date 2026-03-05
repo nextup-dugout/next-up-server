@@ -230,6 +230,37 @@ class CareerBattingStats(
     }
 
     /**
+     * 기록 정정에 따른 필드별 델타를 적용합니다.
+     *
+     * @param fieldName 정정된 필드명
+     * @param delta 변경량 (양수: 증가, 음수: 감소)
+     */
+    fun applyFieldCorrection(
+        fieldName: String,
+        delta: Int
+    ) {
+        when (fieldName) {
+            "plateAppearances" -> plateAppearances = maxOf(0, plateAppearances + delta)
+            "atBats" -> atBats = maxOf(0, atBats + delta)
+            "hits" -> hits = maxOf(0, hits + delta)
+            "doubles" -> doubles = maxOf(0, doubles + delta)
+            "triples" -> triples = maxOf(0, triples + delta)
+            "homeRuns" -> homeRuns = maxOf(0, homeRuns + delta)
+            "runs" -> runs = maxOf(0, runs + delta)
+            "runsBattedIn" -> runsBattedIn = maxOf(0, runsBattedIn + delta)
+            "walks" -> walks = maxOf(0, walks + delta)
+            "intentionalWalks" -> intentionalWalks = maxOf(0, intentionalWalks + delta)
+            "hitByPitch" -> hitByPitch = maxOf(0, hitByPitch + delta)
+            "strikeouts" -> strikeouts = maxOf(0, strikeouts + delta)
+            "sacrificeBunts" -> sacrificeBunts = maxOf(0, sacrificeBunts + delta)
+            "sacrificeFlies" -> sacrificeFlies = maxOf(0, sacrificeFlies + delta)
+            "stolenBases" -> stolenBases = maxOf(0, stolenBases + delta)
+            "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
+            "groundedIntoDoublePlays" -> groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays + delta)
+        }
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
