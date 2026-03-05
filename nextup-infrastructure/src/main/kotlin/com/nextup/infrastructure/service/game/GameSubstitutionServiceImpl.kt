@@ -1,0 +1,108 @@
+package com.nextup.infrastructure.service.game
+
+import com.nextup.common.exception.GameNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundException
+import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameEvent
+import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.port.repository.GameEventRepositoryPort
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.service.game.GameSubstitutionService
+import com.nextup.core.service.game.dto.SubstitutionRequest
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+/**
+ * 선수 교체 서비스 구현
+ *
+ * 선수 교체, DH 해제 규칙 검증을 담당합니다.
+ */
+@Service
+@Transactional(readOnly = true)
+class GameSubstitutionServiceImpl(
+    private val gameRepository: GameRepositoryPort,
+    private val gamePlayerRepository: GamePlayerRepositoryPort,
+    private val gameEventRepository: GameEventRepositoryPort,
+) : GameSubstitutionService {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @Transactional
+    override fun substitutePlayer(
+        gameId: Long,
+        request: SubstitutionRequest,
+    ): GameEvent {
+        val game = findGame(gameId)
+
+        if (game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "진행 중인 경기만 선수 교체를 할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        val outgoingPlayer =
+            gamePlayerRepository.findByIdOrNull(request.outgoingPlayerId)
+                ?: throw GamePlayerNotFoundException(request.outgoingPlayerId)
+
+        val incomingPlayer =
+            gamePlayerRepository.findByIdOrNull(request.incomingPlayerId)
+                ?: throw GamePlayerNotFoundException(request.incomingPlayerId)
+
+        if (incomingPlayer.hasExited) {
+            throw InvalidGameStateException(
+                "이미 퇴장한 선수는 재출전할 수 없습니다. (GamePlayer ID: ${request.incomingPlayerId})",
+            )
+        }
+
+        if (!outgoingPlayer.isCurrentlyPlaying) {
+            throw InvalidGameStateException(
+                "현재 출전 중인 선수만 교체할 수 있습니다. (GamePlayer ID: ${request.outgoingPlayerId})",
+            )
+        }
+
+        if (outgoingPlayer.isDesignatedHitter) {
+            try {
+                outgoingPlayer.validateDhRelease(incomingPlayer, request.newBattingOrder)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidGameStateException(e.message ?: "DH 해제 규칙 위반")
+            }
+        }
+
+        val dhReleaseRequired = outgoingPlayer.isDhReleaseRequired(incomingPlayer)
+        if (dhReleaseRequired) {
+            outgoingPlayer.releaseDH()
+            gamePlayerRepository.save(outgoingPlayer)
+        }
+
+        outgoingPlayer.exitGame(game.currentInning)
+        gamePlayerRepository.save(outgoingPlayer)
+
+        incomingPlayer.enterAsSubstitute(
+            inning = game.currentInning,
+            newPosition = request.newPosition,
+            newBattingOrder = request.newBattingOrder,
+        )
+        gamePlayerRepository.save(incomingPlayer)
+
+        val halfInning = if (game.isTopInning) "초" else "말"
+        val dhReleaseNote = if (dhReleaseRequired) " (DH 규칙 해제)" else ""
+        val description =
+            "${game.currentInning}회$halfInning: ${outgoingPlayer.player.name} → ${incomingPlayer.player.name} (${request.newPosition.displayName})$dhReleaseNote"
+
+        val substitutionEvent =
+            GameEvent.createSubstitution(
+                game = game,
+                incomingPlayer = incomingPlayer,
+                outgoingPlayer = outgoingPlayer,
+                description = description,
+            )
+
+        return gameEventRepository.save(substitutionEvent)
+    }
+
+    private fun findGame(id: Long): Game =
+        gameRepository.findByIdOrNull(id)
+            ?: throw GameNotFoundException(id)
+}

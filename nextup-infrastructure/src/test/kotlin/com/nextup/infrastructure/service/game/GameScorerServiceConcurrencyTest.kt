@@ -41,7 +41,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-@DisplayName("GameScorerServiceImpl - 동시성 테스트")
+@DisplayName("GameLifecycleServiceImpl / PlateAppearanceRecordServiceImpl / GameUndoServiceImpl - 동시성 테스트")
 class GameScorerServiceConcurrencyTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
@@ -51,7 +51,9 @@ class GameScorerServiceConcurrencyTest {
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
-    private lateinit var gameScorerService: GameScorerServiceImpl
+    private lateinit var gameLifecycleService: GameLifecycleServiceImpl
+    private lateinit var plateAppearanceRecordService: PlateAppearanceRecordServiceImpl
+    private lateinit var gameUndoService: GameUndoServiceImpl
 
     @BeforeEach
     fun setUp() {
@@ -66,12 +68,26 @@ class GameScorerServiceConcurrencyTest {
         every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
         every { gameEventRepository.save(any()) } answers { firstArg() }
-        gameScorerService =
-            GameScorerServiceImpl(
+        gameLifecycleService =
+            GameLifecycleServiceImpl(
+                gameRepository,
+                gameTeamRepository,
+                pitchingRecordRepository,
+                eventPublisher,
+            )
+        plateAppearanceRecordService =
+            PlateAppearanceRecordServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
-                gameTeamRepository,
                 boxScoreService,
+                gameEventRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
+                eventPublisher,
+            )
+        gameUndoService =
+            GameUndoServiceImpl(
+                gameRepository,
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
@@ -102,7 +118,7 @@ class GameScorerServiceConcurrencyTest {
                 executor.submit {
                     latch.await()
                     try {
-                        gameScorerService.startGame(1L)
+                        gameLifecycleService.startGame(1L)
                         successCount.incrementAndGet()
                     } catch (e: Exception) {
                         failCount.incrementAndGet()
@@ -149,7 +165,7 @@ class GameScorerServiceConcurrencyTest {
                     latch.await()
                     try {
                         val request = createStrikeoutRequest(batterId = 10L, pitcherId = 20L)
-                        gameScorerService.recordPlateAppearance(1L, request)
+                        plateAppearanceRecordService.recordPlateAppearance(1L, request)
                         successCount.incrementAndGet()
                     } catch (e: Exception) {
                         failCount.incrementAndGet()
@@ -192,7 +208,7 @@ class GameScorerServiceConcurrencyTest {
                 executor.submit {
                     latch.await()
                     try {
-                        gameScorerService.advanceHalfInning(1L)
+                        gameLifecycleService.advanceHalfInning(1L)
                         successCount.incrementAndGet()
                     } catch (e: Exception) {
                         // 상태 오류는 허용됨
@@ -237,7 +253,7 @@ class GameScorerServiceConcurrencyTest {
             executor.submit {
                 latch.await()
                 try {
-                    gameScorerService.endGame(1L, GameEndReason.REGULATION)
+                    gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
                     endSucceeded.incrementAndGet()
                 } catch (e: Exception) {
                     // ignore
@@ -249,7 +265,7 @@ class GameScorerServiceConcurrencyTest {
                 latch.await()
                 try {
                     val request = createSingleRequest(batterId = 10L, pitcherId = 20L)
-                    gameScorerService.recordPlateAppearance(1L, request)
+                    plateAppearanceRecordService.recordPlateAppearance(1L, request)
                     recordSucceeded.incrementAndGet()
                 } catch (e: InvalidGameStateException) {
                     // 경기 종료 후 타석 기록 시도는 정상적인 실패
@@ -366,7 +382,7 @@ class GameScorerServiceConcurrencyTest {
             executor.submit {
                 latch.await()
                 try {
-                    gameScorerService.forfeitGame(1L, winnerTeamId = 10L, reason = "원정팀 불참")
+                    gameLifecycleService.forfeitGame(1L, winnerTeamId = 10L, reason = "원정팀 불참")
                 } catch (e: Exception) {
                     // ignore
                 }
@@ -375,7 +391,7 @@ class GameScorerServiceConcurrencyTest {
             executor.submit {
                 latch.await()
                 try {
-                    gameScorerService.endGame(1L, GameEndReason.REGULATION)
+                    gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
                 } catch (e: Exception) {
                     // ignore
                 }
@@ -535,7 +551,7 @@ class GameScorerServiceConcurrencyTest {
             executor.submit {
                 latch.await()
                 try {
-                    gameScorerService.undoLastEvent(1L)
+                    gameUndoService.undoLastEvent(1L)
                     undoSucceeded.incrementAndGet()
                 } catch (e: Exception) {
                     // ignore
@@ -547,7 +563,7 @@ class GameScorerServiceConcurrencyTest {
                 latch.await()
                 try {
                     val request = createSingleRequest(batterId = 10L, pitcherId = 20L)
-                    gameScorerService.recordPlateAppearance(1L, request)
+                    plateAppearanceRecordService.recordPlateAppearance(1L, request)
                     recordSucceeded.incrementAndGet()
                 } catch (e: Exception) {
                     // ignore
@@ -583,7 +599,7 @@ class GameScorerServiceConcurrencyTest {
                 executor.submit {
                     latch.await()
                     try {
-                        gameScorerService.startGame(999L)
+                        gameLifecycleService.startGame(999L)
                     } catch (e: GameNotFoundException) {
                         notFoundCount.incrementAndGet()
                     } catch (e: Exception) {
@@ -774,7 +790,7 @@ class GameScorerServiceConcurrencyTest {
                     latch.await()
                     try {
                         val request = createSingleRequest(batterId = 10L, pitcherId = 20L)
-                        gameScorerService.recordPlateAppearance(1L, request)
+                        plateAppearanceRecordService.recordPlateAppearance(1L, request)
                         successCount.incrementAndGet()
                     } catch (e: InvalidGameStateException) {
                         // 3아웃 초과 등 예상 가능한 상태 오류는 정상

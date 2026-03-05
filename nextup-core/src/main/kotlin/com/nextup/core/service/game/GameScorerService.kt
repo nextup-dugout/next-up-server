@@ -1,130 +1,20 @@
 package com.nextup.core.service.game
 
-import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameEvent
-import com.nextup.core.service.game.dto.BaseRunningRequest
-import com.nextup.core.service.game.dto.GameEndReason
-import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
-import com.nextup.core.service.game.dto.PlateAppearanceRequest
-import com.nextup.core.service.game.dto.SubstitutionRequest
-
 /**
- * 기록원 전용 경기 기록 서비스 인터페이스
+ * 기록원 전용 경기 기록 서비스 통합 인터페이스
  *
- * 실시간 경기 기록 입력을 위한 서비스입니다.
+ * 5개의 세부 서비스를 통합하는 마커 인터페이스입니다.
+ * 개별 서비스를 직접 주입하는 것을 권장합니다.
+ *
+ * @see GameLifecycleService
+ * @see PlateAppearanceRecordService
+ * @see GameUndoService
+ * @see BaseRunningRecordService
+ * @see GameSubstitutionService
  */
-interface GameScorerService {
-    /**
-     * 경기를 시작합니다.
-     *
-     * @param gameId 경기 ID
-     * @return 시작된 경기
-     */
-    fun startGame(gameId: Long): Game
-
-    /**
-     * 타석 결과를 기록합니다.
-     *
-     * 타석 기록 후 투구 수 경고, 타순 위반 경고 등을 함께 반환합니다.
-     *
-     * @param gameId 경기 ID
-     * @param request 타석 결과 요청
-     * @return 업데이트된 경기와 경고 목록
-     */
-    fun recordPlateAppearance(
-        gameId: Long,
-        request: PlateAppearanceRequest,
-    ): PlateAppearanceRecordResult
-
-    /**
-     * 반 이닝을 진행합니다 (공수 교대).
-     *
-     * @param gameId 경기 ID
-     * @return 다음 이닝으로 진행된 경기
-     */
-    fun advanceHalfInning(gameId: Long): Game
-
-    /**
-     * 경기를 종료합니다.
-     *
-     * @param gameId 경기 ID
-     * @param reason 종료 사유
-     * @return 종료된 경기
-     */
-    fun endGame(
-        gameId: Long,
-        reason: GameEndReason,
-    ): Game
-
-    /**
-     * 주루 플레이를 기록합니다.
-     *
-     * 도루, 도루 실패, 견제사, 폭투 진루 등 타석 외 주루 이벤트를 기록합니다.
-     *
-     * @param gameId 경기 ID
-     * @param request 주루 플레이 요청
-     * @return 생성된 GameEvent
-     */
-    fun recordBaseRunning(
-        gameId: Long,
-        request: BaseRunningRequest,
-    ): GameEvent
-
-    /**
-     * 마지막 이벤트를 되돌립니다.
-     *
-     * @param gameId 경기 ID
-     * @return 되돌려진 이벤트
-     */
-    fun undoLastEvent(gameId: Long): GameEvent
-
-    /**
-     * 경기를 몰수 처리합니다.
-     *
-     * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
-     * 몰수 시점까지의 개인 타격/투구 기록은 공식 기록으로 유효합니다 (KBO/MLB 기준).
-     * 점수만 7-0으로 설정되며 개인 스탯은 롤백되지 않습니다.
-     *
-     * @param gameId 경기 ID
-     * @param winnerTeamId 몰수승 팀 ID
-     * @param reason 몰수 사유
-     * @return 몰수 처리된 경기
-     */
-    fun forfeitGame(
-        gameId: Long,
-        winnerTeamId: Long,
-        reason: String,
-    ): Game
-
-    /**
-     * 경기를 취소합니다.
-     *
-     * 예정(SCHEDULED) 또는 연기(POSTPONED) 상태의 경기만 취소할 수 있습니다.
-     * 취소된 경기에 실시간으로 반영된 시즌 타격/투구 통계가 롤백됩니다.
-     * (예정/연기 상태의 경기는 실시간 통계 기여분이 없으므로 실질적으로 롤백할 데이터가 없을 수 있습니다.)
-     *
-     * @param gameId 경기 ID
-     * @param reason 취소 사유 (선택)
-     * @return 취소된 경기
-     */
-    fun cancelGame(
-        gameId: Long,
-        reason: String? = null,
-    ): Game
-
-    /**
-     * 선수를 교체합니다.
-     *
-     * 교체 이벤트를 기록하고 다음 규칙을 검증합니다:
-     * - 퇴장한 선수의 재출전 방지
-     * - DH 해제 조건 검증 (투수가 DH 타순으로 들어오는 경우만 허용)
-     *
-     * @param gameId 경기 ID
-     * @param request 선수 교체 요청
-     * @return 교체 이벤트
-     */
-    fun substitutePlayer(
-        gameId: Long,
-        request: SubstitutionRequest,
-    ): GameEvent
-}
+interface GameScorerService :
+    GameLifecycleService,
+    PlateAppearanceRecordService,
+    GameUndoService,
+    BaseRunningRecordService,
+    GameSubstitutionService

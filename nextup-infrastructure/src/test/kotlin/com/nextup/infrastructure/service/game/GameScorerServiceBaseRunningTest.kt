@@ -20,9 +20,6 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
-import com.nextup.core.port.repository.PitchingRecordRepositoryPort
-import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.BaseRunningRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -33,47 +30,31 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@DisplayName("GameScorerServiceImpl - recordBaseRunning")
+@DisplayName("BaseRunningRecordServiceImpl - recordBaseRunning")
 class GameScorerServiceBaseRunningTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
-    private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
-    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
-    private lateinit var eventPublisher: ApplicationEventPublisher
-    private lateinit var gameScorerService: GameScorerServiceImpl
+    private lateinit var baseRunningRecordService: BaseRunningRecordServiceImpl
 
     @BeforeEach
     fun setUp() {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
-        gameTeamRepository = mockk()
-        boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
-        pitchingRecordRepository = mockk()
-        eventPublisher = mockk(relaxed = true)
-        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
-        every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
-        every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
         every { gameEventRepository.save(any()) } answers { firstArg() }
         every { gameRepository.save(any()) } answers { firstArg() }
-        gameScorerService =
-            GameScorerServiceImpl(
+        baseRunningRecordService =
+            BaseRunningRecordServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
-                gameTeamRepository,
-                boxScoreService,
                 gameEventRepository,
                 battingRecordRepository,
-                pitchingRecordRepository,
-                eventPublisher,
             )
     }
 
@@ -101,7 +82,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -133,7 +114,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -168,7 +149,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -201,7 +182,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -233,7 +214,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -261,7 +242,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_ERROR)
@@ -288,7 +269,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_PASSED_BALL)
@@ -315,7 +296,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = gameScorerService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_BALK)
@@ -341,7 +322,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { gameScorerService.recordBaseRunning(999L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(999L, request) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
 
@@ -360,7 +341,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { gameScorerService.recordBaseRunning(1L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("진행 중인 경기만 주루 기록을 입력할 수 있습니다")
         }
@@ -381,7 +362,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { gameScorerService.recordBaseRunning(1L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request) }
                 .isInstanceOf(GamePlayerNotFoundException::class.java)
         }
     }
