@@ -13,7 +13,11 @@ import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
-import com.nextup.core.service.game.GameScorerService
+import com.nextup.core.service.game.BaseRunningRecordService
+import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.GameSubstitutionService
+import com.nextup.core.service.game.GameUndoService
+import com.nextup.core.service.game.PlateAppearanceRecordService
 import com.nextup.scorer.dto.game.BaseRunningRequestDto
 import io.mockk.every
 import io.mockk.mockk
@@ -35,14 +39,29 @@ import java.time.LocalDateTime
 class BaseRunningControllerTest {
 
     private lateinit var mockMvc: MockMvc
-    private lateinit var gameScorerService: GameScorerService
+    private lateinit var gameLifecycleService: GameLifecycleService
+    private lateinit var plateAppearanceRecordService: PlateAppearanceRecordService
+    private lateinit var gameUndoService: GameUndoService
+    private lateinit var baseRunningRecordService: BaseRunningRecordService
+    private lateinit var gameSubstitutionService: GameSubstitutionService
     private lateinit var controller: GameScorerController
     private lateinit var objectMapper: ObjectMapper
 
     @BeforeEach
     fun setUp() {
-        gameScorerService = mockk()
-        controller = GameScorerController(gameScorerService)
+        gameLifecycleService = mockk()
+        plateAppearanceRecordService = mockk()
+        gameUndoService = mockk()
+        baseRunningRecordService = mockk()
+        gameSubstitutionService = mockk()
+        controller =
+            GameScorerController(
+                gameLifecycleService,
+                plateAppearanceRecordService,
+                gameUndoService,
+                baseRunningRecordService,
+                gameSubstitutionService,
+            )
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())
     }
@@ -64,7 +83,7 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.STOLEN_BASE)
-            every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
 
             // when & then
             mockMvc.perform(
@@ -78,7 +97,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.data.fromBase").value("FIRST"))
                 .andExpect(jsonPath("$.data.toBase").value("SECOND"))
 
-            verify(exactly = 1) { gameScorerService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
         }
 
         @Test
@@ -97,7 +116,7 @@ class BaseRunningControllerTest {
                     gameState.outs = 1
                 }
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.CAUGHT_STEALING)
-            every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
 
             // when & then
             mockMvc.perform(
@@ -109,7 +128,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("CAUGHT_STEALING"))
 
-            verify(exactly = 1) { gameScorerService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
         }
 
         @Test
@@ -125,7 +144,7 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.SECOND, BaseRunningResult.PICKED_OFF)
-            every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
 
             // when & then
             mockMvc.perform(
@@ -137,7 +156,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("PICKED_OFF"))
 
-            verify(exactly = 1) { gameScorerService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
         }
 
         @Test
@@ -153,7 +172,7 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.THIRD, BaseRunningResult.ADVANCED_ON_WILD_PITCH)
-            every { gameScorerService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
 
             // when & then
             mockMvc.perform(
@@ -165,7 +184,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("ADVANCED_ON_WILD_PITCH"))
 
-            verify(exactly = 1) { gameScorerService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
         }
 
         @Test

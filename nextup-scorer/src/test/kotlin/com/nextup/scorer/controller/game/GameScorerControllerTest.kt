@@ -16,7 +16,11 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
-import com.nextup.core.service.game.GameScorerService
+import com.nextup.core.service.game.BaseRunningRecordService
+import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.GameSubstitutionService
+import com.nextup.core.service.game.GameUndoService
+import com.nextup.core.service.game.PlateAppearanceRecordService
 import com.nextup.core.service.game.dto.GameEndReason
 import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.scorer.dto.game.GameEndRequestDto
@@ -43,14 +47,29 @@ import java.time.LocalDateTime
 class GameScorerControllerTest {
 
     private lateinit var mockMvc: MockMvc
-    private lateinit var gameScorerService: GameScorerService
+    private lateinit var gameLifecycleService: GameLifecycleService
+    private lateinit var plateAppearanceRecordService: PlateAppearanceRecordService
+    private lateinit var gameUndoService: GameUndoService
+    private lateinit var baseRunningRecordService: BaseRunningRecordService
+    private lateinit var gameSubstitutionService: GameSubstitutionService
     private lateinit var controller: GameScorerController
     private lateinit var objectMapper: ObjectMapper
 
     @BeforeEach
     fun setUp() {
-        gameScorerService = mockk()
-        controller = GameScorerController(gameScorerService)
+        gameLifecycleService = mockk()
+        plateAppearanceRecordService = mockk()
+        gameUndoService = mockk()
+        baseRunningRecordService = mockk()
+        gameSubstitutionService = mockk()
+        controller =
+            GameScorerController(
+                gameLifecycleService,
+                plateAppearanceRecordService,
+                gameUndoService,
+                baseRunningRecordService,
+                gameSubstitutionService,
+            )
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())
     }
@@ -68,7 +87,7 @@ class GameScorerControllerTest {
                     currentInning = 1
                     isTopInning = true
                 }
-            every { gameScorerService.startGame(gameId) } returns game
+            every { gameLifecycleService.startGame(gameId) } returns game
 
             // when & then
             mockMvc.perform(post("/api/scorer/games/$gameId/start"))
@@ -79,7 +98,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.currentInning").value(1))
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
 
-            verify(exactly = 1) { gameScorerService.startGame(gameId) }
+            verify(exactly = 1) { gameLifecycleService.startGame(gameId) }
         }
     }
 
@@ -107,7 +126,8 @@ class GameScorerControllerTest {
                     isTopInning = false
                     gameState.runnerOnFirstId = 10L
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+                PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
@@ -121,7 +141,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.currentInning").value(3))
 
-            verify(exactly = 1) { gameScorerService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
         }
 
         @Test
@@ -153,7 +173,8 @@ class GameScorerControllerTest {
                     gameState.runnerOnSecondId = 10L
                     gameState.runnerOnThirdId = 5L
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+                PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
@@ -167,7 +188,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.gameState.runnerOnSecondId").value(10))
                 .andExpect(jsonPath("$.data.gameState.runnerOnThirdId").value(5))
 
-            verify(exactly = 1) { gameScorerService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
         }
 
         @Test
@@ -190,7 +211,8 @@ class GameScorerControllerTest {
                     isTopInning = true
                     gameState.outs = 1
                 }
-            every { gameScorerService.recordPlateAppearance(gameId, any()) } returns PlateAppearanceRecordResult(game)
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+                PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
@@ -202,7 +224,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameState.outs").value(1))
 
-            verify(exactly = 1) { gameScorerService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
         }
     }
 
@@ -220,7 +242,7 @@ class GameScorerControllerTest {
                     isTopInning = false // 1회말로 진행
                     gameState.resetForNewInning()
                 }
-            every { gameScorerService.advanceHalfInning(gameId) } returns game
+            every { gameLifecycleService.advanceHalfInning(gameId) } returns game
 
             // when & then
             mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
@@ -231,7 +253,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.isTopInning").value(false))
                 .andExpect(jsonPath("$.data.gameState.outs").value(0))
 
-            verify(exactly = 1) { gameScorerService.advanceHalfInning(gameId) }
+            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId) }
         }
 
         @Test
@@ -244,7 +266,7 @@ class GameScorerControllerTest {
                     isTopInning = true // 2회초로 진행
                     gameState.resetForNewInning()
                 }
-            every { gameScorerService.advanceHalfInning(gameId) } returns game
+            every { gameLifecycleService.advanceHalfInning(gameId) } returns game
 
             // when & then
             mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
@@ -253,7 +275,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.currentInning").value(2))
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
 
-            verify(exactly = 1) { gameScorerService.advanceHalfInning(gameId) }
+            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId) }
         }
     }
 
@@ -271,7 +293,7 @@ class GameScorerControllerTest {
                     currentInning = 9
                     isTopInning = false
                 }
-            every { gameScorerService.endGame(gameId, GameEndReason.REGULATION) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION) } returns game
 
             // when & then
             mockMvc.perform(
@@ -284,7 +306,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(gameId))
                 .andExpect(jsonPath("$.data.status").value("FINISHED"))
 
-            verify(exactly = 1) { gameScorerService.endGame(gameId, GameEndReason.REGULATION) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION) }
         }
 
         @Test
@@ -297,7 +319,7 @@ class GameScorerControllerTest {
                     currentInning = 7
                     isTopInning = true
                 }
-            every { gameScorerService.endGame(gameId, GameEndReason.MERCY_RULE) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE) } returns game
 
             // when & then
             mockMvc.perform(
@@ -309,7 +331,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CALLED"))
 
-            verify(exactly = 1) { gameScorerService.endGame(gameId, GameEndReason.MERCY_RULE) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE) }
         }
 
         @Test
@@ -322,7 +344,7 @@ class GameScorerControllerTest {
                     currentInning = 5
                     isTopInning = false
                 }
-            every { gameScorerService.endGame(gameId, GameEndReason.WEATHER) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER) } returns game
 
             // when & then
             mockMvc.perform(
@@ -334,7 +356,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CALLED"))
 
-            verify(exactly = 1) { gameScorerService.endGame(gameId, GameEndReason.WEATHER) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER) }
         }
 
         @Test
@@ -347,7 +369,7 @@ class GameScorerControllerTest {
                     currentInning = 3
                     isTopInning = true
                 }
-            every { gameScorerService.endGame(gameId, GameEndReason.FORFEIT) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT) } returns game
 
             // when & then
             mockMvc.perform(
@@ -359,7 +381,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("FORFEITED"))
 
-            verify(exactly = 1) { gameScorerService.endGame(gameId, GameEndReason.FORFEIT) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT) }
         }
     }
 
@@ -372,7 +394,7 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val game = createGame(gameId, GameStatus.CANCELLED)
-            every { gameScorerService.cancelGame(gameId, "우천 취소") } returns game
+            every { gameLifecycleService.cancelGame(gameId, "우천 취소") } returns game
 
             // when & then
             mockMvc.perform(
@@ -385,7 +407,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(gameId))
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
-            verify(exactly = 1) { gameScorerService.cancelGame(gameId, "우천 취소") }
+            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, "우천 취소") }
         }
 
         @Test
@@ -393,7 +415,7 @@ class GameScorerControllerTest {
             // given
             val gameId = 1L
             val game = createGame(gameId, GameStatus.CANCELLED)
-            every { gameScorerService.cancelGame(gameId, null) } returns game
+            every { gameLifecycleService.cancelGame(gameId, null) } returns game
 
             // when & then
             mockMvc.perform(
@@ -405,7 +427,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
-            verify(exactly = 1) { gameScorerService.cancelGame(gameId, null) }
+            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, null) }
         }
     }
 
@@ -444,7 +466,7 @@ class GameScorerControllerTest {
                     idField.set(this, 100L)
                 }
 
-            every { gameScorerService.substitutePlayer(gameId, any()) } returns substitutionEvent
+            every { gameSubstitutionService.substitutePlayer(gameId, any()) } returns substitutionEvent
 
             val request =
                 SubstitutionRequestDto(
@@ -468,7 +490,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
                 .andExpect(jsonPath("$.data.description").value("5회초: 홍길동 → 김철수 (좌익수)"))
 
-            verify(exactly = 1) { gameScorerService.substitutePlayer(gameId, any()) }
+            verify(exactly = 1) { gameSubstitutionService.substitutePlayer(gameId, any()) }
         }
     }
 

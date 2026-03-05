@@ -15,13 +15,9 @@ import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
-import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
-import com.nextup.core.port.repository.PitchingRecordRepositoryPort
-import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.SubstitutionRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -32,43 +28,26 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@DisplayName("GameScorerServiceImpl - substitutePlayer")
+@DisplayName("GameSubstitutionServiceImpl - substitutePlayer")
 class GameScorerServiceSubstitutionTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
-    private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
-    private lateinit var battingRecordRepository: BattingRecordRepositoryPort
-    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
-    private lateinit var eventPublisher: ApplicationEventPublisher
-    private lateinit var gameScorerService: GameScorerServiceImpl
+    private lateinit var gameSubstitutionService: GameSubstitutionServiceImpl
 
     @BeforeEach
     fun setUp() {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
-        gameTeamRepository = mockk()
-        boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
-        battingRecordRepository = mockk()
-        pitchingRecordRepository = mockk()
-        eventPublisher = mockk(relaxed = true)
-        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
-        gameScorerService =
-            GameScorerServiceImpl(
+        gameSubstitutionService =
+            GameSubstitutionServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
-                gameTeamRepository,
-                boxScoreService,
                 gameEventRepository,
-                battingRecordRepository,
-                pitchingRecordRepository,
-                eventPublisher,
             )
     }
 
@@ -101,7 +80,7 @@ class GameScorerServiceSubstitutionTest {
                 )
 
             // when
-            val result = gameScorerService.substitutePlayer(1L, request)
+            val result = gameSubstitutionService.substitutePlayer(1L, request)
 
             // then
             assertThat(result).isNotNull()
@@ -142,7 +121,7 @@ class GameScorerServiceSubstitutionTest {
                 )
 
             // when
-            val result = gameScorerService.substitutePlayer(1L, request)
+            val result = gameSubstitutionService.substitutePlayer(1L, request)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.SUBSTITUTION)
@@ -176,7 +155,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("이미 퇴장한 선수")
         }
@@ -202,7 +181,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("진행 중인 경기만 선수 교체")
         }
@@ -223,7 +202,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(999L, request)
+                gameSubstitutionService.substitutePlayer(999L, request)
             }.isInstanceOf(GameNotFoundException::class.java)
         }
 
@@ -245,7 +224,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
@@ -269,7 +248,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
@@ -295,7 +274,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("현재 출전 중인 선수만 교체")
         }
@@ -330,7 +309,7 @@ class GameScorerServiceSubstitutionTest {
                 )
 
             // when
-            gameScorerService.substitutePlayer(1L, request)
+            gameSubstitutionService.substitutePlayer(1L, request)
 
             // then - DH 해제 후 퇴장 처리
             assertThat(dhPlayer.isDesignatedHitter).isFalse()
@@ -368,7 +347,7 @@ class GameScorerServiceSubstitutionTest {
                 )
 
             // when
-            gameScorerService.substitutePlayer(1L, request)
+            gameSubstitutionService.substitutePlayer(1L, request)
 
             // then
             assertThat(capturedEvent).isNotNull()
@@ -403,7 +382,7 @@ class GameScorerServiceSubstitutionTest {
                 )
 
             // when
-            gameScorerService.substitutePlayer(1L, request)
+            gameSubstitutionService.substitutePlayer(1L, request)
 
             // then
             assertThat(capturedEvent).isNotNull()
@@ -432,7 +411,7 @@ class GameScorerServiceSubstitutionTest {
 
             // when & then
             assertThatThrownBy {
-                gameScorerService.substitutePlayer(1L, request)
+                gameSubstitutionService.substitutePlayer(1L, request)
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("DH 타순")
         }

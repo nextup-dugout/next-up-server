@@ -20,7 +20,6 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
@@ -37,37 +36,42 @@ import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@DisplayName("GameScorerServiceImpl - 이벤트 발행 테스트")
+@DisplayName("PlateAppearanceRecordServiceImpl / GameUndoServiceImpl - 이벤트 발행 테스트")
 class GameScorerServiceEventPublishingTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
-    private lateinit var gameScorerService: GameScorerServiceImpl
+    private lateinit var plateAppearanceRecordService: PlateAppearanceRecordServiceImpl
+    private lateinit var gameUndoService: GameUndoServiceImpl
 
     @BeforeEach
     fun setUp() {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
-        gameTeamRepository = mockk()
         boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
-        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
         every { gameEventRepository.save(any()) } answers { firstArg() }
-        gameScorerService =
-            GameScorerServiceImpl(
+        plateAppearanceRecordService =
+            PlateAppearanceRecordServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
-                gameTeamRepository,
                 boxScoreService,
+                gameEventRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
+                eventPublisher,
+            )
+        gameUndoService =
+            GameUndoServiceImpl(
+                gameRepository,
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
@@ -101,7 +105,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            gameScorerService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -134,7 +138,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            gameScorerService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -165,7 +169,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            gameScorerService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request)
 
             // then
             verify { eventPublisher.publishEvent(any<PlateAppearanceRecordedEvent>()) }
@@ -194,7 +198,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            gameScorerService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -242,7 +246,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             val eventSlot = slot<PlateAppearanceUndoneEvent>()
@@ -292,7 +296,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             val eventSlot = slot<PlateAppearanceUndoneEvent>()
@@ -328,7 +332,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then - PlateAppearanceUndoneEvent 는 발행되지 않아야 함
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }
@@ -357,7 +361,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }
@@ -389,7 +393,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then - plateAppearanceResult가 null이므로 이벤트 발행 안 됨
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }

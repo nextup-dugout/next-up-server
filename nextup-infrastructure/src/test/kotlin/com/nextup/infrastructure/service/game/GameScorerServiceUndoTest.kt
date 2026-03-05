@@ -18,11 +18,8 @@ import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
-import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
-import com.nextup.core.service.game.BoxScoreService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -36,34 +33,25 @@ import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@DisplayName("GameScorerServiceImpl - Undo")
+@DisplayName("GameUndoServiceImpl - Undo")
 class GameScorerServiceUndoTest {
     private lateinit var gameRepository: GameRepositoryPort
-    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
-    private lateinit var boxScoreService: BoxScoreService
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
-    private lateinit var gameScorerService: GameScorerServiceImpl
+    private lateinit var gameUndoService: GameUndoServiceImpl
 
     @BeforeEach
     fun setUp() {
         gameRepository = mockk()
-        gamePlayerRepository = mockk()
-        gameTeamRepository = mockk()
-        boxScoreService = mockk(relaxed = true)
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
         eventPublisher = mockk(relaxed = true)
-        gameScorerService =
-            GameScorerServiceImpl(
+        gameUndoService =
+            GameUndoServiceImpl(
                 gameRepository,
-                gamePlayerRepository,
-                gameTeamRepository,
-                boxScoreService,
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
@@ -111,7 +99,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameScorerService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -162,7 +150,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameScorerService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -213,7 +201,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             assertThat(game.gameState.outs).isEqualTo(0) // 아웃 카운트 복원
@@ -229,7 +217,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameScorerService.undoLastEvent(1L) }
+            assertThatThrownBy { gameUndoService.undoLastEvent(1L) }
                 .isInstanceOf(UndoNotAvailableException::class.java)
         }
 
@@ -241,7 +229,7 @@ class GameScorerServiceUndoTest {
             every { gameEventRepository.findLastActiveEvent(1L) } returns null
 
             // when & then
-            assertThatThrownBy { gameScorerService.undoLastEvent(1L) }
+            assertThatThrownBy { gameUndoService.undoLastEvent(1L) }
                 .isInstanceOf(NoEventToUndoException::class.java)
         }
 
@@ -284,7 +272,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when - 첫 번째 Undo
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             assertThat(event2.undone).isTrue()
@@ -322,7 +310,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameScorerService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L)
 
             // then
             assertThat(event.undone).isTrue()

@@ -1,7 +1,11 @@
 package com.nextup.scorer.controller.game
 
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.service.game.GameScorerService
+import com.nextup.core.service.game.BaseRunningRecordService
+import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.GameSubstitutionService
+import com.nextup.core.service.game.GameUndoService
+import com.nextup.core.service.game.PlateAppearanceRecordService
 import com.nextup.scorer.dto.game.BaseRunningRequestDto
 import com.nextup.scorer.dto.game.BaseRunningResponse
 import com.nextup.scorer.dto.game.CancelGameRequestDto
@@ -33,7 +37,11 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scorer/games")
 class GameScorerController(
-    private val gameScorerService: GameScorerService,
+    private val gameLifecycleService: GameLifecycleService,
+    private val plateAppearanceRecordService: PlateAppearanceRecordService,
+    private val gameUndoService: GameUndoService,
+    private val baseRunningRecordService: BaseRunningRecordService,
+    private val gameSubstitutionService: GameSubstitutionService,
 ) {
     /**
      * 경기를 시작합니다.
@@ -43,7 +51,7 @@ class GameScorerController(
     fun startGame(
         @PathVariable gameId: Long,
     ): ApiResponse<GameResponse> {
-        val game = gameScorerService.startGame(gameId)
+        val game = gameLifecycleService.startGame(gameId)
         return ApiResponse.success(game.toResponse())
     }
 
@@ -58,7 +66,7 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: PlateAppearanceRequestDto,
     ): ApiResponse<GameResponse> {
-        val result = gameScorerService.recordPlateAppearance(gameId, request.toDomain())
+        val result = plateAppearanceRecordService.recordPlateAppearance(gameId, request.toDomain())
         return ApiResponse.success(result.game.toResponse(warnings = result.warnings))
     }
 
@@ -70,7 +78,7 @@ class GameScorerController(
     fun advanceHalfInning(
         @PathVariable gameId: Long,
     ): ApiResponse<GameResponse> {
-        val game = gameScorerService.advanceHalfInning(gameId)
+        val game = gameLifecycleService.advanceHalfInning(gameId)
         return ApiResponse.success(game.toResponse())
     }
 
@@ -83,7 +91,7 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: GameEndRequestDto,
     ): ApiResponse<GameResponse> {
-        val game = gameScorerService.endGame(gameId, request.reason!!)
+        val game = gameLifecycleService.endGame(gameId, request.reason!!)
         return ApiResponse.success(game.toResponse())
     }
 
@@ -95,7 +103,7 @@ class GameScorerController(
     fun undoLastEvent(
         @PathVariable gameId: Long,
     ): ApiResponse<UndoResponse> {
-        val undoneEvent = gameScorerService.undoLastEvent(gameId)
+        val undoneEvent = gameUndoService.undoLastEvent(gameId)
         val game = undoneEvent.game
         return ApiResponse.success(
             UndoResponse(
@@ -118,7 +126,7 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: BaseRunningRequestDto,
     ): ApiResponse<BaseRunningResponse> {
-        val event = gameScorerService.recordBaseRunning(gameId, request.toDomain())
+        val event = baseRunningRecordService.recordBaseRunning(gameId, request.toDomain())
         return ApiResponse.success(event.toBaseRunningResponse())
     }
 
@@ -135,7 +143,7 @@ class GameScorerController(
         @RequestBody @Valid request: ForfeitRequestDto,
     ): ApiResponse<GameResponse> {
         val game =
-            gameScorerService.forfeitGame(
+            gameLifecycleService.forfeitGame(
                 gameId = gameId,
                 winnerTeamId = request.winnerTeamId!!,
                 reason = request.reason!!,
@@ -156,7 +164,7 @@ class GameScorerController(
         @RequestBody request: CancelGameRequestDto = CancelGameRequestDto()
     ): ApiResponse<GameResponse> {
         val game =
-            gameScorerService.cancelGame(
+            gameLifecycleService.cancelGame(
                 gameId = gameId,
                 reason = request.reason,
             )
@@ -176,7 +184,7 @@ class GameScorerController(
         @PathVariable gameId: Long,
         @RequestBody @Valid request: SubstitutionRequestDto,
     ): ApiResponse<SubstitutionResponse> {
-        val event = gameScorerService.substitutePlayer(gameId, request.toDomain())
+        val event = gameSubstitutionService.substitutePlayer(gameId, request.toDomain())
         return ApiResponse.success(event.toSubstitutionResponse())
     }
 }
