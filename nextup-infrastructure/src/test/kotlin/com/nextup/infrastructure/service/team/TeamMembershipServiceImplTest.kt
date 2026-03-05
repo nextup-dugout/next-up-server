@@ -719,7 +719,6 @@ class TeamMembershipServiceImplTest {
             // then
             assertThat(result).isEmpty()
         }
-
     }
 
     @Nested
