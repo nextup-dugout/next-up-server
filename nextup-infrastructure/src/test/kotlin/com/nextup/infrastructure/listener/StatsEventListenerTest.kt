@@ -621,6 +621,26 @@ class StatsEventListenerTest {
         }
 
         @Test
+        fun `CareerFieldingStats가 없으면 신규 생성됨`() {
+            // given: careerFieldingStatsRepository.findByPlayerId returns null
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns null
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: 새 CareerFieldingStats 생성 및 저장
+            verify(exactly = 1) { careerFieldingStatsRepository.save(any()) }
+        }
+
+        @Test
         fun `기존 시즌 수비 기록 시 CareerFieldingStats에 addSeason 호출되지 않음`() {
             // given: 시즌 통계 이미 존재
             val existingSeason = SeasonFieldingStats.create(testPlayer, 2024)
