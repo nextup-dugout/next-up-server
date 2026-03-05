@@ -2,8 +2,10 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -26,8 +28,10 @@ import org.springframework.transaction.event.TransactionalEventListener
 class GameCancelEventListener(
     private val seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort,
     private val seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort,
+    private val seasonFieldingStatsRepository: SeasonFieldingStatsRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val fieldingRecordRepository: FieldingRecordRepositoryPort,
 ) {
     private val logger = LoggerFactory.getLogger(GameCancelEventListener::class.java)
 
@@ -45,8 +49,9 @@ class GameCancelEventListener(
 
         val battingRecords = battingRecordRepository.findAllByGameId(gameId)
         val pitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
+        val fieldingRecords = fieldingRecordRepository.findAllByGameId(gameId)
 
-        if (battingRecords.isEmpty() && pitchingRecords.isEmpty()) {
+        if (battingRecords.isEmpty() && pitchingRecords.isEmpty() && fieldingRecords.isEmpty()) {
             logger.info(
                 "경기 취소 스탯 롤백 완료 - 롤백할 기록 없음 (gameId={})",
                 gameId,
@@ -108,11 +113,39 @@ class GameCancelEventListener(
             }
         }
 
+        // 수비 스탯 롤백
+        if (fieldingRecords.isNotEmpty()) {
+            val seasonFieldingStatsList = seasonFieldingStatsRepository.findAllByGameId(gameId)
+            val statsByPlayerId = seasonFieldingStatsList.associateBy { it.player.id }
+
+            for (fieldingRecord in fieldingRecords) {
+                val playerId = fieldingRecord.gamePlayer.player.id
+                val stats = statsByPlayerId[playerId]
+
+                if (stats == null) {
+                    logger.debug(
+                        "시즌 수비 통계 없음 - 롤백 건너뜀 (playerId={}, gameId={})",
+                        playerId,
+                        gameId,
+                    )
+                } else {
+                    stats.revertGameRecord(fieldingRecord)
+                    seasonFieldingStatsRepository.save(stats)
+                    logger.debug(
+                        "시즌 수비 통계 롤백 완료 (playerId={}, gameId={})",
+                        playerId,
+                        gameId,
+                    )
+                }
+            }
+        }
+
         logger.info(
-            "경기 취소 스탯 롤백 완료 (gameId={}, battingRecords={}, pitchingRecords={})",
+            "경기 취소 스탯 롤백 완료 (gameId={}, battingRecords={}, pitchingRecords={}, fieldingRecords={})",
             gameId,
             battingRecords.size,
             pitchingRecords.size,
+            fieldingRecords.size,
         )
     }
 }

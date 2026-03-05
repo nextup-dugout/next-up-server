@@ -5,6 +5,7 @@ import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.game.BattingRecord
+import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingRecord
@@ -14,15 +15,20 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
 import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
+import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -39,20 +45,26 @@ import java.time.LocalDateTime
 class StatsEventListenerTest {
     private val seasonBattingStatsRepository = mockk<SeasonBattingStatsRepositoryPort>()
     private val seasonPitchingStatsRepository = mockk<SeasonPitchingStatsRepositoryPort>()
+    private val seasonFieldingStatsRepository = mockk<SeasonFieldingStatsRepositoryPort>()
     private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
     private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
+    private val careerFieldingStatsRepository = mockk<CareerFieldingStatsRepositoryPort>()
     private val battingRecordRepository = mockk<BattingRecordRepositoryPort>()
     private val pitchingRecordRepository = mockk<PitchingRecordRepositoryPort>()
+    private val fieldingRecordRepository = mockk<FieldingRecordRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
 
     private val listener =
         StatsEventListener(
             seasonBattingStatsRepository = seasonBattingStatsRepository,
             seasonPitchingStatsRepository = seasonPitchingStatsRepository,
+            seasonFieldingStatsRepository = seasonFieldingStatsRepository,
             careerBattingStatsRepository = careerBattingStatsRepository,
             careerPitchingStatsRepository = careerPitchingStatsRepository,
+            careerFieldingStatsRepository = careerFieldingStatsRepository,
             battingRecordRepository = battingRecordRepository,
             pitchingRecordRepository = pitchingRecordRepository,
+            fieldingRecordRepository = fieldingRecordRepository,
             gameRepository = gameRepository,
         )
 
@@ -327,8 +339,10 @@ class StatsEventListenerTest {
     inner class OnGameResultConfirmed {
         private val mockBattingRecord = mockk<BattingRecord>(relaxed = true)
         private val mockPitchingRecord = mockk<PitchingRecord>(relaxed = true)
+        private val mockFieldingRecord = mockk<FieldingRecord>(relaxed = true)
         private val mockGamePlayer = mockk<GamePlayer>()
         private val mockPitcherGamePlayer = mockk<GamePlayer>()
+        private val mockFielderGamePlayer = mockk<GamePlayer>()
 
         private val gameId = 10L
         private val event =
@@ -346,6 +360,10 @@ class StatsEventListenerTest {
             every { mockGamePlayer.player } returns testPlayer
             every { mockPitchingRecord.gamePlayer } returns mockPitcherGamePlayer
             every { mockPitcherGamePlayer.player } returns testPitcher
+            every { mockFieldingRecord.gamePlayer } returns mockFielderGamePlayer
+            every { mockFielderGamePlayer.player } returns testPlayer
+            // 기본적으로 수비 기록 없음 (수비 테스트에서만 오버라이드)
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
         }
 
         @Test
@@ -531,7 +549,125 @@ class StatsEventListenerTest {
         }
 
         @Test
-        fun `타격 기록과 투수 기록이 모두 없는 경우 아무것도 저장하지 않음`() {
+        fun `경기 종료 시 SeasonFieldingStats가 신규 생성되고 기록이 누적됨`() {
+            // given
+            val careerFielding = CareerFieldingStats.create(testPlayer)
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: 새 SeasonFieldingStats 생성 및 저장 확인
+            verify(exactly = 1) { seasonFieldingStatsRepository.save(any()) }
+            verify(exactly = 1) { careerFieldingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `경기 종료 시 기존 SeasonFieldingStats에 기록이 누적됨`() {
+            // given
+            val seasonFielding = SeasonFieldingStats.create(testPlayer, 2024)
+            val careerFielding = CareerFieldingStats.create(testPlayer)
+            careerFielding.addSeason()
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns seasonFielding
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            val initialGames = seasonFielding.gamesPlayed
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: gamesPlayed 가 1 증가함
+            assertThat(seasonFielding.gamesPlayed).isEqualTo(initialGames + 1)
+            verify(exactly = 1) { seasonFieldingStatsRepository.save(seasonFielding) }
+        }
+
+        @Test
+        fun `첫 시즌 수비 기록 시 CareerFieldingStats에 addSeason 호출됨`() {
+            // given: 시즌 통계 없음(첫 시즌)
+            val careerFielding = CareerFieldingStats.create(testPlayer)
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: 첫 시즌이므로 seasonsPlayed = 1
+            assertThat(careerFielding.seasonsPlayed).isEqualTo(1)
+        }
+
+        @Test
+        fun `CareerFieldingStats가 없으면 신규 생성됨`() {
+            // given: careerFieldingStatsRepository.findByPlayerId returns null
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns null
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: 새 CareerFieldingStats 생성 및 저장
+            verify(exactly = 1) { careerFieldingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `기존 시즌 수비 기록 시 CareerFieldingStats에 addSeason 호출되지 않음`() {
+            // given: 시즌 통계 이미 존재
+            val existingSeason = SeasonFieldingStats.create(testPlayer, 2024)
+            val careerFielding = CareerFieldingStats.create(testPlayer)
+            careerFielding.addSeason()
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns existingSeason
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            val initialSeasons = careerFielding.seasonsPlayed
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: addSeason 호출 안 됨 - seasonsPlayed 변화 없음
+            assertThat(careerFielding.seasonsPlayed).isEqualTo(initialSeasons)
+        }
+
+        @Test
+        fun `모든 기록이 없는 경우 아무것도 저장하지 않음`() {
             // given
             every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
@@ -543,6 +679,8 @@ class StatsEventListenerTest {
             verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
             verify(exactly = 0) { careerBattingStatsRepository.save(any()) }
             verify(exactly = 0) { careerPitchingStatsRepository.save(any()) }
+            verify(exactly = 0) { seasonFieldingStatsRepository.save(any()) }
+            verify(exactly = 0) { careerFieldingStatsRepository.save(any()) }
         }
 
         @Test

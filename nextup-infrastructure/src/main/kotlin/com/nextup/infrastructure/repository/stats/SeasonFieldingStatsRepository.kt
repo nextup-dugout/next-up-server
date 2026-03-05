@@ -33,4 +33,24 @@ interface SeasonFieldingStatsRepository :
     override fun findAllByYear(
         @Param("year") year: Int,
     ): List<SeasonFieldingStats>
+
+    /**
+     * 경기 ID로 해당 경기에 참여한 선수들의 시즌 수비 통계를 조회합니다.
+     * FieldingRecord → GamePlayer → Player → SeasonFieldingStats 조인.
+     */
+    @Query(
+        """
+        SELECT DISTINCT sfs FROM SeasonFieldingStats sfs
+        WHERE sfs.player.id IN (
+            SELECT fr.gamePlayer.player.id FROM FieldingRecord fr
+            WHERE fr.gamePlayer.game.id = :gameId
+        )
+        AND sfs.year = (
+            SELECT FUNCTION('YEAR', g.scheduledAt) FROM Game g WHERE g.id = :gameId
+        )
+    """,
+    )
+    override fun findAllByGameId(
+        @Param("gameId") gameId: Long,
+    ): List<SeasonFieldingStats>
 }

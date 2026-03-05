@@ -109,6 +109,19 @@ class SeasonFieldingStats(
     }
 
     /**
+     * 경기 수비 기록을 롤백합니다 (경기 취소 시).
+     */
+    fun revertGameRecord(record: FieldingRecord) {
+        gamesPlayed--
+        putOuts -= record.putOuts
+        assists -= record.assists
+        errors -= record.errors
+        doublePlays -= record.doublePlays
+        passedBalls -= record.passedBalls
+        validate()
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
