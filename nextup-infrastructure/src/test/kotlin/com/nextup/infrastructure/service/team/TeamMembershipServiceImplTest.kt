@@ -671,6 +671,57 @@ class TeamMembershipServiceImplTest {
     }
 
     @Nested
+    @DisplayName("getJoinRequests")
+    inner class GetJoinRequests {
+        @Test
+        fun `should return all join requests when status is null`() {
+            // given
+            val pendingRequest = TeamJoinRequest.create(team, user, player, 7)
+            val approvedRequest = TeamJoinRequest.create(team, user, player, 8)
+            approvedRequest.approve(owner, "환영합니다")
+
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns
+                listOf(pendingRequest, approvedRequest)
+
+            // when
+            val result = service.getJoinRequests(1L, null)
+
+            // then
+            assertThat(result).hasSize(2)
+        }
+
+        @Test
+        fun `should return filtered join requests when status is provided`() {
+            // given
+            val pendingRequest = TeamJoinRequest.create(team, user, player, 7)
+            val approvedRequest = TeamJoinRequest.create(team, user, player, 8)
+            approvedRequest.approve(owner, "환영합니다")
+
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns
+                listOf(pendingRequest, approvedRequest)
+
+            // when
+            val result = service.getJoinRequests(1L, JoinRequestStatus.PENDING)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result.first().status).isEqualTo(JoinRequestStatus.PENDING)
+        }
+
+        @Test
+        fun `should return empty list when no join requests`() {
+            // given
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+
+            // when
+            val result = service.getJoinRequests(1L, null)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
     @DisplayName("getRoster")
     inner class GetRoster {
         @Test

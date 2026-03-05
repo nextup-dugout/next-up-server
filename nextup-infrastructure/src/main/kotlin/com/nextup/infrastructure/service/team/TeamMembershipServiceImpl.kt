@@ -256,6 +256,18 @@ class TeamMembershipServiceImpl(
         return teamMemberRepository.save(member)
     }
 
+    override fun getJoinRequests(
+        teamId: Long,
+        status: JoinRequestStatus?,
+    ): List<TeamJoinRequest> {
+        val requests = teamJoinRequestRepository.findByTeamId(teamId)
+        return if (status != null) {
+            requests.filter { it.status == status }
+        } else {
+            requests
+        }
+    }
+
     override fun getRoster(teamId: Long): List<TeamMember> {
         // ACTIVE 상태의 멤버만 조회
         return teamMemberRepository.findByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)

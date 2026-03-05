@@ -6,6 +6,7 @@ import com.nextup.api.mapper.team.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.TeamMemberNotFoundException
+import com.nextup.core.domain.team.JoinRequestStatus
 import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -45,13 +46,13 @@ class TeamMembershipController(
      * 가입 신청 목록을 조회합니다.
      */
     @GetMapping("/join-requests")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun getJoinRequests(
         @PathVariable teamId: Long,
-        @AuthenticationPrincipal userId: Long,
+        @RequestParam(required = false) status: JoinRequestStatus?,
     ): ApiResponse<List<JoinRequestResponse>> {
-        // TODO: 실제 구현에서는 TeamJoinRequestRepository에서 페이징 조회 필요
-        // 현재는 간단한 구현으로 대체
-        return ApiResponse.success(emptyList())
+        val joinRequests = teamMembershipService.getJoinRequests(teamId, status)
+        return ApiResponse.success(joinRequests.map { it.toResponse() })
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.nextup.core.service.team
 
+import com.nextup.core.domain.team.JoinRequestStatus
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamJoinRequest
 import com.nextup.core.domain.team.TeamMember
@@ -106,6 +107,18 @@ interface TeamMembershipService {
         newRole: TeamMemberRole,
         changerUserId: Long,
     ): TeamMember
+
+    /**
+     * 팀의 가입 신청 목록을 조회합니다.
+     *
+     * @param teamId 팀 ID
+     * @param status 필터링할 상태 (null이면 전체 조회)
+     * @return 가입 신청 목록
+     */
+    fun getJoinRequests(
+        teamId: Long,
+        status: JoinRequestStatus?,
+    ): List<TeamJoinRequest>
 
     /**
      * 팀 로스터를 조회합니다.

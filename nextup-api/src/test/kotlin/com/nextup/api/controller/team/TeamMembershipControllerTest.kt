@@ -118,9 +118,41 @@ class TeamMembershipControllerTest {
     @DisplayName("GET /api/v1/teams/{teamId}/join-requests")
     inner class GetJoinRequests {
         @Test
-        fun `should return empty list`() {
+        fun `should return all join requests when no status filter`() {
+            // given
+            val requests = listOf(createMockJoinRequest(1L), createMockJoinRequest(2L))
+            every { teamMembershipService.getJoinRequests(1L, null) } returns requests
+
             // when
-            val response = controller.getJoinRequests(teamId = 1L, userId = 10L)
+            val response = controller.getJoinRequests(teamId = 1L, status = null)
+
+            // then
+            assertThat(response.data).hasSize(2)
+        }
+
+        @Test
+        fun `should return filtered join requests when status provided`() {
+            // given
+            val pendingRequest = createMockJoinRequest(1L, JoinRequestStatus.PENDING)
+            every {
+                teamMembershipService.getJoinRequests(1L, JoinRequestStatus.PENDING)
+            } returns listOf(pendingRequest)
+
+            // when
+            val response = controller.getJoinRequests(teamId = 1L, status = JoinRequestStatus.PENDING)
+
+            // then
+            assertThat(response.data).hasSize(1)
+            assertThat(response.data?.first()?.status).isEqualTo(JoinRequestStatus.PENDING)
+        }
+
+        @Test
+        fun `should return empty list when no join requests`() {
+            // given
+            every { teamMembershipService.getJoinRequests(1L, null) } returns emptyList()
+
+            // when
+            val response = controller.getJoinRequests(teamId = 1L, status = null)
 
             // then
             assertThat(response.data).isEmpty()
