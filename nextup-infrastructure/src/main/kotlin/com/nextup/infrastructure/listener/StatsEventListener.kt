@@ -5,14 +5,19 @@ import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
+import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -31,10 +36,13 @@ import org.springframework.transaction.event.TransactionalEventListener
 class StatsEventListener(
     private val seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort,
     private val seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort,
+    private val seasonFieldingStatsRepository: SeasonFieldingStatsRepositoryPort,
     private val careerBattingStatsRepository: CareerBattingStatsRepositoryPort,
     private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
+    private val careerFieldingStatsRepository: CareerFieldingStatsRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val fieldingRecordRepository: FieldingRecordRepositoryPort,
     private val gameRepository: GameRepositoryPort,
 ) {
     private val logger = LoggerFactory.getLogger(StatsEventListener::class.java)
@@ -190,11 +198,47 @@ class StatsEventListener(
             )
         }
 
+        // 수비 스탯 집계: SeasonFieldingStats + CareerFieldingStats
+        val fieldingRecords = fieldingRecordRepository.findAllByGameId(gameId)
+        for (fieldingRecord in fieldingRecords) {
+            val player = fieldingRecord.gamePlayer.player
+            val playerId = player.id
+
+            val existingSeasonFielding =
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+            val isFirstFieldingSeason = existingSeasonFielding == null
+
+            // SeasonFieldingStats 갱신
+            val seasonFieldingStats =
+                existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
+            seasonFieldingStats.addGameRecord(fieldingRecord)
+            seasonFieldingStatsRepository.save(seasonFieldingStats)
+
+            // CareerFieldingStats 갱신
+            val careerFieldingStats =
+                careerFieldingStatsRepository.findByPlayerId(playerId)
+                    ?: CareerFieldingStats.create(player = player)
+
+            if (isFirstFieldingSeason) {
+                careerFieldingStats.addSeason()
+            }
+            careerFieldingStats.addGameRecord(fieldingRecord)
+            careerFieldingStatsRepository.save(careerFieldingStats)
+
+            logger.debug(
+                "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
+                playerId,
+                year,
+                isFirstFieldingSeason,
+            )
+        }
+
         logger.info(
-            "경기 결과 확정 스탯 집계 완료 (gameId={}, battingRecords={}, pitchingRecords={})",
+            "경기 결과 확정 스탯 집계 완료 (gameId={}, battingRecords={}, pitchingRecords={}, fieldingRecords={})",
             gameId,
             battingRecords.size,
             pitchingRecords.size,
+            fieldingRecords.size,
         )
     }
 
