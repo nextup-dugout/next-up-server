@@ -4,6 +4,7 @@ import com.nextup.common.exception.BattingRecordNotFoundByIdException
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PitchingRecordNotFoundByIdException
 import com.nextup.core.domain.audit.AuditLog
+import com.nextup.core.domain.event.RecordCorrectedEvent
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.PitchingRecord
@@ -17,6 +18,7 @@ import com.nextup.core.service.game.correction.BattingCorrectionRequest
 import com.nextup.core.service.game.correction.PitchingCorrectionRequest
 import com.nextup.core.service.game.correction.RecordCorrectionDto
 import com.nextup.core.service.game.correction.RecordCorrectionService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -34,6 +36,7 @@ class RecordCorrectionServiceImpl(
     private val recordCorrectionRepository: RecordCorrectionRepositoryPort,
     private val auditLogRepository: AuditLogRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : RecordCorrectionService {
     /**
      * 타격 기록을 정정합니다.
@@ -82,6 +85,18 @@ class RecordCorrectionServiceImpl(
                         "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
             )
         auditLogRepository.save(auditLog)
+
+        // 시즌/커리어 스탯 재집계 이벤트 발행
+        eventPublisher.publishEvent(
+            RecordCorrectedEvent(
+                gameId = gameId,
+                correctionType = CorrectionType.BATTING,
+                playerId = battingRecord.gamePlayer.player.id,
+                fieldName = request.fieldName,
+                oldValue = oldValue,
+                newValue = request.newValue,
+            ),
+        )
 
         return battingRecord
     }
@@ -133,6 +148,18 @@ class RecordCorrectionServiceImpl(
                         "oldValue=$oldValue, newValue=${request.newValue}, reason=${request.reason}",
             )
         auditLogRepository.save(auditLog)
+
+        // 시즌/커리어 스탯 재집계 이벤트 발행
+        eventPublisher.publishEvent(
+            RecordCorrectedEvent(
+                gameId = gameId,
+                correctionType = CorrectionType.PITCHING,
+                playerId = pitchingRecord.gamePlayer.player.id,
+                fieldName = request.fieldName,
+                oldValue = oldValue,
+                newValue = request.newValue,
+            ),
+        )
 
         return pitchingRecord
     }

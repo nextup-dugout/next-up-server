@@ -328,6 +328,33 @@ class SeasonPitchingStats(
     }
 
     /**
+     * 기록 정정에 따른 필드별 델타를 적용합니다.
+     *
+     * @param fieldName 정정된 필드명
+     * @param delta 변경량 (양수: 증가, 음수: 감소)
+     */
+    fun applyFieldCorrection(
+        fieldName: String,
+        delta: Int
+    ) {
+        when (fieldName) {
+            "inningsPitchedOuts" -> inningsPitchedOuts = maxOf(0, inningsPitchedOuts + delta)
+            "earnedRuns" -> earnedRuns = maxOf(0, earnedRuns + delta)
+            "runsAllowed" -> runsAllowed = maxOf(0, runsAllowed + delta)
+            "hitsAllowed" -> hitsAllowed = maxOf(0, hitsAllowed + delta)
+            "walksAllowed" -> walksAllowed = maxOf(0, walksAllowed + delta)
+            "strikeouts" -> strikeouts = maxOf(0, strikeouts + delta)
+            "homeRunsAllowed" -> homeRunsAllowed = maxOf(0, homeRunsAllowed + delta)
+            "hitBatsmen" -> hitBatsmen = maxOf(0, hitBatsmen + delta)
+            "wildPitches" -> wildPitches = maxOf(0, wildPitches + delta)
+            "balks" -> balks = maxOf(0, balks + delta)
+            "battersFaced" -> battersFaced = maxOf(0, battersFaced + delta)
+            "pitchesThrown" -> pitchesThrown = maxOf(0, (pitchesThrown ?: 0) + delta)
+            "strikesThrown" -> strikesThrown = maxOf(0, (strikesThrown ?: 0) + delta)
+        }
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

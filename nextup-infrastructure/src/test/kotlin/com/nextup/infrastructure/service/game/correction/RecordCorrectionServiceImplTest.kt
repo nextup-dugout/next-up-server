@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 
 @DisplayName("RecordCorrectionServiceImpl")
 class RecordCorrectionServiceImplTest {
@@ -33,6 +34,7 @@ class RecordCorrectionServiceImplTest {
     private lateinit var recordCorrectionRepository: RecordCorrectionRepositoryPort
     private lateinit var auditLogRepository: AuditLogRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var service: RecordCorrectionServiceImpl
 
     private val gameId = 1L
@@ -46,6 +48,7 @@ class RecordCorrectionServiceImplTest {
         recordCorrectionRepository = mockk()
         auditLogRepository = mockk()
         gameRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
 
         service =
             RecordCorrectionServiceImpl(
@@ -54,6 +57,7 @@ class RecordCorrectionServiceImplTest {
                 recordCorrectionRepository = recordCorrectionRepository,
                 auditLogRepository = auditLogRepository,
                 gameRepository = gameRepository,
+                eventPublisher = eventPublisher,
             )
     }
 
@@ -97,6 +101,7 @@ class RecordCorrectionServiceImplTest {
             verify(exactly = 1) { mockBattingRecord.correctField("hits", "3") }
             verify(exactly = 1) { recordCorrectionRepository.save(any()) }
             verify(exactly = 1) { auditLogRepository.save(any()) }
+            verify(exactly = 1) { eventPublisher.publishEvent(any<Any>()) }
         }
 
         @Test
@@ -177,6 +182,7 @@ class RecordCorrectionServiceImplTest {
             verify(exactly = 1) { mockPitchingRecord.correctField("strikeouts", "5") }
             verify(exactly = 1) { recordCorrectionRepository.save(any()) }
             verify(exactly = 1) { auditLogRepository.save(any()) }
+            verify(exactly = 1) { eventPublisher.publishEvent(any<Any>()) }
         }
 
         @Test
