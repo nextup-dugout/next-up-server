@@ -719,6 +719,19 @@ class TeamMembershipServiceImplTest {
             // then
             assertThat(result).isEmpty()
         }
+
+        @Test
+        fun `should use default null status when status parameter omitted`() {
+            // given
+            val request = TeamJoinRequest.create(team, user, player, 7)
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns listOf(request)
+
+            // when: default parameter 사용 (status 생략)
+            val result = service.getJoinRequests(1L)
+
+            // then
+            assertThat(result).hasSize(1)
+        }
     }
 
     @Nested
