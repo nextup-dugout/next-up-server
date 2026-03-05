@@ -117,7 +117,7 @@ interface TeamMembershipService {
      */
     fun getJoinRequests(
         teamId: Long,
-        status: JoinRequestStatus? = null,
+        status: JoinRequestStatus?,
     ): List<TeamJoinRequest>
 
     /**
