@@ -318,6 +318,68 @@ class GameScorerServiceUndoTest {
             assertThat(game.isTopInning).isTrue() // 1회초로 복원
             assertThat(game.gameState.outs).isEqualTo(3) // 3아웃 상태로 복원
         }
+
+        @Test
+        fun `should undo base running event with simple marking`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+
+            val event =
+                GameEvent(
+                    game = game,
+                    inning = 1,
+                    isTopInning = true,
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    eventType = GameEventType.BASE_RUNNING,
+                    description = "도루 성공: 1루 → 2루",
+                )
+            setEntityId(event, 200L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameEventRepository.findLastActiveEvent(1L) } returns event
+            every { gameEventRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = gameUndoService.undoLastEvent(1L)
+
+            // then
+            assertThat(result.undone).isTrue()
+            assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
+            verify { gameEventRepository.save(any()) }
+            verify { gameRepository.save(any()) }
+        }
+
+        @Test
+        fun `should undo game status event with simple marking`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+
+            val event =
+                GameEvent(
+                    game = game,
+                    inning = 1,
+                    isTopInning = true,
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    eventType = GameEventType.GAME_STATUS,
+                    description = "경기 상태 변경",
+                )
+            setEntityId(event, 300L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameEventRepository.findLastActiveEvent(1L) } returns event
+            every { gameEventRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = gameUndoService.undoLastEvent(1L)
+
+            // then
+            assertThat(result.undone).isTrue()
+            assertThat(result.eventType).isEqualTo(GameEventType.GAME_STATUS)
+        }
     }
 
     // Helper methods
