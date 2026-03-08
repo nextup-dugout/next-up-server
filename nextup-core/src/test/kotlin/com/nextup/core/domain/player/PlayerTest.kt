@@ -127,6 +127,85 @@ class PlayerTest {
     }
 
     @Nested
+    @DisplayName("선수 프로필 수정")
+    inner class UpdatePlayerProfile {
+        @Test
+        fun `포지션, 투타, 신체정보를 수정할 수 있다`() {
+            // given
+            val player = createPlayer()
+
+            // when
+            player.updatePlayerProfile(
+                primaryPosition = Position.CATCHER,
+                throwingHand = ThrowingHand.RIGHT,
+                battingHand = BattingHand.LEFT,
+                height = 185,
+                weight = 82,
+            )
+
+            // then
+            assertThat(player.primaryPosition).isEqualTo(Position.CATCHER)
+            assertThat(player.throwingHand).isEqualTo(ThrowingHand.RIGHT)
+            assertThat(player.battingHand).isEqualTo(BattingHand.LEFT)
+            assertThat(player.height).isEqualTo(185)
+            assertThat(player.weight).isEqualTo(82)
+        }
+
+        @Test
+        fun `포지션만 수정하면 나머지는 기존값을 유지한다`() {
+            // given
+            val player =
+                createPlayer().apply {
+                    updatePlayerProfile(
+                        primaryPosition = Position.SHORTSTOP,
+                        throwingHand = ThrowingHand.RIGHT,
+                        battingHand = BattingHand.RIGHT,
+                        height = 180,
+                        weight = 75,
+                    )
+                }
+
+            // when
+            player.updatePlayerProfile(primaryPosition = Position.SECOND_BASE)
+
+            // then
+            assertThat(player.primaryPosition).isEqualTo(Position.SECOND_BASE)
+            assertThat(player.throwingHand).isEqualTo(ThrowingHand.RIGHT)
+            assertThat(player.battingHand).isEqualTo(BattingHand.RIGHT)
+            assertThat(player.height).isEqualTo(180)
+            assertThat(player.weight).isEqualTo(75)
+        }
+
+        @Test
+        fun `투타와 신체정보를 null로 설정할 수 있다`() {
+            // given
+            val player =
+                createPlayer().apply {
+                    updatePlayerProfile(
+                        throwingHand = ThrowingHand.RIGHT,
+                        battingHand = BattingHand.RIGHT,
+                        height = 180,
+                        weight = 75,
+                    )
+                }
+
+            // when
+            player.updatePlayerProfile(
+                throwingHand = null,
+                battingHand = null,
+                height = null,
+                weight = null,
+            )
+
+            // then
+            assertThat(player.throwingHand).isNull()
+            assertThat(player.battingHand).isNull()
+            assertThat(player.height).isNull()
+            assertThat(player.weight).isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("나이 계산")
     inner class CalculateAge {
         @Test
