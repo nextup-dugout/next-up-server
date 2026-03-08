@@ -36,6 +36,45 @@ class BookingControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/bookings/{id}")
+    inner class GetBookingDetail {
+        @Test
+        fun `should return booking detail successfully`() {
+            // given
+            val stadium = createStadium(1L, "잠실 야구장")
+            val slot = createSlot(1L, stadium)
+            val booking = createBooking(1L, slot, 100L, 200L)
+            every { stadiumService.getBookingById(1L) } returns booking
+
+            // when & then
+            mockMvc
+                .perform(get("/api/v1/bookings/1"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.teamId").value(100))
+                .andExpect(jsonPath("$.data.bookedBy").value(200))
+                .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.data.stadium.id").value(1))
+                .andExpect(jsonPath("$.data.stadium.name").value("잠실 야구장"))
+                .andExpect(jsonPath("$.data.slot.id").value(1))
+        }
+
+        @Test
+        fun `should return 404 when booking not found`() {
+            // given
+            every { stadiumService.getBookingById(999L) } throws
+                com.nextup.common.exception.BookingNotFoundException(999L)
+
+            // when & then
+            mockMvc
+                .perform(get("/api/v1/bookings/999"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/bookings/team/{teamId}")
     inner class GetTeamBookings {
         @Test

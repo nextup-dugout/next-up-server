@@ -310,6 +310,39 @@ class StadiumServiceTest {
     }
 
     @Nested
+    @DisplayName("getBookingById")
+    inner class GetBookingById {
+        @Test
+        fun `should return booking when found`() {
+            // given
+            val stadium = createStadium(1L, "잠실 야구장", 37.5121, 127.0717)
+            val slot = createSlot(1L, stadium, LocalDate.of(2024, 12, 25))
+            val booking = createBooking(1L, slot, 100L, 200L)
+            every { bookingRepository.findByIdOrNull(1L) } returns booking
+
+            // when
+            val result = stadiumService.getBookingById(1L)
+
+            // then
+            assertThat(result.id).isEqualTo(1L)
+            assertThat(result.teamId).isEqualTo(100L)
+            assertThat(result.bookedBy).isEqualTo(200L)
+            assertThat(result.status).isEqualTo(BookingStatus.CONFIRMED)
+        }
+
+        @Test
+        fun `should throw BookingNotFoundException when not found`() {
+            // given
+            every { bookingRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                stadiumService.getBookingById(999L)
+            }.isInstanceOf(BookingNotFoundException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("getTeamBookings")
     inner class GetTeamBookings {
         @Test
