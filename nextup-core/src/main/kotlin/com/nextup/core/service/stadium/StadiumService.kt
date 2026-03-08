@@ -154,6 +154,13 @@ class StadiumService(
     }
 
     /**
+     * ID로 예약을 조회합니다.
+     */
+    fun getBookingById(bookingId: Long): StadiumBooking =
+        bookingRepository.findByIdOrNull(bookingId)
+            ?: throw BookingNotFoundException(bookingId)
+
+    /**
      * 팀의 예약 목록을 조회합니다.
      */
     fun getTeamBookings(

@@ -1,5 +1,6 @@
 package com.nextup.api.controller.stadium
 
+import com.nextup.api.dto.stadium.BookingDetailResponse
 import com.nextup.api.dto.stadium.BookingResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.stadium.BookingStatus
@@ -14,6 +15,17 @@ import org.springframework.web.bind.annotation.*
 class BookingController(
     private val stadiumService: StadiumService,
 ) {
+    /**
+     * 예약 상세 정보를 조회합니다.
+     */
+    @GetMapping("/{id}")
+    fun getBookingDetail(
+        @PathVariable id: Long,
+    ): ApiResponse<BookingDetailResponse> {
+        val booking = stadiumService.getBookingById(id)
+        return ApiResponse.success(BookingDetailResponse.from(booking))
+    }
+
     /**
      * 팀의 예약 목록을 조회합니다.
      */
