@@ -1,12 +1,15 @@
 package com.nextup.core.domain.competition
 
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class BracketEntryTest {
     @Test
@@ -177,6 +180,118 @@ class BracketEntryTest {
 
         // when & then
         assertThat(bracketEntry.isCompleted()).isFalse()
+    }
+
+    @Nested
+    inner class LinkGame {
+        @Test
+        fun `두 팀이 모두 있는 경우 경기를 연결할 수 있다`() {
+            // given
+            val (competition, team1, team2) = createTestData()
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team1,
+                    team2 = team2,
+                )
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                )
+
+            // when
+            bracketEntry.linkGame(game)
+
+            // then
+            assertThat(bracketEntry.game).isEqualTo(game)
+        }
+
+        @Test
+        fun `이미 경기가 연결된 경우 예외가 발생한다`() {
+            // given
+            val (competition, team1, team2) = createTestData()
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team1,
+                    team2 = team2,
+                )
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                )
+            bracketEntry.linkGame(game)
+
+            // when & then
+            val anotherGame =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 16, 14, 0),
+                )
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    bracketEntry.linkGame(anotherGame)
+                }
+            assertThat(exception.message).isEqualTo("이미 경기가 연결된 대진표 엔트리입니다")
+        }
+
+        @Test
+        fun `부전승 경기에는 경기를 연결할 수 없다`() {
+            // given
+            val (competition, team1, _) = createTestData()
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team1,
+                    team2 = null,
+                )
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                )
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    bracketEntry.linkGame(game)
+                }
+            assertThat(exception.message).isEqualTo("부전승 경기에는 경기를 연결할 수 없습니다")
+        }
+
+        @Test
+        fun `팀이 결정되지 않은 슬롯에는 경기를 연결할 수 없다`() {
+            // given
+            val (competition, _, _) = createTestData()
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 2,
+                    matchNumber = 1,
+                    team1 = null,
+                    team2 = null,
+                )
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                )
+
+            // when & then
+            val exception =
+                assertThrows<IllegalArgumentException> {
+                    bracketEntry.linkGame(game)
+                }
+            assertThat(exception.message).isEqualTo("부전승 경기에는 경기를 연결할 수 없습니다")
+        }
     }
 
     private fun createTestData(): Triple<Competition, Team, Team> {

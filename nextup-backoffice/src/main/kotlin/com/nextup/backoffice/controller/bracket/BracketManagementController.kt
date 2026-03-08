@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.bracket
 
 import com.nextup.backoffice.dto.bracket.AdvanceWinnerRequest
 import com.nextup.backoffice.dto.bracket.BracketEntryResponse
+import com.nextup.backoffice.dto.bracket.CreateGameFromBracketRequest
 import com.nextup.backoffice.dto.bracket.GenerateBracketRequest
 import com.nextup.backoffice.dto.bracket.toResponse
 import com.nextup.common.dto.ApiResponse
@@ -41,6 +42,23 @@ class BracketManagementController(
         @RequestBody @Valid request: AdvanceWinnerRequest,
     ): ApiResponse<BracketEntryResponse> {
         val entry = bracketGeneratorService.advanceWinner(entryId, request.winnerTeamId)
+        return ApiResponse.success(entry.toResponse())
+    }
+
+    @PostMapping("/{entryId}/create-game")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createGameForBracketEntry(
+        @PathVariable competitionId: Long,
+        @PathVariable entryId: Long,
+        @RequestBody @Valid request: CreateGameFromBracketRequest,
+    ): ApiResponse<BracketEntryResponse> {
+        val entry =
+            bracketGeneratorService.createGameForBracketEntry(
+                bracketEntryId = entryId,
+                scheduledAt = request.scheduledAt,
+                location = request.location,
+                fieldName = request.fieldName,
+            )
         return ApiResponse.success(entry.toResponse())
     }
 }

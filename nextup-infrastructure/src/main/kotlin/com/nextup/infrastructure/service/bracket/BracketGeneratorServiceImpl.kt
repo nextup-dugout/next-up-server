@@ -5,12 +5,18 @@ import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameTeam
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.bracket.BracketGeneratorService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -20,6 +26,8 @@ class BracketGeneratorServiceImpl(
     private val bracketEntryRepository: BracketEntryRepositoryPort,
     private val competitionRepository: CompetitionRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
+    private val gameTeamRepository: GameTeamRepositoryPort,
 ) : BracketGeneratorService {
     @Transactional
     override fun generateSingleElimination(
@@ -208,6 +216,65 @@ class BracketGeneratorServiceImpl(
                 )
 
         bracketEntry.recordWinner(winnerTeam)
+        return bracketEntryRepository.save(bracketEntry)
+    }
+
+    @Transactional
+    override fun createGameForBracketEntry(
+        bracketEntryId: Long,
+        scheduledAt: LocalDateTime,
+        location: String?,
+        fieldName: String?,
+    ): BracketEntry {
+        val bracketEntry =
+            bracketEntryRepository.findByIdOrNull(bracketEntryId)
+                ?: throw BracketEntryNotFoundException(bracketEntryId)
+
+        val team1 =
+            bracketEntry.team1
+                ?: throw InvalidInputException(
+                    code = "BRACKET_TEAMS_NOT_DECIDED",
+                    message = "두 팀이 모두 결정된 경기에만 경기를 생성할 수 있습니다",
+                )
+        val team2 =
+            bracketEntry.team2
+                ?: throw InvalidInputException(
+                    code = "BRACKET_TEAMS_NOT_DECIDED",
+                    message = "두 팀이 모두 결정된 경기에만 경기를 생성할 수 있습니다",
+                )
+
+        if (bracketEntry.game != null) {
+            throw InvalidInputException(
+                code = "BRACKET_GAME_ALREADY_EXISTS",
+                message = "이미 경기가 연결된 대진표 엔트리입니다: $bracketEntryId",
+            )
+        }
+
+        val game =
+            Game(
+                competition = bracketEntry.competition,
+                scheduledAt = scheduledAt,
+                location = location,
+                fieldName = fieldName,
+            )
+        val savedGame = gameRepository.save(game)
+
+        val homeTeam =
+            GameTeam(
+                game = savedGame,
+                team = team1,
+                homeAway = HomeAway.HOME,
+            )
+        val awayTeam =
+            GameTeam(
+                game = savedGame,
+                team = team2,
+                homeAway = HomeAway.AWAY,
+            )
+        gameTeamRepository.save(homeTeam)
+        gameTeamRepository.save(awayTeam)
+
+        bracketEntry.linkGame(savedGame)
         return bracketEntryRepository.save(bracketEntry)
     }
 

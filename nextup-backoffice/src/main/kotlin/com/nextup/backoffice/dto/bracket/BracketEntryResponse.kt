@@ -13,6 +13,7 @@ data class BracketEntryResponse(
     val seed2: Int?,
     val isBye: Boolean,
     val isCompleted: Boolean,
+    val gameId: Long?,
 )
 
 data class TeamBriefResponse(

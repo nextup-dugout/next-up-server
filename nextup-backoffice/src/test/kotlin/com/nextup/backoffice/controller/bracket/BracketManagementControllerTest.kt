@@ -9,6 +9,7 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.service.bracket.BracketGeneratorService
@@ -27,6 +28,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @DisplayName("BracketManagementController")
 class BracketManagementControllerTest {
@@ -320,6 +322,167 @@ class BracketManagementControllerTest {
                 .perform(
                     put(
                         "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/advance",
+                        competitionId,
+                        entryId,
+                    ).contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody),
+                ).andExpect(status().isBadRequest)
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/backoffice/competitions/{competitionId}/bracket/{entryId}/create-game")
+    inner class CreateGameForBracketEntry {
+        @Test
+        fun `should create game for bracket entry successfully`() {
+            // given
+            val competitionId = 1L
+            val entryId = 1L
+            val scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0)
+            val requestBody =
+                """
+                {
+                    "scheduledAt": "2025-03-15T14:00:00",
+                    "location": "서울 잠실야구장",
+                    "fieldName": "주경기장"
+                }
+                """.trimIndent()
+
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = scheduledAt,
+                    location = "서울 잠실야구장",
+                    fieldName = "주경기장",
+                    id = 100L,
+                )
+            val updatedEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team1,
+                    team2 = team2,
+                    game = game,
+                    id = entryId,
+                )
+
+            every {
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = entryId,
+                    scheduledAt = scheduledAt,
+                    location = "서울 잠실야구장",
+                    fieldName = "주경기장",
+                )
+            } returns updatedEntry
+
+            // when & then
+            mockMvc
+                .perform(
+                    post(
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/create-game",
+                        competitionId,
+                        entryId,
+                    ).contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody),
+                ).andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(entryId))
+                .andExpect(jsonPath("$.data.gameId").value(100))
+
+            verify(exactly = 1) {
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = entryId,
+                    scheduledAt = scheduledAt,
+                    location = "서울 잠실야구장",
+                    fieldName = "주경기장",
+                )
+            }
+        }
+
+        @Test
+        fun `should return 404 when bracket entry not found`() {
+            // given
+            val competitionId = 1L
+            val entryId = 999L
+            val requestBody =
+                """
+                {
+                    "scheduledAt": "2025-03-15T14:00:00"
+                }
+                """.trimIndent()
+
+            every {
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = entryId,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                    location = null,
+                    fieldName = null,
+                )
+            } throws BracketEntryNotFoundException(entryId)
+
+            // when & then
+            mockMvc
+                .perform(
+                    post(
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/create-game",
+                        competitionId,
+                        entryId,
+                    ).contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody),
+                ).andExpect(status().isNotFound)
+        }
+
+        @Test
+        fun `should return 400 when teams are not decided`() {
+            // given
+            val competitionId = 1L
+            val entryId = 1L
+            val scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0)
+            val requestBody =
+                """
+                {
+                    "scheduledAt": "2025-03-15T14:00:00"
+                }
+                """.trimIndent()
+
+            every {
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = entryId,
+                    scheduledAt = scheduledAt,
+                    location = null,
+                    fieldName = null,
+                )
+            } throws
+                InvalidInputException(
+                    code = "BRACKET_TEAMS_NOT_DECIDED",
+                    message = "두 팀이 모두 결정된 경기에만 경기를 생성할 수 있습니다",
+                )
+
+            // when & then
+            mockMvc
+                .perform(
+                    post(
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/create-game",
+                        competitionId,
+                        entryId,
+                    ).contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody),
+                ).andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `should return 400 when scheduledAt is missing`() {
+            // given
+            val competitionId = 1L
+            val entryId = 1L
+            val requestBody = "{}"
+
+            // when & then
+            mockMvc
+                .perform(
+                    post(
+                        "/api/backoffice/competitions/{competitionId}/bracket/{entryId}/create-game",
                         competitionId,
                         entryId,
                     ).contentType(MediaType.APPLICATION_JSON)

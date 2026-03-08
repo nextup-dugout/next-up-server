@@ -7,10 +7,14 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -22,12 +26,15 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @DisplayName("BracketGeneratorServiceImpl")
 class BracketGeneratorServiceImplTest {
     private lateinit var bracketEntryRepository: BracketEntryRepositoryPort
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var gameRepository: GameRepositoryPort
+    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var bracketGeneratorService: BracketGeneratorServiceImpl
 
     private lateinit var competition: Competition
@@ -40,11 +47,15 @@ class BracketGeneratorServiceImplTest {
         bracketEntryRepository = mockk()
         competitionRepository = mockk()
         teamRepository = mockk()
+        gameRepository = mockk()
+        gameTeamRepository = mockk()
         bracketGeneratorService =
             BracketGeneratorServiceImpl(
                 bracketEntryRepository,
                 competitionRepository,
                 teamRepository,
+                gameRepository,
+                gameTeamRepository,
             )
 
         // Test data setup
@@ -269,6 +280,163 @@ class BracketGeneratorServiceImplTest {
             // then
             assertThat(result).hasSize(1)
             assertThat(result[0].competition).isEqualTo(competition)
+        }
+    }
+
+    @Nested
+    @DisplayName("createGameForBracketEntry")
+    inner class CreateGameForBracketEntry {
+        @Test
+        fun `대진표 엔트리가 존재하지 않으면 BracketEntryNotFoundException 발생`() {
+            // given
+            val bracketEntryId = 999L
+            every { bracketEntryRepository.findByIdOrNull(bracketEntryId) } returns null
+
+            // when & then
+            assertThrows<BracketEntryNotFoundException> {
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = bracketEntryId,
+                    scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                )
+            }
+        }
+
+        @Test
+        fun `팀이 결정되지 않은 슬롯에는 경기를 생성할 수 없다`() {
+            // given
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 2,
+                    matchNumber = 1,
+                    team1 = null,
+                    team2 = null,
+                    id = 1L,
+                )
+            every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
+
+            // when & then
+            val exception =
+                assertThrows<InvalidInputException> {
+                    bracketGeneratorService.createGameForBracketEntry(
+                        bracketEntryId = 1L,
+                        scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                    )
+                }
+            assertThat(exception.code).isEqualTo("BRACKET_TEAMS_NOT_DECIDED")
+        }
+
+        @Test
+        fun `이미 경기가 연결된 경우 InvalidInputException 발생`() {
+            // given
+            val existingGame =
+                Game(
+                    competition = competition,
+                    scheduledAt = LocalDateTime.of(2025, 3, 10, 14, 0),
+                    id = 10L,
+                )
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = teams[0],
+                    team2 = teams[1],
+                    game = existingGame,
+                    id = 1L,
+                )
+            every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
+
+            // when & then
+            val exception =
+                assertThrows<InvalidInputException> {
+                    bracketGeneratorService.createGameForBracketEntry(
+                        bracketEntryId = 1L,
+                        scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
+                    )
+                }
+            assertThat(exception.code).isEqualTo("BRACKET_GAME_ALREADY_EXISTS")
+        }
+
+        @Test
+        fun `경기를 정상적으로 생성하고 대진표 엔트리에 연결한다`() {
+            // given
+            val scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0)
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = teams[0],
+                    team2 = teams[1],
+                    id = 1L,
+                )
+            val savedGame =
+                Game(
+                    competition = competition,
+                    scheduledAt = scheduledAt,
+                    id = 100L,
+                )
+
+            every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
+            every { gameRepository.save(any<Game>()) } returns savedGame
+            every { gameTeamRepository.save(any<GameTeam>()) } answers { firstArg() }
+            every { bracketEntryRepository.save(any<BracketEntry>()) } answers { firstArg() }
+
+            // when
+            val result =
+                bracketGeneratorService.createGameForBracketEntry(
+                    bracketEntryId = 1L,
+                    scheduledAt = scheduledAt,
+                )
+
+            // then
+            assertThat(result.game).isEqualTo(savedGame)
+            verify(exactly = 1) { gameRepository.save(any<Game>()) }
+            verify(exactly = 2) { gameTeamRepository.save(any<GameTeam>()) }
+            verify(exactly = 1) { bracketEntryRepository.save(any<BracketEntry>()) }
+        }
+
+        @Test
+        fun `경기 생성 시 location과 fieldName이 전달된다`() {
+            // given
+            val scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0)
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = teams[0],
+                    team2 = teams[1],
+                    id = 1L,
+                )
+
+            var capturedGame: Game? = null
+            every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
+            every { gameRepository.save(any<Game>()) } answers {
+                capturedGame = firstArg()
+                Game(
+                    competition = competition,
+                    scheduledAt = scheduledAt,
+                    location = capturedGame?.location,
+                    fieldName = capturedGame?.fieldName,
+                    id = 100L,
+                )
+            }
+            every { gameTeamRepository.save(any<GameTeam>()) } answers { firstArg() }
+            every { bracketEntryRepository.save(any<BracketEntry>()) } answers { firstArg() }
+
+            // when
+            bracketGeneratorService.createGameForBracketEntry(
+                bracketEntryId = 1L,
+                scheduledAt = scheduledAt,
+                location = "서울 잠실야구장",
+                fieldName = "주경기장",
+            )
+
+            // then
+            assertThat(capturedGame?.location).isEqualTo("서울 잠실야구장")
+            assertThat(capturedGame?.fieldName).isEqualTo("주경기장")
         }
     }
 

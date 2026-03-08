@@ -1,6 +1,7 @@
 package com.nextup.core.service.bracket
 
 import com.nextup.core.domain.competition.BracketEntry
+import java.time.LocalDateTime
 
 /**
  * 대진표 생성 서비스 인터페이스
@@ -33,5 +34,21 @@ interface BracketGeneratorService {
     fun advanceWinner(
         bracketEntryId: Long,
         winnerTeamId: Long,
+    ): BracketEntry
+
+    /**
+     * 대진표 엔트리에 해당하는 경기를 생성하고 연결합니다.
+     *
+     * @param bracketEntryId 대진표 엔트리 ID
+     * @param scheduledAt 경기 예정 일시
+     * @param location 경기 장소 (선택)
+     * @param fieldName 구장 이름 (선택)
+     * @return 경기가 연결된 대진표 엔트리
+     */
+    fun createGameForBracketEntry(
+        bracketEntryId: Long,
+        scheduledAt: LocalDateTime,
+        location: String? = null,
+        fieldName: String? = null,
     ): BracketEntry
 }

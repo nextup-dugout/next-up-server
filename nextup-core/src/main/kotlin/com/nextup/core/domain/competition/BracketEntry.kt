@@ -1,6 +1,7 @@
 package com.nextup.core.domain.competition
 
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.team.Team
 import jakarta.persistence.*
 
@@ -14,6 +15,7 @@ import jakarta.persistence.*
     name = "bracket_entries",
     indexes = [
         Index(name = "idx_bracket_entries_competition", columnList = "competition_id"),
+        Index(name = "idx_bracket_entries_game", columnList = "game_id"),
     ],
 )
 class BracketEntry(
@@ -39,10 +41,23 @@ class BracketEntry(
     val seed1: Int? = null,
     @Column(nullable = true)
     val seed2: Int? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "game_id")
+    var game: Game? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    /**
+     * 경기를 연결합니다.
+     */
+    fun linkGame(game: Game) {
+        require(this.game == null) { "이미 경기가 연결된 대진표 엔트리입니다" }
+        require(!isBye()) { "부전승 경기에는 경기를 연결할 수 없습니다" }
+        require(team1 != null && team2 != null) { "두 팀이 모두 결정된 경기에만 연결할 수 있습니다" }
+        this.game = game
+    }
+
     /**
      * 승자를 기록합니다.
      */
