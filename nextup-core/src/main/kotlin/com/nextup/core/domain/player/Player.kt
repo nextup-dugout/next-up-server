@@ -72,6 +72,24 @@ class Player(
     }
 
     /**
+     * 선수 프로필 정보를 수정합니다.
+     * (포지션, 투타, 신체정보)
+     */
+    fun updatePlayerProfile(
+        primaryPosition: Position = this.primaryPosition,
+        throwingHand: ThrowingHand? = this.throwingHand,
+        battingHand: BattingHand? = this.battingHand,
+        height: Int? = this.height,
+        weight: Int? = this.weight,
+    ) {
+        this.primaryPosition = primaryPosition
+        this.throwingHand = throwingHand
+        this.battingHand = battingHand
+        this.height = height
+        this.weight = weight
+    }
+
+    /**
      * 선수의 나이를 계산합니다.
      */
     fun calculateAge(baseDate: LocalDate = LocalDate.now()): Int? =

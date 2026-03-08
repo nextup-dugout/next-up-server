@@ -1,11 +1,17 @@
 package com.nextup.core.service.player
 
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.common.exception.PlayerNotLinkedException
+import com.nextup.common.exception.UserNotFoundException
 import com.nextup.core.common.PageCommand
 import com.nextup.core.common.PageResult
+import com.nextup.core.domain.player.BattingHand
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
+import com.nextup.core.domain.player.ThrowingHand
+import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -18,12 +24,58 @@ import org.junit.jupiter.api.Test
 @DisplayName("PlayerService")
 class PlayerServiceTest {
     private lateinit var playerRepository: PlayerRepositoryPort
+    private lateinit var userRepository: UserRepositoryPort
     private lateinit var playerService: PlayerService
 
     @BeforeEach
     fun setUp() {
         playerRepository = mockk()
-        playerService = PlayerService(playerRepository)
+        userRepository = mockk()
+        playerService = PlayerService(playerRepository, userRepository)
+    }
+
+    private fun createPlayer(
+        id: Long = 1L,
+        name: String = "김철수",
+        position: Position = Position.STARTING_PITCHER,
+    ): Player =
+        Player(
+            name = name,
+            primaryPosition = position,
+        ).apply {
+            val idField = Player::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
+
+    private fun createUserWithPlayer(
+        userId: Long = 1L,
+        player: Player,
+    ): User {
+        val user =
+            User.createLocalUser(
+                email = "test@example.com",
+                encodedPassword = "encoded",
+                nickname = "테스터",
+            )
+        val idField = user.javaClass.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(user, userId)
+        user.linkPlayer(player)
+        return user
+    }
+
+    private fun createUserWithoutPlayer(userId: Long = 1L): User {
+        val user =
+            User.createLocalUser(
+                email = "test@example.com",
+                encodedPassword = "encoded",
+                nickname = "테스터",
+            )
+        val idField = user.javaClass.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(user, userId)
+        return user
     }
 
     @Nested
@@ -116,6 +168,118 @@ class PlayerServiceTest {
             // when & then
             assertThatThrownBy { playerService.getById(999L) }
                 .isInstanceOf(PlayerNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getLinkedPlayer")
+    inner class GetLinkedPlayer {
+        @Test
+        fun `should return linked player when user has linked player`() {
+            // given
+            val player = createPlayer()
+            val user = createUserWithPlayer(userId = 1L, player = player)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when
+            val result = playerService.getLinkedPlayer(1L)
+
+            // then
+            assertThat(result.id).isEqualTo(player.id)
+            assertThat(result.name).isEqualTo("김철수")
+        }
+
+        @Test
+        fun `should throw UserNotFoundException when user not found`() {
+            // given
+            every { userRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy { playerService.getLinkedPlayer(999L) }
+                .isInstanceOf(UserNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw PlayerNotLinkedException when user has no linked player`() {
+            // given
+            val user = createUserWithoutPlayer(userId = 1L)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when & then
+            assertThatThrownBy { playerService.getLinkedPlayer(1L) }
+                .isInstanceOf(PlayerNotLinkedException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("updatePlayerProfile")
+    inner class UpdatePlayerProfile {
+        @Test
+        fun `should update player profile successfully`() {
+            // given
+            val player = createPlayer()
+            val user = createUserWithPlayer(userId = 1L, player = player)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when
+            val result =
+                playerService.updatePlayerProfile(
+                    userId = 1L,
+                    primaryPosition = Position.CATCHER,
+                    throwingHand = ThrowingHand.RIGHT,
+                    battingHand = BattingHand.LEFT,
+                    height = 185,
+                    weight = 82,
+                )
+
+            // then
+            assertThat(result.primaryPosition).isEqualTo(Position.CATCHER)
+            assertThat(result.throwingHand).isEqualTo(ThrowingHand.RIGHT)
+            assertThat(result.battingHand).isEqualTo(BattingHand.LEFT)
+            assertThat(result.height).isEqualTo(185)
+            assertThat(result.weight).isEqualTo(82)
+        }
+
+        @Test
+        fun `should keep existing position when primaryPosition is null`() {
+            // given
+            val player = createPlayer(position = Position.SHORTSTOP)
+            val user = createUserWithPlayer(userId = 1L, player = player)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when
+            val result =
+                playerService.updatePlayerProfile(
+                    userId = 1L,
+                    primaryPosition = null,
+                    throwingHand = ThrowingHand.LEFT,
+                    battingHand = null,
+                    height = null,
+                    weight = null,
+                )
+
+            // then
+            assertThat(result.primaryPosition).isEqualTo(Position.SHORTSTOP)
+            assertThat(result.throwingHand).isEqualTo(ThrowingHand.LEFT)
+        }
+
+        @Test
+        fun `should throw PlayerNotLinkedException when user has no linked player`() {
+            // given
+            val user = createUserWithoutPlayer(userId = 1L)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when & then
+            assertThatThrownBy {
+                playerService.updatePlayerProfile(
+                    userId = 1L,
+                    primaryPosition = Position.CATCHER,
+                    throwingHand = null,
+                    battingHand = null,
+                    height = null,
+                    weight = null,
+                )
+            }.isInstanceOf(PlayerNotLinkedException::class.java)
         }
     }
 }

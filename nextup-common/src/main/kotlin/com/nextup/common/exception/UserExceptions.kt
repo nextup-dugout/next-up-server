@@ -69,3 +69,13 @@ class UserDeactivatedException(
         "USER_DEACTIVATED",
         "User is deactivated: $userId",
     )
+
+/**
+ * 사용자에게 연결된 선수 프로필이 없을 때 발생하는 예외
+ */
+class PlayerNotLinkedException(
+    userId: Long,
+) : InvalidStateException(
+        "PLAYER_NOT_LINKED",
+        "User does not have a linked player: $userId",
+    )
