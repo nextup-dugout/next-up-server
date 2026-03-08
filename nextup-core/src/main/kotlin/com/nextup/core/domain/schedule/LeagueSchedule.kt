@@ -71,6 +71,11 @@ class LeagueSchedule private constructor(
         protected set
 
     /**
+     * 경기 연결이 가능한 상태인지 확인합니다.
+     */
+    fun canLinkGame(): Boolean = status == ScheduleStatus.SCHEDULED || status == ScheduleStatus.POSTPONED
+
+    /**
      * 경기를 연결합니다.
      */
     fun linkGame(game: Game) {
