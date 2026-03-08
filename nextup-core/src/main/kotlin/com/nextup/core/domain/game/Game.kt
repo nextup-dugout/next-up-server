@@ -2,6 +2,7 @@ package com.nextup.core.domain.game
 
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.team.Team
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -22,7 +23,7 @@ import java.time.LocalDateTime
         Index(name = "idx_games_competition_date", columnList = "competition_id, scheduled_at"),
     ],
 )
-class Game(
+class Game private constructor(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "competition_id", nullable = false)
     val competition: Competition,
@@ -59,6 +60,10 @@ class Game(
 ) : BaseTimeEntity() {
     @Version
     var version: Long = 0
+
+    @OneToMany(mappedBy = "game", cascade = [CascadeType.ALL], orphanRemoval = true)
+    private val _gameTeams: MutableList<GameTeam> = mutableListOf()
+    val gameTeams: List<GameTeam> get() = _gameTeams.toList()
 
     /**
      * 경기를 시작합니다.
@@ -317,6 +322,86 @@ class Game(
 
         /** 투수 교체 시 최소 대면 타자 수 기본값 */
         const val DEFAULT_MIN_BATTERS_FACED = 1
+
+        /**
+         * 프로덕션 팩토리 메서드.
+         *
+         * 홈팀/원정팀 [GameTeam] 2개를 자동 생성하며,
+         * [competition]의 [GameRules.defaultInnings]를 totalInnings로 설정합니다.
+         */
+        fun create(
+            competition: Competition,
+            homeTeam: Team,
+            awayTeam: Team,
+            scheduledAt: LocalDateTime,
+            location: String? = null,
+            fieldName: String? = null,
+            gameNumber: Int? = null,
+        ): Game {
+            require(homeTeam.id != awayTeam.id) { "홈팀과 원정팀은 같을 수 없습니다." }
+
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = scheduledAt,
+                    location = location,
+                    fieldName = fieldName,
+                    gameNumber = gameNumber,
+                    totalInnings = competition.gameRules.defaultInnings,
+                )
+            game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME))
+            game._gameTeams.add(GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY))
+            return game
+        }
+
+        /**
+         * 테스트 전용 팩토리 메서드.
+         *
+         * 특정 상태(status, currentInning 등)의 Game을 생성할 때 사용합니다.
+         * 프로덕션 코드에서는 반드시 [create]를 사용하세요.
+         */
+        @Suppress("LongParameterList")
+        fun createForTest(
+            competition: Competition,
+            homeTeam: Team,
+            awayTeam: Team,
+            scheduledAt: LocalDateTime = LocalDateTime.now(),
+            location: String? = null,
+            fieldName: String? = null,
+            gameNumber: Int? = null,
+            status: GameStatus = GameStatus.SCHEDULED,
+            currentInning: Int = 0,
+            isTopInning: Boolean = true,
+            totalInnings: Int = competition.gameRules.defaultInnings,
+            startedAt: LocalDateTime? = null,
+            endedAt: LocalDateTime? = null,
+            note: String? = null,
+            forfeitReason: String? = null,
+            gameState: GameState = GameState(),
+            id: Long = 0L,
+        ): Game {
+            val game =
+                Game(
+                    competition = competition,
+                    scheduledAt = scheduledAt,
+                    location = location,
+                    fieldName = fieldName,
+                    gameNumber = gameNumber,
+                    status = status,
+                    currentInning = currentInning,
+                    isTopInning = isTopInning,
+                    totalInnings = totalInnings,
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    note = note,
+                    forfeitReason = forfeitReason,
+                    gameState = gameState,
+                    id = id,
+                )
+            game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = id * 100 + 1))
+            game._gameTeams.add(GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY, id = id * 100 + 2))
+            return game
+        }
     }
 
     /**

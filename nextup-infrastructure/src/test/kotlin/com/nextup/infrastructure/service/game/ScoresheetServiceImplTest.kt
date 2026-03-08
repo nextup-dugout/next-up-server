@@ -78,8 +78,10 @@ class ScoresheetServiceImplTest {
         awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
 
         game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.of(2024, 3, 15, 14, 0),
                 location = "서울",
                 fieldName = "잠실구장",
@@ -93,26 +95,14 @@ class ScoresheetServiceImplTest {
                 id = 100L,
             )
 
-        homeGameTeam =
-            GameTeam(
-                game = game,
-                team = homeTeam,
-                homeAway = HomeAway.HOME,
-                id = 1L,
-            )
+        homeGameTeam = game.gameTeams.first { it.homeAway == HomeAway.HOME }
         homeGameTeam.updateScore(totalScore = 5, totalHits = 10, totalErrors = 1)
         homeGameTeam.updateResult(GameResult.WIN)
         for (i in 1..9) {
             homeGameTeam.recordInningScore(i, listOf(0, 2, 0, 1, 0, 0, 2, 0, 0)[i - 1])
         }
 
-        awayGameTeam =
-            GameTeam(
-                game = game,
-                team = awayTeam,
-                homeAway = HomeAway.AWAY,
-                id = 2L,
-            )
+        awayGameTeam = game.gameTeams.first { it.homeAway == HomeAway.AWAY }
         awayGameTeam.updateScore(totalScore = 3, totalHits = 8, totalErrors = 2)
         awayGameTeam.updateResult(GameResult.LOSS)
         for (i in 1..9) {

@@ -4,6 +4,7 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import org.assertj.core.api.Assertions.assertThat
@@ -36,13 +37,18 @@ class GameTest {
             )
     }
 
-    private fun createGame(status: GameStatus = GameStatus.SCHEDULED): Game =
-        Game(
+    private fun createGame(status: GameStatus = GameStatus.SCHEDULED): Game {
+        val homeTeam = createTeam("홈팀", id = 1L)
+        val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실야구장",
             status = status,
         )
+    }
 
     private fun createTeam(
         name: String,
@@ -541,30 +547,18 @@ class GameTest {
     @Nested
     @DisplayName("몰수패")
     inner class Forfeit {
-        private lateinit var homeTeam: Team
-        private lateinit var awayTeam: Team
-
-        @BeforeEach
-        fun setUpTeams() {
-            homeTeam = createTeam("홈팀", id = 1L)
-            awayTeam = createTeam("원정팀", city = "부산", id = 2L)
-        }
-
-        private fun createGameTeams(game: Game): List<GameTeam> =
-            listOf(
-                GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME),
-                GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY),
-            )
+        private val homeTeamId = 1L
+        private val awayTeamId = 2L
 
         @Test
         fun `예정된 경기를 몰수 처리하면 7대0 점수가 반영된다`() {
             // given
             val game = createGame(status = GameStatus.SCHEDULED)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when
             game.forfeit(
-                winnerTeamId = homeTeam.id,
+                winnerTeamId = homeTeamId,
                 reason = "상대팀 불참",
                 gameTeams = gameTeams,
             )
@@ -575,8 +569,8 @@ class GameTest {
             assertThat(game.note).contains("상대팀 불참")
             assertThat(game.endedAt).isNotNull()
 
-            val winnerGameTeam = gameTeams.first { it.team.id == homeTeam.id }
-            val loserGameTeam = gameTeams.first { it.team.id == awayTeam.id }
+            val winnerGameTeam = gameTeams.first { it.team.id == homeTeamId }
+            val loserGameTeam = gameTeams.first { it.team.id == awayTeamId }
 
             assertThat(winnerGameTeam.totalScore).isEqualTo(7)
             assertThat(winnerGameTeam.result).isEqualTo(GameResult.WIN)
@@ -588,19 +582,19 @@ class GameTest {
         fun `진행 중인 경기도 몰수 처리할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when
             game.forfeit(
-                winnerTeamId = awayTeam.id,
+                winnerTeamId = awayTeamId,
                 reason = "홈팀 규정 위반",
                 gameTeams = gameTeams,
             )
 
             // then
             assertThat(game.status).isEqualTo(GameStatus.FORFEITED)
-            val winnerGameTeam = gameTeams.first { it.team.id == awayTeam.id }
-            val loserGameTeam = gameTeams.first { it.team.id == homeTeam.id }
+            val winnerGameTeam = gameTeams.first { it.team.id == awayTeamId }
+            val loserGameTeam = gameTeams.first { it.team.id == homeTeamId }
 
             assertThat(winnerGameTeam.totalScore).isEqualTo(7)
             assertThat(winnerGameTeam.result).isEqualTo(GameResult.WIN)
@@ -612,12 +606,12 @@ class GameTest {
         fun `이미 종료된 경기는 몰수 처리할 수 없다`() {
             // given
             val game = createGame(status = GameStatus.FINISHED)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when & then
             assertThatThrownBy {
                 game.forfeit(
-                    winnerTeamId = homeTeam.id,
+                    winnerTeamId = homeTeamId,
                     reason = "사유",
                     gameTeams = gameTeams,
                 )
@@ -628,12 +622,12 @@ class GameTest {
         fun `취소된 경기는 몰수 처리할 수 없다`() {
             // given
             val game = createGame(status = GameStatus.CANCELLED)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when & then
             assertThatThrownBy {
                 game.forfeit(
-                    winnerTeamId = homeTeam.id,
+                    winnerTeamId = homeTeamId,
                     reason = "사유",
                     gameTeams = gameTeams,
                 )
@@ -644,7 +638,7 @@ class GameTest {
         fun `참여하지 않는 팀을 승리팀으로 지정하면 예외가 발생한다`() {
             // given
             val game = createGame(status = GameStatus.SCHEDULED)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when & then
             assertThatThrownBy {
@@ -661,11 +655,11 @@ class GameTest {
         fun `몰수 사유가 forfeitReason 필드에 기록된다`() {
             // given
             val game = createGame(status = GameStatus.SCHEDULED)
-            val gameTeams = createGameTeams(game)
+            val gameTeams = game.gameTeams
 
             // when
             game.forfeit(
-                winnerTeamId = homeTeam.id,
+                winnerTeamId = homeTeamId,
                 reason = "인원 미달로 경기 불가",
                 gameTeams = gameTeams,
             )
@@ -993,6 +987,112 @@ class GameTest {
             assertThatThrownBy { game.addStrike() }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("진행 중인 경기만")
+        }
+    }
+
+    @Nested
+    @DisplayName("Game.create() 팩토리 메서드")
+    inner class CreateFactory {
+        private lateinit var homeTeam: Team
+        private lateinit var awayTeam: Team
+
+        @BeforeEach
+        fun setUpTeams() {
+            homeTeam = createTeam("홈팀", id = 1L)
+            awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+        }
+
+        @Test
+        fun `create() 호출 시 GameTeam 2개가 자동 생성된다`() {
+            // when
+            val game =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.gameTeams).hasSize(2)
+        }
+
+        @Test
+        fun `create() 시 HOME과 AWAY GameTeam이 각 1개씩 생성된다`() {
+            // when
+            val game =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            val homeGameTeam = game.gameTeams.find { it.homeAway == HomeAway.HOME }
+            val awayGameTeam = game.gameTeams.find { it.homeAway == HomeAway.AWAY }
+
+            assertThat(homeGameTeam).isNotNull
+            assertThat(awayGameTeam).isNotNull
+            assertThat(homeGameTeam!!.team.id).isEqualTo(homeTeam.id)
+            assertThat(awayGameTeam!!.team.id).isEqualTo(awayTeam.id)
+        }
+
+        @Test
+        fun `create() 시 totalInnings가 competition의 defaultInnings로 설정된다`() {
+            // given
+            val customRules = GameRules(defaultInnings = 7)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    gameRules = customRules,
+                )
+
+            // when
+            val game =
+                Game.create(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.totalInnings).isEqualTo(7)
+        }
+
+        @Test
+        fun `홈팀과 원정팀이 같으면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy {
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = homeTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("홈팀과 원정팀은 같을 수 없습니다")
+        }
+
+        @Test
+        fun `create() 시 기본 상태는 SCHEDULED이다`() {
+            // when
+            val game =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.SCHEDULED)
         }
     }
 }

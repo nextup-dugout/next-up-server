@@ -68,17 +68,19 @@ class BoxScoreServiceImplTest {
                 startDate = LocalDate.of(2025, 3, 1),
                 status = CompetitionStatus.IN_PROGRESS,
             )
+        homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
         game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
                 location = "잠실야구장",
                 status = GameStatus.IN_PROGRESS,
             )
-        homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020)
-        awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020)
-        homeGameTeam = GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME)
-        awayGameTeam = GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY)
+        homeGameTeam = game.gameTeams.first { it.homeAway == HomeAway.HOME }
+        awayGameTeam = game.gameTeams.first { it.homeAway == HomeAway.AWAY }
     }
 
     private fun createPlayer(name: String): Player =

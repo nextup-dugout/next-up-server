@@ -236,9 +236,13 @@ class PitchEventTest {
                 startDate = LocalDate.of(2024, 3, 1),
                 id = 1L,
             )
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
 
-        return Game(
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2024, 6, 1, 14, 0),
             status = GameStatus.IN_PROGRESS,
             currentInning = 1,
@@ -246,29 +250,9 @@ class PitchEventTest {
         )
     }
 
-    private fun createHomeTeam(game: Game): GameTeam {
-        val association = Association(name = "테스트 협회", id = 1L)
-        val league = League(association = association, name = "테스트 리그", foundedYear = 2020, id = 1L)
-        val team = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
-        return GameTeam(
-            game = game,
-            team = team,
-            homeAway = HomeAway.HOME,
-            id = 1L,
-        )
-    }
+    private fun createHomeTeam(game: Game): GameTeam = game.gameTeams.first { it.homeAway == HomeAway.HOME }
 
-    private fun createAwayTeam(game: Game): GameTeam {
-        val association = Association(name = "테스트 협회", id = 2L)
-        val league = League(association = association, name = "테스트 리그", foundedYear = 2020, id = 2L)
-        val team = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
-        return GameTeam(
-            game = game,
-            team = team,
-            homeAway = HomeAway.AWAY,
-            id = 2L,
-        )
-    }
+    private fun createAwayTeam(game: Game): GameTeam = game.gameTeams.first { it.homeAway == HomeAway.AWAY }
 
     private fun createPitcher(game: Game): GamePlayer {
         val awayTeam = createAwayTeam(game)

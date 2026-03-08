@@ -21,6 +21,7 @@ import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -1522,9 +1523,27 @@ class GameScorerServiceImplTest {
         val association = createAssociation(1L)
         val league = createLeague(1L, association)
         val competition = createCompetition(1L, league)
+        val homeTeam =
+            Team(
+                league = league,
+                name = "홈팀",
+                city = "서울",
+                foundedYear = 2020,
+                id = 10L,
+            )
+        val awayTeam =
+            Team(
+                league = league,
+                name = "원정팀",
+                city = "부산",
+                foundedYear = 2020,
+                id = 11L,
+            )
 
-        return Game(
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실구장",
             fieldName = "1구장",
@@ -1534,10 +1553,7 @@ class GameScorerServiceImplTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-        ).apply {
-            val idField = Game::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, id)
-        }
+            id = id,
+        )
     }
 }

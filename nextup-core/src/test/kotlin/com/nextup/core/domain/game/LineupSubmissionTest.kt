@@ -491,8 +491,12 @@ class LineupSubmissionTest {
                         .now()
                         .plusDays(30),
             )
-        return Game(
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020)
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.now().plusDays(1),
             location = "서울야구장",
         )

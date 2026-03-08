@@ -31,7 +31,15 @@ class GameParticipationTest {
         team = Team(league = league, name = "타이거즈", city = "서울", foundedYear = 2015)
 
         val competition = mockk<com.nextup.core.domain.competition.Competition>()
-        game = Game(competition = competition, scheduledAt = LocalDateTime.now().plusDays(7))
+        val awayTeam = Team(league = league, name = "이글스", city = "부산", foundedYear = 2015)
+        game =
+            Game.createForTest(
+                competition = competition,
+                homeTeam = team,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.now().plusDays(7),
+                totalInnings = 9,
+            )
 
         val user = User.createLocalUser("member@example.com", "password", "회원")
         val player = Player(name = "회원", primaryPosition = Position.SHORTSTOP)

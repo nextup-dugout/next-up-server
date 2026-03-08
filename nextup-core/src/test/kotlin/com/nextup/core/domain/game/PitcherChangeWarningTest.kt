@@ -6,6 +6,7 @@ import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -19,6 +20,8 @@ import java.time.LocalDateTime
 class PitcherChangeWarningTest {
     private lateinit var competition: Competition
     private lateinit var league: League
+    private lateinit var homeTeam: Team
+    private lateinit var awayTeam: Team
 
     @BeforeEach
     fun setUp() {
@@ -35,12 +38,16 @@ class PitcherChangeWarningTest {
                 status = CompetitionStatus.IN_PROGRESS,
                 gameRules = GameRules(),
             )
+        homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
     }
 
     private fun createInProgressGame(outs: Int = 0): Game {
         val game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
                 status = GameStatus.IN_PROGRESS,
                 currentInning = 3,
@@ -154,8 +161,10 @@ class PitcherChangeWarningTest {
         fun `진행 중이 아닌 경기에서 투수 교체 확인 시 예외가 발생한다`() {
             // given
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
                     scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
                     status = GameStatus.SCHEDULED,
                 )

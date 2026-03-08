@@ -15,6 +15,7 @@ import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
@@ -431,11 +432,7 @@ class GameScorerServiceSubstitutionTest {
                 description = null,
                 logoUrl = null,
                 websiteUrl = null,
-            ).apply {
-                val f = Association::class.java.getDeclaredField("id")
-                f.isAccessible = true
-                f.set(this, 1L)
-            }
+            )
         val league =
             League(
                 association = association,
@@ -445,11 +442,7 @@ class GameScorerServiceSubstitutionTest {
                 divisionLevel = 1,
                 description = null,
                 logoUrl = null,
-            ).apply {
-                val f = League::class.java.getDeclaredField("id")
-                f.isAccessible = true
-                f.set(this, 1L)
-            }
+            )
         val competition =
             Competition(
                 league = league,
@@ -462,13 +455,13 @@ class GameScorerServiceSubstitutionTest {
                 status = CompetitionStatus.IN_PROGRESS,
                 description = null,
                 maxTeams = null,
-            ).apply {
-                val f = Competition::class.java.getDeclaredField("id")
-                f.isAccessible = true
-                f.set(this, 1L)
-            }
-        return Game(
+            )
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실구장",
             fieldName = "1구장",
@@ -478,11 +471,8 @@ class GameScorerServiceSubstitutionTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-        ).apply {
-            val f = Game::class.java.getDeclaredField("id")
-            f.isAccessible = true
-            f.set(this, id)
-        }
+            id = id,
+        )
     }
 
     private fun createStartingPlayer(

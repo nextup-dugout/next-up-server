@@ -1,12 +1,15 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.infrastructure.config.CacheConfig
@@ -241,15 +244,18 @@ class GameResultEventListenerTest {
         competition: Competition,
         status: GameStatus,
     ): Game {
-        val game =
-            Game(
-                competition = competition,
-                scheduledAt = LocalDateTime.of(2025, 5, 10, 14, 0),
-                status = status,
-            )
-        val idField = Game::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(game, id)
-        return game
+        val association = Association(name = "서울시야구협회", region = "서울")
+        val league = League(association = association, name = "1부 리그", foundedYear = 2020)
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
+        return Game.createForTest(
+            competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            scheduledAt = LocalDateTime.of(2025, 5, 10, 14, 0),
+            status = status,
+            totalInnings = 9,
+            id = id,
+        )
     }
 }
