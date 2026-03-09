@@ -4,11 +4,13 @@ import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidScheduleStateException
 import com.nextup.common.exception.ScheduleNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.schedule.LeagueSchedule
 import com.nextup.core.domain.schedule.RoundRobinScheduleGenerator
 import com.nextup.core.domain.schedule.ScheduleConflict
 import com.nextup.core.domain.schedule.ScheduleConflictDetector
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueScheduleRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import org.springframework.stereotype.Service
@@ -28,6 +30,7 @@ class LeagueScheduleService(
     private val scheduleRepository: LeagueScheduleRepositoryPort,
     private val competitionRepository: CompetitionRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
 ) {
     private val conflictDetector = ScheduleConflictDetector()
     private val scheduleGenerator = RoundRobinScheduleGenerator()
@@ -294,6 +297,46 @@ class LeagueScheduleService(
         }
 
         return schedules
+    }
+
+    /**
+     * 대진표에서 경기를 생성합니다.
+     *
+     * Schedule의 대회/홈팀/원정팀/일정 정보를 기반으로 Game을 생성하고,
+     * Schedule에 연결합니다. (상태: SCHEDULED/POSTPONED → GAME_CREATED)
+     */
+    @Transactional
+    fun createGameFromSchedule(
+        scheduleId: Long,
+        location: String? = null,
+        fieldName: String? = null,
+    ): LeagueSchedule {
+        val schedule = getById(scheduleId)
+
+        if (!schedule.canLinkGame()) {
+            throw InvalidScheduleStateException(
+                "예정 또는 연기 상태의 대진표만 경기를 생성할 수 있습니다. (현재: ${schedule.status})",
+            )
+        }
+
+        val scheduledAt =
+            schedule.scheduledDate
+                .atTime(schedule.scheduledTime ?: java.time.LocalTime.of(0, 0))
+
+        val game =
+            Game.create(
+                competition = schedule.competition,
+                homeTeam = schedule.homeTeam,
+                awayTeam = schedule.awayTeam,
+                scheduledAt = scheduledAt,
+                location = location ?: schedule.venue,
+                fieldName = fieldName,
+            )
+
+        val savedGame = gameRepository.save(game)
+        schedule.linkGame(savedGame)
+
+        return schedule
     }
 
     /**

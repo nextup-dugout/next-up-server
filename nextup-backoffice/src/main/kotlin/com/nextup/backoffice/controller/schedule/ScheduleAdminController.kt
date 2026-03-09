@@ -1,5 +1,6 @@
 package com.nextup.backoffice.controller.schedule
 
+import com.nextup.backoffice.dto.schedule.CreateGameFromScheduleRequest
 import com.nextup.backoffice.dto.schedule.CreateScheduleRequest
 import com.nextup.backoffice.dto.schedule.PostponeBulkRequest
 import com.nextup.backoffice.dto.schedule.RescheduleRequest
@@ -153,6 +154,27 @@ class ScheduleAdminController(
                 reason = request.reason,
             )
         return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+    }
+
+    /**
+     * 대진표에서 경기를 생성합니다.
+     *
+     * 대진표의 대회/홈팀/원정팀/일정 정보를 기반으로 Game을 생성하고 연결합니다.
+     */
+    @PostMapping("/{id}/create-game")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createGameFromSchedule(
+        @PathVariable competitionId: Long,
+        @PathVariable id: Long,
+        @Valid @RequestBody(required = false) request: CreateGameFromScheduleRequest?,
+    ): ApiResponse<ScheduleAdminResponse> {
+        val schedule =
+            scheduleService.createGameFromSchedule(
+                scheduleId = id,
+                location = request?.location,
+                fieldName = request?.fieldName,
+            )
+        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
     }
 
     /**

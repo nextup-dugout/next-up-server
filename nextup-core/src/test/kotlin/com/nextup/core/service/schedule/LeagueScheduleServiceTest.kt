@@ -6,10 +6,13 @@ import com.nextup.common.exception.ScheduleNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.schedule.LeagueSchedule
+import com.nextup.core.domain.schedule.ScheduleStatus
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueScheduleRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
@@ -26,6 +29,7 @@ class LeagueScheduleServiceTest {
     private lateinit var scheduleRepository: LeagueScheduleRepositoryPort
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var gameRepository: GameRepositoryPort
     private lateinit var service: LeagueScheduleService
 
     @BeforeEach
@@ -33,7 +37,14 @@ class LeagueScheduleServiceTest {
         scheduleRepository = mockk()
         competitionRepository = mockk()
         teamRepository = mockk()
-        service = LeagueScheduleService(scheduleRepository, competitionRepository, teamRepository)
+        gameRepository = mockk()
+        service =
+            LeagueScheduleService(
+                scheduleRepository,
+                competitionRepository,
+                teamRepository,
+                gameRepository,
+            )
     }
 
     @Test
@@ -711,6 +722,99 @@ class LeagueScheduleServiceTest {
                 service.rescheduleGame(1L, newDate)
             }
         assertThat(exception.message).contains("충돌이 감지되었습니다")
+    }
+
+    @Test
+    fun `should create game from schedule successfully`() {
+        // given
+        val schedule = createLeagueSchedule()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every { gameRepository.save(any<Game>()) } answers { firstArg() }
+
+        // when
+        val result =
+            service.createGameFromSchedule(
+                scheduleId = 1L,
+                location = "서울야구장",
+                fieldName = "1구장",
+            )
+
+        // then
+        assertThat(result.status).isEqualTo(ScheduleStatus.GAME_CREATED)
+        assertThat(result.game).isNotNull()
+        verify { gameRepository.save(any<Game>()) }
+    }
+
+    @Test
+    fun `should create game from schedule using schedule venue when location is null`() {
+        // given
+        val schedule = createLeagueSchedule()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every { gameRepository.save(any<Game>()) } answers { firstArg() }
+
+        // when
+        val result = service.createGameFromSchedule(scheduleId = 1L)
+
+        // then
+        assertThat(result.status).isEqualTo(ScheduleStatus.GAME_CREATED)
+        assertThat(result.game).isNotNull()
+        assertThat(result.game!!.location).isEqualTo("서울야구장")
+    }
+
+    @Test
+    fun `should throw ScheduleNotFoundException when creating game for non-existent schedule`() {
+        // given
+        every { scheduleRepository.findByIdOrNull(999L) } returns null
+
+        // when & then
+        assertThrows<ScheduleNotFoundException> {
+            service.createGameFromSchedule(scheduleId = 999L)
+        }
+    }
+
+    @Test
+    fun `should throw InvalidScheduleStateException when creating game for cancelled schedule`() {
+        // given
+        val schedule = createLeagueSchedule()
+        schedule.cancel()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+
+        // when & then
+        assertThrows<InvalidScheduleStateException> {
+            service.createGameFromSchedule(scheduleId = 1L)
+        }
+    }
+
+    @Test
+    fun `should throw InvalidScheduleStateException when schedule already has game`() {
+        // given
+        val schedule = createLeagueSchedule()
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every { gameRepository.save(any<Game>()) } answers { firstArg() }
+
+        // create game first
+        service.createGameFromSchedule(scheduleId = 1L)
+
+        // when & then - try to create again
+        assertThrows<InvalidScheduleStateException> {
+            service.createGameFromSchedule(scheduleId = 1L)
+        }
+    }
+
+    @Test
+    fun `should create game from postponed schedule`() {
+        // given
+        val schedule = createLeagueSchedule()
+        schedule.postpone("우천")
+        every { scheduleRepository.findByIdOrNull(1L) } returns schedule
+        every { gameRepository.save(any<Game>()) } answers { firstArg() }
+
+        // when
+        val result = service.createGameFromSchedule(scheduleId = 1L)
+
+        // then
+        assertThat(result.status).isEqualTo(ScheduleStatus.GAME_CREATED)
+        assertThat(result.game).isNotNull()
     }
 
     // ========== Helper Methods ==========
