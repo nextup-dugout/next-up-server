@@ -5,6 +5,10 @@ import com.nextup.common.exception.MatchRequestNotFoundException
 import com.nextup.common.exception.MatchResponseNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.match.MatchRequest
 import com.nextup.core.domain.match.MatchRequestStatus
@@ -12,6 +16,8 @@ import com.nextup.core.domain.match.MatchResponse
 import com.nextup.core.domain.match.MatchResponseStatus
 import com.nextup.core.domain.match.SkillLevel
 import com.nextup.core.domain.team.Team
+import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -25,11 +31,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import java.time.LocalTime
 
 class MatchingServiceTest {
     private lateinit var matchRequestRepository: MatchRequestRepositoryPort
     private lateinit var matchResponseRepository: MatchResponseRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var competitionRepository: CompetitionRepositoryPort
+    private lateinit var gameRepository: GameRepositoryPort
     private lateinit var matchingService: MatchingService
 
     private lateinit var association: Association
@@ -42,11 +51,15 @@ class MatchingServiceTest {
         matchRequestRepository = mockk()
         matchResponseRepository = mockk()
         teamRepository = mockk()
+        competitionRepository = mockk()
+        gameRepository = mockk()
         matchingService =
             MatchingService(
                 matchRequestRepository = matchRequestRepository,
                 matchResponseRepository = matchResponseRepository,
                 teamRepository = teamRepository,
+                competitionRepository = competitionRepository,
+                gameRepository = gameRepository,
             )
 
         // 테스트 픽스처 설정
@@ -313,10 +326,11 @@ class MatchingServiceTest {
     @Test
     fun `매칭 응답을 수락하고 요청을 MATCHED 상태로 변경할 수 있다`() {
         // given
+        val preferredDate = LocalDate.now().plusDays(7)
         val matchRequest =
             MatchRequest.create(
                 team = teamA,
-                preferredDate = LocalDate.now().plusDays(7),
+                preferredDate = preferredDate,
                 preferredTime = null,
                 preferredLocation = null,
                 message = null,
@@ -330,8 +344,26 @@ class MatchingServiceTest {
                 message = null,
             )
 
+        val competition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+        val game =
+            Game.createForTest(
+                competition = competition,
+                homeTeam = teamA,
+                awayTeam = teamB,
+                scheduledAt = preferredDate.atTime(LocalTime.of(0, 0)),
+            )
+
         every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
         every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
+        every { gameRepository.save(any()) } returns game
 
         // when
         val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
@@ -342,6 +374,216 @@ class MatchingServiceTest {
 
         verify { matchRequestRepository.findByIdOrNull(1L) }
         verify { matchResponseRepository.findByIdOrNull(2L) }
+        verify { gameRepository.save(any()) }
+    }
+
+    @Test
+    fun `매칭 성사 시 기존 친선 대회가 없으면 새로 생성하고 Game을 만든다`() {
+        // given
+        val preferredDate = LocalDate.now().plusDays(7)
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = preferredDate,
+                preferredTime = "14:30",
+                preferredLocation = "서울야구장",
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val matchResponse =
+            MatchResponse.create(
+                matchRequest = matchRequest,
+                respondTeam = teamB,
+                message = null,
+            )
+
+        val newCompetition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+        val savedGame =
+            Game.createForTest(
+                competition = newCompetition,
+                homeTeam = teamA,
+                awayTeam = teamB,
+                scheduledAt = preferredDate.atTime(LocalTime.of(14, 30)),
+                location = "서울야구장",
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns emptyList()
+        every { competitionRepository.save(any()) } returns newCompetition
+        every { gameRepository.save(any()) } returns savedGame
+
+        // when
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+
+        // then
+        assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
+        verify { competitionRepository.save(any()) }
+        verify { gameRepository.save(any()) }
+    }
+
+    @Test
+    fun `매칭 성사 시 기존 친선 대회가 있으면 재사용하고 Game을 만든다`() {
+        // given
+        val preferredDate = LocalDate.now().plusDays(7)
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = preferredDate,
+                preferredTime = null,
+                preferredLocation = "인천구장",
+                message = null,
+                skillLevel = SkillLevel.ANY,
+            )
+
+        val matchResponse =
+            MatchResponse.create(
+                matchRequest = matchRequest,
+                respondTeam = teamB,
+                message = null,
+            )
+
+        val existingCompetition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+        val savedGame =
+            Game.createForTest(
+                competition = existingCompetition,
+                homeTeam = teamA,
+                awayTeam = teamB,
+                scheduledAt = preferredDate.atTime(LocalTime.of(0, 0)),
+                location = "인천구장",
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns listOf(existingCompetition)
+        every { gameRepository.save(any()) } returns savedGame
+
+        // when
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+
+        // then
+        assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
+        verify(exactly = 0) { competitionRepository.save(any()) }
+        verify { gameRepository.save(any()) }
+    }
+
+    @Test
+    fun `매칭 성사 시 홈팀은 요청팀 원정팀은 응답팀으로 Game이 생성된다`() {
+        // given
+        val preferredDate = LocalDate.now().plusDays(7)
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = preferredDate,
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val matchResponse =
+            MatchResponse.create(
+                matchRequest = matchRequest,
+                respondTeam = teamB,
+                message = null,
+            )
+
+        val competition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+
+        val capturedGames = mutableListOf<Game>()
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
+        every { gameRepository.save(any()) } answers {
+            val g = firstArg<Game>()
+            capturedGames.add(g)
+            g
+        }
+
+        // when
+        matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+
+        // then
+        assertThat(capturedGames).hasSize(1)
+        val createdGame = capturedGames.first()
+        assertThat(createdGame.gameTeams).hasSize(2)
+        val homeGameTeam = createdGame.gameTeams.first { it.homeAway == HomeAway.HOME }
+        val awayGameTeam = createdGame.gameTeams.first { it.homeAway == HomeAway.AWAY }
+        assertThat(homeGameTeam.team).isEqualTo(teamA)
+        assertThat(awayGameTeam.team).isEqualTo(teamB)
+    }
+
+    @Test
+    fun `매칭 성사 시 선호 날짜와 시간이 경기 일정에 반영된다`() {
+        // given
+        val preferredDate = LocalDate.now().plusDays(7)
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = preferredDate,
+                preferredTime = "09:00",
+                preferredLocation = "잠실구장",
+                message = null,
+                skillLevel = SkillLevel.BEGINNER,
+            )
+
+        val matchResponse =
+            MatchResponse.create(
+                matchRequest = matchRequest,
+                respondTeam = teamB,
+                message = null,
+            )
+
+        val competition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+
+        val capturedGames = mutableListOf<Game>()
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
+        every { gameRepository.save(any()) } answers {
+            val g = firstArg<Game>()
+            capturedGames.add(g)
+            g
+        }
+
+        // when
+        matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+
+        // then
+        assertThat(capturedGames).hasSize(1)
+        val createdGame = capturedGames.first()
+        assertThat(createdGame.scheduledAt).isEqualTo(preferredDate.atTime(LocalTime.of(9, 0)))
+        assertThat(createdGame.location).isEqualTo("잠실구장")
     }
 
     @Test

@@ -4,8 +4,13 @@ import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.MatchRequestNotFoundException
 import com.nextup.common.exception.MatchResponseNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
+import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.match.MatchRequest
 import com.nextup.core.domain.match.MatchResponse
+import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -13,6 +18,8 @@ import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * 매칭 서비스
@@ -25,6 +32,8 @@ class MatchingService(
     private val matchRequestRepository: MatchRequestRepositoryPort,
     private val matchResponseRepository: MatchResponseRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val competitionRepository: CompetitionRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
 ) {
     /**
      * 매칭 요청을 생성합니다.
@@ -85,6 +94,7 @@ class MatchingService(
 
     /**
      * 매칭 응답을 수락하고 요청을 MATCHED 상태로 변경합니다.
+     * 매칭 성사 후 Game과 GameTeam 2개를 자동 생성합니다.
      */
     @Transactional
     fun acceptResponse(
@@ -109,7 +119,74 @@ class MatchingService(
             )
         }
 
+        createFriendlyGame(matchRequest, matchResponse)
+
         return matchRequest
+    }
+
+    /**
+     * 매칭 성사 후 친선 경기(Game)와 참여 팀(GameTeam) 2개를 생성합니다.
+     *
+     * - 요청 팀(MatchRequest.team)이 홈팀, 응답 팀(MatchResponse.respondTeam)이 원정팀입니다.
+     * - 해당 리그의 현재 연도 FRIENDLY 대회를 찾거나 없으면 새로 생성합니다.
+     * - preferredDate + preferredTime(String) → LocalDateTime 으로 변환합니다.
+     */
+    private fun createFriendlyGame(
+        matchRequest: MatchRequest,
+        matchResponse: MatchResponse,
+    ) {
+        val homeTeam = matchRequest.team
+        val awayTeam = matchResponse.respondTeam
+        val league = homeTeam.league
+        val year = matchRequest.preferredDate.year
+
+        val competition =
+            competitionRepository.findByLeagueId(league.id)
+                .firstOrNull { it.type == CompetitionType.FRIENDLY && it.year == year }
+                ?: competitionRepository.save(
+                    Competition(
+                        league = league,
+                        name = "${year}년 친선 경기",
+                        year = year,
+                        type = CompetitionType.FRIENDLY,
+                        startDate = LocalDate.of(year, 1, 1),
+                    ),
+                )
+
+        val scheduledAt =
+            matchRequest.preferredDate.atTime(
+                matchRequest.preferredTime
+                    ?.let { parseTime(it) }
+                    ?: LocalTime.of(0, 0),
+            )
+
+        gameRepository.save(
+            Game.create(
+                competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = scheduledAt,
+                location = matchRequest.preferredLocation,
+            ),
+        )
+    }
+
+    /**
+     * "오후 2시", "14:30" 등 다양한 형식의 시간 문자열을 LocalTime으로 파싱합니다.
+     * 파싱 실패 시 00:00(자정)을 반환합니다.
+     */
+    private fun parseTime(timeStr: String): LocalTime {
+        // "HH:mm" 형식 시도
+        runCatching {
+            val parts = timeStr.trim().split(":")
+            if (parts.size == 2) {
+                val hour = parts[0].trim().toInt()
+                val minute = parts[1].trim().toInt()
+                return LocalTime.of(hour, minute)
+            }
+        }
+        // 파싱 실패 시 자정 반환
+        return LocalTime.of(0, 0)
     }
 
     /**
