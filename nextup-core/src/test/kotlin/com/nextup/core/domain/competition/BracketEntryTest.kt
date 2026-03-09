@@ -197,8 +197,10 @@ class BracketEntryTest {
                     team2 = team2,
                 )
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
                 )
 
@@ -222,16 +224,20 @@ class BracketEntryTest {
                     team2 = team2,
                 )
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
                 )
             bracketEntry.linkGame(game)
 
             // when & then
             val anotherGame =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = LocalDateTime.of(2025, 3, 16, 14, 0),
                 )
             val exception =
@@ -244,7 +250,7 @@ class BracketEntryTest {
         @Test
         fun `부전승 경기에는 경기를 연결할 수 없다`() {
             // given
-            val (competition, team1, _) = createTestData()
+            val (competition, team1, team2) = createTestData()
             val bracketEntry =
                 BracketEntry(
                     competition = competition,
@@ -254,8 +260,10 @@ class BracketEntryTest {
                     team2 = null,
                 )
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
                 )
 
@@ -270,7 +278,7 @@ class BracketEntryTest {
         @Test
         fun `팀이 결정되지 않은 슬롯에는 경기를 연결할 수 없다`() {
             // given
-            val (competition, _, _) = createTestData()
+            val (competition, team1, team2) = createTestData()
             val bracketEntry =
                 BracketEntry(
                     competition = competition,
@@ -280,8 +288,10 @@ class BracketEntryTest {
                     team2 = null,
                 )
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = LocalDateTime.of(2025, 3, 15, 14, 0),
                 )
 

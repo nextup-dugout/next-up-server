@@ -349,8 +349,10 @@ class BracketManagementControllerTest {
                 """.trimIndent()
 
             val game =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = team1,
+                    awayTeam = team2,
                     scheduledAt = scheduledAt,
                     location = "서울 잠실야구장",
                     fieldName = "주경기장",
