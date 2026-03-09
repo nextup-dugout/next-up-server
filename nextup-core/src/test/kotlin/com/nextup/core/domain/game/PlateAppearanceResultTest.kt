@@ -17,7 +17,7 @@ class PlateAppearanceResultTest {
             value = PlateAppearanceResult::class,
             names = [
                 "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "STRIKEOUT", "GROUND_OUT",
-                "FLY_OUT", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY",
+                "FLY_OUT", "INFIELD_FLY", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY",
             ],
         )
         fun `타수에 포함되는 결과를 반환한다`(result: PlateAppearanceResult) {
@@ -129,7 +129,7 @@ class PlateAppearanceResultTest {
         @EnumSource(
             value = PlateAppearanceResult::class,
             names = [
-                "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "LINE_OUT",
+                "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "INFIELD_FLY", "LINE_OUT",
                 "SACRIFICE_BUNT", "SACRIFICE_FLY", "DOUBLE_PLAY", "TRIPLE_PLAY",
             ],
         )
