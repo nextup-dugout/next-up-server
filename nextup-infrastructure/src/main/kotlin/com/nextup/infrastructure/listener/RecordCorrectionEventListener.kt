@@ -8,7 +8,9 @@ import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
+import com.nextup.infrastructure.config.CacheConfig
 import org.slf4j.LoggerFactory
+import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
@@ -27,6 +29,7 @@ class RecordCorrectionEventListener(
     private val careerBattingStatsRepository: CareerBattingStatsRepositoryPort,
     private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val cacheManager: CacheManager,
 ) {
     private val logger = LoggerFactory.getLogger(RecordCorrectionEventListener::class.java)
 
@@ -59,6 +62,9 @@ class RecordCorrectionEventListener(
             CorrectionType.PITCHING -> applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
         }
 
+        // 순위 캐시 무효화
+        evictStandingsCache(event.gameId)
+
         logger.info(
             "기록 정정 스탯 반영 완료 (gameId={}, playerId={}, field={}, delta={})",
             event.gameId,
@@ -66,6 +72,13 @@ class RecordCorrectionEventListener(
             event.fieldName,
             delta,
         )
+    }
+
+    private fun evictStandingsCache(gameId: Long) {
+        val game = gameRepository.findByIdOrNull(gameId) ?: return
+        val competitionId = game.competition.id
+        cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        logger.debug("기록 정정 후 순위 캐시 무효화 완료 (competitionId={}, gameId={})", competitionId, gameId)
     }
 
     private fun applyBattingCorrection(
