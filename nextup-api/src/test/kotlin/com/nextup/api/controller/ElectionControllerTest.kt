@@ -11,12 +11,12 @@ import com.nextup.common.exception.CandidateNotFoundException
 import com.nextup.common.exception.DuplicateVoteException
 import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidStateException
+import com.nextup.core.domain.election.Candidate
+import com.nextup.core.domain.election.Election
 import com.nextup.core.domain.election.ElectionStatus
 import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.service.election.ElectionService
-import com.nextup.core.service.election.dto.CandidateResponse
-import com.nextup.core.service.election.dto.ElectionResponse
-import com.nextup.core.service.election.dto.ElectionResultResponse
+import com.nextup.core.service.election.dto.ElectionResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -58,8 +58,8 @@ class ElectionControllerTest {
                 startAt = startAt,
                 endAt = endAt,
             )
-        val response =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = 1L,
                 teamId = teamId,
                 title = request.title,
@@ -68,11 +68,9 @@ class ElectionControllerTest {
                 startAt = request.startAt,
                 endAt = request.endAt,
                 status = ElectionStatus.SCHEDULED,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.createElection(any()) } returns response
+        every { electionService.createElection(any()) } returns election
 
         // when & then
         mockMvc
@@ -95,25 +93,15 @@ class ElectionControllerTest {
     fun `should get elections by team`() {
         // given
         val teamId = 1L
-        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
-        val endAt = startAt.plus(7, ChronoUnit.DAYS)
-        val elections =
-            listOf(
-                ElectionResponse(
-                    id = 1L,
-                    teamId = teamId,
-                    title = "구단주 선출",
-                    description = null,
-                    electionType = ElectionType.OWNER_ELECTION,
-                    startAt = startAt,
-                    endAt = endAt,
-                    status = ElectionStatus.SCHEDULED,
-                    isVotingOpen = false,
-                    createdAt = Instant.now(),
-                ),
+        val election =
+            createTestElection(
+                id = 1L,
+                teamId = teamId,
+                title = "구단주 선출",
+                status = ElectionStatus.SCHEDULED,
             )
 
-        every { electionService.getElectionsByTeam(teamId) } returns elections
+        every { electionService.getElectionsByTeam(teamId) } returns listOf(election)
 
         // when & then
         mockMvc
@@ -131,23 +119,15 @@ class ElectionControllerTest {
         // given
         val teamId = 1L
         val electionId = 1L
-        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
-        val endAt = startAt.plus(7, ChronoUnit.DAYS)
-        val response =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = electionId,
                 teamId = teamId,
                 title = "구단주 선출",
-                description = null,
-                electionType = ElectionType.OWNER_ELECTION,
-                startAt = startAt,
-                endAt = endAt,
                 status = ElectionStatus.SCHEDULED,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.getElectionById(electionId) } returns response
+        every { electionService.getElectionById(electionId) } returns election
 
         // when & then
         mockMvc
@@ -182,23 +162,15 @@ class ElectionControllerTest {
         // given
         val teamId = 1L
         val electionId = 1L
-        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
-        val endAt = startAt.plus(7, ChronoUnit.DAYS)
-        val response =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = electionId,
                 teamId = teamId,
                 title = "구단주 선출",
-                description = null,
-                electionType = ElectionType.OWNER_ELECTION,
-                startAt = startAt,
-                endAt = endAt,
                 status = ElectionStatus.IN_PROGRESS,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.startElection(electionId) } returns response
+        every { electionService.startElection(electionId) } returns election
 
         // when & then
         mockMvc
@@ -215,23 +187,15 @@ class ElectionControllerTest {
         // given
         val teamId = 1L
         val electionId = 1L
-        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
-        val endAt = startAt.plus(7, ChronoUnit.DAYS)
-        val response =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = electionId,
                 teamId = teamId,
                 title = "구단주 선출",
-                description = null,
-                electionType = ElectionType.OWNER_ELECTION,
-                startAt = startAt,
-                endAt = endAt,
                 status = ElectionStatus.COMPLETED,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.completeElection(electionId) } returns response
+        every { electionService.completeElection(electionId) } returns election
 
         // when & then
         mockMvc
@@ -248,23 +212,15 @@ class ElectionControllerTest {
         // given
         val teamId = 1L
         val electionId = 1L
-        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
-        val endAt = startAt.plus(7, ChronoUnit.DAYS)
-        val response =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = electionId,
                 teamId = teamId,
                 title = "구단주 선출",
-                description = null,
-                electionType = ElectionType.OWNER_ELECTION,
-                startAt = startAt,
-                endAt = endAt,
                 status = ElectionStatus.CANCELLED,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.cancelElection(electionId) } returns response
+        every { electionService.cancelElection(electionId) } returns election
 
         // when & then
         mockMvc
@@ -287,17 +243,16 @@ class ElectionControllerTest {
                 memberName = "홍길동",
                 statement = "열심히 하겠습니다",
             )
-        val response =
-            CandidateResponse(
+        val candidate =
+            createTestCandidate(
                 id = 1L,
                 electionId = electionId,
                 memberId = request.memberId,
                 memberName = request.memberName,
                 statement = request.statement,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.registerCandidate(any()) } returns response
+        every { electionService.registerCandidate(any()) } returns candidate
 
         // when & then
         mockMvc
@@ -355,17 +310,15 @@ class ElectionControllerTest {
                 voterId = 100L,
                 candidateId = 10L,
             )
-        val response =
-            CandidateResponse(
+        val candidate =
+            createTestCandidate(
                 id = request.candidateId,
                 electionId = electionId,
                 memberId = 200L,
                 memberName = "홍길동",
-                statement = null,
-                createdAt = Instant.now(),
             )
 
-        every { electionService.vote(any()) } returns response
+        every { electionService.vote(any()) } returns candidate
 
         // when & then
         mockMvc
@@ -438,29 +391,21 @@ class ElectionControllerTest {
         // given
         val teamId = 1L
         val electionId = 1L
-        val startAt = Instant.now().minus(2, ChronoUnit.DAYS)
-        val endAt = Instant.now().minus(1, ChronoUnit.DAYS)
-        val electionResponse =
-            ElectionResponse(
+        val election =
+            createTestElection(
                 id = electionId,
                 teamId = teamId,
                 title = "구단주 선출",
-                description = null,
-                electionType = ElectionType.OWNER_ELECTION,
-                startAt = startAt,
-                endAt = endAt,
                 status = ElectionStatus.COMPLETED,
-                isVotingOpen = false,
-                createdAt = Instant.now(),
             )
-        val response =
-            ElectionResultResponse(
-                election = electionResponse,
-                candidates = emptyList(),
+        val result =
+            ElectionResult(
+                election = election,
+                candidateVoteCounts = emptyList(),
                 totalVotes = 0,
             )
 
-        every { electionService.getResults(electionId) } returns response
+        every { electionService.getResults(electionId) } returns result
 
         // when & then
         mockMvc
@@ -471,5 +416,70 @@ class ElectionControllerTest {
             .andExpect(jsonPath("$.data.totalVotes").value(0))
 
         verify(exactly = 1) { electionService.getResults(electionId) }
+    }
+
+    // --- helper methods ---
+
+    private fun createTestElection(
+        id: Long,
+        teamId: Long,
+        title: String,
+        status: ElectionStatus,
+        description: String? = null,
+        electionType: ElectionType = ElectionType.OWNER_ELECTION,
+        startAt: Instant = Instant.now().plus(1, ChronoUnit.DAYS),
+        endAt: Instant = Instant.now().plus(8, ChronoUnit.DAYS),
+    ): Election {
+        val election =
+            Election.create(
+                teamId = teamId,
+                title = title,
+                description = description,
+                electionType = electionType,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        setFieldById(election, Election::class.java, "id", id)
+
+        when (status) {
+            ElectionStatus.IN_PROGRESS -> election.start()
+            ElectionStatus.COMPLETED -> {
+                election.start()
+                election.complete()
+            }
+            ElectionStatus.CANCELLED -> election.cancel()
+            ElectionStatus.SCHEDULED -> {}
+        }
+
+        return election
+    }
+
+    private fun createTestCandidate(
+        id: Long,
+        electionId: Long,
+        memberId: Long,
+        memberName: String,
+        statement: String? = null,
+    ): Candidate {
+        val candidate =
+            Candidate.create(
+                electionId = electionId,
+                memberId = memberId,
+                memberName = memberName,
+                statement = statement,
+            )
+        setFieldById(candidate, Candidate::class.java, "id", id)
+        return candidate
+    }
+
+    private fun setFieldById(
+        target: Any,
+        clazz: Class<*>,
+        fieldName: String,
+        value: Any,
+    ) {
+        val field = clazz.getDeclaredField(fieldName)
+        field.isAccessible = true
+        field.set(target, value)
     }
 }
