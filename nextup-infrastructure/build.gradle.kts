@@ -60,6 +60,9 @@ dependencies {
     // Spring Cache
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // Firebase Admin SDK (FCM Push Notification)
+    implementation("com.google.firebase:firebase-admin:9.4.2")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.assertj:assertj-core:3.27.3")
