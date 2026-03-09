@@ -509,7 +509,9 @@ class GamePlayerTest {
             gamePlayer.changePosition(Position.SECOND_BASE, currentInning = 3)
 
             assertThat(gamePlayer.position).isEqualTo(Position.SECOND_BASE)
-            assertThat(gamePlayer.positionHistory).isEqualTo("3:SHORTSTOP")
+            assertThat(gamePlayer.positionHistory).containsExactly(
+                PositionHistoryEntry(3, Position.SHORTSTOP),
+            )
         }
 
         @Test
@@ -526,7 +528,10 @@ class GamePlayerTest {
             gamePlayer.changePosition(Position.THIRD_BASE, currentInning = 6)
 
             assertThat(gamePlayer.position).isEqualTo(Position.THIRD_BASE)
-            assertThat(gamePlayer.positionHistory).isEqualTo("3:SHORTSTOP,6:SECOND_BASE")
+            assertThat(gamePlayer.positionHistory).containsExactly(
+                PositionHistoryEntry(3, Position.SHORTSTOP),
+                PositionHistoryEntry(6, Position.SECOND_BASE),
+            )
         }
 
         @Test
@@ -542,7 +547,7 @@ class GamePlayerTest {
             gamePlayer.changePosition(Position.SECOND_BASE)
 
             assertThat(gamePlayer.position).isEqualTo(Position.SECOND_BASE)
-            assertThat(gamePlayer.positionHistory).isNull()
+            assertThat(gamePlayer.positionHistory).isEmpty()
         }
     }
 
@@ -563,7 +568,7 @@ class GamePlayerTest {
         }
 
         @Test
-        fun `포지션 이력을 이닝-포지션 쌍으로 반환한다`() {
+        fun `포지션 이력을 PositionHistoryEntry 목록으로 반환한다`() {
             val gamePlayer =
                 GamePlayer.createStarter(
                     gameTeam = gameTeam,
@@ -578,8 +583,8 @@ class GamePlayerTest {
             val history = gamePlayer.getPositionHistoryList()
 
             assertThat(history).hasSize(2)
-            assertThat(history[0]).isEqualTo(Pair(3, Position.SHORTSTOP))
-            assertThat(history[1]).isEqualTo(Pair(6, Position.SECOND_BASE))
+            assertThat(history[0]).isEqualTo(PositionHistoryEntry(3, Position.SHORTSTOP))
+            assertThat(history[1]).isEqualTo(PositionHistoryEntry(6, Position.SECOND_BASE))
         }
 
         @Test
@@ -597,8 +602,8 @@ class GamePlayerTest {
 
             val history = gamePlayer.getPositionHistoryList()
 
-            assertThat(history[0].first).isEqualTo(3)
-            assertThat(history[1].first).isEqualTo(6)
+            assertThat(history[0].inning).isEqualTo(3)
+            assertThat(history[1].inning).isEqualTo(6)
         }
     }
 
