@@ -17,6 +17,7 @@ fun BracketEntry.toResponse(): BracketEntryResponse =
         seed2 = this.seed2,
         isBye = this.isBye(),
         isCompleted = this.isCompleted(),
+        gameId = this.game?.id,
     )
 
 fun Team.toBriefResponse(): TeamBriefResponse =
