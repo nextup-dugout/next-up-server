@@ -8,13 +8,11 @@ import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -34,7 +32,6 @@ class BracketGeneratorServiceImplTest {
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var bracketGeneratorService: BracketGeneratorServiceImpl
 
     private lateinit var competition: Competition
@@ -48,14 +45,12 @@ class BracketGeneratorServiceImplTest {
         competitionRepository = mockk()
         teamRepository = mockk()
         gameRepository = mockk()
-        gameTeamRepository = mockk()
         bracketGeneratorService =
             BracketGeneratorServiceImpl(
                 bracketEntryRepository,
                 competitionRepository,
                 teamRepository,
                 gameRepository,
-                gameTeamRepository,
             )
 
         // Test data setup
@@ -330,8 +325,10 @@ class BracketGeneratorServiceImplTest {
         fun `이미 경기가 연결된 경우 InvalidInputException 발생`() {
             // given
             val existingGame =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = teams[0],
+                    awayTeam = teams[1],
                     scheduledAt = LocalDateTime.of(2025, 3, 10, 14, 0),
                     id = 10L,
                 )
@@ -372,15 +369,16 @@ class BracketGeneratorServiceImplTest {
                     id = 1L,
                 )
             val savedGame =
-                Game(
+                Game.createForTest(
                     competition = competition,
+                    homeTeam = teams[0],
+                    awayTeam = teams[1],
                     scheduledAt = scheduledAt,
                     id = 100L,
                 )
 
             every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
             every { gameRepository.save(any<Game>()) } returns savedGame
-            every { gameTeamRepository.save(any<GameTeam>()) } answers { firstArg() }
             every { bracketEntryRepository.save(any<BracketEntry>()) } answers { firstArg() }
 
             // when
@@ -393,7 +391,6 @@ class BracketGeneratorServiceImplTest {
             // then
             assertThat(result.game).isEqualTo(savedGame)
             verify(exactly = 1) { gameRepository.save(any<Game>()) }
-            verify(exactly = 2) { gameTeamRepository.save(any<GameTeam>()) }
             verify(exactly = 1) { bracketEntryRepository.save(any<BracketEntry>()) }
         }
 
@@ -415,15 +412,8 @@ class BracketGeneratorServiceImplTest {
             every { bracketEntryRepository.findByIdOrNull(1L) } returns bracketEntry
             every { gameRepository.save(any<Game>()) } answers {
                 capturedGame = firstArg()
-                Game(
-                    competition = competition,
-                    scheduledAt = scheduledAt,
-                    location = capturedGame?.location,
-                    fieldName = capturedGame?.fieldName,
-                    id = 100L,
-                )
+                firstArg()
             }
-            every { gameTeamRepository.save(any<GameTeam>()) } answers { firstArg() }
             every { bracketEntryRepository.save(any<BracketEntry>()) } answers { firstArg() }
 
             // when

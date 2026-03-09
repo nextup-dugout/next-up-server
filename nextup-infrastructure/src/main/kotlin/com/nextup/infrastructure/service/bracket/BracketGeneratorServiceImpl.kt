@@ -6,12 +6,9 @@ import com.nextup.common.exception.InvalidInputException
 import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameTeam
-import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.bracket.BracketGeneratorService
 import org.springframework.stereotype.Service
@@ -27,7 +24,6 @@ class BracketGeneratorServiceImpl(
     private val competitionRepository: CompetitionRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
     private val gameRepository: GameRepositoryPort,
-    private val gameTeamRepository: GameTeamRepositoryPort,
 ) : BracketGeneratorService {
     @Transactional
     override fun generateSingleElimination(
@@ -251,28 +247,15 @@ class BracketGeneratorServiceImpl(
         }
 
         val game =
-            Game(
+            Game.create(
                 competition = bracketEntry.competition,
+                homeTeam = team1,
+                awayTeam = team2,
                 scheduledAt = scheduledAt,
                 location = location,
                 fieldName = fieldName,
             )
         val savedGame = gameRepository.save(game)
-
-        val homeTeam =
-            GameTeam(
-                game = savedGame,
-                team = team1,
-                homeAway = HomeAway.HOME,
-            )
-        val awayTeam =
-            GameTeam(
-                game = savedGame,
-                team = team2,
-                homeAway = HomeAway.AWAY,
-            )
-        gameTeamRepository.save(homeTeam)
-        gameTeamRepository.save(awayTeam)
 
         bracketEntry.linkGame(savedGame)
         return bracketEntryRepository.save(bracketEntry)
