@@ -497,13 +497,16 @@ class LineupValidatorTest {
                 year = 2024,
                 startDate = LocalDate.now().minusDays(30),
             )
+        val team = Team(league = league, name = "Tigers", city = "서울", foundedYear = 2020)
+        val awayTeam = Team(league = league, name = "Eagles", city = "부산", foundedYear = 2020)
         val game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.now().plusDays(1),
                 location = "서울야구장",
             )
-        val team = Team(league = league, name = "Tigers", city = "서울", foundedYear = 2020)
         val user = User.createLocalUser(email = "manager@test.com", encodedPassword = "encoded", nickname = "감독")
         return LineupSubmission.create(game, team, user)
     }

@@ -41,14 +41,17 @@ class LineupEntryTest {
                 startDate = LocalDate.of(2025, 3, 1),
                 status = CompetitionStatus.IN_PROGRESS,
             )
+        team = Team(league = league, name = "테스트팀", city = "서울", foundedYear = 2020)
+        val awayTeam = Team(league = league, name = "상대팀", city = "부산", foundedYear = 2020)
         game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
                 location = "잠실야구장",
                 status = GameStatus.SCHEDULED,
             )
-        team = Team(league = league, name = "테스트팀", city = "서울", foundedYear = 2020)
         user =
             User.createLocalUser(
                 email = "test@example.com",

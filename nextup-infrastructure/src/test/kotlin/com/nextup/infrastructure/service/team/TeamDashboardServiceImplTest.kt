@@ -78,20 +78,32 @@ class TeamDashboardServiceImplTest {
         id: Long,
         scheduledAt: LocalDateTime,
         status: GameStatus = GameStatus.SCHEDULED,
-    ): Game =
-        Game(
+    ): Game {
+        val homeTeam =
+            com.nextup.core.domain.team.Team(
+                league = league,
+                name = "홈팀$id",
+                city = "서울",
+                foundedYear = 2020,
+                id = 100L + id * 2,
+            )
+        val awayTeam =
+            com.nextup.core.domain.team.Team(
+                league = league,
+                name = "원정팀$id",
+                city = "부산",
+                foundedYear = 2020,
+                id = 101L + id * 2,
+            )
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = scheduledAt,
+            status = status,
             id = id,
-        ).also {
-            // Use reflection to set status for test purposes or rely on status from constructor default
-            if (status != GameStatus.SCHEDULED) {
-                // Status is set via business methods or directly for testing purposes
-                val field = Game::class.java.getDeclaredField("status")
-                field.isAccessible = true
-                field.set(it, status)
-            }
-        }
+        )
+    }
 
     private fun makeGameTeam(
         game: Game,

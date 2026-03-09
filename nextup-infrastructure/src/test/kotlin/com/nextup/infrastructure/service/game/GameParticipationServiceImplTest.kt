@@ -63,8 +63,17 @@ class GameParticipationServiceImplTest {
         setTeamId(team, 1L)
 
         val competition = mockk<com.nextup.core.domain.competition.Competition>()
-        game = Game(competition = competition, scheduledAt = LocalDateTime.now().plusDays(7))
-        setGameId(game, 100L)
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
+        game =
+            Game.createForTest(
+                competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.now().plusDays(7),
+                totalInnings = 9,
+                id = 100L,
+            )
 
         val user = User.createLocalUser("member@example.com", "password", "회원")
         setUserId(user, 10L)
@@ -404,12 +413,17 @@ class GameParticipationServiceImplTest {
         fun `should return game scheduled time`() {
             // given
             val scheduledTime = LocalDateTime.of(2026, 3, 15, 14, 0)
+            val association = Association(name = "서울시야구협회", region = "서울")
+            val league = League(association = association, name = "1부 리그", foundedYear = 2020)
             val futureGame =
-                Game(
+                Game.createForTest(
                     competition = mockk<com.nextup.core.domain.competition.Competition>(),
+                    homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L),
+                    awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L),
                     scheduledAt = scheduledTime,
+                    totalInnings = 9,
+                    id = 100L,
                 )
-            setGameId(futureGame, 100L)
 
             every { gameRepository.findByIdOrNull(100L) } returns futureGame
 

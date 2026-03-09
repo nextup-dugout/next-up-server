@@ -128,18 +128,48 @@ class CompetitionReportServiceImplTest {
                 every { id } returns 2L
                 every { name } returns "팀B"
             }
+        val fixtureTeamA =
+            Team(
+                league =
+                    com.nextup.core.domain.league.League(
+                        association = com.nextup.core.domain.association.Association(name = "협회", region = "서울"),
+                        name = "리그",
+                        foundedYear = 2020,
+                    ),
+                name = "홈팀",
+                city = "서울",
+                foundedYear = 2020,
+                id = 10L,
+            )
+        val fixtureTeamB =
+            Team(
+                league =
+                    com.nextup.core.domain.league.League(
+                        association = com.nextup.core.domain.association.Association(name = "협회", region = "서울"),
+                        name = "리그",
+                        foundedYear = 2020,
+                    ),
+                name = "원정팀",
+                city = "부산",
+                foundedYear = 2020,
+                id = 11L,
+            )
 
         val game1 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = fixtureTeamA,
+                awayTeam = fixtureTeamB,
                 scheduledAt = LocalDateTime.of(2024, 3, 15, 14, 0),
                 status = GameStatus.FINISHED,
                 id = 1L,
             )
 
         val game2 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = fixtureTeamA,
+                awayTeam = fixtureTeamB,
                 scheduledAt = LocalDateTime.of(2024, 3, 20, 14, 0),
                 status = GameStatus.FINISHED,
                 id = 2L,
@@ -244,38 +274,50 @@ class CompetitionReportServiceImplTest {
             )
         val team =
             Team(league = league, name = "팀A", city = "서울", foundedYear = 2020, id = 1L)
+        val opponentTeam =
+            Team(league = league, name = "팀B", city = "부산", foundedYear = 2020, id = 2L)
 
         val game1 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = opponentTeam,
                 scheduledAt = LocalDateTime.now().minusDays(5),
                 status = GameStatus.FINISHED,
                 id = 1L,
             )
         val game2 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = opponentTeam,
                 scheduledAt = LocalDateTime.now().minusDays(4),
                 status = GameStatus.FINISHED,
                 id = 2L,
             )
         val game3 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = opponentTeam,
                 scheduledAt = LocalDateTime.now().minusDays(3),
                 status = GameStatus.FINISHED,
                 id = 3L,
             )
         val game4 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = opponentTeam,
                 scheduledAt = LocalDateTime.now().minusDays(2),
                 status = GameStatus.FINISHED,
                 id = 4L,
             )
         val game5 =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = team,
+                awayTeam = opponentTeam,
                 scheduledAt = LocalDateTime.now().minusDays(1),
                 status = GameStatus.FINISHED,
                 id = 5L,

@@ -272,8 +272,10 @@ class LeagueScheduleTest {
     }
 
     private fun createGame(): Game =
-        Game(
+        Game.createForTest(
             competition = createCompetition(),
+            homeTeam = createTeam("홈팀", 10L),
+            awayTeam = createTeam("원정팀", 20L),
             scheduledAt = LocalDateTime.now().plusDays(7),
             location = "서울야구장",
         )

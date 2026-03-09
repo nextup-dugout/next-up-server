@@ -16,6 +16,7 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -899,8 +900,27 @@ class GameScorerServiceConcurrencyTest {
                 idField.set(this, 1L)
             }
 
-        return Game(
+        val homeTeam =
+            Team(
+                league = league,
+                name = "홈팀",
+                city = "서울",
+                foundedYear = 2020,
+                id = 10L,
+            )
+        val awayTeam =
+            Team(
+                league = league,
+                name = "원정팀",
+                city = "부산",
+                foundedYear = 2020,
+                id = 11L,
+            )
+
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실구장",
             fieldName = "1구장",
@@ -910,11 +930,8 @@ class GameScorerServiceConcurrencyTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-        ).apply {
-            val idField = Game::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, id)
-        }
+            id = id,
+        )
     }
 
     private fun createSingleRequest(

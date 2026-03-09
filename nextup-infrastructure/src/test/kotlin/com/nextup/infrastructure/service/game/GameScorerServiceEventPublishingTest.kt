@@ -16,6 +16,7 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -503,9 +504,13 @@ class GameScorerServiceEventPublishingTest {
         val association = createAssociation(1L)
         val league = createLeague(1L, association)
         val competition = createCompetition(1L, league)
+        val homeTeam = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
 
-        return Game(
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             location = "잠실구장",
             fieldName = "1구장",
@@ -515,6 +520,7 @@ class GameScorerServiceEventPublishingTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-        ).apply { setEntityId(this, id) }
+            id = id,
+        )
     }
 }

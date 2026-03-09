@@ -13,6 +13,7 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.AppealRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.service.appeal.dto.CreateAppealRequest
@@ -522,8 +523,26 @@ class AppealServiceTest {
         val league = createLeague(1L, "1부 리그", association)
         val competition = createCompetition(1L, league)
 
-        return Game(
+        val homeTeam =
+            Team(
+                league = league,
+                name = "홈팀",
+                city = "서울",
+                foundedYear = 2020,
+                id = 10L,
+            )
+        val awayTeam =
+            Team(
+                league = league,
+                name = "원정팀",
+                city = "부산",
+                foundedYear = 2020,
+                id = 20L,
+            )
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.now().plusDays(1),
             status = GameStatus.SCHEDULED,
             currentInning = 0,

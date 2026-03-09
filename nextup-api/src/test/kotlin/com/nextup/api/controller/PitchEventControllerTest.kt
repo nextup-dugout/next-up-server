@@ -8,7 +8,6 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameStatus
-import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PitchEvent
 import com.nextup.core.domain.game.PitchResult
@@ -63,24 +62,26 @@ class PitchEventControllerTest {
                 id = 1L,
             )
 
+        val homeTeam =
+            Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeam =
+            Team(league = league, name = "원정팀", city = "서울", foundedYear = 2020, id = 2L)
+
         game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
                 scheduledAt = LocalDateTime.of(2024, 6, 1, 14, 0),
                 status = GameStatus.IN_PROGRESS,
                 currentInning = 1,
                 id = 1L,
             )
 
-        val homeTeam =
-            Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
-        val awayTeam =
-            Team(league = league, name = "원정팀", city = "서울", foundedYear = 2020, id = 2L)
-
         val homeGameTeam =
-            GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = 1L)
+            game.gameTeams.first { it.homeAway == HomeAway.HOME }
         val awayGameTeam =
-            GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY, id = 2L)
+            game.gameTeams.first { it.homeAway == HomeAway.AWAY }
 
         val pitcherPlayer =
             Player(

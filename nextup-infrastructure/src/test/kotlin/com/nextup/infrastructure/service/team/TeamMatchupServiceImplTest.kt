@@ -352,8 +352,10 @@ class TeamMatchupServiceImplTest {
         status: GameStatus,
         scheduledAt: LocalDateTime = LocalDateTime.now(),
     ): Game =
-        Game(
+        Game.createForTest(
             competition = competition,
+            homeTeam = teamA,
+            awayTeam = teamB,
             scheduledAt = scheduledAt,
             status = status,
             id = id,

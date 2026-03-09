@@ -450,17 +450,33 @@ class StandingsServiceImplTest {
     private fun createGame(
         id: Long,
         competition: Competition,
-    ): Game =
-        Game(
+    ): Game {
+        val homeTeam =
+            com.nextup.core.domain.team.Team(
+                league = competition.league,
+                name = "홈팀$id",
+                city = "서울",
+                foundedYear = 2020,
+                id = 100L + id * 2,
+            )
+        val awayTeam =
+            com.nextup.core.domain.team.Team(
+                league = competition.league,
+                name = "원정팀$id",
+                city = "부산",
+                foundedYear = 2020,
+                id = 101L + id * 2,
+            )
+        return Game.createForTest(
             competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
             scheduledAt = LocalDateTime.now(),
             location = "서울야구장",
             status = GameStatus.SCHEDULED,
-        ).apply {
-            val idField = Game::class.java.getDeclaredField("id")
-            idField.isAccessible = true
-            idField.set(this, id)
-        }
+            id = id,
+        )
+    }
 
     private fun createGameTeam(
         id: Long,

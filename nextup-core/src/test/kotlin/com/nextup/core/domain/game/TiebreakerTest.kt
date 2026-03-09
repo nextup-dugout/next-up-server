@@ -7,8 +7,6 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
-import io.mockk.every
-import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -49,27 +47,16 @@ class TiebreakerTest {
         isTopInning: Boolean,
         totalInnings: Int = 9,
     ): Game =
-        Game(
+        Game.createForTest(
             competition = competition,
+            homeTeam = team1,
+            awayTeam = team2,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             status = GameStatus.IN_PROGRESS,
             currentInning = currentInning,
             isTopInning = isTopInning,
             totalInnings = totalInnings,
         )
-
-    // ─── GameTeam 목 생성 헬퍼 ───────────────────────────────────────────────────
-    private fun mockGameTeam(
-        game: Game,
-        team: Team,
-        homeAway: HomeAway
-    ): GameTeam {
-        val gt = mockk<GameTeam>(relaxed = true)
-        every { gt.team } returns team
-        every { gt.homeAway } returns homeAway
-        every { gt.game } returns game
-        return gt
-    }
 
     @Nested
     @DisplayName("타이브레이크 미적용 (일반 이닝 전환)")
@@ -238,11 +225,8 @@ class TiebreakerTest {
             // 11회말 (9 + 2 = 11이닝, 이 말이 끝나면 무승부)
             val game = createGame(competition, currentInning = 11, isTopInning = false)
 
-            val homeGameTeam = mockGameTeam(game, team1, HomeAway.HOME)
-            val awayGameTeam = mockGameTeam(game, team2, HomeAway.AWAY)
-
             // when
-            val result = game.nextHalfInning(gameTeams = listOf(homeGameTeam, awayGameTeam))
+            val result = game.nextHalfInning(gameTeams = game.gameTeams)
 
             // then
             assertThat(result).isEqualTo(TiebreakerResult.DRAW_BY_INNINGS_LIMIT)

@@ -86,8 +86,16 @@ class LineupServiceTest {
                 endDate = LocalDate.now().plusDays(30),
             )
 
-        game = Game(competition = competition, scheduledAt = LocalDateTime.now().plusDays(1), location = "서울야구장")
         team = Team(league = league, name = "Tigers", city = "서울", foundedYear = 2020)
+        val awayTeam = Team(league = league, name = "Eagles", city = "부산", foundedYear = 2020)
+        game =
+            Game.createForTest(
+                competition = competition,
+                homeTeam = team,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.now().plusDays(1),
+                location = "서울야구장",
+            )
         user = User.createLocalUser(email = "test@test.com", encodedPassword = "encoded", nickname = "테스트")
         player =
             mockk<Player>().apply {

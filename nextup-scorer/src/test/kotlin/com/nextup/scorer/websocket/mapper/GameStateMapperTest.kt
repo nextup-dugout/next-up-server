@@ -28,11 +28,15 @@ class GameStateMapperTest {
                 year = 2024,
                 startDate = LocalDate.now()
             )
+        val homeTeamEntity = Team(league = league, name = "홈팀", city = "서울", foundedYear = 2020, id = 1L)
+        val awayTeamEntity = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2020, id = 2L)
         val game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = homeTeamEntity,
+                awayTeam = awayTeamEntity,
                 scheduledAt = LocalDateTime.now(),
-                location = "테스트구장"
+                location = "테스트구장",
             )
 
         val gameState =
