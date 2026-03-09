@@ -237,11 +237,37 @@ class Game private constructor(
     }
 
     /**
+     * 경기를 중단합니다.
+     *
+     * 진행 중인 경기를 우천/조명 고장 등의 사유로 중단합니다.
+     * 현재 이닝, 아웃카운트, 주자 상태 등 GameState가 그대로 보존됩니다.
+     *
+     * @param reason 중단 사유 (선택)
+     */
+    fun suspend(reason: String? = null) {
+        require(status.isOngoing()) { "진행 중인 경기만 중단할 수 있습니다." }
+        status = GameStatus.SUSPENDED
+        if (reason != null) {
+            note = (note?.let { "$it\n" } ?: "") + "중단 사유: $reason"
+        }
+    }
+
+    /**
+     * 중단된 경기를 재개합니다.
+     *
+     * 중단 시점의 이닝, 아웃카운트, 주자 상태부터 이어서 진행합니다.
+     */
+    fun resume() {
+        require(status.isSuspended()) { "중단된 경기만 재개할 수 있습니다. 현재 상태: ${status.displayName}" }
+        status = GameStatus.IN_PROGRESS
+    }
+
+    /**
      * 경기를 취소합니다.
      */
     fun cancel(reason: String? = null) {
-        require(status == GameStatus.SCHEDULED || status == GameStatus.POSTPONED) {
-            "예정 또는 연기 상태의 경기만 취소할 수 있습니다."
+        require(status == GameStatus.SCHEDULED || status == GameStatus.POSTPONED || status == GameStatus.SUSPENDED) {
+            "예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다."
         }
         status = GameStatus.CANCELLED
         if (reason != null) {
