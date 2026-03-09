@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 @DisplayName("투수 통계 applyFieldCorrection 테스트")
 class PitchingStatsApplyFieldCorrectionTest {
@@ -103,10 +104,11 @@ class PitchingStatsApplyFieldCorrectionTest {
         }
 
         @Test
-        fun `존재하지 않는 필드명은 무시됨`() {
+        fun `존재하지 않는 필드명은 예외가 발생함`() {
             val stats = SeasonPitchingStats.create(testPlayer, 2024)
-            stats.applyFieldCorrection("unknownField", 5)
-            assertThat(stats.inningsPitchedOuts).isZero()
+            assertThrows<IllegalArgumentException> {
+                stats.applyFieldCorrection("unknownField", 5)
+            }
         }
     }
 

@@ -544,99 +544,26 @@ class PitchingRecord(
         fieldName: String,
         newValue: String,
     ): String {
+        val intValue =
+            newValue.toIntOrNull()
+                ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+        require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+
         val oldValue =
             when (fieldName) {
-                "inningsPitchedOuts" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    inningsPitchedOuts.also { inningsPitchedOuts = intValue }
-                }
-                "earnedRuns" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    earnedRuns.also { earnedRuns = intValue }
-                }
-                "runsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    runsAllowed.also { runsAllowed = intValue }
-                }
-                "hitsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    hitsAllowed.also { hitsAllowed = intValue }
-                }
-                "walksAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    walksAllowed.also { walksAllowed = intValue }
-                }
-                "strikeouts" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    strikeouts.also { strikeouts = intValue }
-                }
-                "homeRunsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    homeRunsAllowed.also { homeRunsAllowed = intValue }
-                }
-                "hitBatsmen" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    hitBatsmen.also { hitBatsmen = intValue }
-                }
-                "wildPitches" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    wildPitches.also { wildPitches = intValue }
-                }
-                "balks" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    balks.also { balks = intValue }
-                }
-                "battersFaced" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    battersFaced.also { battersFaced = intValue }
-                }
-                "pitchesThrown" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    (pitchesThrown ?: 0).also { pitchesThrown = intValue }
-                }
-                "strikesThrown" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    (strikesThrown ?: 0).also { strikesThrown = intValue }
-                }
+                "inningsPitchedOuts" -> inningsPitchedOuts.also { inningsPitchedOuts = intValue }
+                "earnedRuns" -> earnedRuns.also { earnedRuns = intValue }
+                "runsAllowed" -> runsAllowed.also { runsAllowed = intValue }
+                "hitsAllowed" -> hitsAllowed.also { hitsAllowed = intValue }
+                "walksAllowed" -> walksAllowed.also { walksAllowed = intValue }
+                "strikeouts" -> strikeouts.also { strikeouts = intValue }
+                "homeRunsAllowed" -> homeRunsAllowed.also { homeRunsAllowed = intValue }
+                "hitBatsmen" -> hitBatsmen.also { hitBatsmen = intValue }
+                "wildPitches" -> wildPitches.also { wildPitches = intValue }
+                "balks" -> balks.also { balks = intValue }
+                "battersFaced" -> battersFaced.also { battersFaced = intValue }
+                "pitchesThrown" -> (pitchesThrown ?: 0).also { pitchesThrown = intValue }
+                "strikesThrown" -> (strikesThrown ?: 0).also { strikesThrown = intValue }
                 else -> throw IllegalArgumentException("유효하지 않은 투수 기록 필드입니다: $fieldName")
             }
 
