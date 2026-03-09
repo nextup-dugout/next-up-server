@@ -8,7 +8,6 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.match.MatchRequest
@@ -19,7 +18,6 @@ import com.nextup.core.domain.match.SkillLevel
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -41,7 +39,6 @@ class MatchingServiceTest {
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
-    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var matchingService: MatchingService
 
     private lateinit var association: Association
@@ -56,7 +53,6 @@ class MatchingServiceTest {
         teamRepository = mockk()
         competitionRepository = mockk()
         gameRepository = mockk()
-        gameTeamRepository = mockk()
         matchingService =
             MatchingService(
                 matchRequestRepository = matchRequestRepository,
@@ -64,7 +60,6 @@ class MatchingServiceTest {
                 teamRepository = teamRepository,
                 competitionRepository = competitionRepository,
                 gameRepository = gameRepository,
-                gameTeamRepository = gameTeamRepository,
             )
 
         // 테스트 픽스처 설정
@@ -358,8 +353,10 @@ class MatchingServiceTest {
                 startDate = LocalDate.of(preferredDate.year, 1, 1),
             )
         val game =
-            Game(
+            Game.createForTest(
                 competition = competition,
+                homeTeam = teamA,
+                awayTeam = teamB,
                 scheduledAt = preferredDate.atTime(LocalTime.of(0, 0)),
             )
 
@@ -367,7 +364,6 @@ class MatchingServiceTest {
         every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
         every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
         every { gameRepository.save(any()) } returns game
-        every { gameTeamRepository.save(any()) } answers { firstArg() }
 
         // when
         val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
@@ -379,7 +375,6 @@ class MatchingServiceTest {
         verify { matchRequestRepository.findByIdOrNull(1L) }
         verify { matchResponseRepository.findByIdOrNull(2L) }
         verify { gameRepository.save(any()) }
-        verify(exactly = 2) { gameTeamRepository.save(any()) }
     }
 
     @Test
@@ -412,8 +407,10 @@ class MatchingServiceTest {
                 startDate = LocalDate.of(preferredDate.year, 1, 1),
             )
         val savedGame =
-            Game(
+            Game.createForTest(
                 competition = newCompetition,
+                homeTeam = teamA,
+                awayTeam = teamB,
                 scheduledAt = preferredDate.atTime(LocalTime.of(14, 30)),
                 location = "서울야구장",
             )
@@ -423,7 +420,6 @@ class MatchingServiceTest {
         every { competitionRepository.findByLeagueId(league.id) } returns emptyList()
         every { competitionRepository.save(any()) } returns newCompetition
         every { gameRepository.save(any()) } returns savedGame
-        every { gameTeamRepository.save(any()) } answers { firstArg() }
 
         // when
         val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
@@ -432,7 +428,6 @@ class MatchingServiceTest {
         assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
         verify { competitionRepository.save(any()) }
         verify { gameRepository.save(any()) }
-        verify(exactly = 2) { gameTeamRepository.save(any()) }
     }
 
     @Test
@@ -465,8 +460,10 @@ class MatchingServiceTest {
                 startDate = LocalDate.of(preferredDate.year, 1, 1),
             )
         val savedGame =
-            Game(
+            Game.createForTest(
                 competition = existingCompetition,
+                homeTeam = teamA,
+                awayTeam = teamB,
                 scheduledAt = preferredDate.atTime(LocalTime.of(0, 0)),
                 location = "인천구장",
             )
@@ -475,7 +472,6 @@ class MatchingServiceTest {
         every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
         every { competitionRepository.findByLeagueId(league.id) } returns listOf(existingCompetition)
         every { gameRepository.save(any()) } returns savedGame
-        every { gameTeamRepository.save(any()) } answers { firstArg() }
 
         // when
         val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
@@ -484,11 +480,10 @@ class MatchingServiceTest {
         assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
         verify(exactly = 0) { competitionRepository.save(any()) }
         verify { gameRepository.save(any()) }
-        verify(exactly = 2) { gameTeamRepository.save(any()) }
     }
 
     @Test
-    fun `매칭 성사 시 홈팀은 요청팀 원정팀은 응답팀으로 GameTeam이 생성된다`() {
+    fun `매칭 성사 시 홈팀은 요청팀 원정팀은 응답팀으로 Game이 생성된다`() {
         // given
         val preferredDate = LocalDate.now().plusDays(7)
         val matchRequest =
@@ -516,31 +511,27 @@ class MatchingServiceTest {
                 type = CompetitionType.FRIENDLY,
                 startDate = LocalDate.of(preferredDate.year, 1, 1),
             )
-        val savedGame =
-            Game(
-                competition = competition,
-                scheduledAt = preferredDate.atTime(LocalTime.of(0, 0)),
-            )
 
-        val savedGameTeams = mutableListOf<GameTeam>()
+        val capturedGames = mutableListOf<Game>()
 
         every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
         every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
         every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
-        every { gameRepository.save(any()) } returns savedGame
-        every { gameTeamRepository.save(any()) } answers {
-            val gt = firstArg<GameTeam>()
-            savedGameTeams.add(gt)
-            gt
+        every { gameRepository.save(any()) } answers {
+            val g = firstArg<Game>()
+            capturedGames.add(g)
+            g
         }
 
         // when
         matchingService.acceptResponse(requestId = 1L, responseId = 2L)
 
         // then
-        assertThat(savedGameTeams).hasSize(2)
-        val homeGameTeam = savedGameTeams.first { it.homeAway == HomeAway.HOME }
-        val awayGameTeam = savedGameTeams.first { it.homeAway == HomeAway.AWAY }
+        assertThat(capturedGames).hasSize(1)
+        val createdGame = capturedGames.first()
+        assertThat(createdGame.gameTeams).hasSize(2)
+        val homeGameTeam = createdGame.gameTeams.first { it.homeAway == HomeAway.HOME }
+        val awayGameTeam = createdGame.gameTeams.first { it.homeAway == HomeAway.AWAY }
         assertThat(homeGameTeam.team).isEqualTo(teamA)
         assertThat(awayGameTeam.team).isEqualTo(teamB)
     }
@@ -584,7 +575,6 @@ class MatchingServiceTest {
             capturedGames.add(g)
             g
         }
-        every { gameTeamRepository.save(any()) } answers { firstArg() }
 
         // when
         matchingService.acceptResponse(requestId = 1L, responseId = 2L)

@@ -7,13 +7,10 @@ import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameTeam
-import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.match.MatchRequest
 import com.nextup.core.domain.match.MatchResponse
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
@@ -37,7 +34,6 @@ class MatchingService(
     private val teamRepository: TeamRepositoryPort,
     private val competitionRepository: CompetitionRepositoryPort,
     private val gameRepository: GameRepositoryPort,
-    private val gameTeamRepository: GameTeamRepositoryPort,
 ) {
     /**
      * 매칭 요청을 생성합니다.
@@ -164,17 +160,15 @@ class MatchingService(
                     ?: LocalTime.of(0, 0),
             )
 
-        val game =
-            gameRepository.save(
-                Game(
-                    competition = competition,
-                    scheduledAt = scheduledAt,
-                    location = matchRequest.preferredLocation,
-                ),
-            )
-
-        gameTeamRepository.save(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME))
-        gameTeamRepository.save(GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY))
+        gameRepository.save(
+            Game.create(
+                competition = competition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = scheduledAt,
+                location = matchRequest.preferredLocation,
+            ),
+        )
     }
 
     /**
