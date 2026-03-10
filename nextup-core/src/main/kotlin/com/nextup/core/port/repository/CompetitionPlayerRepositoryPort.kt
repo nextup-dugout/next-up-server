@@ -55,4 +55,10 @@ interface CompetitionPlayerRepositoryPort {
         teamId: Long,
         status: CompetitionPlayerStatus,
     ): List<CompetitionPlayer>
+
+    /**
+     * 팀이 참가 중인(WITHDRAWN이 아닌) 대회 ID 목록을 조회합니다.
+     * 팀 해산 시 해당 팀이 참가 중인 대회들을 식별하는 데 사용합니다.
+     */
+    fun findActiveCompetitionIdsByTeamId(teamId: Long): Set<Long>
 }
