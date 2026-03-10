@@ -55,4 +55,13 @@ interface CompetitionPlayerRepositoryPort {
         teamId: Long,
         status: CompetitionPlayerStatus,
     ): List<CompetitionPlayer>
+
+    /**
+     * 선수 ID와 상태 목록으로 대회 선수를 조회합니다.
+     * 팀원 개별 탈퇴/강퇴 시 해당 선수의 활성 대회 등록을 처리하는 데 사용합니다.
+     */
+    fun findByPlayerIdAndStatusIn(
+        playerId: Long,
+        statuses: List<CompetitionPlayerStatus>,
+    ): List<CompetitionPlayer>
 }
