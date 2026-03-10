@@ -286,6 +286,94 @@ class GameScheduleServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("getUpcomingGamesByTeamIds")
+    inner class GetUpcomingGamesByTeamIdsTest {
+        @Test
+        @DisplayName("여러 팀의 다가오는 경기를 통합 조회한다")
+        fun getUpcomingGamesByTeamIdsReturnsGamesFromMultipleTeams() {
+            // given
+            val teamIds = listOf(1L, 2L)
+            val now = LocalDateTime.now()
+            val game1 = createGame(10L, scheduledAt = now.plusDays(1), status = GameStatus.SCHEDULED)
+            val game2 = createGame(20L, scheduledAt = now.plusDays(3), status = GameStatus.SCHEDULED)
+
+            val gameTeam1 = createGameTeam(10L, teamId = 1L)
+            val gameTeam2 = createGameTeam(20L, teamId = 2L)
+
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gameTeam1)
+            every { gameTeamRepository.findAllByTeamId(2L) } returns listOf(gameTeam2)
+            every { gameRepository.findAllByIds(listOf(10L, 20L)) } returns listOf(game1, game2)
+            every { gameTeamRepository.findAllByGameIds(listOf(10L, 20L)) } returns listOf(gameTeam1, gameTeam2)
+
+            // when
+            val result = service.getUpcomingGamesByTeamIds(teamIds, limit = 10)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result[0].gameId).isEqualTo(10L)
+            assertThat(result[1].gameId).isEqualTo(20L)
+        }
+
+        @Test
+        @DisplayName("빈 팀 목록이면 빈 리스트를 반환한다")
+        fun getUpcomingGamesByTeamIdsReturnsEmptyForEmptyTeamIds() {
+            // given & when
+            val result = service.getUpcomingGamesByTeamIds(emptyList(), limit = 10)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("중복 경기를 제거한다")
+        fun getUpcomingGamesByTeamIdsDeduplicatesGames() {
+            // given
+            val teamIds = listOf(1L, 2L)
+            val now = LocalDateTime.now()
+            // 같은 경기에 두 팀이 모두 참여하는 경우
+            val game = createGame(10L, scheduledAt = now.plusDays(1), status = GameStatus.SCHEDULED)
+
+            val gameTeam1 = createGameTeam(10L, teamId = 1L, homeAway = HomeAway.HOME)
+            val gameTeam2 = createGameTeam(10L, teamId = 2L, homeAway = HomeAway.AWAY)
+
+            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gameTeam1)
+            every { gameTeamRepository.findAllByTeamId(2L) } returns listOf(gameTeam2)
+            every { gameRepository.findAllByIds(listOf(10L)) } returns listOf(game)
+            every { gameTeamRepository.findAllByGameIds(listOf(10L)) } returns listOf(gameTeam1, gameTeam2)
+
+            // when
+            val result = service.getUpcomingGamesByTeamIds(teamIds, limit = 10)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].gameId).isEqualTo(10L)
+        }
+
+        @Test
+        @DisplayName("limit을 적용한다")
+        fun getUpcomingGamesByTeamIdsRespectsLimit() {
+            // given
+            val teamIds = listOf(1L)
+            val now = LocalDateTime.now()
+            val games =
+                (1L..5L).map {
+                    createGame(it, scheduledAt = now.plusDays(it), status = GameStatus.SCHEDULED)
+                }
+            val gameTeams = (1L..5L).map { createGameTeam(it, teamId = 1L) }
+
+            every { gameTeamRepository.findAllByTeamId(1L) } returns gameTeams
+            every { gameRepository.findAllByIds(any()) } returns games
+            every { gameTeamRepository.findAllByGameIds(listOf(1L, 2L)) } returns gameTeams.take(2)
+
+            // when
+            val result = service.getUpcomingGamesByTeamIds(teamIds, limit = 2)
+
+            // then
+            assertThat(result).hasSize(2)
+        }
+    }
+
     // Helper methods
     private fun createGame(
         id: Long,
