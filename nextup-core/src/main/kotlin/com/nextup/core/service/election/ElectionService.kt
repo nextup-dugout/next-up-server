@@ -6,14 +6,13 @@ import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.domain.election.Candidate
 import com.nextup.core.domain.election.Election
-import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.election.ElectionVote
-import com.nextup.core.domain.team.TeamMemberRole
+import com.nextup.core.domain.event.ElectionCompletedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.election.dto.*
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -28,7 +27,7 @@ class ElectionService(
     private val electionRepository: ElectionRepositoryPort,
     private val candidateRepository: CandidateRepositoryPort,
     private val electionVoteRepository: ElectionVoteRepositoryPort,
-    private val teamMemberRepository: TeamMemberRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /**
      * 선거를 생성합니다.
@@ -59,63 +58,22 @@ class ElectionService(
 
     /**
      * 선거를 완료합니다.
-     * OWNER_ELECTION인 경우, 단독 최다 득표자에게 자동으로 OWNER 권한을 이양합니다.
-     * 동률이거나 투표가 없으면 자동 이양하지 않습니다.
+     * 도메인 이벤트를 발행하여 OWNER_ELECTION의 경우 리스너에서 권한 이양을 처리합니다.
      */
     @Transactional
     fun completeElection(electionId: Long): ElectionResponse {
         val election = findElection(electionId)
         election.complete()
 
-        if (election.electionType == ElectionType.OWNER_ELECTION) {
-            transferOwnershipToWinner(election)
-        }
+        eventPublisher.publishEvent(
+            ElectionCompletedEvent(
+                electionId = election.id,
+                teamId = election.teamId,
+                electionType = election.electionType,
+            ),
+        )
 
         return election.toResponse()
-    }
-
-    /**
-     * OWNER 선거 완료 후 당선자에게 OWNER 권한을 자동 이양합니다.
-     * 동률이거나 투표가 없으면 이양하지 않습니다.
-     */
-    private fun transferOwnershipToWinner(election: Election) {
-        val voteCounts =
-            electionVoteRepository.countByElectionIdGroupByCandidateId(election.id)
-
-        // 투표가 없으면 이양하지 않음
-        if (voteCounts.isEmpty()) return
-
-        // 최다 득표수 확인
-        val maxVotes = voteCounts.values.max()
-        val topCandidates = voteCounts.filter { it.value == maxVotes }
-
-        // 동률이면 이양하지 않음
-        if (topCandidates.size > 1) return
-
-        val winnerCandidateId = topCandidates.keys.first()
-        val winnerCandidate =
-            candidateRepository.findById(winnerCandidateId) ?: return
-
-        val winner =
-            teamMemberRepository.findByIdOrNull(winnerCandidate.memberId) ?: return
-
-        // 당선자가 이미 OWNER이면 이양 불필요
-        if (winner.role == TeamMemberRole.OWNER) return
-
-        // 기존 OWNER를 MEMBER로 강등
-        val teamMembers =
-            teamMemberRepository.findByTeamId(election.teamId)
-        val currentOwner =
-            teamMembers.firstOrNull { it.role == TeamMemberRole.OWNER }
-
-        if (currentOwner != null) {
-            currentOwner.role = TeamMemberRole.MEMBER
-            teamMemberRepository.save(currentOwner)
-        }
-
-        // 당선자를 OWNER로 승격
-        winner.role = TeamMemberRole.OWNER
-        teamMemberRepository.save(winner)
     }
 
     /**
