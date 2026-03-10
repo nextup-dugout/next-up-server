@@ -2,10 +2,14 @@ package com.nextup.backoffice.controller.competition
 
 import com.nextup.backoffice.dto.competition.CompetitionAdminResponse
 import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
+import com.nextup.backoffice.dto.competition.PrepareNextSeasonRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
+import com.nextup.core.service.competition.SeasonTransitionService
+import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
+import com.nextup.core.service.competition.dto.SeasonSummaryDto
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -29,6 +33,7 @@ import java.time.LocalDate
 @RequestMapping("/api/backoffice/competitions")
 class CompetitionAdminController(
     private val competitionService: CompetitionService,
+    private val seasonTransitionService: SeasonTransitionService,
 ) {
     /**
      * 모든 대회 목록을 조회합니다.
@@ -155,5 +160,41 @@ class CompetitionAdminController(
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.postpone(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
+    }
+
+    /**
+     * 완료된 대회의 시즌 요약을 조회합니다.
+     *
+     * 최종 순위, 참가 팀/선수 통계를 반환합니다.
+     */
+    @GetMapping("/{id}/season-summary")
+    fun getSeasonSummary(
+        @PathVariable id: Long,
+    ): ApiResponse<SeasonSummaryDto> {
+        val summary = seasonTransitionService.getSeasonSummary(id)
+        return ApiResponse.success(summary)
+    }
+
+    /**
+     * 완료된 대회를 기반으로 다음 시즌 대회를 준비합니다.
+     *
+     * 이전 시즌 활성 선수를 자동 등록합니다.
+     */
+    @PostMapping("/{id}/prepare-next-season")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun prepareNextSeason(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: PrepareNextSeasonRequest,
+    ): ApiResponse<NextSeasonPreparationResult> {
+        val result =
+            seasonTransitionService.prepareNextSeason(
+                previousCompetitionId = id,
+                name = request.name,
+                startDate = request.startDate,
+                endDate = request.endDate,
+                description = request.description,
+                maxTeams = request.maxTeams,
+            )
+        return ApiResponse.success(result)
     }
 }

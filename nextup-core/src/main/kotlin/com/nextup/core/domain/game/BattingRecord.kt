@@ -231,6 +231,7 @@ class BattingRecord(
             }
             PlateAppearanceResult.GROUND_OUT,
             PlateAppearanceResult.FLY_OUT,
+            PlateAppearanceResult.INFIELD_FLY,
             PlateAppearanceResult.LINE_OUT,
             PlateAppearanceResult.FIELDERS_CHOICE,
             PlateAppearanceResult.ERROR,
@@ -344,6 +345,7 @@ class BattingRecord(
             }
             PlateAppearanceResult.GROUND_OUT,
             PlateAppearanceResult.FLY_OUT,
+            PlateAppearanceResult.INFIELD_FLY,
             PlateAppearanceResult.LINE_OUT,
             PlateAppearanceResult.FIELDERS_CHOICE,
             PlateAppearanceResult.ERROR,

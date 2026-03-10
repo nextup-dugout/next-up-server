@@ -312,7 +312,9 @@ class CareerPitchingStats(
             "battersFaced" -> battersFaced = maxOf(0, battersFaced + delta)
             "pitchesThrown" -> pitchesThrown = maxOf(0, (pitchesThrown ?: 0) + delta)
             "strikesThrown" -> strikesThrown = maxOf(0, (strikesThrown ?: 0) + delta)
+            else -> throw IllegalArgumentException("유효하지 않은 커리어 투수 통계 필드입니다: $fieldName")
         }
+        validate()
     }
 
     /**

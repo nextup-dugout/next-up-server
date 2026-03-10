@@ -70,8 +70,12 @@ class RecordCorrectionEventListenerTest {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
             val careerStats = CareerBattingStats.create(testPlayer)
-            // 기존 값 설정: hits = 10 (addGameRecord 대신 applyFieldCorrection으로 세팅)
+            // 기존 값 설정 (불변식을 만족하는 순서: PA ≥ AB ≥ H)
+            seasonStats.applyFieldCorrection("plateAppearances", 15)
+            seasonStats.applyFieldCorrection("atBats", 12)
             seasonStats.applyFieldCorrection("hits", 10)
+            careerStats.applyFieldCorrection("plateAppearances", 15)
+            careerStats.applyFieldCorrection("atBats", 12)
             careerStats.applyFieldCorrection("hits", 10)
 
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
@@ -103,6 +107,10 @@ class RecordCorrectionEventListenerTest {
         fun `음수 델타 적용 시 통계가 감소됨`() {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            // 불변식을 만족하는 순서: PA ≥ AB ≥ H ≥ 2B+3B+HR
+            seasonStats.applyFieldCorrection("plateAppearances", 10)
+            seasonStats.applyFieldCorrection("atBats", 8)
+            seasonStats.applyFieldCorrection("hits", 5)
             seasonStats.applyFieldCorrection("homeRuns", 5)
 
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
@@ -263,6 +271,8 @@ class RecordCorrectionEventListenerTest {
         fun `자책점 감소 정정이 올바르게 반영됨`() {
             // given
             val seasonStats = SeasonPitchingStats.create(testPlayer, 2024)
+            // 불변식을 만족하는 순서: RA ≥ ER
+            seasonStats.applyFieldCorrection("runsAllowed", 12)
             seasonStats.applyFieldCorrection("earnedRuns", 10)
 
             every { seasonPitchingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats

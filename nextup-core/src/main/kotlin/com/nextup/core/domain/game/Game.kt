@@ -35,6 +35,8 @@ class Game private constructor(
     var fieldName: String? = null,
     @Column(name = "game_number")
     var gameNumber: Int? = null,
+    @Column(name = "is_doubleheader", nullable = false)
+    var isDoubleheader: Boolean = false,
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: GameStatus = GameStatus.SCHEDULED,
@@ -237,11 +239,37 @@ class Game private constructor(
     }
 
     /**
+     * 경기를 중단합니다.
+     *
+     * 진행 중인 경기를 우천/조명 고장 등의 사유로 중단합니다.
+     * 현재 이닝, 아웃카운트, 주자 상태 등 GameState가 그대로 보존됩니다.
+     *
+     * @param reason 중단 사유 (선택)
+     */
+    fun suspend(reason: String? = null) {
+        require(status.isOngoing()) { "진행 중인 경기만 중단할 수 있습니다." }
+        status = GameStatus.SUSPENDED
+        if (reason != null) {
+            note = (note?.let { "$it\n" } ?: "") + "중단 사유: $reason"
+        }
+    }
+
+    /**
+     * 중단된 경기를 재개합니다.
+     *
+     * 중단 시점의 이닝, 아웃카운트, 주자 상태부터 이어서 진행합니다.
+     */
+    fun resume() {
+        require(status.isSuspended()) { "중단된 경기만 재개할 수 있습니다. 현재 상태: ${status.displayName}" }
+        status = GameStatus.IN_PROGRESS
+    }
+
+    /**
      * 경기를 취소합니다.
      */
     fun cancel(reason: String? = null) {
-        require(status == GameStatus.SCHEDULED || status == GameStatus.POSTPONED) {
-            "예정 또는 연기 상태의 경기만 취소할 수 있습니다."
+        require(status == GameStatus.SCHEDULED || status == GameStatus.POSTPONED || status == GameStatus.SUSPENDED) {
+            "예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다."
         }
         status = GameStatus.CANCELLED
         if (reason != null) {
@@ -337,8 +365,14 @@ class Game private constructor(
             location: String? = null,
             fieldName: String? = null,
             gameNumber: Int? = null,
+            isDoubleheader: Boolean = false,
         ): Game {
             require(homeTeam.id != awayTeam.id) { "홈팀과 원정팀은 같을 수 없습니다." }
+            if (isDoubleheader) {
+                require(gameNumber != null && gameNumber in 1..2) {
+                    "더블헤더 경기는 gameNumber가 1 또는 2여야 합니다."
+                }
+            }
 
             val game =
                 Game(
@@ -347,6 +381,7 @@ class Game private constructor(
                     location = location,
                     fieldName = fieldName,
                     gameNumber = gameNumber,
+                    isDoubleheader = isDoubleheader,
                     totalInnings = competition.gameRules.defaultInnings,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME))
@@ -369,6 +404,7 @@ class Game private constructor(
             location: String? = null,
             fieldName: String? = null,
             gameNumber: Int? = null,
+            isDoubleheader: Boolean = false,
             status: GameStatus = GameStatus.SCHEDULED,
             currentInning: Int = 0,
             isTopInning: Boolean = true,
@@ -387,6 +423,7 @@ class Game private constructor(
                     location = location,
                     fieldName = fieldName,
                     gameNumber = gameNumber,
+                    isDoubleheader = isDoubleheader,
                     status = status,
                     currentInning = currentInning,
                     isTopInning = isTopInning,
@@ -455,6 +492,18 @@ class Game private constructor(
      */
     val isExtraInning: Boolean
         get() = currentInning > totalInnings
+
+    /**
+     * 더블헤더 표시를 반환합니다 (예: "제1경기", "제2경기").
+     * 더블헤더가 아닌 경우 null을 반환합니다.
+     */
+    val doubleheaderDisplay: String?
+        get() =
+            if (isDoubleheader && gameNumber != null) {
+                "제${gameNumber}경기"
+            } else {
+                null
+            }
 
     /**
      * 아웃을 기록합니다.

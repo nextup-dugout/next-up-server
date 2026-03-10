@@ -222,5 +222,28 @@ class GameEvent(
                 batter = incomingPlayer,
                 pitcher = outgoingPlayer,
             )
+
+        /**
+         * 퇴장 이벤트를 생성합니다.
+         *
+         * @param game 경기
+         * @param ejectedPlayer 퇴장 선수
+         * @param description 퇴장 사유 (예: "폭력", "항의", "기타")
+         */
+        fun createEjection(
+            game: Game,
+            ejectedPlayer: GamePlayer,
+            description: String,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = game.gameState.outs,
+                outCountAfter = game.gameState.outs,
+                eventType = GameEventType.EJECTION,
+                description = description,
+                batter = ejectedPlayer,
+            )
     }
 }
