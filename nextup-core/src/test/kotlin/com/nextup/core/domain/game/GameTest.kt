@@ -1094,6 +1094,68 @@ class GameTest {
             // then
             assertThat(game.status).isEqualTo(GameStatus.SCHEDULED)
         }
+
+        @Test
+        fun `더블헤더 경기를 생성할 수 있다`() {
+            // when
+            val game1 =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 10, 0),
+                    gameNumber = 1,
+                    isDoubleheader = true,
+                )
+            val game2 =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    gameNumber = 2,
+                    isDoubleheader = true,
+                )
+
+            // then
+            assertThat(game1.isDoubleheader).isTrue()
+            assertThat(game1.gameNumber).isEqualTo(1)
+            assertThat(game1.doubleheaderDisplay).isEqualTo("제1경기")
+            assertThat(game2.isDoubleheader).isTrue()
+            assertThat(game2.gameNumber).isEqualTo(2)
+            assertThat(game2.doubleheaderDisplay).isEqualTo("제2경기")
+        }
+
+        @Test
+        fun `더블헤더 경기에 gameNumber가 없으면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy {
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    isDoubleheader = true,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("gameNumber가 1 또는 2여야 합니다")
+        }
+
+        @Test
+        fun `더블헤더가 아닌 경기의 doubleheaderDisplay는 null이다`() {
+            // when
+            val game =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.isDoubleheader).isFalse()
+            assertThat(game.doubleheaderDisplay).isNull()
+        }
     }
 
     @Nested
