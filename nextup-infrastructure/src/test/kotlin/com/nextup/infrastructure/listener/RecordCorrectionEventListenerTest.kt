@@ -1,6 +1,7 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.event.RecordCorrectedEvent
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.Game
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.cache.Cache
+import org.springframework.cache.CacheManager
 import java.time.LocalDateTime
 
 @DisplayName("RecordCorrectionEventListener 테스트")
@@ -35,6 +38,8 @@ class RecordCorrectionEventListenerTest {
     private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
     private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
+    private val cacheManager = mockk<CacheManager>()
+    private val mockCache = mockk<Cache>(relaxed = true)
 
     private val listener =
         RecordCorrectionEventListener(
@@ -43,6 +48,7 @@ class RecordCorrectionEventListenerTest {
             careerBattingStatsRepository = careerBattingStatsRepository,
             careerPitchingStatsRepository = careerPitchingStatsRepository,
             gameRepository = gameRepository,
+            cacheManager = cacheManager,
         )
 
     private val testPlayer =
@@ -55,11 +61,15 @@ class RecordCorrectionEventListenerTest {
         )
 
     private val mockGame = mockk<Game>()
+    private val mockCompetition = mockk<Competition>()
 
     @BeforeEach
     fun setUp() {
         every { mockGame.scheduledAt } returns LocalDateTime.of(2024, 5, 15, 18, 0)
+        every { mockGame.competition } returns mockCompetition
+        every { mockCompetition.id } returns 100L
         every { gameRepository.findByIdOrNull(any()) } returns mockGame
+        every { cacheManager.getCache(any()) } returns mockCache
     }
 
     @Nested
@@ -294,6 +304,60 @@ class RecordCorrectionEventListenerTest {
 
             // then: delta = 1 - 3 = -2, earnedRuns = 10 - 2 = 8
             assertThat(seasonStats.earnedRuns).isEqualTo(8)
+        }
+    }
+
+    @Nested
+    @DisplayName("순위 캐시 무효화")
+    inner class StandingsCacheEviction {
+        @Test
+        fun `기록 정정 시 해당 대회의 순위 캐시가 무효화됨`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("plateAppearances", 15)
+            seasonStats.applyFieldCorrection("atBats", 12)
+            seasonStats.applyFieldCorrection("hits", 10)
+
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "2",
+                    newValue = "3",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then
+            verify(exactly = 1) { cacheManager.getCache("standings") }
+            verify(exactly = 1) { mockCache.evict(100L) }
+        }
+
+        @Test
+        fun `델타가 0이면 캐시 무효화도 건너뜀`() {
+            // given
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "3",
+                    newValue = "3",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then
+            verify(exactly = 0) { cacheManager.getCache(any()) }
         }
     }
 
