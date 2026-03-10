@@ -5,6 +5,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.PrepareNextSeasonRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
+import com.nextup.backoffice.dto.competition.WithdrawTeamRequest
+import com.nextup.backoffice.exception.GlobalExceptionHandler
+import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
@@ -14,6 +17,7 @@ import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.competition.SeasonTransitionService
 import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
 import com.nextup.core.service.competition.dto.SeasonSummaryDto
+import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import com.nextup.core.service.standings.dto.TeamStandingDto
 import io.mockk.every
 import io.mockk.mockk
@@ -46,7 +50,10 @@ class CompetitionAdminControllerTest {
         competitionService = mockk()
         seasonTransitionService = mockk()
         controller = CompetitionAdminController(competitionService, seasonTransitionService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        mockMvc =
+            MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
+                .build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())
     }
 
@@ -262,6 +269,70 @@ class CompetitionAdminControllerTest {
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"))
 
             verify(exactly = 1) { competitionService.complete(1L, any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/backoffice/competitions/{id}/teams/{teamId}/withdraw")
+    inner class WithdrawTeam {
+        @Test
+        fun `should withdraw team from competition`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val request = WithdrawTeamRequest(reason = "팀 해산으로 인한 탈퇴")
+            val result =
+                TeamWithdrawalResult(
+                    competitionId = competitionId,
+                    teamId = teamId,
+                    teamName = "한강 타이거즈",
+                    withdrawnPlayerCount = 5,
+                    forfeitedGameCount = 3,
+                    updatedBracketEntryCount = 1,
+                    reason = request.reason,
+                )
+
+            every { competitionService.withdrawTeam(competitionId, teamId, request.reason) } returns result
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/backoffice/competitions/$competitionId/teams/$teamId/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.data.teamId").value(teamId))
+                .andExpect(jsonPath("$.data.teamName").value("한강 타이거즈"))
+                .andExpect(jsonPath("$.data.withdrawnPlayerCount").value(5))
+                .andExpect(jsonPath("$.data.forfeitedGameCount").value(3))
+                .andExpect(jsonPath("$.data.updatedBracketEntryCount").value(1))
+
+            verify(exactly = 1) { competitionService.withdrawTeam(competitionId, teamId, request.reason) }
+        }
+
+        @Test
+        fun `should return 400 when competition is not in progress`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val request = WithdrawTeamRequest(reason = "탈퇴 사유")
+
+            every { competitionService.withdrawTeam(competitionId, teamId, request.reason) } throws
+                InvalidCompetitionStateException("Team withdrawal is only allowed for in-progress competitions")
+
+            // when & then
+            mockMvc
+                .perform(
+                    post("/api/backoffice/competitions/$competitionId/teams/$teamId/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                ).andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_COMPETITION_STATE"))
+
+            verify(exactly = 1) { competitionService.withdrawTeam(competitionId, teamId, request.reason) }
         }
     }
 

@@ -307,8 +307,8 @@ class Game private constructor(
         reason: String,
         gameTeams: List<GameTeam>,
     ) {
-        require(status == GameStatus.SCHEDULED || status.isOngoing()) {
-            "예정 또는 진행 중인 경기만 몰수 처리할 수 있습니다."
+        require(status == GameStatus.SCHEDULED || status == GameStatus.POSTPONED || status.isOngoing()) {
+            "예정, 연기, 또는 진행 중인 경기만 몰수 처리할 수 있습니다."
         }
         require(gameTeams.size == 2) {
             "몰수 처리를 위해서는 정확히 2개의 GameTeam이 필요합니다."
