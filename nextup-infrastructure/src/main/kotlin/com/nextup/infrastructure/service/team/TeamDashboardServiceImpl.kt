@@ -9,6 +9,7 @@ import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
+import com.nextup.core.service.standings.StandingsService
 import com.nextup.core.service.team.TeamDashboardService
 import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.core.service.team.dto.GameSummaryForDashboardDto
@@ -17,6 +18,7 @@ import com.nextup.core.service.team.dto.StandingEntryDto
 import com.nextup.core.service.team.dto.TeamDashboardDto
 import com.nextup.core.service.team.dto.TeamStatsSummaryDto
 import com.nextup.core.service.team.dto.TeamSummaryDto
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -37,7 +39,9 @@ class TeamDashboardServiceImpl(
     private val gameTeamRepository: GameTeamRepositoryPort,
     private val teamMembershipService: TeamMembershipService,
     private val attendancePollRepository: AttendancePollRepositoryPort,
+    private val standingsService: StandingsService,
 ) : TeamDashboardService {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         private const val RECENT_RESULTS_LIMIT = 5
@@ -156,6 +160,7 @@ class TeamDashboardServiceImpl(
     /**
      * 팀이 참여 중인 가장 최근 대회에서의 순위 정보를 조회합니다.
      *
+     * StandingsService에 위임하여 순위 계산 로직 중복을 제거합니다.
      * 팀이 여러 대회에 참여 중인 경우 가장 많은 경기를 치른 대회를 기준으로 합니다.
      */
     private fun resolveStanding(
@@ -173,114 +178,29 @@ class TeamDashboardServiceImpl(
         val primaryCompetitionId =
             competitionGameCounts.maxByOrNull { it.value }?.key ?: return null
 
-        // 해당 대회의 모든 GameTeam 조회
-        val competitionGameTeams = gameTeamRepository.findAllByCompetitionId(primaryCompetitionId)
-        val decidedGameTeams =
-            gameTeamRepository.findAllByCompetitionIdWithDecidedResult(primaryCompetitionId)
+        // StandingsService에 위임하여 순위 조회
+        return try {
+            val standings = standingsService.getStandings(primaryCompetitionId)
+            val teamStanding =
+                standings.standings.firstOrNull { it.teamId == teamId }
+                    ?: return null
 
-        if (competitionGameTeams.isEmpty()) return null
-
-        // 대회명 추출
-        val competitionName =
-            competitionGameTeams
-                .firstOrNull()
-                ?.game
-                ?.competition
-                ?.name ?: return null
-
-        // 대회 참여 팀 ID 목록
-        val allTeamIds = competitionGameTeams.map { it.team.id }.distinct()
-
-        // 팀별 성적 계산
-        val teamStatsMap = calculateTeamStatsForStanding(decidedGameTeams, competitionGameTeams)
-
-        // 정렬 (승률 DESC, 득실차 DESC, 득점 DESC)
-        val sortedStats =
-            allTeamIds
-                .mapNotNull { id -> teamStatsMap[id] }
-                .sortedWith(
-                    compareByDescending<TeamStandingStats> { it.winningPercentage }
-                        .thenByDescending { it.runDifferential }
-                        .thenByDescending { it.runsScored },
-                )
-
-        // 해당 팀의 순위 찾기
-        val teamIndex = sortedStats.indexOfFirst { it.teamId == teamId }
-        if (teamIndex < 0) return null
-
-        val teamStats = sortedStats[teamIndex]
-        val leader = sortedStats.firstOrNull()
-
-        val gamesBehind =
-            if (leader == null || leader.teamId == teamId) {
-                BigDecimal.ZERO
-            } else {
-                val winDiff = leader.wins - teamStats.wins
-                val lossDiff = teamStats.losses - leader.losses
-                BigDecimal(winDiff + lossDiff)
-                    .divide(BigDecimal(2), 1, RoundingMode.HALF_UP)
-            }
-
-        return StandingEntryDto(
-            rank = teamIndex + 1,
-            teamId = teamId,
-            teamName = teamStats.teamName,
-            competitionId = primaryCompetitionId,
-            competitionName = competitionName,
-            gamesPlayed = teamStats.gamesPlayed,
-            wins = teamStats.wins,
-            losses = teamStats.losses,
-            draws = teamStats.draws,
-            winningPercentage = teamStats.winningPercentage,
-            gamesBehind = gamesBehind,
-        )
-    }
-
-    /**
-     * 순위 계산용 팀별 통계를 집계합니다.
-     */
-    private fun calculateTeamStatsForStanding(
-        decidedGameTeams: List<com.nextup.core.domain.game.GameTeam>,
-        allGameTeams: List<com.nextup.core.domain.game.GameTeam>,
-    ): Map<Long, TeamStandingStats> {
-        val decidedByTeam = decidedGameTeams.groupBy { it.team.id }
-        val allTeamIds = allGameTeams.map { it.team.id }.distinct()
-
-        return allTeamIds.associateWith { teamId ->
-            val gameTeams = decidedByTeam[teamId] ?: emptyList()
-            val teamName = allGameTeams.first { it.team.id == teamId }.team.name
-            val wins = gameTeams.count { it.result == GameResult.WIN }
-            val losses = gameTeams.count { it.result == GameResult.LOSS }
-            val draws = gameTeams.count { it.result == GameResult.DRAW }
-            val gamesPlayed = wins + losses + draws
-            val runsScored = gameTeams.sumOf { it.totalScore }
-            val runsAllowed =
-                gameTeams.sumOf { gameTeam ->
-                    decidedGameTeams
-                        .filter { it.game.id == gameTeam.game.id && it.team.id != teamId }
-                        .sumOf { it.totalScore }
-                }
-            val runDifferential = runsScored - runsAllowed
-            val winningPercentage =
-                if (gamesPlayed > 0) {
-                    BigDecimal(wins)
-                        .add(BigDecimal(draws).multiply(BigDecimal("0.5")))
-                        .divide(BigDecimal(gamesPlayed), 3, RoundingMode.HALF_UP)
-                } else {
-                    BigDecimal.ZERO
-                }
-
-            TeamStandingStats(
-                teamId = teamId,
-                teamName = teamName,
-                gamesPlayed = gamesPlayed,
-                wins = wins,
-                losses = losses,
-                draws = draws,
-                winningPercentage = winningPercentage,
-                runsScored = runsScored,
-                runDifferential = runDifferential,
+            StandingEntryDto(
+                rank = teamStanding.rank,
+                teamId = teamStanding.teamId,
+                teamName = teamStanding.teamName,
+                competitionId = standings.competitionId,
+                competitionName = standings.competitionName,
+                gamesPlayed = teamStanding.gamesPlayed,
+                wins = teamStanding.wins,
+                losses = teamStanding.losses,
+                draws = teamStanding.draws,
+                winningPercentage = teamStanding.winningPercentage,
+                gamesBehind = teamStanding.gamesBehind,
             )
+        } catch (e: Exception) {
+            log.warn("순위 조회 실패 (competitionId={}): {}", primaryCompetitionId, e.message)
+            null
         }
     }
 
@@ -337,19 +257,4 @@ class TeamDashboardServiceImpl(
             teamEra = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
         )
     }
-
-    /**
-     * 순위 계산용 내부 데이터 클래스
-     */
-    private data class TeamStandingStats(
-        val teamId: Long,
-        val teamName: String,
-        val gamesPlayed: Int,
-        val wins: Int,
-        val losses: Int,
-        val draws: Int,
-        val winningPercentage: BigDecimal,
-        val runsScored: Int,
-        val runDifferential: Int,
-    )
 }
