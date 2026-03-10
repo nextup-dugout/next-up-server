@@ -8,6 +8,7 @@ import com.nextup.core.port.repository.ElectionVoteRepositoryPort
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -31,7 +32,7 @@ class ElectionEventListener(
      * 동률이거나 투표가 없으면 이양하지 않습니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onElectionCompleted(event: ElectionCompletedEvent) {
         if (event.electionType != ElectionType.OWNER_ELECTION) {
             log.debug("선거 완료 이벤트 무시 (OWNER_ELECTION이 아님): electionId={}", event.electionId)
