@@ -4,7 +4,6 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionPlayer
-import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @DisplayName("CompetitionService.withdrawTeam 커버리지 보완")
 class CompetitionServiceWithdrawCoverageTest {
