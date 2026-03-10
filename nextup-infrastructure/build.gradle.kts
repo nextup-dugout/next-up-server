@@ -60,10 +60,13 @@ dependencies {
     // Spring Cache
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // PDF Generation (OpenPDF)
+    implementation("com.github.librepdf:openpdf:2.0.3")
+    
     // QR Code Generation (ZXing)
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
-
+    
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.assertj:assertj-core:3.27.3")
