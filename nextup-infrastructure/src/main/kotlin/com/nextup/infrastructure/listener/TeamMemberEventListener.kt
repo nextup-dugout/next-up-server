@@ -19,6 +19,7 @@ import com.nextup.core.port.repository.StadiumBookingRepositoryPort
 import com.nextup.core.port.repository.TeamJoinRequestRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -49,7 +50,7 @@ class TeamMemberEventListener(
      * 제거 후 라인업이 비어 있으면 상태를 DRAFT로 되돌립니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun handleTeamMemberLeft(event: TeamMemberLeftEvent) {
         logger.info("팀원 탈퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
@@ -63,7 +64,7 @@ class TeamMemberEventListener(
      * 제거 후 라인업이 비어 있으면 상태를 DRAFT로 되돌립니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun handleTeamMemberKicked(event: TeamMemberKickedEvent) {
         logger.info("팀원 강퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
@@ -80,7 +81,7 @@ class TeamMemberEventListener(
      * - PENDING 상태의 TeamJoinRequest → 일괄 REJECTED
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun handleTeamDisbanded(event: TeamDisbandedEvent) {
         logger.info("팀 해산 연쇄 처리 - teamId={}", event.teamId)
 

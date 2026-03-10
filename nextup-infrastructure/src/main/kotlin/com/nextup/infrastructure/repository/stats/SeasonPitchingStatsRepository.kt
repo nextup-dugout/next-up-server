@@ -129,7 +129,7 @@ interface SeasonPitchingStatsRepository :
         SELECT DISTINCT sps FROM SeasonPitchingStats sps
         WHERE sps.player.id IN (
             SELECT pr.gamePlayer.player.id FROM PitchingRecord pr
-            WHERE pr.gamePlayer.game.id = :gameId
+            WHERE pr.gamePlayer.gameTeam.game.id = :gameId
         )
         AND sps.year = (
             SELECT FUNCTION('YEAR', g.scheduledAt) FROM Game g WHERE g.id = :gameId

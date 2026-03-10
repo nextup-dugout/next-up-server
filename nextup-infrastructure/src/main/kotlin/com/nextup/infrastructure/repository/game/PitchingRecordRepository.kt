@@ -36,7 +36,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
     """,
     )
     override fun findAllByGameId(
@@ -51,7 +51,7 @@ interface PitchingRecordRepository :
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
         WHERE gp.player.id = :playerId
-        ORDER BY gp.game.scheduledDate DESC
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
     """,
     )
     override fun findAllByPlayerId(
@@ -66,7 +66,7 @@ interface PitchingRecordRepository :
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
         WHERE gp.player.id = :playerId
-        ORDER BY gp.game.scheduledDate DESC
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
         LIMIT :limit
     """,
     )
@@ -84,7 +84,7 @@ interface PitchingRecordRepository :
         JOIN pr.gamePlayer gp
         JOIN gp.gameTeam gt
         WHERE gt.team.id = :teamId
-        AND gp.game.id = :gameId
+        AND gp.gameTeam.game.id = :gameId
     """,
     )
     override fun findAllByTeamIdAndGameId(
@@ -99,7 +99,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND pr.isStartingPitcher = true
     """,
     )
@@ -114,7 +114,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND pr.isStartingPitcher = false
     """,
     )
@@ -142,7 +142,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND pr.decision = 'WIN'
     """,
     )
@@ -157,7 +157,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND pr.decision = 'LOSS'
     """,
     )
@@ -172,7 +172,7 @@ interface PitchingRecordRepository :
         """
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND pr.decision = 'SAVE'
     """,
     )
@@ -248,8 +248,8 @@ interface PitchingRecordRepository :
         SELECT pr FROM PitchingRecord pr
         JOIN pr.gamePlayer gp
         WHERE gp.player.id = :playerId
-        AND FUNCTION('YEAR', gp.game.scheduledAt) = :year
-        ORDER BY gp.game.scheduledAt DESC
+        AND FUNCTION('YEAR', gp.gameTeam.game.scheduledAt) = :year
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
     """,
     )
     override fun findAllByPlayerIdAndYear(
@@ -266,7 +266,7 @@ interface PitchingRecordRepository :
         JOIN pr.gamePlayer gp
         JOIN gp.gameTeam gt
         WHERE gt.team.id = :teamId
-        AND gp.game.id IN :gameIds
+        AND gp.gameTeam.game.id IN :gameIds
     """,
     )
     override fun findAllByTeamIdAndGameIds(

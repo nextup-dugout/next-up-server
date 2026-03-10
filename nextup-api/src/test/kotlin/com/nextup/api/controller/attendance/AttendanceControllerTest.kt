@@ -30,7 +30,7 @@ class AttendanceControllerTest {
 
         mockMvc =
             MockMvcBuilders
-                .standaloneSetup(AttendanceController(nudgeService))
+                .standaloneSetup(NudgeController(nudgeService))
                 .setControllerAdvice(GlobalExceptionHandler())
                 .build()
     }

@@ -9,6 +9,7 @@ import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -42,7 +43,7 @@ class GameCancelEventListener(
      * AFTER_COMMIT 단계에서 실행하여 취소 트랜잭션이 완전히 커밋된 이후 통계를 역산합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onGameCancelled(event: GameCancelledEvent) {
         val gameId = event.gameId
         logger.info("경기 취소 스탯 롤백 시작 (gameId={})", gameId)

@@ -11,6 +11,8 @@ import java.time.LocalDate
 interface PlayerTeamHistoryRepository :
     JpaRepository<PlayerTeamHistory, Long>,
     PlayerTeamHistoryRepositoryPort {
+    override fun findByIdOrNull(id: Long): PlayerTeamHistory? = findById(id).orElse(null)
+
     override fun findByPlayerId(playerId: Long): List<PlayerTeamHistory>
 
     override fun findByTeamId(teamId: Long): List<PlayerTeamHistory>

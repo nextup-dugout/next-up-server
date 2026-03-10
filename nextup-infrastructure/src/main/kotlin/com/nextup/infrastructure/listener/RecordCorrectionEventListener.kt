@@ -10,6 +10,7 @@ import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -31,7 +32,7 @@ class RecordCorrectionEventListener(
     private val logger = LoggerFactory.getLogger(RecordCorrectionEventListener::class.java)
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onRecordCorrected(event: RecordCorrectedEvent) {
         val delta = event.newValue.toInt() - event.oldValue.toInt()
         if (delta == 0) {

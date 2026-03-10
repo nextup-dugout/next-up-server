@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query
 interface CompetitionRepository :
     JpaRepository<Competition, Long>,
     CompetitionRepositoryPort {
+    override fun findByIdOrNull(id: Long): Competition? = findById(id).orElse(null)
+
     /**
      * 리그별 대회 목록 조회
      */

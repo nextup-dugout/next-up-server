@@ -12,7 +12,10 @@ interface GameRepository :
     GameRepositoryPort {
     override fun findByIdOrNull(id: Long): Game? = findById(id).orElse(null)
 
-    override fun findAllByIds(ids: List<Long>): List<Game> = findAllById(ids)
+    @Query("SELECT g FROM Game g WHERE g.id IN :ids")
+    override fun findAllByIds(
+        @Param("ids") ids: List<Long>,
+    ): List<Game>
 
     @Query("SELECT g FROM Game g WHERE g.competition.id = :competitionId ORDER BY g.scheduledAt ASC")
     override fun findByCompetitionId(

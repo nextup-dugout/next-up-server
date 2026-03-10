@@ -2,6 +2,7 @@ package com.nextup.infrastructure.security.userdetails
 
 import com.nextup.core.domain.user.Role
 import com.nextup.core.domain.user.User
+import com.nextup.infrastructure.repository.UserJpaRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

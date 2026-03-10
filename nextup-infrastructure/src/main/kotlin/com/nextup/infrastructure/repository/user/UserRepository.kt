@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.Query
 interface UserRepository :
     JpaRepository<User, Long>,
     UserRepositoryPort {
+    override fun findByIdOrNull(id: Long): User? = findById(id).orElse(null)
+
     override fun findByEmail(email: String): User?
 
     override fun existsByEmail(email: String): Boolean

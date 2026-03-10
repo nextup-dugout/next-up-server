@@ -46,25 +46,6 @@ class ProfileController(
     }
 
     /**
-     * 연동된 OAuth 계정 목록을 조회합니다.
-     */
-    @GetMapping("/oauth-accounts")
-    fun getLinkedOAuthAccounts(
-        @AuthenticationPrincipal userId: Long,
-    ): ApiResponse<List<LinkedOAuthProvider>> {
-        val user = userService.getActiveById(userId)
-        val providers =
-            user.oauthAccounts.map {
-                LinkedOAuthProvider(
-                    provider = it.provider.name,
-                    displayName = it.provider.displayName,
-                    connectedAt = it.connectedAt,
-                )
-            }
-        return ApiResponse.success(providers)
-    }
-
-    /**
      * 회원 탈퇴합니다 (계정 비활성화).
      */
     @DeleteMapping

@@ -43,7 +43,7 @@ interface SeasonFieldingStatsRepository :
         SELECT DISTINCT sfs FROM SeasonFieldingStats sfs
         WHERE sfs.player.id IN (
             SELECT fr.gamePlayer.player.id FROM FieldingRecord fr
-            WHERE fr.gamePlayer.game.id = :gameId
+            WHERE fr.gamePlayer.gameTeam.game.id = :gameId
         )
         AND sfs.year = (
             SELECT FUNCTION('YEAR', g.scheduledAt) FROM Game g WHERE g.id = :gameId

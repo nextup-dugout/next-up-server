@@ -1,21 +1,11 @@
 package com.nextup.infrastructure.security.userdetails
 
-import com.nextup.core.domain.user.User
-import org.springframework.data.jpa.repository.JpaRepository
+import com.nextup.infrastructure.repository.UserJpaRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-
-/**
- * User JPA Repository
- */
-interface UserJpaRepository : JpaRepository<User, Long> {
-    fun findByEmail(email: String): User?
-
-    fun existsByEmail(email: String): Boolean
-}
 
 /**
  * Spring Security UserDetailsService 구현체
