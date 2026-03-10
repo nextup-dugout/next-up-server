@@ -13,6 +13,7 @@ import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.port.repository.DeviceTokenRepositoryPort
 import com.nextup.core.port.repository.NotificationPreferenceRepositoryPort
 import com.nextup.core.port.repository.NotificationRepositoryPort
+import com.nextup.core.port.service.PushNotificationPort
 import com.nextup.core.service.notification.dto.RegisterDeviceRequest
 import com.nextup.core.service.notification.dto.SendNotificationRequest
 import com.nextup.core.service.notification.dto.UpdatePreferenceRequest
@@ -28,6 +29,7 @@ class NotificationServiceTest {
     private lateinit var notificationRepository: NotificationRepositoryPort
     private lateinit var deviceTokenRepository: DeviceTokenRepositoryPort
     private lateinit var preferenceRepository: NotificationPreferenceRepositoryPort
+    private lateinit var pushNotificationPort: PushNotificationPort
     private lateinit var notificationService: NotificationService
 
     @BeforeEach
@@ -35,11 +37,13 @@ class NotificationServiceTest {
         notificationRepository = mockk()
         deviceTokenRepository = mockk()
         preferenceRepository = mockk()
+        pushNotificationPort = mockk(relaxed = true)
         notificationService =
             NotificationService(
                 notificationRepository,
                 deviceTokenRepository,
                 preferenceRepository,
+                pushNotificationPort,
             )
     }
 
@@ -58,6 +62,7 @@ class NotificationServiceTest {
             )
 
         every { notificationRepository.save(any()) } answers { firstArg() }
+        every { deviceTokenRepository.findByUserId(1L) } returns emptyList()
 
         // when
         val result = notificationService.sendNotification(request)
@@ -86,6 +91,7 @@ class NotificationServiceTest {
             )
 
         every { notificationRepository.save(any()) } answers { firstArg() }
+        every { deviceTokenRepository.findByUserId(1L) } returns emptyList()
 
         // when
         val result = notificationService.sendNotification(request)
