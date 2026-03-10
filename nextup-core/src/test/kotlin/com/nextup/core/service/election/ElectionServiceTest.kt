@@ -5,12 +5,10 @@ import com.nextup.common.exception.DuplicateVoteException
 import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.domain.election.*
-import com.nextup.core.domain.team.TeamMember
-import com.nextup.core.domain.team.TeamMemberRole
+import com.nextup.core.domain.event.ElectionCompletedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.election.dto.*
 import io.mockk.every
 import io.mockk.mockk
@@ -21,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -29,7 +28,7 @@ class ElectionServiceTest {
     private lateinit var electionRepository: ElectionRepositoryPort
     private lateinit var candidateRepository: CandidateRepositoryPort
     private lateinit var electionVoteRepository: ElectionVoteRepositoryPort
-    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var electionService: ElectionService
 
     @BeforeEach
@@ -37,13 +36,13 @@ class ElectionServiceTest {
         electionRepository = mockk()
         candidateRepository = mockk()
         electionVoteRepository = mockk()
-        teamMemberRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         electionService =
             ElectionService(
                 electionRepository,
                 candidateRepository,
                 electionVoteRepository,
-                teamMemberRepository,
+                eventPublisher,
             )
     }
 
@@ -198,107 +197,32 @@ class ElectionServiceTest {
     }
 
     @Nested
-    @DisplayName("completeElection - 자동 OWNER 이양")
-    inner class CompleteElectionOwnerTransfer {
+    @DisplayName("completeElection - 도메인 이벤트 발행")
+    inner class CompleteElectionEventPublishing {
         @Test
-        fun `OWNER_ELECTION 완료 시 단독 최다 득표자에게 OWNER 이양`() {
+        fun `OWNER_ELECTION 완료 시 ElectionCompletedEvent를 발행한다`() {
             // given
             val election = createTestOwnerElection(1L, ElectionStatus.IN_PROGRESS)
-            val winnerCandidate = createTestCandidate(10L, 1L, 100L, "김철수")
-            val currentOwner =
-                mockk<TeamMember>(relaxed = true) {
-                    every { id } returns 200L
-                    every { role } returns TeamMemberRole.OWNER
-                }
-            val winner =
-                mockk<TeamMember>(relaxed = true) {
-                    every { id } returns 100L
-                    every { role } returns TeamMemberRole.MEMBER
-                }
-
             every { electionRepository.findById(1L) } returns election
-            every {
-                electionVoteRepository.countByElectionIdGroupByCandidateId(1L)
-            } returns mapOf(10L to 5L, 11L to 3L)
-            every { candidateRepository.findById(10L) } returns winnerCandidate
-            every { teamMemberRepository.findByIdOrNull(100L) } returns winner
-            every { teamMemberRepository.findByTeamId(1L) } returns listOf(currentOwner, winner)
-            every { teamMemberRepository.save(any()) } answers { firstArg() }
 
             // when
             val result = electionService.completeElection(1L)
 
             // then
             assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify { winner.role = TeamMemberRole.OWNER }
-            verify { currentOwner.role = TeamMemberRole.MEMBER }
-            verify(exactly = 2) { teamMemberRepository.save(any()) }
+            verify {
+                eventPublisher.publishEvent(
+                    ElectionCompletedEvent(
+                        electionId = 1L,
+                        teamId = 1L,
+                        electionType = ElectionType.OWNER_ELECTION,
+                    ),
+                )
+            }
         }
 
         @Test
-        fun `OWNER_ELECTION 동률이면 자동 이양하지 않음`() {
-            // given
-            val election = createTestOwnerElection(1L, ElectionStatus.IN_PROGRESS)
-
-            every { electionRepository.findById(1L) } returns election
-            every {
-                electionVoteRepository.countByElectionIdGroupByCandidateId(1L)
-            } returns mapOf(10L to 5L, 11L to 5L)
-
-            // when
-            val result = electionService.completeElection(1L)
-
-            // then
-            assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify(exactly = 0) { teamMemberRepository.save(any()) }
-        }
-
-        @Test
-        fun `OWNER_ELECTION 투표가 없으면 자동 이양하지 않음`() {
-            // given
-            val election = createTestOwnerElection(1L, ElectionStatus.IN_PROGRESS)
-
-            every { electionRepository.findById(1L) } returns election
-            every {
-                electionVoteRepository.countByElectionIdGroupByCandidateId(1L)
-            } returns emptyMap()
-
-            // when
-            val result = electionService.completeElection(1L)
-
-            // then
-            assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify(exactly = 0) { teamMemberRepository.save(any()) }
-        }
-
-        @Test
-        fun `당선자가 이미 OWNER이면 이양하지 않음`() {
-            // given
-            val election = createTestOwnerElection(1L, ElectionStatus.IN_PROGRESS)
-            val winnerCandidate = createTestCandidate(10L, 1L, 100L, "김철수")
-            val winner =
-                mockk<TeamMember>(relaxed = true) {
-                    every { id } returns 100L
-                    every { role } returns TeamMemberRole.OWNER
-                }
-
-            every { electionRepository.findById(1L) } returns election
-            every {
-                electionVoteRepository.countByElectionIdGroupByCandidateId(1L)
-            } returns mapOf(10L to 5L)
-            every { candidateRepository.findById(10L) } returns winnerCandidate
-            every { teamMemberRepository.findByIdOrNull(100L) } returns winner
-
-            // when
-            val result = electionService.completeElection(1L)
-
-            // then
-            assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify(exactly = 0) { teamMemberRepository.save(any()) }
-        }
-
-        @Test
-        fun `CAPTAIN_ELECTION이면 자동 이양하지 않음`() {
+        fun `CAPTAIN_ELECTION 완료 시에도 ElectionCompletedEvent를 발행한다`() {
             // given
             val election = createTestElection(1L, ElectionStatus.IN_PROGRESS)
             every { electionRepository.findById(1L) } returns election
@@ -308,36 +232,15 @@ class ElectionServiceTest {
 
             // then
             assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify(exactly = 0) { teamMemberRepository.save(any()) }
-        }
-
-        @Test
-        fun `기존 OWNER가 없어도 당선자에게 OWNER 부여`() {
-            // given
-            val election = createTestOwnerElection(1L, ElectionStatus.IN_PROGRESS)
-            val winnerCandidate = createTestCandidate(10L, 1L, 100L, "김철수")
-            val winner =
-                mockk<TeamMember>(relaxed = true) {
-                    every { id } returns 100L
-                    every { role } returns TeamMemberRole.MEMBER
-                }
-
-            every { electionRepository.findById(1L) } returns election
-            every {
-                electionVoteRepository.countByElectionIdGroupByCandidateId(1L)
-            } returns mapOf(10L to 5L)
-            every { candidateRepository.findById(10L) } returns winnerCandidate
-            every { teamMemberRepository.findByIdOrNull(100L) } returns winner
-            every { teamMemberRepository.findByTeamId(1L) } returns listOf(winner)
-            every { teamMemberRepository.save(any()) } answers { firstArg() }
-
-            // when
-            val result = electionService.completeElection(1L)
-
-            // then
-            assertThat(result.status).isEqualTo(ElectionStatus.COMPLETED)
-            verify { winner.role = TeamMemberRole.OWNER }
-            verify(exactly = 1) { teamMemberRepository.save(any()) }
+            verify {
+                eventPublisher.publishEvent(
+                    ElectionCompletedEvent(
+                        electionId = 1L,
+                        teamId = 1L,
+                        electionType = ElectionType.CAPTAIN_ELECTION,
+                    ),
+                )
+            }
         }
     }
 
