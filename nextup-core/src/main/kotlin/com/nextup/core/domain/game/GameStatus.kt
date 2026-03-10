@@ -27,6 +27,9 @@ enum class GameStatus(
 
     /** 콜드게임 */
     CALLED("콜드게임", "점수차 또는 기상 조건으로 조기 종료된 경기"),
+
+    /** 경기 중단 (우천 등으로 도중 중단, 이어서 재개 가능) */
+    SUSPENDED("중단", "경기 도중 중단된 상태 (재개 가능)"),
     ;
 
     /**
@@ -48,4 +51,9 @@ enum class GameStatus(
      * 경기가 취소/연기된 상태인지 확인합니다.
      */
     fun isCancelledOrPostponed(): Boolean = this in listOf(CANCELLED, POSTPONED)
+
+    /**
+     * 경기가 중단된 상태인지 확인합니다.
+     */
+    fun isSuspended(): Boolean = this == SUSPENDED
 }
