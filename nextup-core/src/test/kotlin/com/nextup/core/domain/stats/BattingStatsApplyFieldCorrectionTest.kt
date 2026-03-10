@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 @DisplayName("타격 통계 applyFieldCorrection 테스트")
 class BattingStatsApplyFieldCorrectionTest {
@@ -67,9 +68,10 @@ class BattingStatsApplyFieldCorrectionTest {
         @Test
         fun `음수 델타 적용 시 0 미만으로 내려가지 않음`() {
             val stats = SeasonBattingStats.create(testPlayer, 2024)
-            stats.applyFieldCorrection("plateAppearances", 2)
-            stats.applyFieldCorrection("atBats", 2)
-            stats.applyFieldCorrection("hits", 2)
+            // 불변식을 만족하는 초기값 설정 (PA ≥ AB ≥ H ≥ 2B+3B+HR)
+            stats.applyFieldCorrection("plateAppearances", 20)
+            stats.applyFieldCorrection("atBats", 15)
+            stats.applyFieldCorrection("hits", 10)
             stats.applyFieldCorrection("doubles", 2)
             stats.applyFieldCorrection("triples", 2)
             stats.applyFieldCorrection("homeRuns", 2)
@@ -85,24 +87,24 @@ class BattingStatsApplyFieldCorrectionTest {
             stats.applyFieldCorrection("caughtStealing", 2)
             stats.applyFieldCorrection("groundedIntoDoublePlays", 2)
 
-            // 모든 필드에 -10 적용 (현재값 2보다 큰 음수)
-            stats.applyFieldCorrection("plateAppearances", -10)
-            stats.applyFieldCorrection("atBats", -10)
-            stats.applyFieldCorrection("hits", -10)
-            stats.applyFieldCorrection("doubles", -10)
-            stats.applyFieldCorrection("triples", -10)
-            stats.applyFieldCorrection("homeRuns", -10)
-            stats.applyFieldCorrection("runs", -10)
-            stats.applyFieldCorrection("runsBattedIn", -10)
-            stats.applyFieldCorrection("walks", -10)
-            stats.applyFieldCorrection("intentionalWalks", -10)
-            stats.applyFieldCorrection("hitByPitch", -10)
-            stats.applyFieldCorrection("strikeouts", -10)
-            stats.applyFieldCorrection("sacrificeBunts", -10)
-            stats.applyFieldCorrection("sacrificeFlies", -10)
-            stats.applyFieldCorrection("stolenBases", -10)
-            stats.applyFieldCorrection("caughtStealing", -10)
-            stats.applyFieldCorrection("groundedIntoDoublePlays", -10)
+            // 역의존 순서로 큰 음수 적용 (2B+3B+HR → H → AB → PA)
+            stats.applyFieldCorrection("doubles", -100)
+            stats.applyFieldCorrection("triples", -100)
+            stats.applyFieldCorrection("homeRuns", -100)
+            stats.applyFieldCorrection("hits", -100)
+            stats.applyFieldCorrection("atBats", -100)
+            stats.applyFieldCorrection("plateAppearances", -100)
+            stats.applyFieldCorrection("runs", -100)
+            stats.applyFieldCorrection("runsBattedIn", -100)
+            stats.applyFieldCorrection("walks", -100)
+            stats.applyFieldCorrection("intentionalWalks", -100)
+            stats.applyFieldCorrection("hitByPitch", -100)
+            stats.applyFieldCorrection("strikeouts", -100)
+            stats.applyFieldCorrection("sacrificeBunts", -100)
+            stats.applyFieldCorrection("sacrificeFlies", -100)
+            stats.applyFieldCorrection("stolenBases", -100)
+            stats.applyFieldCorrection("caughtStealing", -100)
+            stats.applyFieldCorrection("groundedIntoDoublePlays", -100)
 
             assertThat(stats.plateAppearances).isZero()
             assertThat(stats.atBats).isZero()
@@ -124,10 +126,11 @@ class BattingStatsApplyFieldCorrectionTest {
         }
 
         @Test
-        fun `존재하지 않는 필드명은 무시됨`() {
+        fun `존재하지 않는 필드명에 대해 예외가 발생함`() {
             val stats = SeasonBattingStats.create(testPlayer, 2024)
-            stats.applyFieldCorrection("unknownField", 5)
-            assertThat(stats.plateAppearances).isZero()
+            assertThrows<IllegalArgumentException> {
+                stats.applyFieldCorrection("unknownField", 5)
+            }
         }
     }
 
@@ -214,6 +217,14 @@ class BattingStatsApplyFieldCorrectionTest {
             assertThat(stats.stolenBases).isZero()
             assertThat(stats.caughtStealing).isZero()
             assertThat(stats.groundedIntoDoublePlays).isZero()
+        }
+
+        @Test
+        fun `존재하지 않는 필드명에 대해 예외가 발생함`() {
+            val stats = CareerBattingStats.create(testPlayer)
+            assertThrows<IllegalArgumentException> {
+                stats.applyFieldCorrection("unknownField", 5)
+            }
         }
     }
 }
