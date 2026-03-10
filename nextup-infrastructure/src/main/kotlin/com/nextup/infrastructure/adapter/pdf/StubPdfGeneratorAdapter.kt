@@ -2,16 +2,18 @@ package com.nextup.infrastructure.adapter.pdf
 
 import com.nextup.core.port.PdfGeneratorPort
 import com.nextup.core.service.game.dto.ScoresheetDto
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.nio.charset.StandardCharsets
 
 /**
  * PDF 생성 어댑터 Stub 구현
  *
- * 실제 PDF 라이브러리 연동 전까지 사용하는 임시 구현체입니다.
- * 향후 iText, PDFBox 등의 라이브러리로 교체 예정입니다.
+ * 테스트 환경에서만 활성화됩니다.
+ * 실제 PDF 생성은 OpenPdfScoresheetGenerator가 담당합니다.
  */
 @Component
+@Profile("test")
 class StubPdfGeneratorAdapter : PdfGeneratorPort {
     override fun generateScoresheetPdf(scoresheet: ScoresheetDto): ByteArray {
         val content = buildScoresheetText(scoresheet)

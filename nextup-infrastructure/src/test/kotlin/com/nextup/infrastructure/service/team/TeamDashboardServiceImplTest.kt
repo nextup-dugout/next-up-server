@@ -17,6 +17,9 @@ import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
+import com.nextup.core.service.standings.StandingsService
+import com.nextup.core.service.standings.dto.StandingsDto
+import com.nextup.core.service.standings.dto.TeamStandingDto
 import com.nextup.core.service.team.TeamMembershipService
 import io.mockk.every
 import io.mockk.mockk
@@ -36,6 +39,7 @@ class TeamDashboardServiceImplTest {
     private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var teamMembershipService: TeamMembershipService
     private lateinit var attendancePollRepository: AttendancePollRepositoryPort
+    private lateinit var standingsService: StandingsService
     private lateinit var service: TeamDashboardServiceImpl
 
     private lateinit var association: Association
@@ -50,6 +54,7 @@ class TeamDashboardServiceImplTest {
         gameTeamRepository = mockk()
         teamMembershipService = mockk()
         attendancePollRepository = mockk()
+        standingsService = mockk()
 
         service =
             TeamDashboardServiceImpl(
@@ -58,6 +63,7 @@ class TeamDashboardServiceImplTest {
                 gameTeamRepository,
                 teamMembershipService,
                 attendancePollRepository,
+                standingsService,
             )
 
         association = Association(name = "테스트 협회", id = 1L)
@@ -411,8 +417,6 @@ class TeamDashboardServiceImplTest {
         @DisplayName("팀이 리더가 아닐 때 gamesBehind가 올바르게 계산된다")
         fun `순위에서 리더가 아닌 팀의 gamesBehind가 계산된다`() {
             // given
-            val leaderTeam =
-                Team(league = league, name = "1위팀", city = "서울", foundedYear = 2019, id = 10L)
             val game1 =
                 makeGame(
                     id = 50L,
@@ -426,38 +430,65 @@ class TeamDashboardServiceImplTest {
                     status = GameStatus.FINISHED,
                 )
 
-            // leaderTeam: 2승 0패 / team(id=1): 0승 2패
-            val gt1Home =
-                makeGameTeam(game1, leaderTeam, HomeAway.HOME, score = 5, result = GameResult.WIN)
             val gt1Away =
                 makeGameTeam(game1, team, HomeAway.AWAY, score = 1, result = GameResult.LOSS)
-            val gt2Home =
-                makeGameTeam(game2, leaderTeam, HomeAway.HOME, score = 4, result = GameResult.WIN)
             val gt2Away =
                 makeGameTeam(game2, team, HomeAway.AWAY, score = 2, result = GameResult.LOSS)
 
-            // team(id=1)이 참가한 gameTeams
             every { teamRepository.findByIdWithLeague(1L) } returns team
             every { teamMembershipService.getTeamMemberCount(1L) } returns 10
             every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gt1Away, gt2Away)
             every { gameRepository.findAllByIds(listOf(50L, 51L)) } returns listOf(game1, game2)
             every {
                 gameTeamRepository.findAllByGameIds(listOf(50L, 51L))
-            } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away)
-            // 대회 전체 gameTeams
-            every { gameTeamRepository.findAllByCompetitionId(100L) } returns
-                listOf(gt1Home, gt1Away, gt2Home, gt2Away)
-            every {
-                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
-            } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away)
+            } returns listOf(gt1Away, gt2Away)
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { standingsService.getStandings(100L) } returns
+                StandingsDto(
+                    competitionId = 100L,
+                    competitionName = "봄리그",
+                    totalGamesPerTeam = 2,
+                    standings =
+                        listOf(
+                            TeamStandingDto(
+                                rank = 1,
+                                teamId = 10L,
+                                teamName = "1위팀",
+                                gamesPlayed = 2,
+                                remainingGames = 0,
+                                wins = 2,
+                                losses = 0,
+                                draws = 0,
+                                winningPercentage = java.math.BigDecimal("1.000"),
+                                gamesBehind = java.math.BigDecimal("0.0"),
+                                runsScored = 9,
+                                runsAllowed = 3,
+                                runDifferential = 6,
+                            ),
+                            TeamStandingDto(
+                                rank = 2,
+                                teamId = 1L,
+                                teamName = "테스트팀",
+                                gamesPlayed = 2,
+                                remainingGames = 0,
+                                wins = 0,
+                                losses = 2,
+                                draws = 0,
+                                winningPercentage = java.math.BigDecimal("0.000"),
+                                gamesBehind = java.math.BigDecimal("2.0"),
+                                runsScored = 3,
+                                runsAllowed = 9,
+                                runDifferential = -6,
+                            ),
+                        ),
+                    lastUpdated = LocalDateTime.now(),
+                )
 
             // when
             val result = service.getTeamDashboard(1L)
 
             // then
             assertThat(result.standing).isNotNull
-            // leaderTeam: 2W 0L, team: 0W 2L → gamesBehind = (2-0 + 2-0)/2 = 2.0
             assertThat(result.standing!!.gamesBehind).isEqualByComparingTo("2.0")
             assertThat(result.standing!!.rank).isEqualTo(2)
         }
@@ -466,10 +497,6 @@ class TeamDashboardServiceImplTest {
         @DisplayName("팀이 대회 순위 목록에 없을 때 standing은 null이다")
         fun `대회 순위에서 팀을 찾을 수 없으면 standing은 null이다`() {
             // given
-            val otherTeam1 =
-                Team(league = league, name = "다른팀A", city = "인천", foundedYear = 2018, id = 20L)
-            val otherTeam2 =
-                Team(league = league, name = "다른팀B", city = "수원", foundedYear = 2019, id = 21L)
             val game =
                 makeGame(
                     id = 60L,
@@ -477,29 +504,45 @@ class TeamDashboardServiceImplTest {
                     status = GameStatus.FINISHED,
                 )
 
-            // team(id=1)은 allGameTeams에는 있지만 competition의 전체 gameTeams에는 없는 상황
             val teamGt = makeGameTeam(game, team, HomeAway.HOME, score = 3, result = GameResult.WIN)
-            val gt1 =
-                makeGameTeam(game, otherTeam1, HomeAway.HOME, score = 5, result = GameResult.WIN)
-            val gt2 =
-                makeGameTeam(game, otherTeam2, HomeAway.AWAY, score = 2, result = GameResult.LOSS)
 
             every { teamRepository.findByIdWithLeague(1L) } returns team
             every { teamMembershipService.getTeamMemberCount(1L) } returns 10
             every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(teamGt)
             every { gameRepository.findAllByIds(listOf(60L)) } returns listOf(game)
-            every { gameTeamRepository.findAllByGameIds(listOf(60L)) } returns listOf(gt1, gt2)
-            // competitionId 100L의 전체 목록에는 team(id=1)이 없음
-            every { gameTeamRepository.findAllByCompetitionId(100L) } returns listOf(gt1, gt2)
-            every {
-                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(100L)
-            } returns listOf(gt1, gt2)
+            every { gameTeamRepository.findAllByGameIds(listOf(60L)) } returns listOf(teamGt)
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            // StandingsService 결과에 team(id=1)이 없음
+            every { standingsService.getStandings(100L) } returns
+                StandingsDto(
+                    competitionId = 100L,
+                    competitionName = "봄리그",
+                    totalGamesPerTeam = 1,
+                    standings =
+                        listOf(
+                            TeamStandingDto(
+                                rank = 1,
+                                teamId = 20L,
+                                teamName = "다른팀A",
+                                gamesPlayed = 1,
+                                remainingGames = 0,
+                                wins = 1,
+                                losses = 0,
+                                draws = 0,
+                                winningPercentage = java.math.BigDecimal("1.000"),
+                                gamesBehind = java.math.BigDecimal("0.0"),
+                                runsScored = 5,
+                                runsAllowed = 2,
+                                runDifferential = 3,
+                            ),
+                        ),
+                    lastUpdated = LocalDateTime.now(),
+                )
 
             // when
             val result = service.getTeamDashboard(1L)
 
-            // then — teamIndex < 0 분기 → standing == null
+            // then — team이 순위 목록에 없음 → standing == null
             assertThat(result.standing).isNull()
         }
 
@@ -554,7 +597,6 @@ class TeamDashboardServiceImplTest {
 
             every { teamRepository.findByIdWithLeague(1L) } returns team
             every { teamMembershipService.getTeamMemberCount(1L) } returns 10
-            // team이 참여한 gameTeams: comp100 1경기, comp200 2경기
             every {
                 gameTeamRepository.findAllByTeamId(1L)
             } returns listOf(gt1Home, gt2Home, gt3Home)
@@ -564,13 +606,48 @@ class TeamDashboardServiceImplTest {
             every {
                 gameTeamRepository.findAllByGameIds(listOf(70L, 71L, 72L))
             } returns listOf(gt1Home, gt1Away, gt2Home, gt2Away, gt3Home, gt3Away)
-            // primaryCompetition은 경기 수가 많은 200L
-            every { gameTeamRepository.findAllByCompetitionId(200L) } returns
-                listOf(gt2Home, gt2Away, gt3Home, gt3Away)
-            every {
-                gameTeamRepository.findAllByCompetitionIdWithDecidedResult(200L)
-            } returns listOf(gt2Home, gt2Away, gt3Home, gt3Away)
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            // primaryCompetition은 경기 수가 많은 200L → StandingsService에 위임
+            every { standingsService.getStandings(200L) } returns
+                StandingsDto(
+                    competitionId = 200L,
+                    competitionName = "여름리그",
+                    totalGamesPerTeam = 2,
+                    standings =
+                        listOf(
+                            TeamStandingDto(
+                                rank = 1,
+                                teamId = 1L,
+                                teamName = "테스트팀",
+                                gamesPlayed = 2,
+                                remainingGames = 0,
+                                wins = 2,
+                                losses = 0,
+                                draws = 0,
+                                winningPercentage = java.math.BigDecimal("1.000"),
+                                gamesBehind = java.math.BigDecimal("0.0"),
+                                runsScored = 9,
+                                runsAllowed = 2,
+                                runDifferential = 7,
+                            ),
+                            TeamStandingDto(
+                                rank = 2,
+                                teamId = 2L,
+                                teamName = "상대팀",
+                                gamesPlayed = 2,
+                                remainingGames = 0,
+                                wins = 0,
+                                losses = 2,
+                                draws = 0,
+                                winningPercentage = java.math.BigDecimal("0.000"),
+                                gamesBehind = java.math.BigDecimal("2.0"),
+                                runsScored = 2,
+                                runsAllowed = 9,
+                                runDifferential = -7,
+                            ),
+                        ),
+                    lastUpdated = LocalDateTime.now(),
+                )
 
             // when
             val result = service.getTeamDashboard(1L)
