@@ -32,10 +32,11 @@ class PositionHistoryConverterTest {
 
         @Test
         fun `여러 항목을 CSV로 변환한다`() {
-            val entries = listOf(
-                PositionHistoryEntry(3, Position.SHORTSTOP),
-                PositionHistoryEntry(6, Position.SECOND_BASE),
-            )
+            val entries =
+                listOf(
+                    PositionHistoryEntry(3, Position.SHORTSTOP),
+                    PositionHistoryEntry(6, Position.SECOND_BASE),
+                )
 
             assertThat(converter.convertToDatabaseColumn(entries))
                 .isEqualTo("3:SHORTSTOP,6:SECOND_BASE")
