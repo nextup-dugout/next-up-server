@@ -11,13 +11,11 @@ import com.nextup.core.domain.event.ElectionCompletedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.election.dto.CandidateResult
 import com.nextup.core.service.election.dto.CastVoteRequest
 import com.nextup.core.service.election.dto.CreateElectionRequest
 import com.nextup.core.service.election.dto.ElectionResult
 import com.nextup.core.service.election.dto.RegisterCandidateRequest
-import com.nextup.core.service.election.dto.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
