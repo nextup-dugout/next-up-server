@@ -314,6 +314,8 @@ class RecordCorrectionEventListenerTest {
         fun `기록 정정 시 해당 대회의 순위 캐시가 무효화됨`() {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("plateAppearances", 15)
+            seasonStats.applyFieldCorrection("atBats", 12)
             seasonStats.applyFieldCorrection("hits", 10)
 
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats

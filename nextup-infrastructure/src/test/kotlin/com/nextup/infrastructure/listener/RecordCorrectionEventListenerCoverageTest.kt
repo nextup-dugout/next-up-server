@@ -63,6 +63,8 @@ class RecordCorrectionEventListenerCoverageTest {
         every { gameRepository.findByIdOrNull(10L) } returnsMany listOf(mockGame, null)
 
         val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+        seasonStats.applyFieldCorrection("plateAppearances", 10)
+        seasonStats.applyFieldCorrection("atBats", 5)
         every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
         every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
         every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
@@ -96,6 +98,8 @@ class RecordCorrectionEventListenerCoverageTest {
         every { cacheManager.getCache(any()) } returns null
 
         val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+        seasonStats.applyFieldCorrection("plateAppearances", 10)
+        seasonStats.applyFieldCorrection("atBats", 5)
         every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
         every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
         every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
