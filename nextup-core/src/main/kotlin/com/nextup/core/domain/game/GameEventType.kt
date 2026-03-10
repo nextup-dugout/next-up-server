@@ -13,4 +13,5 @@ enum class GameEventType(
     INNING_CHANGE("이닝 전환"),
     GAME_STATUS("경기 상태 변경"),
     POSITION_CHANGE("포지션 변경"),
+    EJECTION("퇴장"),
 }
