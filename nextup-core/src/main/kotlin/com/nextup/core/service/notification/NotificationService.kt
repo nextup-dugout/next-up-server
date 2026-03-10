@@ -11,9 +11,11 @@ import com.nextup.core.domain.notification.NotificationPreference
 import com.nextup.core.port.repository.DeviceTokenRepositoryPort
 import com.nextup.core.port.repository.NotificationPreferenceRepositoryPort
 import com.nextup.core.port.repository.NotificationRepositoryPort
+import com.nextup.core.port.service.PushNotificationPort
 import com.nextup.core.service.notification.dto.RegisterDeviceRequest
 import com.nextup.core.service.notification.dto.SendNotificationRequest
 import com.nextup.core.service.notification.dto.UpdatePreferenceRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -28,9 +30,14 @@ class NotificationService(
     private val notificationRepository: NotificationRepositoryPort,
     private val deviceTokenRepository: DeviceTokenRepositoryPort,
     private val preferenceRepository: NotificationPreferenceRepositoryPort,
+    private val pushNotificationPort: PushNotificationPort,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     /**
      * 알림을 전송합니다.
+     *
+     * DB에 알림을 저장한 후, 사용자의 등록된 디바이스로 푸시 알림을 발송합니다.
      */
     @Transactional
     fun sendNotification(request: SendNotificationRequest): Notification {
@@ -44,7 +51,38 @@ class NotificationService(
             )
 
         notification.markAsSent()
-        return notificationRepository.save(notification)
+        val saved = notificationRepository.save(notification)
+
+        sendPushToUser(request)
+
+        return saved
+    }
+
+    private fun sendPushToUser(request: SendNotificationRequest) {
+        try {
+            val tokens = deviceTokenRepository.findByUserId(request.userId)
+            if (tokens.isEmpty()) return
+
+            val dataMap =
+                request.data?.let { mapOf("data" to it) }
+
+            val tokenStrings = tokens.map { it.token }
+            val successCount =
+                pushNotificationPort.sendBatch(
+                    tokens = tokenStrings,
+                    title = request.title,
+                    body = request.body,
+                    data = dataMap,
+                )
+            log.debug(
+                "푸시 발송 완료: userId={}, total={}, success={}",
+                request.userId,
+                tokenStrings.size,
+                successCount,
+            )
+        } catch (e: Exception) {
+            log.warn("푸시 발송 실패 (알림 저장은 완료): userId={}, error={}", request.userId, e.message)
+        }
     }
 
     /**
