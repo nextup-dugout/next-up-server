@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query
 interface OrganizationAdminRepository :
     JpaRepository<OrganizationAdmin, Long>,
     OrganizationAdminRepositoryPort {
+    override fun findByIdOrNull(id: Long): OrganizationAdmin? = findById(id).orElse(null)
+
     /**
      * 특정 사용자의 모든 조직 관리자 권한을 조회합니다.
      */

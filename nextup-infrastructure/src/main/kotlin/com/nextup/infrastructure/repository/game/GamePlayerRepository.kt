@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param
 interface GamePlayerRepository :
     JpaRepository<GamePlayer, Long>,
     GamePlayerRepositoryPort {
+    override fun findByIdOrNull(id: Long): GamePlayer? = findById(id).orElse(null)
+
     /**
      * 경기 ID와 선수 ID로 GamePlayer를 조회합니다.
      */

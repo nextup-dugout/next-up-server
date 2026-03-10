@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query
 interface AssociationRepository :
     JpaRepository<Association, Long>,
     AssociationRepositoryPort {
+    override fun findByIdOrNull(id: Long): Association? = findById(id).orElse(null)
+
     /**
      * 협회 이름으로 조회합니다.
      */

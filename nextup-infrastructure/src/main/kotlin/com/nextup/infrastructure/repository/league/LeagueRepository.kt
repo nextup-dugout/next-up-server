@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query
 interface LeagueRepository :
     JpaRepository<League, Long>,
     LeagueRepositoryPort {
+    override fun findByIdOrNull(id: Long): League? = findById(id).orElse(null)
+
     /**
      * 협회 ID로 리그 목록을 조회합니다.
      */

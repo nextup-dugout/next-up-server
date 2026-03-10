@@ -7,13 +7,13 @@ import com.nextup.core.service.attendance.NudgeService
 import org.springframework.web.bind.annotation.*
 
 /**
- * 출석 관리 API Controller
+ * 출석 재촉 API Controller
  *
- * 경기 출석 투표 및 재촉 기능을 제공합니다.
+ * 경기 출석 투표 독려(재촉) 기능을 제공합니다.
  */
 @RestController
 @RequestMapping("/api/v1/games/{gameId}/attendance")
-class AttendanceController(
+class NudgeController(
     private val nudgeService: NudgeService,
 ) {
     /**

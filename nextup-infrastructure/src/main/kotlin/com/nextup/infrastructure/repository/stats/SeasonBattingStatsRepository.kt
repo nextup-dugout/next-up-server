@@ -181,7 +181,7 @@ interface SeasonBattingStatsRepository :
         SELECT DISTINCT sbs FROM SeasonBattingStats sbs
         WHERE sbs.player.id IN (
             SELECT br.gamePlayer.player.id FROM BattingRecord br
-            WHERE br.gamePlayer.game.id = :gameId
+            WHERE br.gamePlayer.gameTeam.game.id = :gameId
         )
         AND sbs.year = (
             SELECT FUNCTION('YEAR', g.scheduledAt) FROM Game g WHERE g.id = :gameId

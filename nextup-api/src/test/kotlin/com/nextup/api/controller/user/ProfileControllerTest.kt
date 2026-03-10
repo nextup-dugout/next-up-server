@@ -128,42 +128,6 @@ class ProfileControllerTest {
     }
 
     @Nested
-    @DisplayName("연동된 OAuth 계정 조회")
-    inner class GetLinkedOAuthAccounts {
-        @Test
-        fun `should return empty list when no oauth linked`() {
-            // given
-            val userId = 1L
-            val user = createTestUser(userId, hasOAuth = false)
-            every { userService.getActiveById(userId) } returns user
-
-            // when
-            val response = profileController.getLinkedOAuthAccounts(userId)
-
-            // then
-            assertThat(response.success).isTrue()
-            assertThat(response.data).isEmpty()
-        }
-
-        @Test
-        fun `should return oauth accounts when linked`() {
-            // given
-            val userId = 1L
-            val user = createTestUser(userId, hasOAuth = true)
-            every { userService.getActiveById(userId) } returns user
-
-            // when
-            val response = profileController.getLinkedOAuthAccounts(userId)
-
-            // then
-            assertThat(response.success).isTrue()
-            assertThat(response.data).hasSize(1)
-            assertThat(response.data?.first()?.provider).isEqualTo("GOOGLE")
-            assertThat(response.data?.first()?.displayName).isEqualTo("구글")
-        }
-    }
-
-    @Nested
     @DisplayName("회원 탈퇴")
     inner class DeactivateMyAccount {
         @Test

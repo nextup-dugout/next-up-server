@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query
 interface DisciplineRepository :
     JpaRepository<Discipline, Long>,
     DisciplineRepositoryPort {
+    override fun findByIdOrNull(id: Long): Discipline? = findById(id).orElse(null)
+
     override fun findByPlayerId(playerId: Long): List<Discipline>
 
     override fun findByPlayerIdAndCompetitionId(

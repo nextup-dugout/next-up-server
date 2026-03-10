@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface DeviceTokenRepository :
     JpaRepository<DeviceToken, Long>,
     DeviceTokenRepositoryPort {
+    override fun findByIdOrNull(id: Long): DeviceToken? = findById(id).orElse(null)
+
     override fun findByUserId(userId: Long): List<DeviceToken>
 
     override fun deleteByToken(token: String)

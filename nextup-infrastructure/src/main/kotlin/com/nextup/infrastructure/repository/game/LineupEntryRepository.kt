@@ -11,6 +11,9 @@ interface LineupEntryRepository :
     LineupEntryRepositoryPort {
     override fun findByIdOrNull(id: Long): LineupEntry? = findById(id).orElse(null)
 
+    @Suppress("UNCHECKED_CAST")
+    override fun saveAll(entries: List<LineupEntry>): List<LineupEntry> = saveAll(entries as Iterable<LineupEntry>)
+
     @Query(
         "SELECT le FROM LineupEntry le WHERE le.submission.id = :submissionId " +
             "ORDER BY le.battingOrder ASC NULLS LAST",

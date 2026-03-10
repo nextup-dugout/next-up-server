@@ -34,6 +34,11 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.14")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Testcontainers (Integration Tests)
+    testImplementation("org.testcontainers:postgresql:1.20.4")
+    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
+    testImplementation("org.springframework.security:spring-security-test")
 }
 
 tasks.withType<Test> {

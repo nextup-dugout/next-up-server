@@ -21,6 +21,7 @@ import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -54,7 +55,7 @@ class StatsEventListener(
      * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
         val stats =
@@ -86,7 +87,7 @@ class StatsEventListener(
      * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
         val stats =
@@ -127,7 +128,7 @@ class StatsEventListener(
      * 2. 타자 스탯: isFirstSeasonRecord 확인 → CareerBattingStats 갱신
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onGameResultConfirmed(event: GameResultConfirmedEvent) {
         val gameId = event.gameId
         val year = resolveYear(gameId)

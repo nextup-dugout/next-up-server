@@ -2,8 +2,8 @@ package com.nextup.infrastructure.security.oauth2
 
 import com.nextup.common.exception.OAuth2AuthenticationProcessingException
 import com.nextup.core.domain.user.User
+import com.nextup.infrastructure.repository.UserJpaRepository
 import com.nextup.infrastructure.repository.user.OAuthAccountRepository
-import com.nextup.infrastructure.security.userdetails.UserJpaRepository
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.core.user.OAuth2User

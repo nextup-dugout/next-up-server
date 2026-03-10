@@ -17,6 +17,8 @@ import java.time.LocalDate
 interface PlayerRepository :
     JpaRepository<Player, Long>,
     PlayerRepositoryPort {
+    override fun findByIdOrNull(id: Long): Player? = findById(id).orElse(null)
+
     override fun findByName(name: String): List<Player>
 
     override fun findByNameContaining(name: String): List<Player>
@@ -26,8 +28,8 @@ interface PlayerRepository :
 
     @Query(
         """
-        SELECT p FROM Player p
-        JOIN FETCH p._teamHistories h
+        SELECT DISTINCT p FROM Player p
+        JOIN PlayerTeamHistory h ON h.player.id = p.id
         WHERE h.team.id = :teamId AND h.endDate IS NULL
     """,
     )
@@ -35,8 +37,8 @@ interface PlayerRepository :
 
     @Query(
         """
-        SELECT p FROM Player p
-        JOIN p._teamHistories h
+        SELECT DISTINCT p FROM Player p
+        JOIN PlayerTeamHistory h ON h.player.id = p.id
         WHERE h.team.id = :teamId
         AND h.startDate <= :date
         AND (h.endDate IS NULL OR h.endDate >= :date)

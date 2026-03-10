@@ -15,6 +15,8 @@ import org.springframework.data.repository.query.Param
 interface NotificationRepository :
     JpaRepository<Notification, Long>,
     NotificationRepositoryPort {
+    override fun findByIdOrNull(id: Long): Notification? = findById(id).orElse(null)
+
     fun findByUserId(
         userId: Long,
         pageable: Pageable,

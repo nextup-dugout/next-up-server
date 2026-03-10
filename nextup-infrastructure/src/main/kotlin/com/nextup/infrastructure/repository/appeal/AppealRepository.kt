@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface AppealRepository :
     JpaRepository<Appeal, Long>,
     AppealRepositoryPort {
+    override fun findByIdOrNull(id: Long): Appeal? = findById(id).orElse(null)
+
     override fun findByGameId(gameId: Long): List<Appeal>
 
     override fun findByAppealerId(appealerId: Long): List<Appeal>

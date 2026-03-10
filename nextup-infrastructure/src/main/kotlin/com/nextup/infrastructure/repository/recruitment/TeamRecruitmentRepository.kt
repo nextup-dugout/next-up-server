@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query
 interface TeamRecruitmentRepository :
     JpaRepository<TeamRecruitment, Long>,
     TeamRecruitmentRepositoryPort {
+    override fun findByIdOrNull(id: Long): TeamRecruitment? = findById(id).orElse(null)
+
     override fun findByTeamId(teamId: Long): List<TeamRecruitment>
 
     @Query("SELECT r FROM TeamRecruitment r WHERE r.status = 'OPEN' ORDER BY r.deadline ASC")

@@ -3,11 +3,11 @@ package com.nextup.infrastructure.security
 import com.nextup.common.exception.*
 import com.nextup.core.domain.auth.RefreshToken
 import com.nextup.core.domain.user.User
+import com.nextup.infrastructure.repository.UserJpaRepository
 import com.nextup.infrastructure.repository.auth.RefreshTokenRepository
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import com.nextup.infrastructure.security.oauth2.AuthCodeStore
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
-import com.nextup.infrastructure.security.userdetails.UserJpaRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

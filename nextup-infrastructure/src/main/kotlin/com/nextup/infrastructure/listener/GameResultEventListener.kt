@@ -9,7 +9,6 @@ import com.nextup.infrastructure.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 
@@ -34,7 +33,6 @@ class GameResultEventListener(
      * BEFORE_COMMIT 단계에서 실행하여 대회 자동 완료를 동일 트랜잭션 내에서 처리합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional
     fun onGameResultConfirmed(event: GameResultConfirmedEvent) {
         val game =
             gameRepository.findByIdOrNull(event.gameId)

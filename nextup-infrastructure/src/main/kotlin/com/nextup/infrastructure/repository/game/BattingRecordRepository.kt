@@ -35,7 +35,7 @@ interface BattingRecordRepository :
         """
         SELECT br FROM BattingRecord br
         JOIN br.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
     """,
     )
     override fun findAllByGameId(
@@ -50,7 +50,7 @@ interface BattingRecordRepository :
         SELECT br FROM BattingRecord br
         JOIN br.gamePlayer gp
         WHERE gp.player.id = :playerId
-        ORDER BY gp.game.scheduledDate DESC
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
     """,
     )
     override fun findAllByPlayerId(
@@ -65,7 +65,7 @@ interface BattingRecordRepository :
         SELECT br FROM BattingRecord br
         JOIN br.gamePlayer gp
         WHERE gp.player.id = :playerId
-        ORDER BY gp.game.scheduledDate DESC
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
         LIMIT :limit
     """,
     )
@@ -83,7 +83,7 @@ interface BattingRecordRepository :
         JOIN br.gamePlayer gp
         JOIN gp.gameTeam gt
         WHERE gt.team.id = :teamId
-        AND gp.game.id = :gameId
+        AND gp.gameTeam.game.id = :gameId
     """,
     )
     override fun findAllByTeamIdAndGameId(
@@ -98,7 +98,7 @@ interface BattingRecordRepository :
         """
         SELECT br FROM BattingRecord br
         JOIN br.gamePlayer gp
-        WHERE gp.game.id = :gameId
+        WHERE gp.gameTeam.game.id = :gameId
         AND br.plateAppearances >= :minPlateAppearances
     """,
     )
@@ -159,8 +159,8 @@ interface BattingRecordRepository :
         SELECT br FROM BattingRecord br
         JOIN br.gamePlayer gp
         WHERE gp.player.id = :playerId
-        AND FUNCTION('YEAR', gp.game.scheduledAt) = :year
-        ORDER BY gp.game.scheduledAt DESC
+        AND FUNCTION('YEAR', gp.gameTeam.game.scheduledAt) = :year
+        ORDER BY gp.gameTeam.game.scheduledAt DESC
     """,
     )
     override fun findAllByPlayerIdAndYear(
@@ -177,7 +177,7 @@ interface BattingRecordRepository :
         JOIN br.gamePlayer gp
         JOIN gp.gameTeam gt
         WHERE gt.team.id = :teamId
-        AND gp.game.id IN :gameIds
+        AND gp.gameTeam.game.id IN :gameIds
     """,
     )
     override fun findAllByTeamIdAndGameIds(

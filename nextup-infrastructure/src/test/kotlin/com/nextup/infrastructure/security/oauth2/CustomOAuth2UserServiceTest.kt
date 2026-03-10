@@ -4,8 +4,8 @@ import com.nextup.common.exception.OAuth2AuthenticationProcessingException
 import com.nextup.core.domain.user.OAuthAccount
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
+import com.nextup.infrastructure.repository.UserJpaRepository
 import com.nextup.infrastructure.repository.user.OAuthAccountRepository
-import com.nextup.infrastructure.security.userdetails.UserJpaRepository
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
