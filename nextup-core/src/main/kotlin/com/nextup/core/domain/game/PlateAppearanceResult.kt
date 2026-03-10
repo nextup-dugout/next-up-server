@@ -22,6 +22,7 @@ enum class PlateAppearanceResult(
     STRIKEOUT("삼진", "3스트라이크 아웃", true, false),
     GROUND_OUT("땅볼 아웃", "땅볼로 아웃", true, false),
     FLY_OUT("플라이 아웃", "뜬공으로 아웃", true, false),
+    INFIELD_FLY("인필드플라이", "내야 뜬공으로 아웃 (인필드플라이 룰 적용)", true, false),
     LINE_OUT("라인 드라이브 아웃", "직선타로 아웃", true, false),
     FIELDERS_CHOICE("야수 선택", "야수 선택으로 출루", true, false),
     ERROR("실책", "수비 실책으로 출루", true, false),
