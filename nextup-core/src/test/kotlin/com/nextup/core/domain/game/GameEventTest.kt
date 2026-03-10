@@ -281,6 +281,36 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("createEjection")
+    inner class CreateEjection {
+        @Test
+        fun `퇴장 이벤트를 생성한다`() {
+            // given
+            val ejectedPlayer = mockk<GamePlayer>(relaxed = true)
+
+            // when
+            val event =
+                GameEvent.createEjection(
+                    game = game,
+                    ejectedPlayer = ejectedPlayer,
+                    description = "3회초: 홍길동 퇴장 (항의)",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.EJECTION)
+            assertThat(event.description).isEqualTo("3회초: 홍길동 퇴장 (항의)")
+            assertThat(event.inning).isEqualTo(game.currentInning)
+            assertThat(event.isTopInning).isEqualTo(game.isTopInning)
+            assertThat(event.outCountBefore).isEqualTo(game.gameState.outs)
+            assertThat(event.outCountAfter).isEqualTo(game.gameState.outs)
+            assertThat(event.batter).isEqualTo(ejectedPlayer)
+            assertThat(event.pitcher).isNull()
+            assertThat(event.plateAppearanceResult).isNull()
+            assertThat(event.runsScored).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("createGameStatus")
     inner class CreateGameStatus {
         @Test

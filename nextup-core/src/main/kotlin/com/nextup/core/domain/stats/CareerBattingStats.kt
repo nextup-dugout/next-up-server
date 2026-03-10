@@ -257,7 +257,9 @@ class CareerBattingStats(
             "stolenBases" -> stolenBases = maxOf(0, stolenBases + delta)
             "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
             "groundedIntoDoublePlays" -> groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays + delta)
+            else -> throw IllegalArgumentException("유효하지 않은 커리어 타격 통계 필드입니다: $fieldName")
         }
+        validate()
     }
 
     /**
