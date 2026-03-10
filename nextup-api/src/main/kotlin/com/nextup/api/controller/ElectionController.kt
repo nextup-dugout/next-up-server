@@ -1,14 +1,15 @@
 package com.nextup.api.controller
 
+import com.nextup.api.dto.election.CandidateResponse
 import com.nextup.api.dto.election.CastVoteApiRequest
 import com.nextup.api.dto.election.CreateElectionApiRequest
+import com.nextup.api.dto.election.ElectionResponse
+import com.nextup.api.dto.election.ElectionResultResponse
 import com.nextup.api.dto.election.RegisterCandidateApiRequest
+import com.nextup.api.dto.election.toResponse
 import com.nextup.api.dto.election.toServiceRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.election.ElectionService
-import com.nextup.core.service.election.dto.CandidateResponse
-import com.nextup.core.service.election.dto.ElectionResponse
-import com.nextup.core.service.election.dto.ElectionResultResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -34,10 +35,10 @@ class ElectionController(
         @PathVariable teamId: Long,
         @RequestBody @Valid request: CreateElectionApiRequest,
     ): ResponseEntity<ApiResponse<ElectionResponse>> {
-        val response = electionService.createElection(request.toServiceRequest(teamId))
+        val election = electionService.createElection(request.toServiceRequest(teamId))
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response))
+            .body(ApiResponse.success(election.toResponse()))
     }
 
     /**
@@ -47,7 +48,8 @@ class ElectionController(
     @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getElectionsByTeam(
         @PathVariable teamId: Long,
-    ): ApiResponse<List<ElectionResponse>> = ApiResponse.success(electionService.getElectionsByTeam(teamId))
+    ): ApiResponse<List<ElectionResponse>> =
+        ApiResponse.success(electionService.getElectionsByTeam(teamId).toResponse())
 
     /**
      * 선거를 ID로 조회합니다.
@@ -57,7 +59,7 @@ class ElectionController(
     fun getElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
-    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.getElectionById(electionId))
+    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.getElectionById(electionId).toResponse())
 
     /**
      * 선거를 시작합니다.
@@ -67,7 +69,7 @@ class ElectionController(
     fun startElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
-    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.startElection(electionId))
+    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.startElection(electionId).toResponse())
 
     /**
      * 선거를 완료합니다.
@@ -77,7 +79,7 @@ class ElectionController(
     fun completeElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
-    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.completeElection(electionId))
+    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.completeElection(electionId).toResponse())
 
     /**
      * 선거를 취소합니다.
@@ -87,7 +89,7 @@ class ElectionController(
     fun cancelElection(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
-    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.cancelElection(electionId))
+    ): ApiResponse<ElectionResponse> = ApiResponse.success(electionService.cancelElection(electionId).toResponse())
 
     /**
      * 후보자를 등록합니다.
@@ -99,10 +101,10 @@ class ElectionController(
         @PathVariable electionId: Long,
         @RequestBody @Valid request: RegisterCandidateApiRequest,
     ): ResponseEntity<ApiResponse<CandidateResponse>> {
-        val response = electionService.registerCandidate(request.toServiceRequest(electionId))
+        val candidate = electionService.registerCandidate(request.toServiceRequest(electionId))
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response))
+            .body(ApiResponse.success(candidate.toResponse()))
     }
 
     /**
@@ -115,10 +117,10 @@ class ElectionController(
         @PathVariable electionId: Long,
         @RequestBody @Valid request: CastVoteApiRequest,
     ): ResponseEntity<ApiResponse<CandidateResponse>> {
-        val response = electionService.vote(request.toServiceRequest(electionId))
+        val candidate = electionService.vote(request.toServiceRequest(electionId))
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response))
+            .body(ApiResponse.success(candidate.toResponse()))
     }
 
     /**
@@ -129,5 +131,5 @@ class ElectionController(
     fun getResults(
         @PathVariable teamId: Long,
         @PathVariable electionId: Long,
-    ): ApiResponse<ElectionResultResponse> = ApiResponse.success(electionService.getResults(electionId))
+    ): ApiResponse<ElectionResultResponse> = ApiResponse.success(electionService.getResults(electionId).toResponse())
 }

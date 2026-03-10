@@ -1,4 +1,4 @@
-package com.nextup.core.service.election.dto
+package com.nextup.api.dto.election
 
 import com.nextup.core.domain.election.Candidate
 import java.time.Instant

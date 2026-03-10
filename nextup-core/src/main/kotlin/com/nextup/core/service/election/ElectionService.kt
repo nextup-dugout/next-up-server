@@ -11,7 +11,11 @@ import com.nextup.core.domain.event.ElectionCompletedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
-import com.nextup.core.service.election.dto.*
+import com.nextup.core.service.election.dto.CandidateResult
+import com.nextup.core.service.election.dto.CastVoteRequest
+import com.nextup.core.service.election.dto.CreateElectionRequest
+import com.nextup.core.service.election.dto.ElectionResult
+import com.nextup.core.service.election.dto.RegisterCandidateRequest
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -33,7 +37,7 @@ class ElectionService(
      * 선거를 생성합니다.
      */
     @Transactional
-    fun createElection(request: CreateElectionRequest): ElectionResponse {
+    fun createElection(request: CreateElectionRequest): Election {
         val election =
             Election.create(
                 teamId = request.teamId,
@@ -43,17 +47,17 @@ class ElectionService(
                 startAt = request.startAt,
                 endAt = request.endAt,
             )
-        return electionRepository.save(election).toResponse()
+        return electionRepository.save(election)
     }
 
     /**
      * 선거를 시작합니다.
      */
     @Transactional
-    fun startElection(electionId: Long): ElectionResponse {
+    fun startElection(electionId: Long): Election {
         val election = findElection(electionId)
         election.start()
-        return election.toResponse()
+        return election
     }
 
     /**
@@ -61,7 +65,7 @@ class ElectionService(
      * 도메인 이벤트를 발행하여 OWNER_ELECTION의 경우 리스너에서 권한 이양을 처리합니다.
      */
     @Transactional
-    fun completeElection(electionId: Long): ElectionResponse {
+    fun completeElection(electionId: Long): Election {
         val election = findElection(electionId)
         election.complete()
 
@@ -73,24 +77,24 @@ class ElectionService(
             ),
         )
 
-        return election.toResponse()
+        return election
     }
 
     /**
      * 선거를 취소합니다.
      */
     @Transactional
-    fun cancelElection(electionId: Long): ElectionResponse {
+    fun cancelElection(electionId: Long): Election {
         val election = findElection(electionId)
         election.cancel()
-        return election.toResponse()
+        return election
     }
 
     /**
      * 후보자를 등록합니다.
      */
     @Transactional
-    fun registerCandidate(request: RegisterCandidateRequest): CandidateResponse {
+    fun registerCandidate(request: RegisterCandidateRequest): Candidate {
         val election = findElection(request.electionId)
 
         // 선거가 진행 중이거나 완료된 경우 후보자 등록 불가
@@ -121,14 +125,14 @@ class ElectionService(
                 memberName = request.memberName,
                 statement = request.statement,
             )
-        return candidateRepository.save(candidate).toResponse()
+        return candidateRepository.save(candidate)
     }
 
     /**
      * 투표합니다.
      */
     @Transactional
-    fun vote(request: CastVoteRequest): CandidateResponse {
+    fun vote(request: CastVoteRequest): Candidate {
         val election = findElection(request.electionId)
 
         // 투표 가능 여부 확인
@@ -166,30 +170,30 @@ class ElectionService(
             )
         electionVoteRepository.save(vote)
 
-        return candidate.toResponse()
+        return candidate
     }
 
     /**
      * 선거 결과를 조회합니다.
      */
-    fun getResults(electionId: Long): ElectionResultResponse {
+    fun getResults(electionId: Long): ElectionResult {
         val election = findElection(electionId)
         val candidates = candidateRepository.findAllByElectionId(electionId)
         val voteCounts = electionVoteRepository.countByElectionIdGroupByCandidateId(electionId)
 
         val candidateResults =
             candidates.map { candidate ->
-                CandidateResultResponse(
-                    candidate = candidate.toResponse(),
+                CandidateResult(
+                    candidate = candidate,
                     voteCount = voteCounts[candidate.id] ?: 0,
                 )
             }.sortedByDescending { it.voteCount }
 
         val totalVotes = voteCounts.values.sum()
 
-        return ElectionResultResponse(
-            election = election.toResponse(),
-            candidates = candidateResults,
+        return ElectionResult(
+            election = election,
+            candidateResults = candidateResults,
             totalVotes = totalVotes,
         )
     }
@@ -197,13 +201,12 @@ class ElectionService(
     /**
      * 팀의 모든 선거를 조회합니다.
      */
-    fun getElectionsByTeam(teamId: Long): List<ElectionResponse> =
-        electionRepository.findAllByTeamId(teamId).toResponse()
+    fun getElectionsByTeam(teamId: Long): List<Election> = electionRepository.findAllByTeamId(teamId)
 
     /**
      * 선거를 ID로 조회합니다.
      */
-    fun getElectionById(electionId: Long): ElectionResponse = findElection(electionId).toResponse()
+    fun getElectionById(electionId: Long): Election = findElection(electionId)
 
     /**
      * Election을 조회하고 없으면 예외를 던집니다.
