@@ -78,6 +78,7 @@ class GameScorerServiceImplTest {
                 gameRepository,
                 gameTeamRepository,
                 pitchingRecordRepository,
+                com.nextup.core.service.game.PitchingDecisionService(),
                 eventPublisher,
             )
         plateAppearanceRecordService =
@@ -1100,7 +1101,7 @@ class GameScorerServiceImplTest {
             // when
             gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
 
-            // then - 무승부이므로 PitchingDecisionCalculator.calculate가 emptyMap 반환
+            // then - 무승부이므로 PitchingDecisionService가 투수 결정을 부여하지 않음
             // → save 호출 없음
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
         }

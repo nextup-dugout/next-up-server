@@ -7,11 +7,11 @@ import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
-import com.nextup.core.domain.game.PitchingDecisionCalculator
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.PitchingDecisionService
 import com.nextup.core.service.game.dto.GameEndReason
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -29,6 +29,7 @@ class GameLifecycleServiceImpl(
     private val gameRepository: GameRepositoryPort,
     private val gameTeamRepository: GameTeamRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val pitchingDecisionService: PitchingDecisionService,
     private val eventPublisher: ApplicationEventPublisher,
 ) : GameLifecycleService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -136,8 +137,11 @@ class GameLifecycleServiceImpl(
 
     /**
      * 경기 종료 시 투수 결정(승/패/세이브/홀드)을 자동으로 할당합니다.
+     *
+     * PitchingDecisionService를 사용하여 GameRules 기반으로 판정합니다.
      */
     private fun assignPitchingDecisions(gameId: Long) {
+        val game = findGame(gameId)
         val gameTeams = gameTeamRepository.findAllByGameId(gameId)
         if (gameTeams.size != 2) return
 
@@ -159,27 +163,39 @@ class GameLifecycleServiceImpl(
                 else -> null
             }
 
+        // 무승부인 경우 투수 결정 불필요
+        if (winnerTeam == null || loserTeam == null) return
+
         val allPitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
         if (allPitchingRecords.isEmpty()) return
 
-        val decisions =
-            PitchingDecisionCalculator.calculate(
-                winnerGameTeam = winnerTeam,
-                loserGameTeam = loserTeam,
-                allPitchingRecords = allPitchingRecords,
-            )
+        val winnerTeamId = winnerTeam.team.id
+        val winnerTeamRecords =
+            allPitchingRecords
+                .filter { it.gamePlayer.gameTeam.team.id == winnerTeamId }
+                .sortedWith(
+                    compareBy<com.nextup.core.domain.game.PitchingRecord> {
+                        it.gamePlayer.entryInning ?: 1
+                    }.thenByDescending { if (it.isStartingPitcher) 1 else 0 },
+                )
+        val loserTeamRecords =
+            allPitchingRecords
+                .filter { it.gamePlayer.gameTeam.team.id != winnerTeamId }
+                .sortedWith(
+                    compareBy<com.nextup.core.domain.game.PitchingRecord> {
+                        it.gamePlayer.entryInning ?: 1
+                    }.thenByDescending { if (it.isStartingPitcher) 1 else 0 },
+                )
 
-        decisions.forEach { (record, decision) ->
-            when (decision) {
-                com.nextup.core.domain.game.PitchingDecision.WIN -> record.assignWin()
-                com.nextup.core.domain.game.PitchingDecision.LOSS -> record.assignLoss()
-                com.nextup.core.domain.game.PitchingDecision.SAVE -> record.assignSave()
-                com.nextup.core.domain.game.PitchingDecision.HOLD -> record.assignHold()
-                com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> record.assignBlownSave()
-                com.nextup.core.domain.game.PitchingDecision.NONE -> { /* no-op */ }
-            }
-            pitchingRecordRepository.save(record)
-        }
+        pitchingDecisionService.assignDecisions(
+            winnerTeamRecords = winnerTeamRecords,
+            loserTeamRecords = loserTeamRecords,
+            winnerGameTeam = winnerTeam,
+            loserGameTeam = loserTeam,
+            gameRules = game.competition.gameRules,
+        )
+
+        allPitchingRecords.forEach { pitchingRecordRepository.save(it) }
     }
 
     private fun publishGameResultEvent(gameId: Long) {
