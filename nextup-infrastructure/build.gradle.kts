@@ -60,6 +60,9 @@ dependencies {
     // Spring Cache
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // Firebase Admin SDK (FCM Push Notification)
+    implementation("com.google.firebase:firebase-admin:9.4.2")
+
     // PDF Generation (OpenPDF)
     implementation("com.github.librepdf:openpdf:2.0.3")
 
