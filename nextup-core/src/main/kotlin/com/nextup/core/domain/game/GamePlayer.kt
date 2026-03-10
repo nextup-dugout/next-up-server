@@ -70,11 +70,12 @@ class GamePlayer(
         protected set
 
     /**
-     * 포지션 변경 이력 (JSON 형식: "이닝:포지션,이닝:포지션,...")
-     * 예: "1:PITCHER,3:FIRST_BASE"
+     * 포지션 변경 이력
+     * DB에는 CSV 형식("이닝:포지션,이닝:포지션,...")으로 저장됩니다.
      */
+    @Convert(converter = PositionHistoryConverter::class)
     @Column(name = "position_history", columnDefinition = "TEXT")
-    var positionHistory: String? = null
+    var positionHistory: List<PositionHistoryEntry> = emptyList()
         protected set
 
     /**
@@ -151,42 +152,18 @@ class GamePlayer(
 
     /**
      * 포지션 이력을 추가합니다.
-     * 형식: "이닝:포지션명" (예: "1:PITCHER,3:FIRST_BASE")
      */
     private fun recordPositionHistory(
         inning: Int,
         previousPosition: Position,
     ) {
-        val entry = "$inning:${previousPosition.name}"
-        positionHistory =
-            if (positionHistory.isNullOrBlank()) {
-                entry
-            } else {
-                "$positionHistory,$entry"
-            }
+        positionHistory = positionHistory + PositionHistoryEntry(inning, previousPosition)
     }
 
     /**
-     * 포지션 이력을 파싱하여 반환합니다.
-     * @return 이닝-포지션 쌍의 목록 (이닝 오름차순)
+     * 포지션 이력을 이닝 오름차순으로 반환합니다.
      */
-    fun getPositionHistoryList(): List<Pair<Int, Position>> {
-        if (positionHistory.isNullOrBlank()) return emptyList()
-        return positionHistory!!
-            .split(",")
-            .mapNotNull { entry ->
-                val parts = entry.split(":")
-                if (parts.size == 2) {
-                    val inning = parts[0].trim().toIntOrNull() ?: return@mapNotNull null
-                    val position =
-                        runCatching { Position.valueOf(parts[1].trim()) }.getOrNull() ?: return@mapNotNull null
-                    Pair(inning, position)
-                } else {
-                    null
-                }
-            }
-            .sortedBy { it.first }
-    }
+    fun getPositionHistoryList(): List<PositionHistoryEntry> = positionHistory.sortedBy { it.inning }
 
     /**
      * 타순을 변경합니다.
