@@ -8,7 +8,9 @@ import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
+import com.nextup.infrastructure.config.CacheConfig
 import org.slf4j.LoggerFactory
+import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
@@ -27,6 +29,7 @@ class RecordCorrectionEventListener(
     private val careerBattingStatsRepository: CareerBattingStatsRepositoryPort,
     private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val cacheManager: CacheManager,
 ) {
     private val logger = LoggerFactory.getLogger(RecordCorrectionEventListener::class.java)
 
@@ -66,6 +69,9 @@ class RecordCorrectionEventListener(
             event.fieldName,
             delta,
         )
+
+        // 기록 정정으로 순위가 변경될 수 있으므로 순위 캐시 무효화
+        evictStandingsCache(event.gameId)
     }
 
     private fun applyBattingCorrection(
@@ -120,6 +126,17 @@ class RecordCorrectionEventListener(
         } else {
             logger.debug("커리어 투수 통계 없음 - 정정 건너뜀 (playerId={})", playerId)
         }
+    }
+
+    private fun evictStandingsCache(gameId: Long) {
+        val game = gameRepository.findByIdOrNull(gameId) ?: return
+        val competitionId = game.competition.id
+        cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        logger.debug(
+            "기록 정정으로 순위 캐시 무효화 (competitionId={}, gameId={})",
+            competitionId,
+            gameId,
+        )
     }
 
     private fun resolveYear(gameId: Long): Int {
