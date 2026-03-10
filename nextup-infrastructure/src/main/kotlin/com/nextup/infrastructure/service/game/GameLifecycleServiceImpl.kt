@@ -197,6 +197,26 @@ class GameLifecycleServiceImpl(
         )
     }
 
+    @Transactional
+    override fun lockGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
+        val game = findGame(gameId)
+        game.lockForScorer(scorerId)
+        return gameRepository.save(game)
+    }
+
+    @Transactional
+    override fun unlockGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
+        val game = findGame(gameId)
+        game.unlockScorer(scorerId)
+        return gameRepository.save(game)
+    }
+
     private fun findGame(id: Long): Game =
         gameRepository.findByIdOrNull(id)
             ?: throw GameNotFoundException(id)
