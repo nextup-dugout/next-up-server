@@ -14,9 +14,7 @@ import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.election.dto.DesignateActingOwnerRequest
-import com.nextup.core.service.election.dto.ElectionResponse
 import com.nextup.core.service.election.dto.TriggerEmergencyElectionRequest
-import com.nextup.core.service.election.dto.toResponse
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -39,12 +37,12 @@ class EmergencyElectionService(
      * 긴급 선거는 발동 즉시 IN_PROGRESS 상태로 시작합니다.
      *
      * @param request 긴급 선거 발동 요청
-     * @return 생성된 긴급 선거 응답
+     * @return 생성된 긴급 선거
      * @throws UnauthorizedEmergencyElectionException 요청자가 MANAGER 역할이 아닌 경우
      * @throws ActiveElectionAlreadyExistsException 이미 진행 중인 선거가 있는 경우
      */
     @Transactional
-    fun triggerEmergencyElection(request: TriggerEmergencyElectionRequest): ElectionResponse {
+    fun triggerEmergencyElection(request: TriggerEmergencyElectionRequest): Election {
         val requester =
             teamMemberRepository.findByIdOrNull(request.requesterId)
                 ?: throw TeamMemberNotFoundException(request.requesterId)
@@ -81,7 +79,7 @@ class EmergencyElectionService(
                 endAt = request.endAt,
             )
 
-        return electionRepository.save(emergencyElection).toResponse()
+        return electionRepository.save(emergencyElection)
     }
 
     /**
@@ -91,13 +89,13 @@ class EmergencyElectionService(
      * 임시 구단주는 제한된 권한(라인업/일정 관리 가능, 강퇴/해산/소유권 이전 불가)을 갖습니다.
      *
      * @param request 임시 구단주 지정 요청
-     * @return 업데이트된 선거 응답
+     * @return 업데이트된 선거
      * @throws ElectionNotFoundException 선거를 찾을 수 없는 경우
      * @throws InvalidStateException 긴급 선거가 아닌 경우
      * @throws InvalidActingOwnerException 대상 멤버가 MANAGER 역할이 아닌 경우
      */
     @Transactional
-    fun designateActingOwner(request: DesignateActingOwnerRequest): ElectionResponse {
+    fun designateActingOwner(request: DesignateActingOwnerRequest): Election {
         val election =
             electionRepository.findById(request.electionId)
                 ?: throw ElectionNotFoundException(request.electionId)
@@ -119,7 +117,7 @@ class EmergencyElectionService(
 
         election.designateActingOwner(request.actingOwnerMemberId)
 
-        return electionRepository.save(election).toResponse()
+        return electionRepository.save(election)
     }
 
     /**
@@ -128,11 +126,11 @@ class EmergencyElectionService(
      * 긴급 선거 완료 시 호출되며, regularElectionDeadline 내에 시작하는 정규 OWNER_ELECTION을 생성합니다.
      *
      * @param emergencyElection 완료된 긴급 선거
-     * @return 생성된 정규 선거 응답
+     * @return 생성된 정규 선거
      * @throws InvalidStateException 긴급 선거가 아니거나 완료 상태가 아닌 경우
      */
     @Transactional
-    fun createRegularElectionAfterEmergency(emergencyElection: Election): ElectionResponse {
+    fun createRegularElectionAfterEmergency(emergencyElection: Election): Election {
         require(emergencyElection.isEmergency()) {
             "정규 선거 자동 생성은 긴급 선거 완료 후에만 가능합니다."
         }
@@ -162,6 +160,6 @@ class EmergencyElectionService(
                 endAt = deadline,
             )
 
-        return electionRepository.save(regularElection).toResponse()
+        return electionRepository.save(regularElection)
     }
 }

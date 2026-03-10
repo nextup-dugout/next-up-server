@@ -793,15 +793,15 @@ class ElectionServiceTest {
             // then
             assertThat(result.election.id).isEqualTo(1L)
             assertThat(result.totalVotes).isEqualTo(15L)
-            assertThat(result.candidates).hasSize(3)
+            assertThat(result.candidateResults).hasSize(3)
 
             // 득표순으로 정렬되어 있는지 확인
-            assertThat(result.candidates[0].candidate.memberName).isEqualTo("박민수")
-            assertThat(result.candidates[0].voteCount).isEqualTo(7L)
-            assertThat(result.candidates[1].candidate.memberName).isEqualTo("김철수")
-            assertThat(result.candidates[1].voteCount).isEqualTo(5L)
-            assertThat(result.candidates[2].candidate.memberName).isEqualTo("이영희")
-            assertThat(result.candidates[2].voteCount).isEqualTo(3L)
+            assertThat(result.candidateResults[0].candidate.memberName).isEqualTo("박민수")
+            assertThat(result.candidateResults[0].voteCount).isEqualTo(7L)
+            assertThat(result.candidateResults[1].candidate.memberName).isEqualTo("김철수")
+            assertThat(result.candidateResults[1].voteCount).isEqualTo(5L)
+            assertThat(result.candidateResults[2].candidate.memberName).isEqualTo("이영희")
+            assertThat(result.candidateResults[2].voteCount).isEqualTo(3L)
         }
 
         @Test
@@ -824,9 +824,9 @@ class ElectionServiceTest {
 
             // then
             assertThat(result.totalVotes).isEqualTo(0L)
-            assertThat(result.candidates).hasSize(2)
-            assertThat(result.candidates[0].voteCount).isEqualTo(0L)
-            assertThat(result.candidates[1].voteCount).isEqualTo(0L)
+            assertThat(result.candidateResults).hasSize(2)
+            assertThat(result.candidateResults[0].voteCount).isEqualTo(0L)
+            assertThat(result.candidateResults[1].voteCount).isEqualTo(0L)
         }
 
         @Test
@@ -855,8 +855,8 @@ class ElectionServiceTest {
 
             // then
             assertThat(result.totalVotes).isEqualTo(10L)
-            assertThat(result.candidates).hasSize(3)
-            assertThat(result.candidates.find { it.candidate.memberName == "이영희" }?.voteCount).isEqualTo(0L)
+            assertThat(result.candidateResults).hasSize(3)
+            assertThat(result.candidateResults.find { it.candidate.memberName == "이영희" }?.voteCount).isEqualTo(0L)
         }
 
         @Test
