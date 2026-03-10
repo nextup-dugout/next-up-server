@@ -1094,5 +1094,162 @@ class GameTest {
             // then
             assertThat(game.status).isEqualTo(GameStatus.SCHEDULED)
         }
+
+        @Test
+        fun `더블헤더 경기를 생성할 수 있다`() {
+            // when
+            val game1 =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 10, 0),
+                    gameNumber = 1,
+                    isDoubleheader = true,
+                )
+            val game2 =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    gameNumber = 2,
+                    isDoubleheader = true,
+                )
+
+            // then
+            assertThat(game1.isDoubleheader).isTrue()
+            assertThat(game1.gameNumber).isEqualTo(1)
+            assertThat(game1.doubleheaderDisplay).isEqualTo("제1경기")
+            assertThat(game2.isDoubleheader).isTrue()
+            assertThat(game2.gameNumber).isEqualTo(2)
+            assertThat(game2.doubleheaderDisplay).isEqualTo("제2경기")
+        }
+
+        @Test
+        fun `더블헤더 경기에 gameNumber가 없으면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy {
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    isDoubleheader = true,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("gameNumber가 1 또는 2여야 합니다")
+        }
+
+        @Test
+        fun `더블헤더가 아닌 경기의 doubleheaderDisplay는 null이다`() {
+            // when
+            val game =
+                Game.create(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.isDoubleheader).isFalse()
+            assertThat(game.doubleheaderDisplay).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("경기 중단/재개")
+    inner class SuspendAndResume {
+        @Test
+        fun `진행 중인 경기를 중단할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            game.suspend(reason = "우천")
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.SUSPENDED)
+            assertThat(game.note).contains("중단 사유: 우천")
+        }
+
+        @Test
+        fun `중단 시 사유 없이도 가능하다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when
+            game.suspend()
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.SUSPENDED)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기는 중단할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.suspend() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만 중단할 수 있습니다")
+        }
+
+        @Test
+        fun `중단된 경기를 재개할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.SUSPENDED)
+
+            // when
+            game.resume()
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+        }
+
+        @Test
+        fun `중단되지 않은 경기는 재개할 수 없다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when & then
+            assertThatThrownBy { game.resume() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("중단된 경기만 재개할 수 있습니다")
+        }
+
+        @Test
+        fun `중단된 경기를 취소할 수 있다`() {
+            // given
+            val game = createGame(status = GameStatus.SUSPENDED)
+
+            // when
+            game.cancel(reason = "재개 불가")
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CANCELLED)
+            assertThat(game.note).contains("취소 사유: 재개 불가")
+        }
+
+        @Test
+        fun `중단 시 게임 상태가 보존된다`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = false
+                    gameState.restoreOuts(2)
+                }
+
+            // when
+            game.suspend(reason = "우천")
+
+            // then
+            assertThat(game.currentInning).isEqualTo(5)
+            assertThat(game.isTopInning).isFalse()
+            assertThat(game.gameState.outs).isEqualTo(2)
+        }
     }
 }
