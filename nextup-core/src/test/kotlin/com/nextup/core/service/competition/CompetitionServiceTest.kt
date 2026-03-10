@@ -3,13 +3,25 @@ package com.nextup.core.service.competition
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.common.exception.LeagueNotFoundException
+import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionPlayer
+import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
+import com.nextup.core.domain.team.Team
+import com.nextup.core.port.repository.BracketEntryRepositoryPort
+import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueRepositoryPort
+import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -25,13 +37,29 @@ import java.time.LocalDate
 class CompetitionServiceTest {
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var leagueRepository: LeagueRepositoryPort
+    private lateinit var competitionPlayerRepository: CompetitionPlayerRepositoryPort
+    private lateinit var gameRepository: GameRepositoryPort
+    private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var bracketEntryRepository: BracketEntryRepositoryPort
     private lateinit var competitionService: CompetitionService
 
     @BeforeEach
     fun setUp() {
         competitionRepository = mockk()
         leagueRepository = mockk()
-        competitionService = CompetitionService(competitionRepository, leagueRepository)
+        competitionPlayerRepository = mockk()
+        gameRepository = mockk()
+        teamRepository = mockk()
+        bracketEntryRepository = mockk()
+        competitionService =
+            CompetitionService(
+                competitionRepository,
+                leagueRepository,
+                competitionPlayerRepository,
+                gameRepository,
+                teamRepository,
+                bracketEntryRepository,
+            )
     }
 
     @Nested
@@ -500,6 +528,170 @@ class CompetitionServiceTest {
             idField.set(this, id)
         }
 
+    @Nested
+    @DisplayName("withdrawTeam")
+    inner class WithdrawTeam {
+        @Test
+        fun `should withdraw team from competition successfully`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition =
+                createCompetition(competitionId, league, "2025 춘계대회", 2025, 1).apply { start() }
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val opponentTeam = createTeam(20L, "잠실 이글스", league)
+            val player1 = createPlayer(100L, "홍길동")
+            val player2 = createPlayer(101L, "김철수")
+
+            val competitionPlayers =
+                listOf(
+                    CompetitionPlayer.register(competition, team, player1),
+                    CompetitionPlayer.register(competition, team, player2),
+                )
+
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = team,
+                    awayTeam = opponentTeam,
+                    id = 1L,
+                )
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndTeamId(competitionId, teamId)
+            } returns competitionPlayers
+            every { competitionPlayerRepository.saveAll(any()) } answers { firstArg() }
+            every { gameRepository.findByCompetitionId(competitionId) } returns listOf(game)
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { bracketEntryRepository.findByCompetitionId(competitionId) } returns emptyList()
+
+            // when
+            val result = competitionService.withdrawTeam(competitionId, teamId, "팀 해산")
+
+            // then
+            assertThat(result.competitionId).isEqualTo(competitionId)
+            assertThat(result.teamId).isEqualTo(teamId)
+            assertThat(result.withdrawnPlayerCount).isEqualTo(2)
+            assertThat(result.forfeitedGameCount).isEqualTo(1)
+            assertThat(result.updatedBracketEntryCount).isEqualTo(0)
+            assertThat(result.reason).isEqualTo("팀 해산")
+
+            // verify players withdrawn
+            competitionPlayers.forEach {
+                assertThat(it.status).isEqualTo(CompetitionPlayerStatus.WITHDRAWN)
+            }
+
+            // verify game forfeited
+            assertThat(game.status).isEqualTo(GameStatus.FORFEITED)
+
+            verify { competitionPlayerRepository.saveAll(any()) }
+            verify { gameRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw exception when competition is not in progress`() {
+            // given
+            val competitionId = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.withdrawTeam(competitionId, 10L, "사유")
+            }.isInstanceOf(InvalidCompetitionStateException::class.java)
+        }
+
+        @Test
+        fun `should throw exception when team not found`() {
+            // given
+            val competitionId = 1L
+            val teamId = 999L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition =
+                createCompetition(competitionId, league, "2025 춘계대회", 2025, 1).apply { start() }
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.withdrawTeam(competitionId, teamId, "사유")
+            }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw exception when team has no players in competition`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition =
+                createCompetition(competitionId, league, "2025 춘계대회", 2025, 1).apply { start() }
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndTeamId(competitionId, teamId)
+            } returns emptyList()
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.withdrawTeam(competitionId, teamId, "사유")
+            }.isInstanceOf(InvalidCompetitionStateException::class.java)
+        }
+
+        @Test
+        fun `should not forfeit already completed games`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition =
+                createCompetition(competitionId, league, "2025 춘계대회", 2025, 1).apply { start() }
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val opponentTeam = createTeam(20L, "잠실 이글스", league)
+            val player = createPlayer(100L, "홍길동")
+
+            val competitionPlayers =
+                listOf(CompetitionPlayer.register(competition, team, player))
+
+            // 이미 종료된 경기
+            val finishedGame =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = team,
+                    awayTeam = opponentTeam,
+                    status = GameStatus.FINISHED,
+                    id = 1L,
+                )
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndTeamId(competitionId, teamId)
+            } returns competitionPlayers
+            every { competitionPlayerRepository.saveAll(any()) } answers { firstArg() }
+            every { gameRepository.findByCompetitionId(competitionId) } returns listOf(finishedGame)
+            every { bracketEntryRepository.findByCompetitionId(competitionId) } returns emptyList()
+
+            // when
+            val result = competitionService.withdrawTeam(competitionId, teamId, "팀 해산")
+
+            // then
+            assertThat(result.forfeitedGameCount).isEqualTo(0)
+            assertThat(finishedGame.status).isEqualTo(GameStatus.FINISHED)
+            verify(exactly = 0) { gameRepository.save(any()) }
+        }
+    }
+
     private fun createCompetition(
         id: Long,
         league: League,
@@ -519,6 +711,35 @@ class CompetitionServiceTest {
             maxTeams = null,
         ).apply {
             val idField = Competition::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
+
+    private fun createTeam(
+        id: Long,
+        name: String,
+        league: League,
+    ): Team =
+        Team(
+            league = league,
+            name = name,
+            city = "서울",
+            foundedYear = 2020,
+        ).apply {
+            val idField = Team::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
+
+    private fun createPlayer(
+        id: Long,
+        name: String,
+    ): Player =
+        Player(
+            name = name,
+            primaryPosition = Position.STARTING_PITCHER,
+        ).apply {
+            val idField = Player::class.java.getDeclaredField("id")
             idField.isAccessible = true
             idField.set(this, id)
         }

@@ -4,12 +4,14 @@ import com.nextup.backoffice.dto.competition.CompetitionAdminResponse
 import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.PrepareNextSeasonRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
+import com.nextup.backoffice.dto.competition.WithdrawTeamRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.competition.SeasonTransitionService
 import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
 import com.nextup.core.service.competition.dto.SeasonSummaryDto
+import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -160,6 +162,21 @@ class CompetitionAdminController(
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.postpone(id)
         return ApiResponse.success(CompetitionAdminResponse.from(competition))
+    }
+
+    /**
+     * 대회에서 팀을 전체 탈퇴시킵니다.
+     *
+     * 잔여 경기 몰수승 처리, 선수 일괄 WITHDRAWN, 대진표 업데이트를 수행합니다.
+     */
+    @PostMapping("/{id}/teams/{teamId}/withdraw")
+    fun withdrawTeam(
+        @PathVariable id: Long,
+        @PathVariable teamId: Long,
+        @Valid @RequestBody request: WithdrawTeamRequest,
+    ): ApiResponse<TeamWithdrawalResult> {
+        val result = competitionService.withdrawTeam(id, teamId, request.reason)
+        return ApiResponse.success(result)
     }
 
     /**

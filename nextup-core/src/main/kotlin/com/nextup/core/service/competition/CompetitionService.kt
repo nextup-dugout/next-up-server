@@ -3,11 +3,18 @@ package com.nextup.core.service.competition
 import com.nextup.common.exception.CompetitionNotFoundException
 import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.common.exception.LeagueNotFoundException
+import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.port.repository.BracketEntryRepositoryPort
+import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueRepositoryPort
+import com.nextup.core.port.repository.TeamRepositoryPort
+import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -22,6 +29,10 @@ import java.time.LocalDate
 class CompetitionService(
     private val competitionRepository: CompetitionRepositoryPort,
     private val leagueRepository: LeagueRepositoryPort,
+    private val competitionPlayerRepository: CompetitionPlayerRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
+    private val teamRepository: TeamRepositoryPort,
+    private val bracketEntryRepository: BracketEntryRepositoryPort,
 ) {
     /**
      * 대회를 생성합니다.
@@ -176,5 +187,104 @@ class CompetitionService(
             throw InvalidCompetitionStateException(e.message ?: "Cannot postpone competition")
         }
         return competition
+    }
+
+    /**
+     * 대회에서 팀 전체를 탈퇴시킵니다.
+     *
+     * 1. 해당 팀 소속 CompetitionPlayer 일괄 WITHDRAWN 처리
+     * 2. 잔여 경기(SCHEDULED/IN_PROGRESS) 자동 몰수승 처리
+     * 3. 대진표(BracketEntry) 부전승 처리
+     *
+     * @param competitionId 대회 ID
+     * @param teamId 탈퇴할 팀 ID
+     * @param reason 탈퇴 사유
+     * @return 처리 결과 요약
+     */
+    @Transactional
+    fun withdrawTeam(
+        competitionId: Long,
+        teamId: Long,
+        reason: String,
+    ): TeamWithdrawalResult {
+        val competition = getById(competitionId)
+        if (competition.status != CompetitionStatus.IN_PROGRESS) {
+            throw InvalidCompetitionStateException(
+                "Team withdrawal is only allowed for in-progress competitions. " +
+                    "Current status: ${competition.status}",
+            )
+        }
+
+        val team =
+            teamRepository.findByIdOrNull(teamId)
+                ?: throw TeamNotFoundException(teamId)
+
+        // 1. CompetitionPlayer 일괄 WITHDRAWN 처리
+        val players = competitionPlayerRepository.findByCompetitionIdAndTeamId(competitionId, teamId)
+        if (players.isEmpty()) {
+            throw InvalidCompetitionStateException(
+                "Team $teamId has no registered players in competition $competitionId",
+            )
+        }
+        var withdrawnPlayerCount = 0
+        players.forEach { player ->
+            if (player.status != com.nextup.core.domain.competition.CompetitionPlayerStatus.WITHDRAWN) {
+                player.withdraw()
+                withdrawnPlayerCount++
+            }
+        }
+        competitionPlayerRepository.saveAll(players)
+
+        // 2. 잔여 경기 몰수승 처리
+        val games = gameRepository.findByCompetitionId(competitionId)
+        var forfeitedGameCount = 0
+        games.forEach { game ->
+            if (game.status == GameStatus.SCHEDULED ||
+                game.status == GameStatus.IN_PROGRESS ||
+                game.status == GameStatus.POSTPONED
+            ) {
+                val gameTeams = game.gameTeams
+                val isTeamInGame = gameTeams.any { it.team.id == teamId }
+                if (isTeamInGame) {
+                    val opponentTeam = gameTeams.first { it.team.id != teamId }
+                    game.forfeit(
+                        winnerTeamId = opponentTeam.team.id,
+                        reason = "팀 대회 탈퇴: $reason",
+                        gameTeams = gameTeams,
+                    )
+                    gameRepository.save(game)
+                    forfeitedGameCount++
+                }
+            }
+        }
+
+        // 3. 대진표 부전승 처리
+        val bracketEntries = bracketEntryRepository.findByCompetitionId(competitionId)
+        var updatedBracketCount = 0
+        bracketEntries.forEach { entry ->
+            if (!entry.isCompleted()) {
+                val isTeam1 = entry.team1?.id == teamId
+                val isTeam2 = entry.team2?.id == teamId
+                if (isTeam1 && entry.team2 != null) {
+                    entry.recordWinner(entry.team2!!)
+                    bracketEntryRepository.save(entry)
+                    updatedBracketCount++
+                } else if (isTeam2 && entry.team1 != null) {
+                    entry.recordWinner(entry.team1!!)
+                    bracketEntryRepository.save(entry)
+                    updatedBracketCount++
+                }
+            }
+        }
+
+        return TeamWithdrawalResult(
+            competitionId = competitionId,
+            teamId = teamId,
+            teamName = team.name,
+            withdrawnPlayerCount = withdrawnPlayerCount,
+            forfeitedGameCount = forfeitedGameCount,
+            updatedBracketEntryCount = updatedBracketCount,
+            reason = reason,
+        )
     }
 }
