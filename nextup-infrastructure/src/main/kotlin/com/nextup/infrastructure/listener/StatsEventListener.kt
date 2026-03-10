@@ -1,12 +1,14 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
 import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
+import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -16,6 +18,7 @@ import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
@@ -45,6 +48,7 @@ class StatsEventListener(
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
     private val fieldingRecordRepository: FieldingRecordRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val playerRepository: PlayerRepositoryPort,
 ) {
     private val logger = LoggerFactory.getLogger(StatsEventListener::class.java)
 
@@ -52,22 +56,13 @@ class StatsEventListener(
      * 타석 결과 기록 이벤트를 처리합니다.
      *
      * 해당 선수의 시즌 타격 통계를 찾아 실시간으로 갱신합니다.
-     * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
+     * 시즌 통계가 없는 경우 자동으로 생성합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
-        val stats =
-            seasonBattingStatsRepository.findByPlayerIdAndYear(event.playerId, year)
-                ?: run {
-                    logger.debug(
-                        "시즌 타격 통계 없음 - 갱신 건너뜀 (playerId={}, year={})",
-                        event.playerId,
-                        year,
-                    )
-                    return
-                }
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
 
         stats.applyLiveUpdate(event.result)
         seasonBattingStatsRepository.save(stats)
@@ -84,22 +79,13 @@ class StatsEventListener(
      * 타석 결과 취소 이벤트를 처리합니다.
      *
      * 해당 선수의 시즌 타격 통계를 찾아 이전 타석 결과를 역산합니다.
-     * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
+     * 시즌 통계가 없는 경우 자동으로 생성한 뒤 역산합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
-        val stats =
-            seasonBattingStatsRepository.findByPlayerIdAndYear(event.playerId, year)
-                ?: run {
-                    logger.debug(
-                        "시즌 타격 통계 없음 - Undo 건너뜀 (playerId={}, year={})",
-                        event.playerId,
-                        year,
-                    )
-                    return
-                }
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
 
         stats.revertLiveUpdate(event.result)
         seasonBattingStatsRepository.save(stats)
@@ -241,6 +227,31 @@ class StatsEventListener(
             pitchingRecords.size,
             fieldingRecords.size,
         )
+    }
+
+    /**
+     * 선수의 시즌 타격 통계를 조회하거나, 없으면 자동 생성합니다.
+     *
+     * 첫 시즌 선수의 실시간 타격 통계가 누락되는 문제를 방지합니다.
+     * DB unique constraint (player_id, year)에 의해 동시성 중복 생성이 방어됩니다.
+     */
+    private fun findOrCreateSeasonBattingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonBattingStats {
+        return seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
+            ?: run {
+                val player =
+                    playerRepository.findByIdOrNull(playerId)
+                        ?: throw PlayerNotFoundException(playerId)
+                logger.info(
+                    "시즌 타격 통계 자동 생성 (playerId={}, year={})",
+                    playerId,
+                    year,
+                )
+                val newStats = SeasonBattingStats.create(player = player, year = year)
+                seasonBattingStatsRepository.save(newStats)
+            }
     }
 
     private fun resolveYear(gameId: Long): Int {
