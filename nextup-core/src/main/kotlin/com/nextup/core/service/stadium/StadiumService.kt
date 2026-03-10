@@ -129,11 +129,8 @@ class StadiumService(
             bookingRepository.findByIdOrNull(bookingId)
                 ?: throw BookingNotFoundException(bookingId)
 
-        // 예약 취소 (비즈니스 로직은 Entity에 위임)
+        // 예약 취소 (슬롯 상태 복원 포함 - 비즈니스 로직은 Entity에 위임)
         booking.cancel()
-
-        // 슬롯 상태도 원복
-        booking.slot.cancel()
 
         return booking
     }

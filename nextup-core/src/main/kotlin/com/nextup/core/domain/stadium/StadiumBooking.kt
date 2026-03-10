@@ -56,6 +56,8 @@ class StadiumBooking private constructor(
 
     /**
      * 예약을 취소합니다.
+     *
+     * 예약 상태를 CANCELLED로 변경하고, 연결된 슬롯 상태를 AVAILABLE로 복원합니다.
      */
     fun cancel() {
         if (status != BookingStatus.CONFIRMED) {
@@ -65,6 +67,7 @@ class StadiumBooking private constructor(
             )
         }
         this.status = BookingStatus.CANCELLED
+        this.slot.cancel()
     }
 
     /**
