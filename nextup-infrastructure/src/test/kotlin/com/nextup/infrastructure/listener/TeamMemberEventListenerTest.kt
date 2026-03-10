@@ -102,7 +102,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("DRAFT 라인업에서 탈퇴한 선수 엔트리를 제거한다")
         fun `should remove player entry from DRAFT lineup submission`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission = mockk<LineupSubmission>(relaxed = true)
             every { submission.id } returns 10L
@@ -133,7 +134,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("해당 선수가 라인업에 없으면 아무 처리도 하지 않는다")
         fun `should do nothing when player is not in lineup`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission = mockk<LineupSubmission>(relaxed = true)
             every { submission.id } returns 10L
@@ -160,7 +162,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("활성 라인업이 없으면 아무 처리도 하지 않는다")
         fun `should do nothing when no active lineup submissions exist`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
@@ -183,7 +186,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("SUBMITTED 라인업에서 마지막 선수 제거 시 경고 로그를 남긴다")
         fun `should log warning when last entry removed from SUBMITTED lineup`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission = mockk<LineupSubmission>(relaxed = true)
             every { submission.id } returns 10L
@@ -215,7 +219,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("팀원 탈퇴 시 활동 점수를 삭제한다")
         fun `should delete activity score on member left`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
@@ -244,7 +249,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("SUBMITTED 라인업에서 강퇴된 선수 엔트리를 제거한다")
         fun `should remove player entry from SUBMITTED lineup submission`() {
             // given
-            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberKickedEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission = mockk<LineupSubmission>(relaxed = true)
             every { submission.id } returns 10L
@@ -276,7 +282,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("여러 라인업에 선수가 있으면 모두 제거한다")
         fun `should remove player entry from multiple lineup submissions`() {
             // given
-            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberKickedEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission1 = mockk<LineupSubmission>(relaxed = true)
             every { submission1.id } returns 10L
@@ -316,7 +323,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("팀원 강퇴 시 활동 점수를 삭제한다")
         fun `should delete activity score on member kicked`() {
             // given
-            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberKickedEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(

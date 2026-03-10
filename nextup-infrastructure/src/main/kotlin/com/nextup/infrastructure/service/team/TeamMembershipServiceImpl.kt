@@ -3,6 +3,8 @@ package com.nextup.infrastructure.service.team
 import com.nextup.common.exception.*
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
+import com.nextup.core.domain.event.TeamMemberKickedEvent
+import com.nextup.core.domain.event.TeamMemberLeftEvent
 import com.nextup.core.domain.team.*
 import com.nextup.core.port.repository.*
 import com.nextup.core.service.team.TeamMembershipService
@@ -216,6 +218,16 @@ class TeamMembershipServiceImpl(
                 )
             teamBlacklistRepository.save(blacklist)
         }
+
+        eventPublisher.publishEvent(
+            TeamMemberKickedEvent(
+                teamId = member.team.id,
+                userId = member.user.id,
+                playerId = member.player.id,
+                memberId = member.id,
+                teamName = member.team.name,
+            ),
+        )
     }
 
     @Transactional
@@ -235,6 +247,16 @@ class TeamMembershipServiceImpl(
         // Entity의 비즈니스 로직으로 탈퇴 처리
         member.leave()
         teamMemberRepository.save(member)
+
+        eventPublisher.publishEvent(
+            TeamMemberLeftEvent(
+                teamId = member.team.id,
+                userId = member.user.id,
+                playerId = member.player.id,
+                memberId = member.id,
+                teamName = member.team.name,
+            ),
+        )
     }
 
     @Transactional

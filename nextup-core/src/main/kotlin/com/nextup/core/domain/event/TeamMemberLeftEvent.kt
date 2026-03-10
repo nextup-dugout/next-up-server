@@ -7,6 +7,8 @@ package com.nextup.core.domain.event
  */
 data class TeamMemberLeftEvent(
     val teamId: Long,
+    val userId: Long,
     val playerId: Long,
     val memberId: Long,
+    val teamName: String,
 )

@@ -61,6 +61,7 @@ class NotificationServiceTest {
                 data = """{"gameId": 123}""",
             )
 
+        every { preferenceRepository.findByUserIdAndType(1L, NotificationType.GAME_START) } returns null
         every { notificationRepository.save(any()) } answers { firstArg() }
         every { deviceTokenRepository.findByUserId(1L) } returns emptyList()
 
@@ -68,7 +69,8 @@ class NotificationServiceTest {
         val result = notificationService.sendNotification(request)
 
         // then
-        assertThat(result.userId).isEqualTo(request.userId)
+        assertThat(result).isNotNull
+        assertThat(result!!.userId).isEqualTo(request.userId)
         assertThat(result.type).isEqualTo(request.type)
         assertThat(result.title).isEqualTo(request.title)
         assertThat(result.body).isEqualTo(request.body)
@@ -90,6 +92,7 @@ class NotificationServiceTest {
                 data = null,
             )
 
+        every { preferenceRepository.findByUserIdAndType(1L, NotificationType.TEAM_NOTICE) } returns null
         every { notificationRepository.save(any()) } answers { firstArg() }
         every { deviceTokenRepository.findByUserId(1L) } returns emptyList()
 
@@ -97,8 +100,73 @@ class NotificationServiceTest {
         val result = notificationService.sendNotification(request)
 
         // then
-        assertThat(result.data).isNull()
+        assertThat(result).isNotNull
+        assertThat(result!!.data).isNull()
         assertThat(result.isSent()).isTrue()
+    }
+
+    @Test
+    fun `사용자가 알림 타입을 비활성화한 경우 발송을 스킵한다`() {
+        // given
+        val request =
+            SendNotificationRequest(
+                userId = 1L,
+                type = NotificationType.GAME_START,
+                title = "경기 시작",
+                body = "경기가 곧 시작됩니다",
+            )
+
+        val disabledPreference =
+            NotificationPreference.create(
+                userId = 1L,
+                type = NotificationType.GAME_START,
+                enabled = false,
+            )
+
+        every {
+            preferenceRepository.findByUserIdAndType(1L, NotificationType.GAME_START)
+        } returns disabledPreference
+
+        // when
+        val result = notificationService.sendNotification(request)
+
+        // then
+        assertThat(result).isNull()
+        verify(exactly = 0) { notificationRepository.save(any()) }
+        verify(exactly = 0) { deviceTokenRepository.findByUserId(any()) }
+    }
+
+    @Test
+    fun `사용자가 알림 타입을 활성화한 경우 정상 발송한다`() {
+        // given
+        val request =
+            SendNotificationRequest(
+                userId = 1L,
+                type = NotificationType.TEAM_NOTICE,
+                title = "팀 공지",
+                body = "중요 공지사항입니다",
+            )
+
+        val enabledPreference =
+            NotificationPreference.create(
+                userId = 1L,
+                type = NotificationType.TEAM_NOTICE,
+                enabled = true,
+            )
+
+        every {
+            preferenceRepository.findByUserIdAndType(1L, NotificationType.TEAM_NOTICE)
+        } returns enabledPreference
+        every { notificationRepository.save(any()) } answers { firstArg() }
+        every { deviceTokenRepository.findByUserId(1L) } returns emptyList()
+
+        // when
+        val result = notificationService.sendNotification(request)
+
+        // then
+        assertThat(result).isNotNull
+        assertThat(result!!.isSent()).isTrue()
+        verify(exactly = 1) { notificationRepository.save(any()) }
     }
 
     // ========== getUserNotifications Tests (Paging) ==========
