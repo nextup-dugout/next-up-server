@@ -41,6 +41,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import java.time.LocalDateTime
 
 @DisplayName("StatsEventListener 테스트")
@@ -762,6 +763,93 @@ class StatsEventListenerTest {
             assertThrows<GameNotFoundException> {
                 listener.onGameResultConfirmed(badEvent)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("retryOnOptimisticLock - Optimistic Locking 재시도")
+    inner class RetryOnOptimisticLock {
+        @Test
+        fun `OptimisticLockingFailureException 발생 시 재시도 후 성공`() {
+            // given
+            var callCount = 0
+
+            // when
+            StatsEventListener.retryOnOptimisticLock("test") {
+                callCount++
+                if (callCount < 3) {
+                    throw ObjectOptimisticLockingFailureException("test", null)
+                }
+            }
+
+            // then: 3번째에 성공
+            assertThat(callCount).isEqualTo(3)
+        }
+
+        @Test
+        fun `재시도 횟수 초과 시 예외 전파`() {
+            // given & when & then
+            assertThrows<ObjectOptimisticLockingFailureException> {
+                StatsEventListener.retryOnOptimisticLock("test") {
+                    throw ObjectOptimisticLockingFailureException("test", null)
+                }
+            }
+        }
+
+        @Test
+        fun `첫 시도에 성공하면 한 번만 호출됨`() {
+            // given
+            var callCount = 0
+
+            // when
+            StatsEventListener.retryOnOptimisticLock("test") {
+                callCount++
+            }
+
+            // then
+            assertThat(callCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `OptimisticLockingFailureException이 아닌 예외는 즉시 전파`() {
+            // given
+            var callCount = 0
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                StatsEventListener.retryOnOptimisticLock("test") {
+                    callCount++
+                    throw IllegalStateException("다른 예외")
+                }
+            }
+
+            // then: 재시도 없이 1회만 호출
+            assertThat(callCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `타석 기록 이벤트에서 OptimisticLocking 충돌 시 재시도하여 성공`() {
+            // given
+            val stats = SeasonBattingStats.create(testPlayer, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            // 첫 번째 save 시 충돌, 두 번째에 성공
+            every { seasonBattingStatsRepository.save(any()) } throws
+                ObjectOptimisticLockingFailureException("conflict", null) andThen stats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then: 2번 호출됨 (1번 실패 + 1번 성공)
+            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
         }
     }
 }
