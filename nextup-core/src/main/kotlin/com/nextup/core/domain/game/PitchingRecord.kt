@@ -607,6 +607,23 @@ class PitchingRecord(
     }
 
     /**
+     * L-5: 이닝 축소 정정 시 기존 기록과 충돌하는지 검증합니다.
+     *
+     * 정정으로 이닝 수가 축소될 경우, 기존에 기록된 아웃 수가
+     * 축소된 이닝의 최대 아웃 수를 초과하지 않는지 확인합니다.
+     *
+     * @param newTotalInnings 새로운 총 이닝 수
+     * @throws IllegalArgumentException 기존 기록이 축소된 이닝과 충돌하는 경우
+     */
+    fun validateInningReduction(newTotalInnings: Int) {
+        val maxOuts = newTotalInnings * 3
+        require(inningsPitchedOuts <= maxOuts) {
+            "이닝 축소(${newTotalInnings}이닝, 최대 ${maxOuts}아웃) 시 기존 기록(${inningsPitchedOuts}아웃, " +
+                "${inningsPitchedDisplay}이닝)과 충돌합니다. 기존 투구 기록을 먼저 정정해주세요."
+        }
+    }
+
+    /**
      * 관리자 기록 정정: 특정 필드 값을 직접 설정합니다.
      *
      * 경기 상태와 무관하게 관리자 권한으로 정정 가능합니다.

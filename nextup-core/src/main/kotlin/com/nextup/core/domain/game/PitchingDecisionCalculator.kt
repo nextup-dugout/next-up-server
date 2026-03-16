@@ -28,7 +28,20 @@ package com.nextup.core.domain.game
  * - 모든 투수 NONE
  *
  * 이 클래스는 순수 도메인 로직만 담습니다. Repository/Spring 의존 금지.
+ *
+ * @deprecated PitchingDecisionService로 통합되었습니다.
+ * GameRules 기반 선발 승리 자격 이닝 및 동점 주자 세이브 조건을 지원하는
+ * PitchingDecisionService를 사용하세요.
+ * @see com.nextup.core.service.game.PitchingDecisionService
  */
+@Deprecated(
+    message = "PitchingDecisionService로 통합되었습니다. GameRules 기반 판정을 사용하세요.",
+    replaceWith =
+        ReplaceWith(
+            "PitchingDecisionService().assignDecisions(winnerTeamRecords, loserTeamRecords, winnerGameTeam, loserGameTeam, gameRules)",
+            "com.nextup.core.service.game.PitchingDecisionService",
+        ),
+)
 object PitchingDecisionCalculator {
 
     /**

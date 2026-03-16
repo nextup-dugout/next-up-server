@@ -50,4 +50,12 @@ class CompetitionPlayerRepositoryAdapter(
         teamId: Long,
         status: CompetitionPlayerStatus,
     ): List<CompetitionPlayer> = jpaRepository.findByTeamIdAndStatus(teamId, status)
+
+    override fun findActiveCompetitionIdsByTeamId(teamId: Long): Set<Long> =
+        jpaRepository.findActiveCompetitionIdsByTeamId(teamId)
+
+    override fun findByPlayerIdAndStatusIn(
+        playerId: Long,
+        statuses: List<CompetitionPlayerStatus>,
+    ): List<CompetitionPlayer> = jpaRepository.findByPlayerIdAndStatusIn(playerId, statuses)
 }

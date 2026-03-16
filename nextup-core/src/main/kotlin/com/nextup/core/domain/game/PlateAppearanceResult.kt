@@ -36,7 +36,11 @@ enum class PlateAppearanceResult(
     HIT_BY_PITCH("사구", "몸에 맞는 공으로 출루", false, false),
     SACRIFICE_BUNT("희생번트", "희생번트로 아웃", false, false),
     SACRIFICE_FLY("희생플라이", "희생플라이로 아웃", false, false),
+
+    /** L-2: 기존 INTERFERENCE를 유지하면서 타격방해/주루방해 세분화 */
     INTERFERENCE("방해", "수비 방해로 출루", false, false),
+    BATTER_INTERFERENCE("타격방해", "타격 방해로 출루", false, false),
+    RUNNER_INTERFERENCE("주루방해", "주루 방해로 아웃", false, false),
     ;
 
     /**
@@ -114,6 +118,7 @@ enum class PlateAppearanceResult(
                     FIELDERS_CHOICE,
                     ERROR,
                     INTERFERENCE,
+                    BATTER_INTERFERENCE,
                     STRIKEOUT_DROPPED_THIRD,
                 )
 

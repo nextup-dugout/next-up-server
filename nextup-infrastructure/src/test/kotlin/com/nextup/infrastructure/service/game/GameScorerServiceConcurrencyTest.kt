@@ -74,6 +74,7 @@ class GameScorerServiceConcurrencyTest {
                 gameRepository,
                 gameTeamRepository,
                 pitchingRecordRepository,
+                com.nextup.core.service.game.PitchingDecisionService(),
                 eventPublisher,
             )
         plateAppearanceRecordService =

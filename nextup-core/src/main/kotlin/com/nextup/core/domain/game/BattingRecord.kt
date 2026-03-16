@@ -265,7 +265,10 @@ class BattingRecord(
                 atBats++
                 triplePlays++
             }
-            PlateAppearanceResult.INTERFERENCE -> {
+            PlateAppearanceResult.INTERFERENCE,
+            PlateAppearanceResult.BATTER_INTERFERENCE,
+            PlateAppearanceResult.RUNNER_INTERFERENCE,
+            -> {
                 // 방해는 타수에 포함되지 않음
             }
         }
@@ -395,7 +398,10 @@ class BattingRecord(
                 atBats--
                 triplePlays--
             }
-            PlateAppearanceResult.INTERFERENCE -> {
+            PlateAppearanceResult.INTERFERENCE,
+            PlateAppearanceResult.BATTER_INTERFERENCE,
+            PlateAppearanceResult.RUNNER_INTERFERENCE,
+            -> {
                 // 방해는 타수에 포함되지 않음
             }
         }

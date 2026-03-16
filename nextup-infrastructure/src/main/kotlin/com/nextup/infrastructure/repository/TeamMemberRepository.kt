@@ -39,6 +39,9 @@ interface TeamMemberRepository : JpaRepository<TeamMember, Long> {
     @Query("SELECT tm FROM TeamMember tm WHERE tm.user.id = :userId AND tm.status = 'ACTIVE'")
     fun findActiveByUserId(userId: Long): TeamMember?
 
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.team WHERE tm.user.id = :userId AND tm.status = 'ACTIVE'")
+    fun findAllActiveByUserId(userId: Long): List<TeamMember>
+
     @Query(
         """
         SELECT tm FROM TeamMember tm

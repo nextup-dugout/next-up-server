@@ -39,10 +39,23 @@ class StandingsServiceImpl(
         // 3. 팀별로 그룹화하여 통계 계산
         val teamStats = calculateTeamStats(decidedGameTeams, allGameTeams)
 
-        // 4. 정렬: 승률 DESC, 득실차 DESC, 득점 DESC
+        // L-13: 상대전적 기반 타이브레이커 계산
+        val headToHeadRecords = calculateHeadToHeadRecords(decidedGameTeams)
+
+        // 4. 정렬: 승률 DESC → L-13: 상대전적 DESC → 득실차 DESC → 득점 DESC
         val sortedStats =
             teamStats.sortedWith(
                 compareByDescending<TeamStats> { it.winningPercentage }
+                    .thenByDescending { stats ->
+                        // L-13: 동률 팀 간 상대전적 승률 계산
+                        val sameWinPctTeams =
+                            teamStats.filter { it.winningPercentage == stats.winningPercentage }
+                        if (sameWinPctTeams.size <= 1) {
+                            BigDecimal.ZERO
+                        } else {
+                            calculateHeadToHeadWinPct(stats.teamId, sameWinPctTeams, headToHeadRecords)
+                        }
+                    }
                     .thenByDescending { it.runDifferential }
                     .thenByDescending { it.runsScored },
             )
@@ -189,6 +202,102 @@ class StandingsServiceImpl(
             .mapValues { (_, gameTeams) -> gameTeams.size }
             .values
             .maxOrNull() ?: 0
+    }
+
+    /**
+     * L-13: 상대전적 기록 계산
+     *
+     * 각 팀 쌍의 직접 대결 결과를 기록합니다.
+     * key: Pair(teamAId, teamBId), value: Pair(teamA승수, teamB승수)
+     */
+    private fun calculateHeadToHeadRecords(decidedGameTeams: List<GameTeam>,): Map<Pair<Long, Long>, Pair<Int, Int>> {
+        val records = mutableMapOf<Pair<Long, Long>, Pair<Int, Int>>()
+
+        // 경기별로 그룹화
+        val gameGroups = decidedGameTeams.groupBy { it.game.id }
+        for ((_, teamsInGame) in gameGroups) {
+            if (teamsInGame.size != 2) continue
+
+            val team1 = teamsInGame[0]
+            val team2 = teamsInGame[1]
+            val key =
+                if (team1.team.id < team2.team.id) {
+                    Pair(team1.team.id, team2.team.id)
+                } else {
+                    Pair(team2.team.id, team1.team.id)
+                }
+
+            val current = records.getOrDefault(key, Pair(0, 0))
+
+            val (team1Wins, team2Wins) =
+                when {
+                    team1.result == GameResult.WIN && team1.team.id == key.first ->
+                        Pair(
+                            current.first + 1,
+                            current.second
+                        )
+                    team1.result == GameResult.LOSS && team1.team.id == key.first ->
+                        Pair(
+                            current.first,
+                            current.second + 1
+                        )
+                    team1.result == GameResult.WIN && team1.team.id == key.second ->
+                        Pair(
+                            current.first,
+                            current.second + 1
+                        )
+                    team1.result == GameResult.LOSS && team1.team.id == key.second ->
+                        Pair(
+                            current.first + 1,
+                            current.second
+                        )
+                    else -> current // DRAW
+                }
+
+            records[key] = Pair(team1Wins, team2Wins)
+        }
+
+        return records
+    }
+
+    /**
+     * L-13: 동률 팀들 간의 상대전적 승률을 계산합니다.
+     */
+    private fun calculateHeadToHeadWinPct(
+        teamId: Long,
+        sameWinPctTeams: List<TeamStats>,
+        headToHeadRecords: Map<Pair<Long, Long>, Pair<Int, Int>>,
+    ): BigDecimal {
+        var h2hWins = 0
+        var h2hGames = 0
+
+        for (opponent in sameWinPctTeams) {
+            if (opponent.teamId == teamId) continue
+
+            val key =
+                if (teamId < opponent.teamId) {
+                    Pair(teamId, opponent.teamId)
+                } else {
+                    Pair(opponent.teamId, teamId)
+                }
+
+            val record = headToHeadRecords[key] ?: continue
+            val (firstWins, secondWins) = record
+
+            if (teamId == key.first) {
+                h2hWins += firstWins
+                h2hGames += firstWins + secondWins
+            } else {
+                h2hWins += secondWins
+                h2hGames += firstWins + secondWins
+            }
+        }
+
+        return if (h2hGames == 0) {
+            BigDecimal.ZERO
+        } else {
+            BigDecimal(h2hWins).divide(BigDecimal(h2hGames), 3, RoundingMode.HALF_UP)
+        }
     }
 
     /**

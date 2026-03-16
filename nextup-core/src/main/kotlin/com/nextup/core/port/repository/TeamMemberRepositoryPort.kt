@@ -35,6 +35,8 @@ interface TeamMemberRepositoryPort {
 
     fun findActiveByUserId(userId: Long): TeamMember?
 
+    fun findAllActiveByUserId(userId: Long): List<TeamMember>
+
     fun findByTeamIdWithUserAndPlayer(
         teamId: Long,
         pageCommand: PageCommand,
