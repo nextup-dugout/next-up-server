@@ -48,4 +48,9 @@ enum class NotificationType {
      * 라인업 확정
      */
     LINEUP_CONFIRMED,
+
+    /**
+     * 선거 동률 발생
+     */
+    ELECTION_TIED,
 }

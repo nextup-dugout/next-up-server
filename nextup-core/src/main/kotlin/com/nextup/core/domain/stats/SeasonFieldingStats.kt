@@ -29,13 +29,14 @@ import java.math.RoundingMode
     name = "season_fielding_stats",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uk_season_fielding_stats_player_year",
-            columnNames = ["player_id", "year"],
+            name = "uk_season_fielding_stats_player_year_team",
+            columnNames = ["player_id", "year", "team_id"],
         ),
     ],
     indexes = [
         Index(name = "idx_season_fielding_stats_player", columnList = "player_id"),
         Index(name = "idx_season_fielding_stats_year", columnList = "year"),
+        Index(name = "idx_season_fielding_stats_team", columnList = "team_id"),
     ],
 )
 class SeasonFieldingStats(
@@ -44,6 +45,8 @@ class SeasonFieldingStats(
     val player: Player,
     @Column(nullable = false)
     val year: Int,
+    @Column(name = "team_id")
+    val teamId: Long? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -148,15 +151,20 @@ class SeasonFieldingStats(
     companion object {
         /**
          * 선수의 시즌 수비 통계를 생성합니다.
+         *
+         * @param player 선수
+         * @param year 연도
+         * @param teamId 팀 ID (이적 시 팀별 기록 분리 지원, null이면 팀 구분 없음)
          */
         fun create(
             player: Player,
             year: Int,
+            teamId: Long? = null,
         ): SeasonFieldingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }
-            return SeasonFieldingStats(player = player, year = year)
+            return SeasonFieldingStats(player = player, year = year, teamId = teamId)
         }
     }
 }
