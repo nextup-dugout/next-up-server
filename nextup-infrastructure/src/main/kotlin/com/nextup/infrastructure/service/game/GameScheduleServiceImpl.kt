@@ -120,6 +120,25 @@ class GameScheduleServiceImpl(
         return toSummaryDtos(games)
     }
 
+    override fun getUpcomingGamesByTeamIds(
+        teamIds: List<Long>,
+        limit: Int,
+    ): List<GameSummaryDto> {
+        if (teamIds.isEmpty()) return emptyList()
+
+        val now = LocalDateTime.now()
+        val gameTeams =
+            teamIds.flatMap { gameTeamRepository.findAllByTeamId(it) }
+        val gameIds = gameTeams.map { it.game.id }.distinct()
+        val games =
+            gameRepository.findAllByIds(gameIds)
+                .filter { it.scheduledAt.isAfter(now) && it.status == GameStatus.SCHEDULED }
+                .sortedBy { it.scheduledAt }
+                .take(limit)
+
+        return toSummaryDtos(games)
+    }
+
     override fun getGameDaysInMonth(
         year: Int,
         month: Int,
