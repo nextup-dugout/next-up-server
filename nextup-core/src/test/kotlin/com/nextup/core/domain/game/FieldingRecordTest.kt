@@ -101,6 +101,28 @@ class FieldingRecordTest {
     }
 
     @Nested
+    @DisplayName("삼중살 관여(TP) 기록")
+    inner class RecordTriplePlayTest {
+        @Test
+        fun `삼중살 관여를 기록하면 triplePlays가 1 증가한다`() {
+            // when
+            fieldingRecord.recordTriplePlay()
+
+            // then
+            assertThat(fieldingRecord.triplePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `삼중살 관여를 여러 번 기록하면 누적된다`() {
+            // when
+            repeat(2) { fieldingRecord.recordTriplePlay() }
+
+            // then
+            assertThat(fieldingRecord.triplePlays).isEqualTo(2)
+        }
+    }
+
+    @Nested
     @DisplayName("포일(PB) 기록")
     inner class RecordPassedBallTest {
         @Test
@@ -251,6 +273,25 @@ class FieldingRecordTest {
         fun `병살 관여 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
             assertThatThrownBy { fieldingRecord.revertDoublePlay() }
                 .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `삼중살 관여를 취소하면 triplePlays가 1 감소한다`() {
+            // given
+            fieldingRecord.recordTriplePlay()
+
+            // when
+            fieldingRecord.revertTriplePlay()
+
+            // then
+            assertThat(fieldingRecord.triplePlays).isEqualTo(0)
+        }
+
+        @Test
+        fun `삼중살 관여 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertTriplePlay() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("취소할 삼중살 관여 기록이 없습니다")
         }
 
         @Test

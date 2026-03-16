@@ -1195,6 +1195,171 @@ class PitchingRecordTest {
     }
 
     @Nested
+    @DisplayName("도루 허용 / 도루 저지 / 견제 아웃 기록 및 롤백")
+    inner class StolenBaseCaughtStealingPickoffTest {
+        @Test
+        fun `도루 허용을 기록하면 stolenBasesAllowed가 증가한다`() {
+            // when
+            pitchingRecord.recordStolenBaseAllowed()
+
+            // then
+            assertThat(pitchingRecord.stolenBasesAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `도루 허용을 여러 번 기록하면 누적된다`() {
+            // when
+            repeat(3) { pitchingRecord.recordStolenBaseAllowed() }
+
+            // then
+            assertThat(pitchingRecord.stolenBasesAllowed).isEqualTo(3)
+        }
+
+        @Test
+        fun `도루 저지를 기록하면 runnersCaughtStealing이 증가한다`() {
+            // when
+            pitchingRecord.recordCaughtStealing()
+
+            // then
+            assertThat(pitchingRecord.runnersCaughtStealing).isEqualTo(1)
+        }
+
+        @Test
+        fun `견제 아웃을 기록하면 pickoffs가 증가한다`() {
+            // when
+            pitchingRecord.recordPickoff()
+
+            // then
+            assertThat(pitchingRecord.pickoffs).isEqualTo(1)
+        }
+
+        @Test
+        fun `도루 허용을 롤백하면 stolenBasesAllowed가 감소한다`() {
+            // given
+            pitchingRecord.recordStolenBaseAllowed()
+
+            // when
+            pitchingRecord.revertStolenBaseAllowed()
+
+            // then
+            assertThat(pitchingRecord.stolenBasesAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `도루 허용 기록이 없을 때 롤백하면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy { pitchingRecord.revertStolenBaseAllowed() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 도루 허용 기록이 없습니다")
+        }
+
+        @Test
+        fun `도루 저지를 롤백하면 runnersCaughtStealing이 감소한다`() {
+            // given
+            pitchingRecord.recordCaughtStealing()
+
+            // when
+            pitchingRecord.revertCaughtStealing()
+
+            // then
+            assertThat(pitchingRecord.runnersCaughtStealing).isEqualTo(0)
+        }
+
+        @Test
+        fun `도루 저지 기록이 없을 때 롤백하면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy { pitchingRecord.revertCaughtStealing() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 도루 저지 기록이 없습니다")
+        }
+
+        @Test
+        fun `견제 아웃을 롤백하면 pickoffs가 감소한다`() {
+            // given
+            pitchingRecord.recordPickoff()
+
+            // when
+            pitchingRecord.revertPickoff()
+
+            // then
+            assertThat(pitchingRecord.pickoffs).isEqualTo(0)
+        }
+
+        @Test
+        fun `견제 아웃 기록이 없을 때 롤백하면 예외가 발생한다`() {
+            // when & then
+            assertThatThrownBy { pitchingRecord.revertPickoff() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 견제 아웃 기록이 없습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("validate - 도루/견제 음수 필드 검증")
+    inner class ValidateStolenBaseFieldsTest {
+        private fun setField(
+            fieldName: String,
+            value: Int,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.setInt(pitchingRecord, value)
+        }
+
+        @Test
+        fun `도루 허용이 음수이면 검증에 실패한다`() {
+            setField("stolenBasesAllowed", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("도루 허용")
+        }
+
+        @Test
+        fun `도루 저지가 음수이면 검증에 실패한다`() {
+            setField("runnersCaughtStealing", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("도루 저지")
+        }
+
+        @Test
+        fun `견제 아웃이 음수이면 검증에 실패한다`() {
+            setField("pickoffs", -1)
+            assertThatThrownBy { pitchingRecord.validate() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("견제 아웃")
+        }
+    }
+
+    @Nested
+    @DisplayName("applyBatterFaced - STRIKEOUT_DROPPED_THIRD 처리")
+    inner class ApplyBatterFacedDroppedThirdTest {
+        @Test
+        fun `낫아웃 삼진을 적용하면 battersFaced와 strikeouts가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.strikeouts).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `낫아웃 삼진 롤백이 정상적으로 동작한다`() {
+            // given
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // when
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.strikeouts).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("validate - 관계형 제약 검증")
     inner class ValidateRelationalTest {
         private fun setField(

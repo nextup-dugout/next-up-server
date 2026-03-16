@@ -1650,4 +1650,122 @@ class BattingRecordTest {
             assertAllFieldsZero(battingRecord)
         }
     }
+
+    @Nested
+    @DisplayName("낫아웃 삼진 (STRIKEOUT_DROPPED_THIRD) 처리")
+    inner class DroppedThirdStrikeTest {
+        @Test
+        fun `낫아웃 삼진을 기록하면 타석, 타수, 삼진이 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.strikeouts).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `낫아웃 삼진 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.strikeouts).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("방해 결과 타입 (BATTER_INTERFERENCE, RUNNER_INTERFERENCE) 처리")
+    inner class InterferenceResultTest {
+        @Test
+        fun `타격방해를 기록하면 타석만 증가하고 타수는 증가하지 않는다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `주루방해를 기록하면 타석만 증가하고 타수는 증가하지 않는다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `타격방해 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `주루방해 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("PlateAppearanceResult - 새 결과 타입 속성 확인")
+    inner class NewResultTypePropertyTest {
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 낫아웃 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isDroppedThirdStrike).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 출루에 성공하지 못한다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isOnBase).isFalse()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isAtBat).isFalse()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isAtBat).isFalse()
+        }
+    }
 }

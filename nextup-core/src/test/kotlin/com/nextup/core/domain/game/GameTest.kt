@@ -1391,4 +1391,164 @@ class GameTest {
             assertThat(game.gameState.outs).isEqualTo(2)
         }
     }
+
+    @Nested
+    @DisplayName("시간 제한 상태 확인 (M-5)")
+    inner class CheckTimeLimitStatusTest {
+
+        private fun createGameWithTimeLimit(
+            status: GameStatus,
+            timeLimitMinutes: Int?,
+            startedMinutesAgo: Long? = null,
+        ): Game {
+            val timeLimitCompetition =
+                Competition(
+                    league = league,
+                    name = "시간 제한 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                ).also {
+                    it.gameRules = GameRules(timeLimitMinutes = timeLimitMinutes)
+                }
+            val homeTeam = createTeam("홈팀", id = 10L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 20L)
+            return Game.createForTest(
+                competition = timeLimitCompetition,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                status = status,
+                startedAt = startedMinutesAgo?.let { LocalDateTime.now().minusMinutes(it) },
+            )
+        }
+
+        @Test
+        fun `timeLimitMinutes가 설정되지 않으면 null을 반환한다`() {
+            // given: timeLimitMinutes = null
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = null,
+                    startedMinutesAgo = 30,
+                )
+
+            // when
+            val result = game.checkTimeLimitStatus(now = LocalDateTime.now())
+
+            // then
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `경기가 진행 중이 아니면 null을 반환한다`() {
+            // given
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.SCHEDULED,
+                    timeLimitMinutes = 120,
+                )
+
+            // when
+            val result = game.checkTimeLimitStatus(now = LocalDateTime.now())
+
+            // then
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `startedAt이 null이면 null을 반환한다`() {
+            // given: 진행 중이지만 startedAt 없음
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = 120,
+                    startedMinutesAgo = null,
+                )
+
+            // when
+            val result = game.checkTimeLimitStatus(now = LocalDateTime.now())
+
+            // then
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `경과 시간이 제한 시간 미만이고 경고 범위 밖이면 null을 반환한다`() {
+            // given: 120분 제한, 경고 10분 전, 현재 60분 경과
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = 120,
+                    startedMinutesAgo = 60,
+                )
+
+            // when
+            val result =
+                game.checkTimeLimitStatus(
+                    now = LocalDateTime.now(),
+                    warningThresholdMinutes = 10,
+                )
+
+            // then
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `경과 시간이 경고 범위에 들어오면 APPROACHING_LIMIT을 반환한다`() {
+            // given: 120분 제한, 경고 10분 전, 현재 112분 경과 (8분 남음)
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = 120,
+                    startedMinutesAgo = 112,
+                )
+
+            // when
+            val result =
+                game.checkTimeLimitStatus(
+                    now = LocalDateTime.now(),
+                    warningThresholdMinutes = 10,
+                )
+
+            // then
+            assertThat(result).isEqualTo(TimeLimitStatus.APPROACHING_LIMIT)
+        }
+
+        @Test
+        fun `경과 시간이 제한 시간에 도달하면 LIMIT_REACHED를 반환한다`() {
+            // given: 120분 제한, 정확히 120분 경과
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = 120,
+                    startedMinutesAgo = 120,
+                )
+
+            // when
+            val result = game.checkTimeLimitStatus(now = LocalDateTime.now())
+
+            // then
+            assertThat(result).isEqualTo(TimeLimitStatus.LIMIT_REACHED)
+        }
+
+        @Test
+        fun `경과 시간이 제한 시간을 초과하면 LIMIT_REACHED를 반환한다`() {
+            // given: 120분 제한, 130분 경과
+            val game =
+                createGameWithTimeLimit(
+                    status = GameStatus.IN_PROGRESS,
+                    timeLimitMinutes = 120,
+                    startedMinutesAgo = 130,
+                )
+
+            // when
+            val result = game.checkTimeLimitStatus(now = LocalDateTime.now())
+
+            // then
+            assertThat(result).isEqualTo(TimeLimitStatus.LIMIT_REACHED)
+        }
+    }
 }
