@@ -239,6 +239,34 @@ class Game private constructor(
     }
 
     /**
+     * 시간 제한 상태를 확인합니다 (M-5: 시간 제한 경고/알림).
+     *
+     * 경기 규칙에 timeLimitMinutes가 설정된 경우, 경기 시작 시각 기준
+     * 현재 경과 시간을 계산하여 경고/도달 상태를 반환합니다.
+     *
+     * @param now 현재 시각
+     * @param warningThresholdMinutes 경고 임박 기준 (분, 기본 10분 전)
+     * @return 시간 제한 상태 (null이면 제한 없음 또는 정상 범위)
+     */
+    fun checkTimeLimitStatus(
+        now: java.time.LocalDateTime,
+        warningThresholdMinutes: Int = DEFAULT_TIME_LIMIT_WARNING_THRESHOLD,
+    ): TimeLimitStatus? {
+        if (!status.isOngoing()) return null
+        val limit = competition.gameRules.timeLimitMinutes ?: return null
+        val started = startedAt ?: return null
+
+        val elapsedMinutes =
+            java.time.Duration.between(started, now).toMinutes()
+
+        return when {
+            elapsedMinutes >= limit -> TimeLimitStatus.LIMIT_REACHED
+            elapsedMinutes >= limit - warningThresholdMinutes -> TimeLimitStatus.APPROACHING_LIMIT
+            else -> null
+        }
+    }
+
+    /**
      * 경기를 중단합니다.
      *
      * 진행 중인 경기를 우천/조명 고장 등의 사유로 중단합니다.
@@ -350,6 +378,9 @@ class Game private constructor(
 
         /** 투수 교체 시 최소 대면 타자 수 기본값 */
         const val DEFAULT_MIN_BATTERS_FACED = 1
+
+        /** 시간 제한 경고 임박 기준 (분) */
+        const val DEFAULT_TIME_LIMIT_WARNING_THRESHOLD = 10
 
         /**
          * 프로덕션 팩토리 메서드.

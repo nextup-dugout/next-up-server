@@ -91,6 +91,27 @@ class PitchingRecord(
     var strikesThrown: Int? = null
         protected set
 
+    /**
+     * 도루 허용 (SB Allowed) - 투구 중 허용한 도루 횟수
+     */
+    @Column(name = "stolen_bases_allowed", nullable = false)
+    var stolenBasesAllowed: Int = 0
+        protected set
+
+    /**
+     * 도루 저지 (CS, Runners Caught Stealing) - 투구 중 도루 실패 횟수
+     */
+    @Column(name = "runners_caught_stealing", nullable = false)
+    var runnersCaughtStealing: Int = 0
+        protected set
+
+    /**
+     * 견제 아웃 (Pickoff) - 견제로 주자를 아웃시킨 횟수
+     */
+    @Column(name = "pickoffs", nullable = false)
+    var pickoffs: Int = 0
+        protected set
+
     // Calculated properties
 
     /**
@@ -283,6 +304,51 @@ class PitchingRecord(
     }
 
     /**
+     * 도루 허용을 기록합니다.
+     */
+    fun recordStolenBaseAllowed() {
+        stolenBasesAllowed++
+    }
+
+    /**
+     * 도루 저지를 기록합니다.
+     */
+    fun recordCaughtStealing() {
+        runnersCaughtStealing++
+    }
+
+    /**
+     * 견제 아웃을 기록합니다.
+     */
+    fun recordPickoff() {
+        pickoffs++
+    }
+
+    /**
+     * 도루 허용을 취소합니다 (Undo용).
+     */
+    fun revertStolenBaseAllowed() {
+        require(stolenBasesAllowed > 0) { "롤백할 도루 허용 기록이 없습니다." }
+        stolenBasesAllowed--
+    }
+
+    /**
+     * 도루 저지를 취소합니다 (Undo용).
+     */
+    fun revertCaughtStealing() {
+        require(runnersCaughtStealing > 0) { "롤백할 도루 저지 기록이 없습니다." }
+        runnersCaughtStealing--
+    }
+
+    /**
+     * 견제 아웃을 취소합니다 (Undo용).
+     */
+    fun revertPickoff() {
+        require(pickoffs > 0) { "롤백할 견제 아웃 기록이 없습니다." }
+        pickoffs--
+    }
+
+    /**
      * 투구 수를 기록합니다.
      */
     fun recordPitchCount(
@@ -398,6 +464,9 @@ class PitchingRecord(
             PlateAppearanceResult.STRIKEOUT -> {
                 strikeouts++
             }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
+                strikeouts++
+            }
             PlateAppearanceResult.WALK,
             PlateAppearanceResult.INTENTIONAL_WALK,
             -> {
@@ -464,6 +533,10 @@ class PitchingRecord(
                 require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
                 strikeouts--
             }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
+                require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
+                strikeouts--
+            }
             PlateAppearanceResult.WALK,
             PlateAppearanceResult.INTENTIONAL_WALK,
             -> {
@@ -515,6 +588,9 @@ class PitchingRecord(
         require(wildPitches >= 0) { "와일드피치($wildPitches)는 음수일 수 없습니다." }
         require(balks >= 0) { "보크($balks)는 음수일 수 없습니다." }
         require(battersFaced >= 0) { "대면 타자 수($battersFaced)는 음수일 수 없습니다." }
+        require(stolenBasesAllowed >= 0) { "도루 허용($stolenBasesAllowed)은 음수일 수 없습니다." }
+        require(runnersCaughtStealing >= 0) { "도루 저지($runnersCaughtStealing)는 음수일 수 없습니다." }
+        require(pickoffs >= 0) { "견제 아웃($pickoffs)은 음수일 수 없습니다." }
         require(earnedRuns <= runsAllowed) {
             "자책점($earnedRuns)이 실점($runsAllowed)보다 클 수 없습니다."
         }
@@ -636,6 +712,27 @@ class PitchingRecord(
                             ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
                     require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
                     (strikesThrown ?: 0).also { strikesThrown = intValue }
+                }
+                "stolenBasesAllowed" -> {
+                    val intValue =
+                        newValue.toIntOrNull()
+                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+                    stolenBasesAllowed.also { stolenBasesAllowed = intValue }
+                }
+                "runnersCaughtStealing" -> {
+                    val intValue =
+                        newValue.toIntOrNull()
+                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+                    runnersCaughtStealing.also { runnersCaughtStealing = intValue }
+                }
+                "pickoffs" -> {
+                    val intValue =
+                        newValue.toIntOrNull()
+                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+                    pickoffs.also { pickoffs = intValue }
                 }
                 else -> throw IllegalArgumentException("유효하지 않은 투수 기록 필드입니다: $fieldName")
             }

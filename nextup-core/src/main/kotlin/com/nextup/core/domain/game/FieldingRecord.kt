@@ -64,6 +64,13 @@ class FieldingRecord(
         protected set
 
     /**
+     * 삼중살 관여(TP, Triple Play) - 삼중살에 관여한 횟수
+     */
+    @Column(name = "triple_plays", nullable = false)
+    var triplePlays: Int = 0
+        protected set
+
+    /**
      * 포일(PB, Passed Ball) - 포수의 공 처리 실패 횟수 (포수 전용)
      */
     @Column(name = "passed_balls", nullable = false)
@@ -121,6 +128,13 @@ class FieldingRecord(
     }
 
     /**
+     * 삼중살 관여(TP)를 기록합니다.
+     */
+    fun recordTriplePlay() {
+        triplePlays++
+    }
+
+    /**
      * 포일(PB)을 기록합니다.
      */
     fun recordPassedBall() {
@@ -160,6 +174,14 @@ class FieldingRecord(
     }
 
     /**
+     * 삼중살 관여(TP)를 취소합니다 (Undo용).
+     */
+    fun revertTriplePlay() {
+        require(triplePlays > 0) { "취소할 삼중살 관여 기록이 없습니다." }
+        triplePlays--
+    }
+
+    /**
      * 포일(PB)을 취소합니다 (Undo용).
      */
     fun revertPassedBall() {
@@ -175,6 +197,7 @@ class FieldingRecord(
         require(assists >= 0) { "보살($assists)은 음수일 수 없습니다." }
         require(errors >= 0) { "실책($errors)은 음수일 수 없습니다." }
         require(doublePlays >= 0) { "병살 관여($doublePlays)는 음수일 수 없습니다." }
+        require(triplePlays >= 0) { "삼중살 관여($triplePlays)는 음수일 수 없습니다." }
         require(passedBalls >= 0) { "포일($passedBalls)은 음수일 수 없습니다." }
     }
 

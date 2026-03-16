@@ -38,6 +38,17 @@ class InvalidDhRuleException(
     )
 
 /**
+ * 타순 인원 수가 올바르지 않을 때 발생하는 예외 (DH 해제 후 타순 인원 검증)
+ */
+class InvalidLineupBattingOrderCountException(
+    expected: Int,
+    actual: Int,
+) : LineupValidationException(
+        "INVALID_LINEUP_BATTING_ORDER_COUNT",
+        "타순에 배치된 선수가 ${expected}명이어야 합니다. 현재: ${actual}명",
+    )
+
+/**
  * 참석하지 않는 선수가 라인업에 포함되었을 때 발생하는 예외
  */
 class NonAttendingPlayerInLineupException(
