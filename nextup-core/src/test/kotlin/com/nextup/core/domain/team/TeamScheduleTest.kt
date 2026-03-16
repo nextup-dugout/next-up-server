@@ -20,15 +20,16 @@ class TeamScheduleTest {
         @Test
         fun `유효한 파라미터로 팀 일정을 생성할 수 있다`() {
             // when
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "정기 연습",
-                description = "월요일 연습입니다",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-                endAt = baseEndAt,
-                location = "잠실 야구장",
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "정기 연습",
+                    description = "월요일 연습입니다",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                    endAt = baseEndAt,
+                    location = "잠실 야구장",
+                )
 
             // then
             assertThat(schedule.team).isEqualTo(team)
@@ -43,12 +44,13 @@ class TeamScheduleTest {
         @Test
         fun `endAt 없이도 팀 일정을 생성할 수 있다`() {
             // when
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "팀 모임",
-                scheduleType = TeamScheduleType.MEETING,
-                startAt = baseStartAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "팀 모임",
+                    scheduleType = TeamScheduleType.MEETING,
+                    startAt = baseStartAt,
+                )
 
             // then
             assertThat(schedule.endAt).isNull()
@@ -100,13 +102,14 @@ class TeamScheduleTest {
         @Test
         fun `endAt이 startAt과 같으면 생성에 성공한다`() {
             // when
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "즉시 종료 이벤트",
-                scheduleType = TeamScheduleType.EVENT,
-                startAt = baseStartAt,
-                endAt = baseStartAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "즉시 종료 이벤트",
+                    scheduleType = TeamScheduleType.EVENT,
+                    startAt = baseStartAt,
+                    endAt = baseStartAt,
+                )
 
             // then
             assertThat(schedule.endAt).isEqualTo(baseStartAt)
@@ -119,12 +122,13 @@ class TeamScheduleTest {
         @Test
         fun `모든 필드를 부분적으로 업데이트할 수 있다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "원래 제목",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "원래 제목",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                )
 
             // when
             schedule.update(
@@ -141,15 +145,16 @@ class TeamScheduleTest {
         @Test
         fun `null 파라미터는 기존 값을 유지한다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "원래 제목",
-                description = "원래 설명",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-                endAt = baseEndAt,
-                location = "잠실 야구장",
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "원래 제목",
+                    description = "원래 설명",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                    endAt = baseEndAt,
+                    location = "잠실 야구장",
+                )
 
             // when
             schedule.update(title = "수정된 제목")
@@ -165,12 +170,13 @@ class TeamScheduleTest {
         @Test
         fun `update 시 빈 title이면 예외가 발생한다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "원래 제목",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "원래 제목",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -181,12 +187,13 @@ class TeamScheduleTest {
         @Test
         fun `update 시 공백만 있는 title이면 예외가 발생한다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "원래 제목",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "원래 제목",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                )
 
             // when & then
             assertThrows<IllegalArgumentException> {
@@ -197,13 +204,14 @@ class TeamScheduleTest {
         @Test
         fun `update 시 endAt이 startAt보다 이전이면 예외가 발생한다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-                endAt = baseEndAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                    endAt = baseEndAt,
+                )
             val invalidEndAt = baseStartAt.minusMinutes(30)
 
             // when & then
@@ -215,13 +223,14 @@ class TeamScheduleTest {
         @Test
         fun `startAt과 endAt을 함께 업데이트할 수 있다`() {
             // given
-            val schedule = TeamSchedule.create(
-                team = team,
-                title = "연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = baseStartAt,
-                endAt = baseEndAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = team,
+                    title = "연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = baseStartAt,
+                    endAt = baseEndAt,
+                )
             val newStartAt = LocalDateTime.of(2026, 3, 21, 9, 0)
             val newEndAt = LocalDateTime.of(2026, 3, 21, 11, 0)
 

@@ -25,10 +25,11 @@ class CorrectionRequestServiceTest {
     fun setUp() {
         correctionRequestRepository = mockk()
         recordCorrectionService = mockk(relaxed = true)
-        service = CorrectionRequestService(
-            correctionRequestRepository = correctionRequestRepository,
-            recordCorrectionService = recordCorrectionService,
-        )
+        service =
+            CorrectionRequestService(
+                correctionRequestRepository = correctionRequestRepository,
+                recordCorrectionService = recordCorrectionService,
+            )
     }
 
     private fun createBattingRequest(): CorrectionRequest =
@@ -63,15 +64,16 @@ class CorrectionRequestServiceTest {
             every { correctionRequestRepository.save(any()) } returns saved
 
             // when
-            val result = service.createRequest(
-                gameId = 1L,
-                requesterUserId = 1L,
-                correctionType = CorrectionType.BATTING,
-                targetRecordId = 1L,
-                fieldName = "hits",
-                newValue = "3",
-                reason = "기록 오류",
-            )
+            val result =
+                service.createRequest(
+                    gameId = 1L,
+                    requesterUserId = 1L,
+                    correctionType = CorrectionType.BATTING,
+                    targetRecordId = 1L,
+                    fieldName = "hits",
+                    newValue = "3",
+                    reason = "기록 오류",
+                )
 
             // then
             assertThat(result).isNotNull
@@ -96,11 +98,12 @@ class CorrectionRequestServiceTest {
             } returns mockk(relaxed = true)
 
             // when
-            val result = service.approve(
-                requestId = requestId,
-                reviewerUserId = reviewerUserId,
-                comment = "승인합니다",
-            )
+            val result =
+                service.approve(
+                    requestId = requestId,
+                    reviewerUserId = reviewerUserId,
+                    comment = "승인합니다",
+                )
 
             // then
             assertThat(result.status).isEqualTo(CorrectionRequestStatus.APPROVED)
@@ -109,12 +112,13 @@ class CorrectionRequestServiceTest {
                 recordCorrectionService.correctBattingRecord(
                     gameId = 1L,
                     recordId = 1L,
-                    request = BattingCorrectionRequest(
-                        adminUserId = reviewerUserId,
-                        fieldName = "hits",
-                        newValue = "3",
-                        reason = "기록 오류",
-                    ),
+                    request =
+                        BattingCorrectionRequest(
+                            adminUserId = reviewerUserId,
+                            fieldName = "hits",
+                            newValue = "3",
+                            reason = "기록 오류",
+                        ),
                 )
             }
         }
@@ -131,11 +135,12 @@ class CorrectionRequestServiceTest {
             } returns mockk(relaxed = true)
 
             // when
-            val result = service.approve(
-                requestId = requestId,
-                reviewerUserId = reviewerUserId,
-                comment = "승인합니다",
-            )
+            val result =
+                service.approve(
+                    requestId = requestId,
+                    reviewerUserId = reviewerUserId,
+                    comment = "승인합니다",
+                )
 
             // then
             assertThat(result.status).isEqualTo(CorrectionRequestStatus.APPROVED)
@@ -144,12 +149,13 @@ class CorrectionRequestServiceTest {
                 recordCorrectionService.correctPitchingRecord(
                     gameId = 1L,
                     recordId = 2L,
-                    request = PitchingCorrectionRequest(
-                        adminUserId = reviewerUserId,
-                        fieldName = "strikeOuts",
-                        newValue = "5",
-                        reason = "기록 오류",
-                    ),
+                    request =
+                        PitchingCorrectionRequest(
+                            adminUserId = reviewerUserId,
+                            fieldName = "strikeOuts",
+                            newValue = "5",
+                            reason = "기록 오류",
+                        ),
                 )
             }
         }
@@ -167,11 +173,12 @@ class CorrectionRequestServiceTest {
             every { correctionRequestRepository.findByIdOrNull(requestId) } returns request
 
             // when
-            val result = service.reject(
-                requestId = requestId,
-                reviewerUserId = reviewerUserId,
-                comment = "근거가 부족합니다",
-            )
+            val result =
+                service.reject(
+                    requestId = requestId,
+                    reviewerUserId = reviewerUserId,
+                    comment = "근거가 부족합니다",
+                )
 
             // then
             assertThat(result.status).isEqualTo(CorrectionRequestStatus.REJECTED)

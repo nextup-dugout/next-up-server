@@ -30,10 +30,11 @@ class TeamScheduleServiceTest {
     fun setUp() {
         teamScheduleRepository = mockk()
         teamRepository = mockk()
-        service = TeamScheduleService(
-            teamScheduleRepository = teamScheduleRepository,
-            teamRepository = teamRepository,
-        )
+        service =
+            TeamScheduleService(
+                teamScheduleRepository = teamScheduleRepository,
+                teamRepository = teamRepository,
+            )
 
         mockTeam = mockk(relaxed = true)
     }
@@ -46,25 +47,27 @@ class TeamScheduleServiceTest {
             // given
             val teamId = 1L
             val startAt = LocalDateTime.now().plusDays(1)
-            val schedule = TeamSchedule.create(
-                team = mockTeam,
-                title = "연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = startAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = mockTeam,
+                    title = "연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = startAt,
+                )
             every { teamRepository.findByIdOrNull(teamId) } returns mockTeam
             every { teamScheduleRepository.save(any()) } returns schedule
 
             // when
-            val result = service.create(
-                teamId = teamId,
-                title = "연습",
-                description = null,
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = startAt,
-                endAt = null,
-                location = null,
-            )
+            val result =
+                service.create(
+                    teamId = teamId,
+                    title = "연습",
+                    description = null,
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = startAt,
+                    endAt = null,
+                    location = null,
+                )
 
             // then
             assertThat(result).isNotNull
@@ -102,20 +105,21 @@ class TeamScheduleServiceTest {
             // given
             val teamId = 1L
             val startAt = LocalDateTime.now().plusDays(1)
-            val schedules = listOf(
-                TeamSchedule.create(
-                    team = mockTeam,
-                    title = "연습",
-                    scheduleType = TeamScheduleType.PRACTICE,
-                    startAt = startAt,
-                ),
-                TeamSchedule.create(
-                    team = mockTeam,
-                    title = "모임",
-                    scheduleType = TeamScheduleType.MEETING,
-                    startAt = startAt.plusDays(1),
-                ),
-            )
+            val schedules =
+                listOf(
+                    TeamSchedule.create(
+                        team = mockTeam,
+                        title = "연습",
+                        scheduleType = TeamScheduleType.PRACTICE,
+                        startAt = startAt,
+                    ),
+                    TeamSchedule.create(
+                        team = mockTeam,
+                        title = "모임",
+                        scheduleType = TeamScheduleType.MEETING,
+                        startAt = startAt.plusDays(1),
+                    ),
+                )
             every { teamRepository.findByIdOrNull(teamId) } returns mockTeam
             every { teamScheduleRepository.findByTeamId(teamId) } returns schedules
 
@@ -165,20 +169,22 @@ class TeamScheduleServiceTest {
             // given
             val scheduleId = 1L
             val startAt = LocalDateTime.now().plusDays(1)
-            val schedule = TeamSchedule.create(
-                team = mockTeam,
-                title = "연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = startAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = mockTeam,
+                    title = "연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = startAt,
+                )
             every { teamScheduleRepository.findByIdOrNull(scheduleId) } returns schedule
 
             // when
-            val result = service.update(
-                id = scheduleId,
-                title = "정기 연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-            )
+            val result =
+                service.update(
+                    id = scheduleId,
+                    title = "정기 연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                )
 
             // then
             assertThat(result.title).isEqualTo("정기 연습")
@@ -193,12 +199,13 @@ class TeamScheduleServiceTest {
             // given
             val scheduleId = 1L
             val startAt = LocalDateTime.now().plusDays(1)
-            val schedule = TeamSchedule.create(
-                team = mockTeam,
-                title = "연습",
-                scheduleType = TeamScheduleType.PRACTICE,
-                startAt = startAt,
-            )
+            val schedule =
+                TeamSchedule.create(
+                    team = mockTeam,
+                    title = "연습",
+                    scheduleType = TeamScheduleType.PRACTICE,
+                    startAt = startAt,
+                )
             every { teamScheduleRepository.findByIdOrNull(scheduleId) } returns schedule
             every { teamScheduleRepository.deleteById(schedule.id) } returns Unit
 
