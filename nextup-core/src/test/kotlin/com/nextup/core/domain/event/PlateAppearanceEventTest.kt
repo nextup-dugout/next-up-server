@@ -19,6 +19,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -39,6 +40,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.HOME_RUN,
                     timestamp = fixedTime,
                 )
@@ -55,6 +57,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.WALK,
                     timestamp = fixedTime,
                 )
@@ -62,6 +65,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.WALK,
                     timestamp = fixedTime,
                 )
@@ -78,6 +82,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -98,6 +103,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.SINGLE,
                     timestamp = fixedTime,
                 )
@@ -105,6 +111,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 1L,
+                    pitcherId = 2L,
                     result = PlateAppearanceResult.HOME_RUN,
                     timestamp = fixedTime,
                 )
@@ -124,6 +131,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.STRIKEOUT,
                 )
 
@@ -144,6 +152,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.DOUBLE,
                     timestamp = fixedTime,
                 )
@@ -160,6 +169,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.TRIPLE,
                     timestamp = fixedTime,
                 )
@@ -167,6 +177,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.TRIPLE,
                     timestamp = fixedTime,
                 )
@@ -183,6 +194,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.HOME_RUN,
                 )
 
@@ -202,6 +214,7 @@ class PlateAppearanceEventTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 20L,
                     playerId = 5L,
+                    pitcherId = 3L,
                     result = PlateAppearanceResult.WALK,
                 )
 

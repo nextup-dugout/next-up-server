@@ -51,65 +51,105 @@ class StatsEventListener(
     /**
      * 타석 결과 기록 이벤트를 처리합니다.
      *
-     * 해당 선수의 시즌 타격 통계를 찾아 실시간으로 갱신합니다.
-     * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
+     * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 실시간으로 갱신합니다.
+     * 시즌 통계가 없는 경우 해당 갱신을 건너뜁니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
-        val stats =
+
+        // 타격 통계 실시간 갱신
+        val battingStats =
             seasonBattingStatsRepository.findByPlayerIdAndYear(event.playerId, year)
-                ?: run {
-                    logger.debug(
-                        "시즌 타격 통계 없음 - 갱신 건너뜀 (playerId={}, year={})",
-                        event.playerId,
-                        year,
-                    )
-                    return
-                }
+        if (battingStats != null) {
+            battingStats.applyLiveUpdate(event.result)
+            seasonBattingStatsRepository.save(battingStats)
+            logger.debug(
+                "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
+                event.playerId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 타격 통계 없음 - 갱신 건너뜀 (playerId={}, year={})",
+                event.playerId,
+                year,
+            )
+        }
 
-        stats.applyLiveUpdate(event.result)
-        seasonBattingStatsRepository.save(stats)
-
-        logger.debug(
-            "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
-            event.playerId,
-            year,
-            event.result,
-        )
+        // 투수 통계 실시간 갱신
+        val pitchingStats =
+            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
+        if (pitchingStats != null) {
+            pitchingStats.applyLiveUpdate(event.result)
+            seasonPitchingStatsRepository.save(pitchingStats)
+            logger.debug(
+                "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, result={})",
+                event.pitcherId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 투수 통계 없음 - 갱신 건너뜀 (pitcherId={}, year={})",
+                event.pitcherId,
+                year,
+            )
+        }
     }
 
     /**
      * 타석 결과 취소 이벤트를 처리합니다.
      *
-     * 해당 선수의 시즌 타격 통계를 찾아 이전 타석 결과를 역산합니다.
-     * 시즌 통계가 없는 경우 갱신을 건너뜁니다.
+     * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 역산합니다.
+     * 시즌 통계가 없는 경우 해당 갱신을 건너뜁니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
-        val stats =
+
+        // 타격 통계 역산
+        val battingStats =
             seasonBattingStatsRepository.findByPlayerIdAndYear(event.playerId, year)
-                ?: run {
-                    logger.debug(
-                        "시즌 타격 통계 없음 - Undo 건너뜀 (playerId={}, year={})",
-                        event.playerId,
-                        year,
-                    )
-                    return
-                }
+        if (battingStats != null) {
+            battingStats.revertLiveUpdate(event.result)
+            seasonBattingStatsRepository.save(battingStats)
+            logger.debug(
+                "실시간 타격 통계 역산 완료 (playerId={}, year={}, result={})",
+                event.playerId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 타격 통계 없음 - Undo 건너뜀 (playerId={}, year={})",
+                event.playerId,
+                year,
+            )
+        }
 
-        stats.revertLiveUpdate(event.result)
-        seasonBattingStatsRepository.save(stats)
-
-        logger.debug(
-            "실시간 타격 통계 역산 완료 (playerId={}, year={}, result={})",
-            event.playerId,
-            year,
-            event.result,
-        )
+        // 투수 통계 역산
+        val pitchingStats =
+            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
+        if (pitchingStats != null) {
+            pitchingStats.revertLiveUpdate(event.result)
+            seasonPitchingStatsRepository.save(pitchingStats)
+            logger.debug(
+                "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, result={})",
+                event.pitcherId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 투수 통계 없음 - Undo 건너뜀 (pitcherId={}, year={})",
+                event.pitcherId,
+                year,
+            )
+        }
     }
 
     /**
