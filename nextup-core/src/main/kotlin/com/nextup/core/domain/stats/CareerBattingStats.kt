@@ -29,6 +29,10 @@ class CareerBattingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 시즌 수
     @Column(name = "seasons_played", nullable = false)
     var seasonsPlayed: Int = 0
@@ -227,6 +231,31 @@ class CareerBattingStats(
      */
     fun addSeason() {
         seasonsPlayed++
+    }
+
+    /**
+     * 경기 타격 기록을 롤백합니다 (경기 취소 시 사용).
+     * 모든 필드를 maxOf(0, ...) 로 보호하여 음수 방지합니다.
+     */
+    fun revertGameRecord(record: BattingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        plateAppearances = maxOf(0, plateAppearances - record.plateAppearances)
+        atBats = maxOf(0, atBats - record.atBats)
+        hits = maxOf(0, hits - record.hits)
+        doubles = maxOf(0, doubles - record.doubles)
+        triples = maxOf(0, triples - record.triples)
+        homeRuns = maxOf(0, homeRuns - record.homeRuns)
+        runs = maxOf(0, runs - record.runs)
+        runsBattedIn = maxOf(0, runsBattedIn - record.runsBattedIn)
+        walks = maxOf(0, walks - record.walks)
+        intentionalWalks = maxOf(0, intentionalWalks - record.intentionalWalks)
+        hitByPitch = maxOf(0, hitByPitch - record.hitByPitch)
+        strikeouts = maxOf(0, strikeouts - record.strikeouts)
+        sacrificeBunts = maxOf(0, sacrificeBunts - record.sacrificeBunts)
+        sacrificeFlies = maxOf(0, sacrificeFlies - record.sacrificeFlies)
+        stolenBases = maxOf(0, stolenBases - record.stolenBases)
+        caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
+        groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays - record.groundedIntoDoublePlays)
     }
 
     /**

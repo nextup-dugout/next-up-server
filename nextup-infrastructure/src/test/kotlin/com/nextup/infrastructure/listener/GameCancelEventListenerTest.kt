@@ -10,10 +10,16 @@ import com.nextup.core.domain.player.BattingHand
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
+import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.domain.stats.CareerFieldingStats
+import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
@@ -33,6 +39,9 @@ class GameCancelEventListenerTest {
     private val seasonBattingStatsRepository = mockk<SeasonBattingStatsRepositoryPort>()
     private val seasonPitchingStatsRepository = mockk<SeasonPitchingStatsRepositoryPort>()
     private val seasonFieldingStatsRepository = mockk<SeasonFieldingStatsRepositoryPort>()
+    private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
+    private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
+    private val careerFieldingStatsRepository = mockk<CareerFieldingStatsRepositoryPort>()
     private val battingRecordRepository = mockk<BattingRecordRepositoryPort>()
     private val pitchingRecordRepository = mockk<PitchingRecordRepositoryPort>()
     private val fieldingRecordRepository = mockk<FieldingRecordRepositoryPort>()
@@ -42,6 +51,9 @@ class GameCancelEventListenerTest {
             seasonBattingStatsRepository = seasonBattingStatsRepository,
             seasonPitchingStatsRepository = seasonPitchingStatsRepository,
             seasonFieldingStatsRepository = seasonFieldingStatsRepository,
+            careerBattingStatsRepository = careerBattingStatsRepository,
+            careerPitchingStatsRepository = careerPitchingStatsRepository,
+            careerFieldingStatsRepository = careerFieldingStatsRepository,
             battingRecordRepository = battingRecordRepository,
             pitchingRecordRepository = pitchingRecordRepository,
             fieldingRecordRepository = fieldingRecordRepository,
@@ -115,6 +127,7 @@ class GameCancelEventListenerTest {
             every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns listOf(stats)
             every { seasonBattingStatsRepository.save(any()) } returns stats
             every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns null
 
             every { mockBattingRecord.plateAppearances } returns 1
             every { mockBattingRecord.atBats } returns 1
@@ -156,6 +169,9 @@ class GameCancelEventListenerTest {
             verify(exactly = 0) { seasonBattingStatsRepository.save(any()) }
             verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
             verify(exactly = 0) { seasonFieldingStatsRepository.save(any()) }
+            verify(exactly = 0) { careerBattingStatsRepository.save(any()) }
+            verify(exactly = 0) { careerPitchingStatsRepository.save(any()) }
+            verify(exactly = 0) { careerFieldingStatsRepository.save(any()) }
         }
 
         @Test
@@ -165,6 +181,7 @@ class GameCancelEventListenerTest {
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
             every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
             every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns null
 
             // when
             listener.onGameCancelled(cancelEvent)
@@ -180,6 +197,7 @@ class GameCancelEventListenerTest {
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
             every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
             every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns null
 
             // when
             listener.onGameCancelled(cancelEvent)
@@ -198,6 +216,7 @@ class GameCancelEventListenerTest {
             every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
             every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns listOf(pitchingStats)
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns null
 
             every { mockPitchingRecord.isStartingPitcher } returns false
             every { mockPitchingRecord.inningsPitchedOuts } returns 0
@@ -241,6 +260,7 @@ class GameCancelEventListenerTest {
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns listOf(fieldingStats)
             every { seasonFieldingStatsRepository.save(any()) } returns fieldingStats
+            every { careerFieldingStatsRepository.findByPlayerId(testBatter.id) } returns null
 
             every { mockFieldingRecord.putOuts } returns 1
             every { mockFieldingRecord.assists } returns 1
@@ -264,6 +284,7 @@ class GameCancelEventListenerTest {
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerFieldingStatsRepository.findByPlayerId(testBatter.id) } returns null
 
             // when
             listener.onGameCancelled(cancelEvent)
@@ -284,6 +305,8 @@ class GameCancelEventListenerTest {
             every { seasonBattingStatsRepository.save(any()) } returns battingStats
             every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns listOf(pitchingStats)
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns null
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns null
 
             every { mockBattingRecord.plateAppearances } returns 0
             every { mockBattingRecord.atBats } returns 0
@@ -325,6 +348,237 @@ class GameCancelEventListenerTest {
             // then: 타격과 투구 모두 저장됨
             verify { seasonBattingStatsRepository.save(battingStats) }
             verify { seasonPitchingStatsRepository.save(pitchingStats) }
+        }
+    }
+
+    @Nested
+    @DisplayName("onGameCancelled - 커리어 스탯 롤백")
+    inner class CareerStatsRollback {
+        @BeforeEach
+        fun setUpDefault() {
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+        }
+
+        @Test
+        fun `타격 기록이 있는 경우 커리어 타격 통계도 롤백됨`() {
+            // given
+            val careerStats = CareerBattingStats.create(testBatter)
+            careerStats.addGameRecord(
+                BattingRecord(mockBatterGamePlayer).also {
+                    it.applyPlateAppearanceResult(
+                        com.nextup.core.domain.game.PlateAppearanceResult.SINGLE,
+                    )
+                },
+            )
+            val initialGamesPlayed = careerStats.gamesPlayed
+            val initialHits = careerStats.hits
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns careerStats
+            every { careerBattingStatsRepository.save(any()) } returns careerStats
+
+            every { mockBattingRecord.plateAppearances } returns 1
+            every { mockBattingRecord.atBats } returns 1
+            every { mockBattingRecord.hits } returns 1
+            every { mockBattingRecord.doubles } returns 0
+            every { mockBattingRecord.triples } returns 0
+            every { mockBattingRecord.homeRuns } returns 0
+            every { mockBattingRecord.runs } returns 0
+            every { mockBattingRecord.runsBattedIn } returns 0
+            every { mockBattingRecord.walks } returns 0
+            every { mockBattingRecord.intentionalWalks } returns 0
+            every { mockBattingRecord.hitByPitch } returns 0
+            every { mockBattingRecord.strikeouts } returns 0
+            every { mockBattingRecord.sacrificeBunts } returns 0
+            every { mockBattingRecord.sacrificeFlies } returns 0
+            every { mockBattingRecord.stolenBases } returns 0
+            every { mockBattingRecord.caughtStealing } returns 0
+            every { mockBattingRecord.groundedIntoDoublePlays } returns 0
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            assertThat(careerStats.gamesPlayed).isEqualTo(initialGamesPlayed - 1)
+            assertThat(careerStats.hits).isEqualTo(initialHits - 1)
+            verify { careerBattingStatsRepository.save(careerStats) }
+        }
+
+        @Test
+        fun `커리어 타격 통계가 없는 선수는 건너뜀`() {
+            // given
+            every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns null
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            verify(exactly = 0) { careerBattingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `투구 기록이 있는 경우 커리어 투구 통계도 롤백됨`() {
+            // given
+            val careerStats = CareerPitchingStats.create(testPitcher)
+            careerStats.addGameRecord(mockPitchingRecord)
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerStats
+            every { careerPitchingStatsRepository.save(any()) } returns careerStats
+
+            every { mockPitchingRecord.isStartingPitcher } returns false
+            every { mockPitchingRecord.inningsPitchedOuts } returns 9
+            every { mockPitchingRecord.earnedRuns } returns 2
+            every { mockPitchingRecord.runsAllowed } returns 3
+            every { mockPitchingRecord.hitsAllowed } returns 5
+            every { mockPitchingRecord.walksAllowed } returns 1
+            every { mockPitchingRecord.strikeouts } returns 4
+            every { mockPitchingRecord.homeRunsAllowed } returns 1
+            every { mockPitchingRecord.hitBatsmen } returns 0
+            every { mockPitchingRecord.wildPitches } returns 0
+            every { mockPitchingRecord.balks } returns 0
+            every { mockPitchingRecord.battersFaced } returns 20
+            every { mockPitchingRecord.pitchesThrown } returns null
+            every { mockPitchingRecord.strikesThrown } returns null
+            every { mockPitchingRecord.decision } returns PitchingDecision.NONE
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            assertThat(careerStats.gamesPlayed).isEqualTo(0)
+            assertThat(careerStats.inningsPitchedOuts).isEqualTo(0)
+            verify { careerPitchingStatsRepository.save(careerStats) }
+        }
+
+        @Test
+        fun `커리어 투구 통계가 없는 선수는 건너뜀`() {
+            // given
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns null
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            verify(exactly = 0) { careerPitchingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `수비 기록이 있는 경우 커리어 수비 통계도 롤백됨`() {
+            // given
+            val careerStats = CareerFieldingStats.create(testBatter)
+            careerStats.addGameRecord(
+                FieldingRecord(mockFielderGamePlayer).also {
+                    it.recordPutOut()
+                    it.recordAssist()
+                },
+            )
+            val initialGamesPlayed = careerStats.gamesPlayed
+            val initialPutOuts = careerStats.putOuts
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerFieldingStatsRepository.findByPlayerId(testBatter.id) } returns careerStats
+            every { careerFieldingStatsRepository.save(any()) } returns careerStats
+
+            every { mockFieldingRecord.putOuts } returns 1
+            every { mockFieldingRecord.assists } returns 1
+            every { mockFieldingRecord.errors } returns 0
+            every { mockFieldingRecord.doublePlays } returns 0
+            every { mockFieldingRecord.passedBalls } returns 0
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            assertThat(careerStats.gamesPlayed).isEqualTo(initialGamesPlayed - 1)
+            assertThat(careerStats.putOuts).isEqualTo(initialPutOuts - 1)
+            verify { careerFieldingStatsRepository.save(careerStats) }
+        }
+
+        @Test
+        fun `커리어 수비 통계가 없는 선수는 건너뜀`() {
+            // given
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
+            every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerFieldingStatsRepository.findByPlayerId(testBatter.id) } returns null
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            verify(exactly = 0) { careerFieldingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `시즌과 커리어 통계가 모두 있으면 둘 다 롤백됨`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testBatter, 2024)
+            val careerStats = CareerBattingStats.create(testBatter)
+
+            // 각각 경기 기여분 추가
+            val realRecord =
+                BattingRecord(mockBatterGamePlayer).also {
+                    it.applyPlateAppearanceResult(
+                        com.nextup.core.domain.game.PlateAppearanceResult.SINGLE,
+                    )
+                }
+            seasonStats.addGameRecord(realRecord)
+            careerStats.addGameRecord(realRecord)
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonBattingStatsRepository.findAllByGameId(gameId) } returns listOf(seasonStats)
+            every { seasonBattingStatsRepository.save(any()) } returns seasonStats
+            every { seasonPitchingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testBatter.id) } returns careerStats
+            every { careerBattingStatsRepository.save(any()) } returns careerStats
+
+            every { mockBattingRecord.plateAppearances } returns 1
+            every { mockBattingRecord.atBats } returns 1
+            every { mockBattingRecord.hits } returns 1
+            every { mockBattingRecord.doubles } returns 0
+            every { mockBattingRecord.triples } returns 0
+            every { mockBattingRecord.homeRuns } returns 0
+            every { mockBattingRecord.runs } returns 0
+            every { mockBattingRecord.runsBattedIn } returns 0
+            every { mockBattingRecord.walks } returns 0
+            every { mockBattingRecord.intentionalWalks } returns 0
+            every { mockBattingRecord.hitByPitch } returns 0
+            every { mockBattingRecord.strikeouts } returns 0
+            every { mockBattingRecord.sacrificeBunts } returns 0
+            every { mockBattingRecord.sacrificeFlies } returns 0
+            every { mockBattingRecord.stolenBases } returns 0
+            every { mockBattingRecord.caughtStealing } returns 0
+            every { mockBattingRecord.groundedIntoDoublePlays } returns 0
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then: 시즌과 커리어 모두 롤백됨
+            verify { seasonBattingStatsRepository.save(seasonStats) }
+            verify { careerBattingStatsRepository.save(careerStats) }
+            assertThat(seasonStats.gamesPlayed).isEqualTo(0)
+            assertThat(careerStats.gamesPlayed).isEqualTo(0)
         }
     }
 }
