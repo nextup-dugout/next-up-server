@@ -4,6 +4,7 @@ import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.team.Team
 import jakarta.persistence.*
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -395,6 +396,12 @@ class Game private constructor(
         /** 투수 교체 시 최소 대면 타자 수 기본값 */
         const val DEFAULT_MIN_BATTERS_FACED = 1
 
+        /** L-4: 더블헤더 이닝 축소 기본값 (기본 이닝 - 2) */
+        const val DEFAULT_DOUBLEHEADER_INNING_REDUCTION = 2
+
+        /** L-11: SUSPENDED 경기 자동 타임아웃 기본값 (48시간) */
+        const val DEFAULT_SUSPENDED_TIMEOUT_HOURS = 48L
+
         /**
          * 프로덕션 팩토리 메서드.
          *
@@ -418,6 +425,14 @@ class Game private constructor(
                 }
             }
 
+            // L-4: 더블헤더 시 이닝 자동 축소
+            val effectiveInnings =
+                if (isDoubleheader) {
+                    maxOf(3, competition.gameRules.defaultInnings - DEFAULT_DOUBLEHEADER_INNING_REDUCTION)
+                } else {
+                    competition.gameRules.defaultInnings
+                }
+
             val game =
                 Game(
                     competition = competition,
@@ -426,7 +441,7 @@ class Game private constructor(
                     fieldName = fieldName,
                     gameNumber = gameNumber,
                     isDoubleheader = isDoubleheader,
-                    totalInnings = competition.gameRules.defaultInnings,
+                    totalInnings = effectiveInnings,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME))
             game._gameTeams.add(GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY))
@@ -548,6 +563,32 @@ class Game private constructor(
             } else {
                 null
             }
+
+    /**
+     * L-11: 중단된 경기가 타임아웃 되었는지 확인합니다.
+     *
+     * @param timeoutHours 타임아웃 시간 (기본 48시간)
+     * @param now 현재 시각 (Instant)
+     * @return 타임아웃 여부
+     */
+    fun isSuspendedTimeout(
+        timeoutHours: Long = DEFAULT_SUSPENDED_TIMEOUT_HOURS,
+        now: java.time.Instant = java.time.Instant.now(),
+    ): Boolean {
+        if (status != GameStatus.SUSPENDED) return false
+        return Duration.between(updatedAt, now).toHours() >= timeoutHours
+    }
+
+    /**
+     * L-11: 타임아웃으로 중단된 경기를 취소 처리합니다.
+     */
+    fun cancelByTimeout() {
+        require(status == GameStatus.SUSPENDED) {
+            "중단 상태의 경기만 타임아웃으로 취소할 수 있습니다."
+        }
+        status = GameStatus.CANCELLED
+        note = (note?.let { "$it\n" } ?: "") + "타임아웃으로 자동 취소됨"
+    }
 
     /**
      * 아웃을 기록합니다.
