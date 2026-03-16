@@ -41,4 +41,9 @@ interface CompetitionPlayerJpaRepository : JpaRepository<CompetitionPlayer, Long
         teamId: Long,
         status: CompetitionPlayerStatus,
     ): List<CompetitionPlayer>
+
+    fun findByPlayerIdAndStatusIn(
+        playerId: Long,
+        statuses: List<CompetitionPlayerStatus>,
+    ): List<CompetitionPlayer>
 }

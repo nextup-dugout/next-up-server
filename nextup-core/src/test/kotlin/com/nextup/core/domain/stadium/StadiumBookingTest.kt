@@ -3,11 +3,15 @@ package com.nextup.core.domain.stadium
 import com.nextup.common.exception.InvalidStateException
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalTime
 
 @DisplayName("StadiumBooking")
 class StadiumBookingTest {
@@ -71,7 +75,7 @@ class StadiumBookingTest {
     @DisplayName("cancel")
     inner class Cancel {
         @Test
-        fun `should cancel confirmed booking`() {
+        fun `should cancel confirmed booking and call slot cancel`() {
             // given
             val slot = mockk<StadiumSlot>(relaxed = true)
             val booking =
@@ -86,6 +90,37 @@ class StadiumBookingTest {
 
             // then
             assertThat(booking.status).isEqualTo(BookingStatus.CANCELLED)
+            verify(exactly = 1) { slot.cancel() }
+        }
+
+        @Test
+        fun `should restore slot status to AVAILABLE when booking is cancelled`() {
+            // given
+            val stadium = mockk<Stadium>(relaxed = true)
+            val slot =
+                StadiumSlot.create(
+                    stadium = stadium,
+                    date = LocalDate.of(2024, 12, 25),
+                    startTime = LocalTime.of(10, 0),
+                    endTime = LocalTime.of(12, 0),
+                    price = BigDecimal("50000"),
+                )
+            slot.book()
+            assertThat(slot.status).isEqualTo(SlotStatus.BOOKED)
+
+            val booking =
+                StadiumBooking.create(
+                    slot = slot,
+                    teamId = 100L,
+                    bookedBy = 200L,
+                )
+
+            // when
+            booking.cancel()
+
+            // then
+            assertThat(booking.status).isEqualTo(BookingStatus.CANCELLED)
+            assertThat(slot.status).isEqualTo(SlotStatus.AVAILABLE)
         }
 
         @Test

@@ -40,6 +40,10 @@ class SeasonPitchingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0
@@ -120,6 +124,11 @@ class SeasonPitchingStats(
 
     @Column(name = "strikes_thrown")
     var strikesThrown: Int? = null
+        protected set
+
+    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
+    @Column(name = "is_finalized", nullable = false)
+    var isFinalized: Boolean = false
         protected set
 
     // Calculated properties (PitchingRecord와 동일한 로직)
@@ -399,6 +408,25 @@ class SeasonPitchingStats(
                 // 다른 결과는 투수 시즌 통계에 직접적인 영향 없음
             }
         }
+    }
+
+    /**
+     * L-8: 시즌 통계를 확정합니다.
+     *
+     * 확정된 통계는 추가 갱신이 불가합니다.
+     */
+    fun finalize() {
+        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
+        validate()
+        this.isFinalized = true
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
+     */
+    fun unfinalize() {
+        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
+        this.isFinalized = false
     }
 
     /**

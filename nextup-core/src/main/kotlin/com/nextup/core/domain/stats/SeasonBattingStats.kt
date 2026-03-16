@@ -40,6 +40,10 @@ class SeasonBattingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0
@@ -112,6 +116,11 @@ class SeasonBattingStats(
 
     @Column(name = "grounded_into_double_plays", nullable = false)
     var groundedIntoDoublePlays: Int = 0
+        protected set
+
+    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
+    @Column(name = "is_finalized", nullable = false)
+    var isFinalized: Boolean = false
         protected set
 
     // Calculated properties (BattingRecord와 동일한 로직)
@@ -371,6 +380,53 @@ class SeasonBattingStats(
         if (atBats > plateAppearances) {
             throw StatsValidationException("타수($atBats)가 타석($plateAppearances)보다 클 수 없습니다.")
         }
+    }
+
+    /**
+     * L-8: 시즌 통계를 확정합니다.
+     *
+     * 확정된 통계는 추가 갱신이 불가합니다.
+     */
+    fun finalize() {
+        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
+        validate()
+        this.isFinalized = true
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
+     */
+    fun unfinalize() {
+        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
+        this.isFinalized = false
+    }
+
+    /**
+     * L-7: 경기 종료 시 BoxScore와 교차 검증하여 정합성을 확인합니다.
+     *
+     * 실시간 갱신된 시즌 통계가 경기별 BattingRecord 합산과 일치하는지 검증합니다.
+     *
+     * @param totalPlateAppearances 경기별 BattingRecord에서 합산한 총 타석 수
+     * @param totalHits 경기별 BattingRecord에서 합산한 총 안타 수
+     * @param totalAtBats 경기별 BattingRecord에서 합산한 총 타수
+     * @return 불일치 항목 목록 (비어있으면 정합성 OK)
+     */
+    fun verifyConsistency(
+        totalPlateAppearances: Int,
+        totalHits: Int,
+        totalAtBats: Int,
+    ): List<String> {
+        val mismatches = mutableListOf<String>()
+        if (plateAppearances != totalPlateAppearances) {
+            mismatches.add("타석: 시즌통계=$plateAppearances, BoxScore합산=$totalPlateAppearances")
+        }
+        if (hits != totalHits) {
+            mismatches.add("안타: 시즌통계=$hits, BoxScore합산=$totalHits")
+        }
+        if (atBats != totalAtBats) {
+            mismatches.add("타수: 시즌통계=$atBats, BoxScore합산=$totalAtBats")
+        }
+        return mismatches
     }
 
     companion object {

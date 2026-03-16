@@ -15,6 +15,9 @@ interface BookingTransferJpaRepository : JpaRepository<BookingTransfer, Long> {
     @Query("SELECT t FROM BookingTransfer t WHERE t.sellerTeamId = :sellerTeamId")
     fun findBySellerTeamId(sellerTeamId: Long): List<BookingTransfer>
 
+    @Query("SELECT t FROM BookingTransfer t WHERE t.buyerTeamId = :buyerTeamId")
+    fun findByBuyerTeamId(buyerTeamId: Long): List<BookingTransfer>
+
     @Query(
         "SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
             "FROM BookingTransfer t WHERE t.bookingId = :bookingId AND t.status = 'OPEN'",
