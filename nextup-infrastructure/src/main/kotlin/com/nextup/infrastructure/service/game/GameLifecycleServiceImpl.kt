@@ -63,14 +63,19 @@ class GameLifecycleServiceImpl(
             throw InvalidGameStateException("진행 중인 경기만 종료할 수 있습니다. 현재 상태: ${game.status.displayName}")
         }
 
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+
         when (reason) {
-            GameEndReason.REGULATION -> game.finish()
-            GameEndReason.MERCY_RULE -> game.callGame(reason = "콜드게임 (점수차)")
-            GameEndReason.WEATHER -> game.callGame(reason = "콜드게임 (기상 조건)")
+            GameEndReason.REGULATION -> game.finish(gameTeams)
+            GameEndReason.MERCY_RULE ->
+                game.callGame(reason = "콜드게임 (점수차)", gameTeams = gameTeams)
+            GameEndReason.WEATHER ->
+                game.callGame(reason = "콜드게임 (기상 조건)", gameTeams = gameTeams)
             GameEndReason.FORFEIT -> throw InvalidGameStateException(
                 "몰수 처리는 전용 API를 사용해주세요.",
             )
-            GameEndReason.OTHER -> game.callGame(reason = "기타 사유")
+            GameEndReason.OTHER ->
+                game.callGame(reason = "기타 사유", gameTeams = gameTeams)
         }
 
         val savedGame = gameRepository.save(game)
