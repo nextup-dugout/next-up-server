@@ -291,4 +291,23 @@ interface PitchingRecordRepository :
     override fun findAllByPlayerIdWithGameInfo(
         @Param("playerId") playerId: Long,
     ): List<PitchingRecord>
+
+    /**
+     * 선수 ID와 대회 ID로 투수 기록을 조회합니다.
+     */
+    @Query(
+        """
+        SELECT pr FROM PitchingRecord pr
+        JOIN FETCH pr.gamePlayer gp
+        JOIN FETCH gp.gameTeam gt
+        JOIN FETCH gt.game g
+        WHERE gp.player.id = :playerId
+        AND g.competition.id = :competitionId
+        ORDER BY g.scheduledAt DESC
+    """,
+    )
+    override fun findAllByPlayerIdAndCompetitionId(
+        @Param("playerId") playerId: Long,
+        @Param("competitionId") competitionId: Long,
+    ): List<PitchingRecord>
 }

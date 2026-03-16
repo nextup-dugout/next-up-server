@@ -202,4 +202,23 @@ interface BattingRecordRepository :
     override fun findAllByPlayerIdWithGameInfo(
         @Param("playerId") playerId: Long,
     ): List<BattingRecord>
+
+    /**
+     * 선수 ID와 대회 ID로 타격 기록을 조회합니다.
+     */
+    @Query(
+        """
+        SELECT br FROM BattingRecord br
+        JOIN FETCH br.gamePlayer gp
+        JOIN FETCH gp.gameTeam gt
+        JOIN FETCH gt.game g
+        WHERE gp.player.id = :playerId
+        AND g.competition.id = :competitionId
+        ORDER BY g.scheduledAt DESC
+    """,
+    )
+    override fun findAllByPlayerIdAndCompetitionId(
+        @Param("playerId") playerId: Long,
+        @Param("competitionId") competitionId: Long,
+    ): List<BattingRecord>
 }

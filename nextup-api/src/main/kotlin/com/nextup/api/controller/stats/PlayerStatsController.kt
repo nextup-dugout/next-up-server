@@ -2,6 +2,8 @@ package com.nextup.api.controller.stats
 
 import com.nextup.api.dto.stats.CareerBattingStatsResponse
 import com.nextup.api.dto.stats.CareerPitchingStatsResponse
+import com.nextup.api.dto.stats.CompetitionBattingStatsResponse
+import com.nextup.api.dto.stats.CompetitionPitchingStatsResponse
 import com.nextup.api.dto.stats.SeasonBattingStatsResponse
 import com.nextup.api.dto.stats.SeasonPitchingStatsResponse
 import com.nextup.api.mapper.stats.toResponse
@@ -12,6 +14,7 @@ import com.nextup.core.service.stats.PlayerStatsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -123,5 +126,81 @@ class PlayerStatsController(
     ): ApiResponse<List<SeasonPitchingStatsResponse>> {
         val statsList = playerStatsService.getAllSeasonPitchingStats(playerId)
         return ApiResponse.success(statsList.toSeasonPitchingResponse())
+    }
+
+    /**
+     * 대회별 타격 통계 조회
+     *
+     * GET /api/v1/players/{playerId}/stats/batting/competition?competitionId=1
+     *
+     * @param playerId 선수 ID
+     * @param competitionId 대회 ID
+     * @return 대회별 타격 통계 응답
+     */
+    @GetMapping("/batting/competition")
+    fun getBattingStatsByCompetition(
+        @PathVariable playerId: Long,
+        @RequestParam competitionId: Long,
+    ): ApiResponse<CompetitionBattingStatsResponse> {
+        val stats = playerStatsService.getBattingStatsByCompetition(playerId, competitionId)
+        return ApiResponse.success(
+            CompetitionBattingStatsResponse(
+                playerId = stats.playerId,
+                competitionId = stats.competitionId,
+                gamesPlayed = stats.gamesPlayed,
+                plateAppearances = stats.plateAppearances,
+                atBats = stats.atBats,
+                hits = stats.hits,
+                doubles = stats.doubles,
+                triples = stats.triples,
+                homeRuns = stats.homeRuns,
+                runs = stats.runs,
+                runsBattedIn = stats.runsBattedIn,
+                walks = stats.walks,
+                strikeouts = stats.strikeouts,
+                stolenBases = stats.stolenBases,
+                battingAverage = stats.battingAverage,
+                onBasePercentage = stats.onBasePercentage,
+                sluggingPercentage = stats.sluggingPercentage,
+                ops = stats.ops,
+            ),
+        )
+    }
+
+    /**
+     * 대회별 투수 통계 조회
+     *
+     * GET /api/v1/players/{playerId}/stats/pitching/competition?competitionId=1
+     *
+     * @param playerId 선수 ID
+     * @param competitionId 대회 ID
+     * @return 대회별 투수 통계 응답
+     */
+    @GetMapping("/pitching/competition")
+    fun getPitchingStatsByCompetition(
+        @PathVariable playerId: Long,
+        @RequestParam competitionId: Long,
+    ): ApiResponse<CompetitionPitchingStatsResponse> {
+        val stats = playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+        return ApiResponse.success(
+            CompetitionPitchingStatsResponse(
+                playerId = stats.playerId,
+                competitionId = stats.competitionId,
+                gamesPlayed = stats.gamesPlayed,
+                gamesStarted = stats.gamesStarted,
+                inningsPitchedDisplay = stats.inningsPitchedDisplay,
+                wins = stats.wins,
+                losses = stats.losses,
+                saves = stats.saves,
+                holds = stats.holds,
+                earnedRuns = stats.earnedRuns,
+                hitsAllowed = stats.hitsAllowed,
+                walksAllowed = stats.walksAllowed,
+                strikeouts = stats.strikeouts,
+                homeRunsAllowed = stats.homeRunsAllowed,
+                earnedRunAverage = stats.earnedRunAverage,
+                whip = stats.whip,
+            ),
+        )
     }
 }
