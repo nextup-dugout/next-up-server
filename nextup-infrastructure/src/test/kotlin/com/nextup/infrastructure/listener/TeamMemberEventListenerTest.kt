@@ -3,6 +3,7 @@ package com.nextup.infrastructure.listener
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.attendance.AttendancePoll
 import com.nextup.core.domain.attendance.PollStatus
+import com.nextup.core.domain.competition.BracketEntry
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionPlayer
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
@@ -838,6 +839,384 @@ class TeamMemberEventListenerTest {
             verify(exactly = 1) { competitionPlayerRepository.save(any()) }
             verify(exactly = 0) { gameRepository.findByCompetitionId(any()) }
             verify(exactly = 0) { gameRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("팀 해산 시 대진표에서 team1이 해산팀이면 team2가 부전승 처리된다")
+        fun `should give walkover win to team2 when team1 is disbanded team in bracket`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val opponentTeam =
+                Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(opponentTeam, Team::class.java, 2L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 토너먼트",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.TOURNAMENT,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // team1이 해산팀(id=1L), team2가 상대팀
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team,
+                    team2 = opponentTeam,
+                )
+            setFieldId(bracketEntry, BracketEntry::class.java, 500L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns emptyList()
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns listOf(bracketEntry)
+            every { bracketEntryRepository.save(any()) } returnsArgument 0
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 1) { bracketEntryRepository.save(bracketEntry) }
+            assert(bracketEntry.winner == opponentTeam)
+        }
+
+        @Test
+        @DisplayName("팀 해산 시 대진표에서 team2가 해산팀이면 team1이 부전승 처리된다")
+        fun `should give walkover win to team1 when team2 is disbanded team in bracket`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val opponentTeam =
+                Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(opponentTeam, Team::class.java, 2L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 토너먼트",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.TOURNAMENT,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // team1이 상대팀, team2가 해산팀(id=1L)
+            val bracketEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = opponentTeam,
+                    team2 = team,
+                )
+            setFieldId(bracketEntry, BracketEntry::class.java, 501L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns emptyList()
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns listOf(bracketEntry)
+            every { bracketEntryRepository.save(any()) } returnsArgument 0
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 1) { bracketEntryRepository.save(bracketEntry) }
+            assert(bracketEntry.winner == opponentTeam)
+        }
+
+        @Test
+        @DisplayName("이미 완료된 대진표 엔트리는 부전승 처리하지 않는다")
+        fun `should skip completed bracket entries`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val opponentTeam =
+                Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(opponentTeam, Team::class.java, 2L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 토너먼트",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.TOURNAMENT,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // 이미 승자가 결정된 대진표 엔트리
+            val completedEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team,
+                    team2 = opponentTeam,
+                    winner = opponentTeam,
+                )
+            setFieldId(completedEntry, BracketEntry::class.java, 502L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns emptyList()
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns listOf(completedEntry)
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 0) { bracketEntryRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("대진표에서 상대팀이 null이면 부전승 처리하지 않는다")
+        fun `should not process bracket entry when opponent team is null`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 토너먼트",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.TOURNAMENT,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // team1이 해산팀이고 team2가 null (이미 bye 상태이므로 isCompleted=true)
+            val byeEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = team,
+                    team2 = null,
+                )
+            setFieldId(byeEntry, BracketEntry::class.java, 503L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns emptyList()
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns listOf(byeEntry)
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 0) { bracketEntryRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("대회가 조회되지 않으면 몰수승/부전승 처리를 건너뛴다")
+        fun `should skip forfeit when competition not found`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            // 대회 조회 시 null 반환
+            every { competitionRepository.findByIdOrNull(100L) } returns null
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 0) { gameRepository.findByCompetitionId(any()) }
+            verify(exactly = 0) { gameRepository.save(any()) }
+            verify(exactly = 0) { bracketEntryRepository.findByCompetitionId(any()) }
+            verify(exactly = 0) { bracketEntryRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("경기에 해산팀이 포함되지 않으면 몰수승 처리하지 않는다")
+        fun `should not forfeit game when disbanded team is not in the game`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val otherTeam1 =
+                Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(otherTeam1, Team::class.java, 2L)
+
+            val otherTeam2 =
+                Team(league = league, name = "이글스", city = "대전", foundedYear = 2017)
+            setFieldId(otherTeam2, Team::class.java, 3L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 시즌",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // 해산팀(teamId=1L)이 포함되지 않은 경기
+            val gameNotInvolvingTeam =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = otherTeam1,
+                    awayTeam = otherTeam2,
+                    scheduledAt = LocalDateTime.now().plusDays(1),
+                    status = GameStatus.SCHEDULED,
+                    id = 1000L,
+                )
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns listOf(gameNotInvolvingTeam)
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns emptyList()
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 0) { gameRepository.save(any()) }
+            assert(gameNotInvolvingTeam.status == GameStatus.SCHEDULED)
+        }
+
+        @Test
+        @DisplayName("대진표에 해산팀과 무관한 엔트리는 부전승 처리하지 않는다")
+        fun `should not process bracket entry when disbanded team is not involved`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val otherTeam1 =
+                Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(otherTeam1, Team::class.java, 2L)
+
+            val otherTeam2 =
+                Team(league = league, name = "이글스", city = "대전", foundedYear = 2017)
+            setFieldId(otherTeam2, Team::class.java, 3L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 토너먼트",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.TOURNAMENT,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            // 해산팀과 무관한 대진표 엔트리
+            val unrelatedEntry =
+                BracketEntry(
+                    competition = competition,
+                    roundNumber = 1,
+                    matchNumber = 1,
+                    team1 = otherTeam1,
+                    team2 = otherTeam2,
+                )
+            setFieldId(unrelatedEntry, BracketEntry::class.java, 504L)
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns emptyList()
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns listOf(unrelatedEntry)
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            verify(exactly = 0) { bracketEntryRepository.save(any()) }
+            assert(unrelatedEntry.winner == null)
         }
     }
 
