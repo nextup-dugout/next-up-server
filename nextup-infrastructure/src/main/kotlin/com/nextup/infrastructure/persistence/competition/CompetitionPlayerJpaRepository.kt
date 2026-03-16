@@ -47,4 +47,9 @@ interface CompetitionPlayerJpaRepository : JpaRepository<CompetitionPlayer, Long
             "WHERE cp.team.id = :teamId AND cp.status <> 'WITHDRAWN'",
     )
     fun findActiveCompetitionIdsByTeamId(teamId: Long): Set<Long>
+
+    fun findByPlayerIdAndStatusIn(
+        playerId: Long,
+        statuses: List<CompetitionPlayerStatus>,
+    ): List<CompetitionPlayer>
 }

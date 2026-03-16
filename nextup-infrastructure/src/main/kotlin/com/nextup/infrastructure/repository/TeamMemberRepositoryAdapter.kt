@@ -43,6 +43,8 @@ class TeamMemberRepositoryAdapter(
 
     override fun findActiveByUserId(userId: Long): TeamMember? = jpaRepository.findActiveByUserId(userId)
 
+    override fun findAllActiveByUserId(userId: Long): List<TeamMember> = jpaRepository.findAllActiveByUserId(userId)
+
     override fun findByTeamIdWithUserAndPlayer(
         teamId: Long,
         pageCommand: PageCommand,

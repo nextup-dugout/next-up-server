@@ -116,6 +116,89 @@ class CareerFieldingStatsTest {
     }
 
     @Nested
+    @DisplayName("경기 기록 롤백")
+    inner class RevertGameRecordTest {
+        @Test
+        fun `revertGameRecord 호출 시 gamesPlayed가 1 감소하고 수비 기록이 차감된다`() {
+            // given
+            val record = mockk<FieldingRecord>()
+            every { record.putOuts } returns 5
+            every { record.assists } returns 3
+            every { record.errors } returns 1
+            every { record.doublePlays } returns 2
+            every { record.passedBalls } returns 1
+
+            careerFieldingStats.addGameRecord(record)
+            assertThat(careerFieldingStats.gamesPlayed).isEqualTo(1)
+
+            // when
+            careerFieldingStats.revertGameRecord(record)
+
+            // then
+            assertThat(careerFieldingStats.gamesPlayed).isEqualTo(0)
+            assertThat(careerFieldingStats.putOuts).isEqualTo(0)
+            assertThat(careerFieldingStats.assists).isEqualTo(0)
+            assertThat(careerFieldingStats.errors).isEqualTo(0)
+            assertThat(careerFieldingStats.doublePlays).isEqualTo(0)
+            assertThat(careerFieldingStats.passedBalls).isEqualTo(0)
+        }
+
+        @Test
+        fun `초기 상태에서 revertGameRecord를 호출해도 음수가 되지 않는다`() {
+            // given
+            val record = mockk<FieldingRecord>()
+            every { record.putOuts } returns 5
+            every { record.assists } returns 3
+            every { record.errors } returns 1
+            every { record.doublePlays } returns 2
+            every { record.passedBalls } returns 1
+
+            // when
+            careerFieldingStats.revertGameRecord(record)
+
+            // then
+            assertThat(careerFieldingStats.gamesPlayed).isEqualTo(0)
+            assertThat(careerFieldingStats.putOuts).isEqualTo(0)
+            assertThat(careerFieldingStats.assists).isEqualTo(0)
+            assertThat(careerFieldingStats.errors).isEqualTo(0)
+            assertThat(careerFieldingStats.doublePlays).isEqualTo(0)
+            assertThat(careerFieldingStats.passedBalls).isEqualTo(0)
+        }
+
+        @Test
+        fun `여러 경기 중 하나를 롤백하면 나머지만 남는다`() {
+            // given
+            val record1 = mockk<FieldingRecord>()
+            every { record1.putOuts } returns 3
+            every { record1.assists } returns 1
+            every { record1.errors } returns 0
+            every { record1.doublePlays } returns 0
+            every { record1.passedBalls } returns 0
+
+            val record2 = mockk<FieldingRecord>()
+            every { record2.putOuts } returns 4
+            every { record2.assists } returns 2
+            every { record2.errors } returns 1
+            every { record2.doublePlays } returns 1
+            every { record2.passedBalls } returns 0
+
+            careerFieldingStats.addGameRecord(record1)
+            careerFieldingStats.addGameRecord(record2)
+            assertThat(careerFieldingStats.gamesPlayed).isEqualTo(2)
+
+            // when: revert record1 only
+            careerFieldingStats.revertGameRecord(record1)
+
+            // then: record2 values remain
+            assertThat(careerFieldingStats.gamesPlayed).isEqualTo(1)
+            assertThat(careerFieldingStats.putOuts).isEqualTo(4)
+            assertThat(careerFieldingStats.assists).isEqualTo(2)
+            assertThat(careerFieldingStats.errors).isEqualTo(1)
+            assertThat(careerFieldingStats.doublePlays).isEqualTo(1)
+        }
+    }
+
+    @Nested
     @DisplayName("수비 기회(TC) 계산")
     inner class TotalChancesTest {
         @Test

@@ -420,6 +420,199 @@ class PitchingDecisionServiceTest {
     }
 
     // ────────────────────────────────────────────────────────────
+    // 세이브 - 동점 주자 조건 (H-7)
+    // ────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("세이브 - 동점 주자 조건")
+    inner class SaveTyingRunnerTest {
+
+        @Test
+        fun `6점 차 만루 등판 마무리 시 세이브 부여 (동점 주자 조건)`() {
+            // given: 6점 차 리드, 만루(주자 3명) 상황 등판
+            // 동점 주자 조건: finalLeadMargin(6) <= runnersOnBase(3) + 1(타자) = 4 → false
+            // 하지만 6 <= 3+1 = 4는 false이므로 세이브 아님
+            // 실제로는 주자 3 + 타자 1 + 다음타자 1 = 5명이 동점 주자가 될 수 있지만
+            // 규칙상 "동점 타자가 타석/온베이스/다음 타자"이므로 runnersOnBase + 1로 판단
+            val starter = makeRecord(isStarter = true, outs = 15, runsAllowed = 0)
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+
+            val winnerTeam = makeGameTeam("6,0,0,0,0,0,0,0,0", 6)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when: qualifiesForSave 직접 검증
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 6, runnersOnBase = 3)
+
+            // then: 6 <= 3+1=4 → false, 6 > 3 → true 아님, 6 >= 3이닝 아님
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `4점 차 만루 등판 마무리 시 세이브 부여 (동점 주자 조건 충족)`() {
+            // given: 4점 차 리드, 만루(주자 3명) 등판
+            // 동점 주자 조건: finalLeadMargin(4) <= runnersOnBase(3) + 1(타자) = 4 → true
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 4, runnersOnBase = 3)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `5점 차 만루 등판 마무리 시 세이브 미부여 (동점 주자 조건 미충족)`() {
+            // given: 5점 차 리드, 만루(주자 3명) 등판
+            // 동점 주자 조건: finalLeadMargin(5) <= runnersOnBase(3) + 1(타자) = 4 → false
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 5, runnersOnBase = 3)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `4점 차 주자 2명 등판 시 세이브 미부여`() {
+            // given: 4점 차, 주자 2명
+            // 동점 주자 조건: finalLeadMargin(4) <= runnersOnBase(2) + 1 = 3 → false
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 4, runnersOnBase = 2)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `선발 투수는 세이브 자격 없음`() {
+            // given
+            val starter = makeRecord(isStarter = true, outs = 27, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(starter, finalLeadMargin = 1, runnersOnBase = 0)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `리드 없으면 세이브 자격 없음`() {
+            // given
+            val closer = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 0, runnersOnBase = 0)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `3점 이내 리드는 주자 수 관계없이 세이브`() {
+            // given
+            val closer = makeRecord(isStarter = false, outs = 3, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 2, runnersOnBase = 0)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `3이닝 이상 마무리는 리드 점수와 주자 수 관계없이 세이브`() {
+            // given: 9아웃 = 3이닝
+            val closer = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+
+            // when
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 10, runnersOnBase = 0)
+
+            // then
+            assertThat(result).isTrue()
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // GameRules 기반 선발 승리 자격 이닝 검증
+    // ────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("GameRules 기반 선발 승리 자격")
+    inner class GameRulesStarterQualificationTest {
+
+        @Test
+        fun `기본 GameRules(15아웃=5이닝)에서 선발 5이닝 완투 시 승리`() {
+            // given: 기본 규칙 (starterWinQualificationOuts = 15)
+            val starter = makeRecord(isStarter = true, outs = 15, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("2,0,0,0,0,0,0,0,0", 2)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then
+            assertThat(starter.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `사회인 야구 규칙(9아웃=3이닝)에서 선발 3이닝 승리`() {
+            // given
+            val shortRules =
+                GameRules(
+                    defaultInnings = 7,
+                    starterWinQualificationOuts = 9,
+                )
+            val starter = makeRecord(isStarter = true, outs = 9, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("3,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0", 0)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = shortRules,
+            )
+
+            // then
+            assertThat(starter.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `GameRules 기준 미달 시 선발에게 승리 미부여 (구원 승리)`() {
+            // given: starterWinQualificationOuts = 15 (5이닝)이지만 선발은 4이닝(12아웃)만 소화
+            val starter = makeRecord(isStarter = true, outs = 12, runsAllowed = 0)
+            val relief = makeRecord(isStarter = false, outs = 15, runsAllowed = 0)
+
+            // 1회에 리드를 잡고 유지
+            val winnerTeam = makeGameTeam("2,0,0,0,0,0,0,0,0", 2)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter, relief),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 선발은 이닝 미달이므로 구원 투수에게 승리
+            assertThat(starter.decision).isNotEqualTo(PitchingDecision.WIN)
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────
     // 홀드 (H)
     // ────────────────────────────────────────────────────────────
 

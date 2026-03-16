@@ -163,11 +163,16 @@ class Game private constructor(
 
     /**
      * 경기를 정상 종료합니다.
+     *
+     * 양 팀의 점수를 비교하여 WIN/LOSS/DRAW 결과를 자동으로 설정합니다.
+     *
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
      */
-    fun finish() {
+    fun finish(gameTeams: List<GameTeam>) {
         require(status.isOngoing()) { "진행 중인 경기만 종료할 수 있습니다." }
         status = GameStatus.FINISHED
         endedAt = LocalDateTime.now()
+        determineResults(gameTeams)
     }
 
     /**
@@ -178,14 +183,18 @@ class Game private constructor(
      * - 예외: [minimumInning]회 초(top)까지 완료되고 홈팀이 리드 중이면
      *         [minimumInning - 1].5이닝에서도 선언 가능 (홈팀 승리 확정)
      *
+     * 양 팀의 점수를 비교하여 WIN/LOSS/DRAW 결과를 자동으로 설정합니다.
+     *
      * @param minimumInning 콜드게임 최소 요건 이닝 (기본값: 5이닝)
      * @param isHomeTeamLeading 홈팀이 리드 중인지 여부 (기본값: false)
      * @param reason 콜드게임 사유 (선택)
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
      */
     fun callGame(
         minimumInning: Int = DEFAULT_COLD_GAME_MINIMUM_INNING,
         isHomeTeamLeading: Boolean = false,
         reason: String? = null,
+        gameTeams: List<GameTeam> = emptyList(),
     ) {
         require(status.isOngoing()) { "진행 중인 경기만 콜드게임 처리할 수 있습니다." }
         require(minimumInning >= 1) { "최소 이닝은 1 이상이어야 합니다." }
@@ -204,6 +213,9 @@ class Game private constructor(
         endedAt = LocalDateTime.now()
         if (reason != null) {
             note = (note?.let { "$it\n" } ?: "") + "콜드게임 사유: $reason"
+        }
+        if (gameTeams.isNotEmpty()) {
+            determineResults(gameTeams)
         }
     }
 
@@ -331,6 +343,38 @@ class Game private constructor(
             } else {
                 gameTeam.updateScore(totalScore = 0, totalHits = 0, totalErrors = 0)
                 gameTeam.updateResult(GameResult.LOSS)
+            }
+        }
+    }
+
+    /**
+     * 양 팀의 점수를 비교하여 GameTeam의 result를 설정합니다.
+     *
+     * - 점수가 높은 팀: WIN, 낮은 팀: LOSS
+     * - 동점: 양 팀 모두 DRAW
+     *
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
+     */
+    private fun determineResults(gameTeams: List<GameTeam>) {
+        require(gameTeams.size == 2) {
+            "결과 판정을 위해서는 정확히 2개의 GameTeam이 필요합니다."
+        }
+
+        val team1 = gameTeams[0]
+        val team2 = gameTeams[1]
+
+        when {
+            team1.totalScore > team2.totalScore -> {
+                team1.updateResult(GameResult.WIN)
+                team2.updateResult(GameResult.LOSS)
+            }
+            team1.totalScore < team2.totalScore -> {
+                team1.updateResult(GameResult.LOSS)
+                team2.updateResult(GameResult.WIN)
+            }
+            else -> {
+                team1.updateResult(GameResult.DRAW)
+                team2.updateResult(GameResult.DRAW)
             }
         }
     }

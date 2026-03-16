@@ -272,6 +272,149 @@ class CareerPitchingStatsTest {
     }
 
     @Nested
+    @DisplayName("경기 기록 롤백")
+    inner class RevertGameRecord {
+        @Test
+        fun `should revert single game record correctly`() {
+            // given
+            val stats = CareerPitchingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 3,
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        strikeouts = 7,
+                        battersFaced = 25,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+
+            stats.addGameRecord(record)
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.wins).isEqualTo(1)
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isEqualTo(0)
+            assertThat(stats.gamesStarted).isEqualTo(0)
+            assertThat(stats.inningsPitchedOuts).isEqualTo(0)
+            assertThat(stats.earnedRuns).isEqualTo(0)
+            assertThat(stats.runsAllowed).isEqualTo(0)
+            assertThat(stats.hitsAllowed).isEqualTo(0)
+            assertThat(stats.walksAllowed).isEqualTo(0)
+            assertThat(stats.strikeouts).isEqualTo(0)
+            assertThat(stats.battersFaced).isEqualTo(0)
+            assertThat(stats.wins).isEqualTo(0)
+        }
+
+        @Test
+        fun `should not go below zero when reverting`() {
+            // given: stats at zero
+            val stats = CareerPitchingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        hitsAllowed = 5,
+                        strikeouts = 7,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+
+            // when: revert on empty stats
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isEqualTo(0)
+            assertThat(stats.gamesStarted).isEqualTo(0)
+            assertThat(stats.inningsPitchedOuts).isEqualTo(0)
+            assertThat(stats.wins).isEqualTo(0)
+        }
+
+        @Test
+        fun `should revert all decision types correctly`() {
+            // given
+            val stats = CareerPitchingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+
+            val decisions =
+                listOf(
+                    PitchingDecision.WIN,
+                    PitchingDecision.LOSS,
+                    PitchingDecision.SAVE,
+                    PitchingDecision.HOLD,
+                    PitchingDecision.BLOWN_SAVE,
+                )
+
+            // Add one of each
+            for (decision in decisions) {
+                val record =
+                    PitchingRecord.create(gamePlayer).apply {
+                        setStats(inningsPitchedOuts = 3, decision = decision)
+                    }
+                stats.addGameRecord(record)
+            }
+
+            assertThat(stats.wins).isEqualTo(1)
+            assertThat(stats.losses).isEqualTo(1)
+            assertThat(stats.saves).isEqualTo(1)
+            assertThat(stats.holds).isEqualTo(1)
+            assertThat(stats.blownSaves).isEqualTo(1)
+
+            // when: revert each
+            for (decision in decisions) {
+                val record =
+                    PitchingRecord.create(gamePlayer).apply {
+                        setStats(inningsPitchedOuts = 3, decision = decision)
+                    }
+                stats.revertGameRecord(record)
+            }
+
+            // then
+            assertThat(stats.wins).isEqualTo(0)
+            assertThat(stats.losses).isEqualTo(0)
+            assertThat(stats.saves).isEqualTo(0)
+            assertThat(stats.holds).isEqualTo(0)
+            assertThat(stats.blownSaves).isEqualTo(0)
+        }
+
+        @Test
+        fun `should revert pitches thrown correctly`() {
+            // given
+            val stats = CareerPitchingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        pitchesThrown = 95,
+                        strikesThrown = 63,
+                    )
+                }
+
+            stats.addGameRecord(record)
+            assertThat(stats.pitchesThrown).isEqualTo(95)
+            assertThat(stats.strikesThrown).isEqualTo(63)
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.pitchesThrown).isEqualTo(0)
+            assertThat(stats.strikesThrown).isEqualTo(0)
+        }
+    }
+
+    @Nested
     @DisplayName("시즌 추가")
     inner class AddSeason {
         @Test

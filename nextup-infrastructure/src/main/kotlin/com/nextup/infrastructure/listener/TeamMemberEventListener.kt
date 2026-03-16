@@ -62,6 +62,7 @@ class TeamMemberEventListener(
     fun handleTeamMemberLeft(event: TeamMemberLeftEvent) {
         logger.info("팀원 탈퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
+        withdrawCompetitionPlayersByPlayerId(event.playerId)
         cleanupActivityScore(event.memberId)
     }
 
@@ -76,6 +77,7 @@ class TeamMemberEventListener(
     fun handleTeamMemberKicked(event: TeamMemberKickedEvent) {
         logger.info("팀원 강퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
+        withdrawCompetitionPlayersByPlayerId(event.playerId)
         cleanupActivityScore(event.memberId)
     }
 
@@ -106,7 +108,7 @@ class TeamMemberEventListener(
     // -------------------------------------------------------------------------
 
     /**
-     * DRAFT/SUBMITTED 상태의 라인업에서 특정 선수를 제거합니다.
+     * DRAFT/SUBMITTED/CONFIRMED 상태의 라인업에서 특정 선수를 제거합니다.
      * 제거 후 라인업 엔트리가 없으면 상태를 DRAFT로 되돌립니다.
      */
     private fun removePlayerFromActiveLineups(
@@ -117,6 +119,7 @@ class TeamMemberEventListener(
             listOf(
                 LineupSubmissionStatus.DRAFT,
                 LineupSubmissionStatus.SUBMITTED,
+                LineupSubmissionStatus.CONFIRMED,
             )
 
         val submissions =
@@ -250,6 +253,25 @@ class TeamMemberEventListener(
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * 특정 선수의 활성/정지 상태 CompetitionPlayer를 WITHDRAWN으로 처리합니다.
+     * 팀원 개별 탈퇴/강퇴 시 호출됩니다.
+     */
+    private fun withdrawCompetitionPlayersByPlayerId(playerId: Long) {
+        val activeStatuses =
+            listOf(
+                CompetitionPlayerStatus.ACTIVE,
+                CompetitionPlayerStatus.SUSPENDED,
+            )
+        val competitionPlayers =
+            competitionPlayerRepository.findByPlayerIdAndStatusIn(playerId, activeStatuses)
+        competitionPlayers.forEach { cp ->
+            cp.withdraw()
+            competitionPlayerRepository.save(cp)
+            logger.info("CompetitionPlayer WITHDRAWN 처리 (개별 탈퇴) - competitionPlayerId={}, playerId={}", cp.id, playerId)
         }
     }
 
