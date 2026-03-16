@@ -1,6 +1,7 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
@@ -27,6 +28,7 @@ import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import java.time.LocalDateTime
 
 @DisplayName("StatsEventListener 테스트")
@@ -53,6 +56,7 @@ class StatsEventListenerTest {
     private val pitchingRecordRepository = mockk<PitchingRecordRepositoryPort>()
     private val fieldingRecordRepository = mockk<FieldingRecordRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
+    private val playerRepository = mockk<PlayerRepositoryPort>()
 
     private val listener =
         StatsEventListener(
@@ -66,6 +70,7 @@ class StatsEventListenerTest {
             pitchingRecordRepository = pitchingRecordRepository,
             fieldingRecordRepository = fieldingRecordRepository,
             gameRepository = gameRepository,
+            playerRepository = playerRepository,
         )
 
     private val testPlayer =
@@ -173,11 +178,13 @@ class StatsEventListenerTest {
         }
 
         @Test
-        fun `시즌 통계가 없는 경우 저장 없이 건너뜀`() {
+        fun `시즌 통계가 없는 경우 자동 생성 후 타석 결과 반영`() {
             // given
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns null
+            every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceRecordedEvent(
@@ -189,8 +196,60 @@ class StatsEventListenerTest {
             // when
             listener.onPlateAppearanceRecorded(event)
 
-            // then
-            verify(exactly = 0) { seasonBattingStatsRepository.save(any()) }
+            // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
+            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPlayer.id) }
+        }
+
+        @Test
+        fun `시즌 통계가 없는 신규 선수의 첫 타석 기록 시 통계가 올바르게 반영됨`() {
+            // given
+            val savedStats = mutableListOf<SeasonBattingStats>()
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { seasonBattingStatsRepository.save(capture(savedStats)) } answers { firstArg() }
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    result = PlateAppearanceResult.HOME_RUN,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then: 마지막 저장된 stats에 홈런이 반영되어 있어야 함
+            val finalStats = savedStats.last()
+            assertThat(finalStats.plateAppearances).isEqualTo(1)
+            assertThat(finalStats.atBats).isEqualTo(1)
+            assertThat(finalStats.hits).isEqualTo(1)
+            assertThat(finalStats.homeRuns).isEqualTo(1)
+            assertThat(finalStats.year).isEqualTo(2024)
+            assertThat(finalStats.player).isEqualTo(testPlayer)
+        }
+
+        @Test
+        fun `선수를 찾을 수 없는 경우 PlayerNotFoundException 발생`() {
+            // given
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(999L, 2024)
+            } returns null
+            every { playerRepository.findByIdOrNull(999L) } returns null
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = 999L,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when & then
+            assertThrows<PlayerNotFoundException> {
+                listener.onPlateAppearanceRecorded(event)
+            }
         }
 
         @Test
@@ -295,11 +354,13 @@ class StatsEventListenerTest {
         }
 
         @Test
-        fun `시즌 통계가 없는 경우 저장 없이 건너뜀`() {
+        fun `시즌 통계가 없는 경우 자동 생성 후 역산 처리`() {
             // given
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns null
+            every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceUndoneEvent(
@@ -311,8 +372,9 @@ class StatsEventListenerTest {
             // when
             listener.onPlateAppearanceUndone(event)
 
-            // then
-            verify(exactly = 0) { seasonBattingStatsRepository.save(any()) }
+            // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
+            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPlayer.id) }
         }
 
         @Test
@@ -701,6 +763,93 @@ class StatsEventListenerTest {
             assertThrows<GameNotFoundException> {
                 listener.onGameResultConfirmed(badEvent)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("retryOnOptimisticLock - Optimistic Locking 재시도")
+    inner class RetryOnOptimisticLock {
+        @Test
+        fun `OptimisticLockingFailureException 발생 시 재시도 후 성공`() {
+            // given
+            var callCount = 0
+
+            // when
+            StatsEventListener.retryOnOptimisticLock("test") {
+                callCount++
+                if (callCount < 3) {
+                    throw ObjectOptimisticLockingFailureException("test", null)
+                }
+            }
+
+            // then: 3번째에 성공
+            assertThat(callCount).isEqualTo(3)
+        }
+
+        @Test
+        fun `재시도 횟수 초과 시 예외 전파`() {
+            // given & when & then
+            assertThrows<ObjectOptimisticLockingFailureException> {
+                StatsEventListener.retryOnOptimisticLock("test") {
+                    throw ObjectOptimisticLockingFailureException("test", null)
+                }
+            }
+        }
+
+        @Test
+        fun `첫 시도에 성공하면 한 번만 호출됨`() {
+            // given
+            var callCount = 0
+
+            // when
+            StatsEventListener.retryOnOptimisticLock("test") {
+                callCount++
+            }
+
+            // then
+            assertThat(callCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `OptimisticLockingFailureException이 아닌 예외는 즉시 전파`() {
+            // given
+            var callCount = 0
+
+            // when & then
+            assertThrows<IllegalStateException> {
+                StatsEventListener.retryOnOptimisticLock("test") {
+                    callCount++
+                    throw IllegalStateException("다른 예외")
+                }
+            }
+
+            // then: 재시도 없이 1회만 호출
+            assertThat(callCount).isEqualTo(1)
+        }
+
+        @Test
+        fun `타석 기록 이벤트에서 OptimisticLocking 충돌 시 재시도하여 성공`() {
+            // given
+            val stats = SeasonBattingStats.create(testPlayer, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            // 첫 번째 save 시 충돌, 두 번째에 성공
+            every { seasonBattingStatsRepository.save(any()) } throws
+                ObjectOptimisticLockingFailureException("conflict", null) andThen stats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then: 2번 호출됨 (1번 실패 + 1번 성공)
+            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
         }
     }
 }

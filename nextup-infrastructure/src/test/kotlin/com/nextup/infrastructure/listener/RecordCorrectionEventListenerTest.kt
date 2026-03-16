@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import java.time.LocalDateTime
 
 @DisplayName("RecordCorrectionEventListener 테스트")
@@ -88,7 +89,7 @@ class RecordCorrectionEventListenerTest {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
             val careerStats = CareerBattingStats.create(testPlayer)
-            // 기존 값 설정 (불변식을 만족하는 순서: PA ≥ AB ≥ H)
+            // 기존 값 설정 (불변식을 만족하는 순서: PA >= AB >= H)
             seasonStats.applyFieldCorrection("plateAppearances", 15)
             seasonStats.applyFieldCorrection("atBats", 12)
             seasonStats.applyFieldCorrection("hits", 10)
@@ -125,7 +126,7 @@ class RecordCorrectionEventListenerTest {
         fun `음수 델타 적용 시 통계가 감소됨`() {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
-            // 불변식을 만족하는 순서: PA ≥ AB ≥ H ≥ 2B+3B+HR
+            // 불변식을 만족하는 순서: PA >= AB >= H >= 2B+3B+HR
             seasonStats.applyFieldCorrection("plateAppearances", 10)
             seasonStats.applyFieldCorrection("atBats", 8)
             seasonStats.applyFieldCorrection("hits", 5)
@@ -289,7 +290,7 @@ class RecordCorrectionEventListenerTest {
         fun `자책점 감소 정정이 올바르게 반영됨`() {
             // given
             val seasonStats = SeasonPitchingStats.create(testPlayer, 2024)
-            // 불변식을 만족하는 순서: RA ≥ ER
+            // 불변식을 만족하는 순서: RA >= ER
             seasonStats.applyFieldCorrection("runsAllowed", 12)
             seasonStats.applyFieldCorrection("earnedRuns", 10)
 
@@ -572,6 +573,68 @@ class RecordCorrectionEventListenerTest {
 
             // then: 파싱 실패로 delta = 0, 스탯 갱신 건너뜀
             verify(exactly = 0) { seasonFieldingStatsRepository.findByPlayerIdAndYear(any(), any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("Optimistic Locking 재시도")
+    inner class OptimisticLockingRetry {
+        @Test
+        fun `기록 정정 시 OptimisticLocking 충돌이 발생하면 재시도하여 성공`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("plateAppearances", 15)
+            seasonStats.applyFieldCorrection("atBats", 12)
+            seasonStats.applyFieldCorrection("hits", 10)
+
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            // 첫 번째 save 시 충돌, 두 번째에 성공
+            every { seasonBattingStatsRepository.save(any()) } throws
+                ObjectOptimisticLockingFailureException("conflict", null) andThen seasonStats
+            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "2",
+                    newValue = "3",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: 2번 호출됨 (1번 실패 + 1번 성공)
+            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `재시도 횟수 초과 시 예외가 전파됨`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("walks", 10)
+
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonBattingStatsRepository.save(any()) } throws
+                ObjectOptimisticLockingFailureException("conflict", null)
+            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "walks",
+                    oldValue = "2",
+                    newValue = "3",
+                )
+
+            // when & then
+            assertThrows<ObjectOptimisticLockingFailureException> {
+                listener.onRecordCorrected(event)
+            }
         }
     }
 

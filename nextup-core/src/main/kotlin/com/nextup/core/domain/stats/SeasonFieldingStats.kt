@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import jakarta.persistence.Version
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -48,6 +49,10 @@ class SeasonFieldingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0

@@ -24,6 +24,9 @@ import org.springframework.transaction.event.TransactionalEventListener
  *
  * RecordCorrectedEvent 수신 시 해당 선수의 시즌/커리어 스탯에
  * 정정 델타(newValue - oldValue)를 반영합니다.
+ *
+ * Optimistic Locking(@Version) 기반 동시성 제어를 적용하여
+ * Lost Update를 방지합니다. 충돌 시 최대 3회 재시도합니다.
  */
 @Component
 class RecordCorrectionEventListener(
@@ -62,10 +65,15 @@ class RecordCorrectionEventListener(
             delta,
         )
 
-        when (event.correctionType) {
-            CorrectionType.BATTING -> applyBattingCorrection(event.playerId, year, event.fieldName, delta)
-            CorrectionType.PITCHING -> applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
-            CorrectionType.FIELDING -> applyFieldingCorrection(event.playerId, year, event.fieldName, delta)
+        StatsEventListener.retryOnOptimisticLock("onRecordCorrected(playerId=${event.playerId})") {
+            when (event.correctionType) {
+                CorrectionType.BATTING ->
+                    applyBattingCorrection(event.playerId, year, event.fieldName, delta)
+                CorrectionType.PITCHING ->
+                    applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
+                CorrectionType.FIELDING ->
+                    applyFieldingCorrection(event.playerId, year, event.fieldName, delta)
+            }
         }
 
         logger.info(

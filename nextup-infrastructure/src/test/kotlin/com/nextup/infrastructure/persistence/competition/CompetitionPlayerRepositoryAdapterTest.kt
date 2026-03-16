@@ -450,4 +450,37 @@ class CompetitionPlayerRepositoryAdapterTest {
             assertThat(result[0].status).isEqualTo(CompetitionPlayerStatus.WITHDRAWN)
         }
     }
+
+    @Nested
+    @DisplayName("findActiveCompetitionIdsByTeamId")
+    inner class FindActiveCompetitionIdsByTeamId {
+        @Test
+        fun `팀이 참가 중인 대회 ID 목록을 반환한다`() {
+            // given
+            val teamId = 1L
+            val expectedIds = setOf(10L, 20L, 30L)
+            every { jpaRepository.findActiveCompetitionIdsByTeamId(teamId) } returns expectedIds
+
+            // when
+            val result = adapter.findActiveCompetitionIdsByTeamId(teamId)
+
+            // then
+            assertThat(result).isEqualTo(expectedIds)
+            verify { jpaRepository.findActiveCompetitionIdsByTeamId(teamId) }
+        }
+
+        @Test
+        fun `참가 중인 대회가 없으면 빈 Set을 반환한다`() {
+            // given
+            val teamId = 999L
+            every { jpaRepository.findActiveCompetitionIdsByTeamId(teamId) } returns emptySet()
+
+            // when
+            val result = adapter.findActiveCompetitionIdsByTeamId(teamId)
+
+            // then
+            assertThat(result).isEmpty()
+            verify { jpaRepository.findActiveCompetitionIdsByTeamId(teamId) }
+        }
+    }
 }

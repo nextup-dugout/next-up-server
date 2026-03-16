@@ -17,5 +17,7 @@ interface BookingTransferRepositoryPort {
 
     fun findBySellerTeamId(sellerTeamId: Long): List<BookingTransfer>
 
+    fun findByBuyerTeamId(buyerTeamId: Long): List<BookingTransfer>
+
     fun existsOpenTransferForBooking(bookingId: Long): Boolean
 }

@@ -131,6 +131,17 @@ class BookingTransferService(
         bookingTransferRepository.findByStatus(TransferStatus.OPEN)
             .filter { !it.isExpired() }
 
+    /**
+     * 특정 팀이 관련된(판매자 또는 구매자) 양도 목록을 조회합니다.
+     */
+    fun getTransfersByTeamId(teamId: Long): List<BookingTransfer> {
+        val sellerTransfers = bookingTransferRepository.findBySellerTeamId(teamId)
+        val buyerTransfers = bookingTransferRepository.findByBuyerTeamId(teamId)
+        return (sellerTransfers + buyerTransfers)
+            .distinctBy { it.id }
+            .sortedByDescending { it.createdAt }
+    }
+
     companion object {
         const val DEFAULT_EXPIRY_SECONDS = 24L * 60 * 60 // 24 hours
     }
