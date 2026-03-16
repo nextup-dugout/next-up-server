@@ -113,12 +113,22 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED,
+                    ),
                 )
             } returns listOf(submission)
             every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry
             justRun { lineupEntryRepository.delete(entry) }
             every { lineupEntryRepository.findAllBySubmissionId(10L) } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
 
             // when
@@ -142,10 +152,20 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
                 )
             } returns listOf(submission)
             every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns null
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
 
             // when
@@ -165,7 +185,17 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
                 )
             } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
@@ -194,12 +224,22 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
                 )
             } returns listOf(submission)
             every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry
             justRun { lineupEntryRepository.delete(entry) }
             every { lineupEntryRepository.findAllBySubmissionId(10L) } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
 
             // when
@@ -220,7 +260,17 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
                 )
             } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
@@ -230,6 +280,82 @@ class TeamMemberEventListenerTest {
 
             // then
             verify(exactly = 1) { activityScoreRepository.deleteByMemberId(100L) }
+        }
+
+        @Test
+        @DisplayName("팀원 탈퇴 시 활성 CompetitionPlayer를 WITHDRAWN 처리한다")
+        fun `should withdraw active competition players on member left`() {
+            // given
+            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val competitionPlayer = mockk<CompetitionPlayer>(relaxed = true)
+            every { competitionPlayer.id } returns 50L
+
+            every {
+                lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
+                    1L,
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns listOf(competitionPlayer)
+            justRun { competitionPlayer.withdraw() }
+            every { competitionPlayerRepository.save(competitionPlayer) } returns competitionPlayer
+            justRun { activityScoreRepository.deleteByMemberId(100L) }
+
+            // when
+            listener.handleTeamMemberLeft(event)
+
+            // then
+            verify(exactly = 1) { competitionPlayer.withdraw() }
+            verify(exactly = 1) { competitionPlayerRepository.save(competitionPlayer) }
+        }
+
+        @Test
+        @DisplayName("CONFIRMED 라인업에서도 탈퇴한 선수 엔트리를 제거한다")
+        fun `should remove player entry from CONFIRMED lineup submission`() {
+            // given
+            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+
+            val submission = mockk<LineupSubmission>(relaxed = true)
+            every { submission.id } returns 10L
+            every { submission.status } returns LineupSubmissionStatus.CONFIRMED
+
+            val entry = mockk<LineupEntry>(relaxed = true)
+
+            every {
+                lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
+                    1L,
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns listOf(submission)
+            every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry
+            justRun { lineupEntryRepository.delete(entry) }
+            every { lineupEntryRepository.findAllBySubmissionId(10L) } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
+            justRun { activityScoreRepository.deleteByMemberId(100L) }
+
+            // when
+            listener.handleTeamMemberLeft(event)
+
+            // then
+            verify(exactly = 1) { lineupEntryRepository.delete(entry) }
         }
     }
 
@@ -256,12 +382,22 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
                 )
             } returns listOf(submission)
             every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry
             justRun { lineupEntryRepository.delete(entry) }
             every { lineupEntryRepository.findAllBySubmissionId(10L) } returns listOf(remainingEntry)
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
 
             // when
@@ -292,7 +428,11 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
                 )
             } returns listOf(submission1, submission2)
             every { lineupEntryRepository.findBySubmissionIdAndPlayerId(10L, 20L) } returns entry1
@@ -301,6 +441,12 @@ class TeamMemberEventListenerTest {
             justRun { lineupEntryRepository.delete(entry2) }
             every { lineupEntryRepository.findAllBySubmissionId(10L) } returns emptyList()
             every { lineupEntryRepository.findAllBySubmissionId(11L) } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
 
             // when
@@ -321,7 +467,17 @@ class TeamMemberEventListenerTest {
             every {
                 lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
                     1L,
-                    listOf(LineupSubmissionStatus.DRAFT, LineupSubmissionStatus.SUBMITTED),
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
                 )
             } returns emptyList()
             justRun { activityScoreRepository.deleteByMemberId(100L) }
@@ -331,6 +487,42 @@ class TeamMemberEventListenerTest {
 
             // then
             verify(exactly = 1) { activityScoreRepository.deleteByMemberId(100L) }
+        }
+
+        @Test
+        @DisplayName("팀원 강퇴 시 활성 CompetitionPlayer를 WITHDRAWN 처리한다")
+        fun `should withdraw active competition players on member kicked`() {
+            // given
+            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val competitionPlayer = mockk<CompetitionPlayer>(relaxed = true)
+            every { competitionPlayer.id } returns 50L
+
+            every {
+                lineupSubmissionRepository.findAllByTeamIdAndStatusIn(
+                    1L,
+                    listOf(
+                        LineupSubmissionStatus.DRAFT,
+                        LineupSubmissionStatus.SUBMITTED,
+                        LineupSubmissionStatus.CONFIRMED
+                    ),
+                )
+            } returns emptyList()
+            every {
+                competitionPlayerRepository.findByPlayerIdAndStatusIn(
+                    20L,
+                    listOf(CompetitionPlayerStatus.ACTIVE, CompetitionPlayerStatus.SUSPENDED),
+                )
+            } returns listOf(competitionPlayer)
+            justRun { competitionPlayer.withdraw() }
+            every { competitionPlayerRepository.save(competitionPlayer) } returns competitionPlayer
+            justRun { activityScoreRepository.deleteByMemberId(100L) }
+
+            // when
+            listener.handleTeamMemberKicked(event)
+
+            // then
+            verify(exactly = 1) { competitionPlayer.withdraw() }
+            verify(exactly = 1) { competitionPlayerRepository.save(competitionPlayer) }
         }
     }
 

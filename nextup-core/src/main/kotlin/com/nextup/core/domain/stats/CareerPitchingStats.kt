@@ -293,6 +293,44 @@ class CareerPitchingStats(
     }
 
     /**
+     * 경기 투수 기록을 롤백합니다 (경기 취소 시 사용).
+     * 모든 필드를 maxOf(0, ...) 로 보호하여 음수 방지합니다.
+     */
+    fun revertGameRecord(record: PitchingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        if (record.isStartingPitcher) {
+            gamesStarted = maxOf(0, gamesStarted - 1)
+        }
+        inningsPitchedOuts = maxOf(0, inningsPitchedOuts - record.inningsPitchedOuts)
+        earnedRuns = maxOf(0, earnedRuns - record.earnedRuns)
+        runsAllowed = maxOf(0, runsAllowed - record.runsAllowed)
+        hitsAllowed = maxOf(0, hitsAllowed - record.hitsAllowed)
+        walksAllowed = maxOf(0, walksAllowed - record.walksAllowed)
+        strikeouts = maxOf(0, strikeouts - record.strikeouts)
+        homeRunsAllowed = maxOf(0, homeRunsAllowed - record.homeRunsAllowed)
+        hitBatsmen = maxOf(0, hitBatsmen - record.hitBatsmen)
+        wildPitches = maxOf(0, wildPitches - record.wildPitches)
+        balks = maxOf(0, balks - record.balks)
+        battersFaced = maxOf(0, battersFaced - record.battersFaced)
+
+        if (record.pitchesThrown != null) {
+            pitchesThrown = maxOf(0, (pitchesThrown ?: 0) - record.pitchesThrown!!)
+        }
+        if (record.strikesThrown != null) {
+            strikesThrown = maxOf(0, (strikesThrown ?: 0) - record.strikesThrown!!)
+        }
+
+        when (record.decision) {
+            com.nextup.core.domain.game.PitchingDecision.WIN -> wins = maxOf(0, wins - 1)
+            com.nextup.core.domain.game.PitchingDecision.LOSS -> losses = maxOf(0, losses - 1)
+            com.nextup.core.domain.game.PitchingDecision.SAVE -> saves = maxOf(0, saves - 1)
+            com.nextup.core.domain.game.PitchingDecision.HOLD -> holds = maxOf(0, holds - 1)
+            com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> blownSaves = maxOf(0, blownSaves - 1)
+            else -> { /* NONE */ }
+        }
+    }
+
+    /**
      * 기록 정정에 따른 필드별 델타를 적용합니다.
      *
      * @param fieldName 정정된 필드명

@@ -4,6 +4,8 @@ import com.nextup.common.exception.*
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
+import com.nextup.core.domain.event.TeamMemberKickedEvent
+import com.nextup.core.domain.event.TeamMemberLeftEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -524,6 +526,30 @@ class TeamMembershipServiceImplTest {
         }
 
         @Test
+        fun `should publish TeamMemberKickedEvent when member is kicked`() {
+            // given
+            val memberToKick =
+                TeamMember.create(team, user, player, 20, TeamMemberRole.MEMBER)
+            setTeamMemberId(memberToKick, 200L)
+
+            every { teamMemberRepository.findByIdOrNull(200L) } returns memberToKick
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 10L) } returns ownerMember
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<TeamMemberKickedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            service.kickMember(200L, 10L, "규칙 위반", false)
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<TeamMemberKickedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.playerId).isEqualTo(3L)
+            assertThat(eventSlot.captured.memberId).isEqualTo(200L)
+        }
+
+        @Test
         fun `should throw when member not found on kick`() {
             // given
             every { teamMemberRepository.findByIdOrNull(999L) } returns null
@@ -581,6 +607,28 @@ class TeamMembershipServiceImplTest {
             // then
             assertThat(member.status).isEqualTo(TeamMemberStatus.LEFT)
             verify { teamMemberRepository.save(member) }
+        }
+
+        @Test
+        fun `should publish TeamMemberLeftEvent when member leaves`() {
+            // given
+            val member = TeamMember.create(team, user, player, 20, TeamMemberRole.MEMBER)
+            setTeamMemberId(member, 200L)
+
+            every { teamMemberRepository.findByIdOrNull(200L) } returns member
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<TeamMemberLeftEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            service.leaveMember(200L)
+
+            // then
+            verify(exactly = 1) { eventPublisher.publishEvent(any<TeamMemberLeftEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.playerId).isEqualTo(3L)
+            assertThat(eventSlot.captured.memberId).isEqualTo(200L)
         }
 
         @Test

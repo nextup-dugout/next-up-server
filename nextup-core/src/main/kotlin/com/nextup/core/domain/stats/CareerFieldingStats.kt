@@ -109,6 +109,19 @@ class CareerFieldingStats(
     }
 
     /**
+     * 경기 수비 기록을 롤백합니다 (경기 취소 시 사용).
+     * 모든 필드를 maxOf(0, ...) 로 보호하여 음수 방지합니다.
+     */
+    fun revertGameRecord(record: FieldingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        putOuts = maxOf(0, putOuts - record.putOuts)
+        assists = maxOf(0, assists - record.assists)
+        errors = maxOf(0, errors - record.errors)
+        doublePlays = maxOf(0, doublePlays - record.doublePlays)
+        passedBalls = maxOf(0, passedBalls - record.passedBalls)
+    }
+
+    /**
      * 시즌을 추가합니다.
      */
     fun addSeason() {
