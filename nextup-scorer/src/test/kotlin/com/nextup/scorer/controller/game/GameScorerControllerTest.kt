@@ -741,6 +741,101 @@ class GameScorerControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/lock")
+    inner class LockGame {
+
+        @Test
+        fun `경기를 잠금한다`() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, GameStatus.SCHEDULED)
+            game.lockForScorer(scorerId)
+            every { gameLifecycleService.lockGame(gameId, scorerId) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/lock")
+                    .param("scorerId", scorerId.toString()),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+
+            verify(exactly = 1) { gameLifecycleService.lockGame(gameId, scorerId) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/unlock")
+    inner class UnlockGame {
+
+        @Test
+        fun `경기 잠금을 해제한다`() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, GameStatus.SCHEDULED)
+            every { gameLifecycleService.unlockGame(gameId, scorerId) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/unlock")
+                    .param("scorerId", scorerId.toString()),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+
+            verify(exactly = 1) { gameLifecycleService.unlockGame(gameId, scorerId) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/forfeit")
+    inner class ForfeitGame {
+
+        @Test
+        fun `경기를 몰수 처리한다`() {
+            // given
+            val gameId = 1L
+            val game = createGame(gameId, GameStatus.FORFEITED)
+            every {
+                gameLifecycleService.forfeitGame(
+                    gameId = gameId,
+                    winnerTeamId = 1L,
+                    reason = "선수 부족",
+                )
+            } returns game
+
+            val request =
+                mapOf(
+                    "winnerTeamId" to 1L,
+                    "reason" to "선수 부족",
+                )
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/forfeit")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+                .andExpect(jsonPath("$.data.status").value("FORFEITED"))
+
+            verify(exactly = 1) {
+                gameLifecycleService.forfeitGame(
+                    gameId = gameId,
+                    winnerTeamId = 1L,
+                    reason = "선수 부족",
+                )
+            }
+        }
+    }
+
     // ===== 테스트 헬퍼 메서드 =====
 
     private fun createGamePlayer(
