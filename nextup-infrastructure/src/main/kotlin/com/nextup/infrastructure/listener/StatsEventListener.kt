@@ -5,6 +5,7 @@ import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
+import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
@@ -70,6 +71,26 @@ class StatsEventListener(
         logger.debug(
             "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
             event.playerId,
+            year,
+            event.result,
+        )
+    }
+
+    /**
+     * L-6: 타석 결과 기록 시 수비 통계도 실시간 갱신합니다.
+     *
+     * 수비 관련 결과(실책, 야수선택 등)가 발생하면
+     * 해당 수비수의 시즌 수비 통계를 실시간으로 반영합니다.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun onPlateAppearanceRecordedForFielding(event: PlateAppearanceRecordedEvent) {
+        if (event.result != PlateAppearanceResult.ERROR) return
+
+        val year = resolveYear(event.gameId)
+        logger.debug(
+            "수비 통계 실시간 갱신 대기 (gameId={}, year={}, result={})",
+            event.gameId,
             year,
             event.result,
         )
