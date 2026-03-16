@@ -390,6 +390,32 @@ class NotificationEventListenerTest {
     @DisplayName("handleGamePostponed")
     inner class HandleGamePostponed {
         @Test
+        fun `should not send notification when no active members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 4, 1, 14, 0)
+            val event =
+                GamePostponedEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            listener.handleGamePostponed(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+
+        @Test
         fun `should send GAME_POSTPONED notification to both teams members`() {
             // given
             val newDate = LocalDateTime.of(2026, 4, 1, 14, 0)
@@ -438,6 +464,32 @@ class NotificationEventListenerTest {
     @Nested
     @DisplayName("handleGameRescheduled")
     inner class HandleGameRescheduled {
+        @Test
+        fun `should not send notification when no active members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 5, 10, 18, 0)
+            val event =
+                GameRescheduledEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            listener.handleGameRescheduled(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+
         @Test
         fun `should send GAME_RESCHEDULED notification to both teams members`() {
             // given
