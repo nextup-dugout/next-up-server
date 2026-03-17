@@ -60,7 +60,7 @@ class StatsEventListener(
     /**
      * 타석 결과 기록 이벤트를 처리합니다.
      *
-     * 해당 선수의 시즌 타격 통계를 찾아 실시간으로 갱신합니다.
+     * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 실시간으로 갱신합니다.
      * 시즌 통계가 없는 경우 자동으로 생성합니다.
      * Optimistic Locking 충돌 시 최대 3회 재시도합니다.
      */
@@ -80,6 +80,26 @@ class StatsEventListener(
                 event.playerId,
                 year,
                 event.result,
+            )
+        }
+
+        // 투수 통계 실시간 갱신
+        val pitchingStats =
+            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
+        if (pitchingStats != null) {
+            pitchingStats.applyLiveUpdate(event.result)
+            seasonPitchingStatsRepository.save(pitchingStats)
+            logger.debug(
+                "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, result={})",
+                event.pitcherId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 투수 통계 없음 - 갱신 건너뜀 (pitcherId={}, year={})",
+                event.pitcherId,
+                year,
             )
         }
     }
@@ -107,7 +127,7 @@ class StatsEventListener(
     /**
      * 타석 결과 취소 이벤트를 처리합니다.
      *
-     * 해당 선수의 시즌 타격 통계를 찾아 이전 타석 결과를 역산합니다.
+     * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 역산합니다.
      * 시즌 통계가 없는 경우 자동으로 생성한 뒤 역산합니다.
      * Optimistic Locking 충돌 시 최대 3회 재시도합니다.
      */
@@ -127,6 +147,26 @@ class StatsEventListener(
                 event.playerId,
                 year,
                 event.result,
+            )
+        }
+
+        // 투수 통계 역산
+        val pitchingStats =
+            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
+        if (pitchingStats != null) {
+            pitchingStats.revertLiveUpdate(event.result)
+            seasonPitchingStatsRepository.save(pitchingStats)
+            logger.debug(
+                "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, result={})",
+                event.pitcherId,
+                year,
+                event.result,
+            )
+        } else {
+            logger.debug(
+                "시즌 투수 통계 없음 - Undo 건너뜀 (pitcherId={}, year={})",
+                event.pitcherId,
+                year,
             )
         }
     }

@@ -101,4 +101,13 @@ interface BattingRecordRepositoryPort {
      * gamePlayer, gameTeam, game을 함께 로딩하여 커리어 통계 계산에 사용합니다.
      */
     fun findAllByPlayerIdWithGameInfo(playerId: Long): List<BattingRecord>
+
+    /**
+     * 선수 ID와 대회 ID로 타격 기록을 조회합니다.
+     * 대회별 스탯 필터에 사용됩니다.
+     */
+    fun findAllByPlayerIdAndCompetitionId(
+        playerId: Long,
+        competitionId: Long,
+    ): List<BattingRecord>
 }

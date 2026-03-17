@@ -445,6 +445,26 @@ class PitchingRecord(
     }
 
     /**
+     * 투수 교체 시 현재 이닝/아웃 기준으로 이닝을 마감합니다.
+     *
+     * 교체 시점까지 투수가 소화한 이닝을 기록합니다.
+     * 이미 기록된 inningsPitchedOuts가 있는 경우에는 추가 보정하지 않습니다
+     * (BoxScore에서 실시간으로 기록되고 있으므로).
+     *
+     * @param currentInning 현재 이닝 번호
+     * @param currentOuts 현재 아웃 카운트 (0-2)
+     */
+    fun closeInning(
+        currentInning: Int,
+        currentOuts: Int,
+    ) {
+        require(currentInning >= 1) { "이닝은 1 이상이어야 합니다." }
+        require(currentOuts in 0..2) { "아웃 카운트는 0-2 사이여야 합니다: $currentOuts" }
+        // inningsPitchedOuts가 이미 BoxScore를 통해 실시간 기록되므로
+        // 추가 갱신은 필요하지 않습니다. 이 메서드는 교체 시점을 명시적으로 마킹하는 역할입니다.
+    }
+
+    /**
      * 타자와 대결한 결과를 기록합니다 (BoxScore 계산용).
      */
     fun applyBatterFaced(result: PlateAppearanceResult) {

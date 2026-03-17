@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.Player
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -333,6 +334,79 @@ class SeasonPitchingStats(
             com.nextup.core.domain.game.PitchingDecision.HOLD -> holds = maxOf(0, holds - 1)
             com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> blownSaves = maxOf(0, blownSaves - 1)
             else -> { /* NONE */ }
+        }
+    }
+
+    /**
+     * 경기 중 타석 결과를 즉시 시즌 투수 통계에 반영합니다 (실시간 갱신).
+     *
+     * 이벤트 기반으로 호출되며, 경기 종료 전에도 투수 통계가 반영됩니다.
+     * 대면 타자 수, 피안타, 삼진, 볼넷, 사구, 피홈런을 갱신합니다.
+     */
+    fun applyLiveUpdate(result: PlateAppearanceResult) {
+        battersFaced++
+
+        when (result) {
+            PlateAppearanceResult.SINGLE,
+            PlateAppearanceResult.DOUBLE,
+            PlateAppearanceResult.TRIPLE,
+            -> {
+                hitsAllowed++
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                hitsAllowed++
+                homeRunsAllowed++
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                strikeouts++
+            }
+            PlateAppearanceResult.WALK,
+            PlateAppearanceResult.INTENTIONAL_WALK,
+            -> {
+                walksAllowed++
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                hitBatsmen++
+            }
+            else -> {
+                // 다른 결과는 투수 시즌 통계에 직접적인 영향 없음
+            }
+        }
+    }
+
+    /**
+     * 경기 중 타석 결과를 시즌 투수 통계에서 역산합니다 (Undo 처리).
+     *
+     * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
+     */
+    fun revertLiveUpdate(result: PlateAppearanceResult) {
+        if (battersFaced > 0) battersFaced--
+
+        when (result) {
+            PlateAppearanceResult.SINGLE,
+            PlateAppearanceResult.DOUBLE,
+            PlateAppearanceResult.TRIPLE,
+            -> {
+                if (hitsAllowed > 0) hitsAllowed--
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                if (hitsAllowed > 0) hitsAllowed--
+                if (homeRunsAllowed > 0) homeRunsAllowed--
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                if (strikeouts > 0) strikeouts--
+            }
+            PlateAppearanceResult.WALK,
+            PlateAppearanceResult.INTENTIONAL_WALK,
+            -> {
+                if (walksAllowed > 0) walksAllowed--
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                if (hitBatsmen > 0) hitBatsmen--
+            }
+            else -> {
+                // 다른 결과는 투수 시즌 통계에 직접적인 영향 없음
+            }
         }
     }
 

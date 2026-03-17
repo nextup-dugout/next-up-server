@@ -7,11 +7,18 @@ import java.time.Instant
  * 타석 결과 취소 도메인 이벤트
  *
  * 경기 중 타석 결과가 Undo될 때 발행됩니다.
- * 시즌 타격 통계를 실시간으로 역산하기 위해 사용됩니다.
+ * 시즌 타격 통계와 투수 통계를 실시간으로 역산하기 위해 사용됩니다.
+ *
+ * @param gameId 경기 ID
+ * @param playerId 타자 선수 ID
+ * @param pitcherId 투수 선수 ID (투수 시즌 통계 실시간 역산용)
+ * @param result 타석 결과
+ * @param timestamp 이벤트 발생 시각
  */
 data class PlateAppearanceUndoneEvent(
     val gameId: Long,
     val playerId: Long,
+    val pitcherId: Long,
     val result: PlateAppearanceResult,
     val timestamp: Instant = Instant.now(),
 )

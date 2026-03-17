@@ -106,15 +106,21 @@ class StatsEventListenerTest {
         fun `타석 결과가 시즌 통계에 즉시 반영됨`() {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -132,15 +138,21 @@ class StatsEventListenerTest {
         fun `홈런 기록 이벤트 처리 시 홈런 통계 증가`() {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.HOME_RUN,
                 )
 
@@ -156,15 +168,21 @@ class StatsEventListenerTest {
         fun `볼넷 기록 이벤트 처리 시 볼넷 통계 증가 (타수 제외)`() {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.WALK,
                 )
 
@@ -183,6 +201,9 @@ class StatsEventListenerTest {
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns null
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
 
@@ -190,6 +211,7 @@ class StatsEventListenerTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -199,6 +221,7 @@ class StatsEventListenerTest {
             // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
             verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
             verify { playerRepository.findByIdOrNull(testPlayer.id) }
+            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
         }
 
         @Test
@@ -210,11 +233,15 @@ class StatsEventListenerTest {
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(capture(savedStats)) } answers { firstArg() }
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.HOME_RUN,
                 )
 
@@ -243,6 +270,7 @@ class StatsEventListenerTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 999L,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -261,6 +289,7 @@ class StatsEventListenerTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 999L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -275,15 +304,21 @@ class StatsEventListenerTest {
             // given: 2023년 경기
             every { mockGame.scheduledAt } returns LocalDateTime.of(2023, 9, 1, 14, 0)
             val stats = SeasonBattingStats.create(testPlayer, 2023)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2023)
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2023)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2023)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.DOUBLE,
                 )
 
@@ -293,6 +328,156 @@ class StatsEventListenerTest {
             // then
             verify { seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2023) }
             assertThat(stats.doubles).isEqualTo(1)
+        }
+
+        @Test
+        fun `타석 결과가 투수 시즌 통계에도 즉시 반영됨`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then
+            assertThat(pitchingStats.battersFaced).isEqualTo(1)
+            assertThat(pitchingStats.hitsAllowed).isEqualTo(1)
+            verify { seasonPitchingStatsRepository.save(pitchingStats) }
+        }
+
+        @Test
+        fun `홈런 기록 시 투수 통계에 피안타와 피홈런 모두 반영됨`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.HOME_RUN,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then
+            assertThat(pitchingStats.battersFaced).isEqualTo(1)
+            assertThat(pitchingStats.hitsAllowed).isEqualTo(1)
+            assertThat(pitchingStats.homeRunsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `삼진 기록 시 투수 삼진 통계 증가`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then
+            assertThat(pitchingStats.battersFaced).isEqualTo(1)
+            assertThat(pitchingStats.strikeouts).isEqualTo(1)
+        }
+
+        @Test
+        fun `볼넷 기록 시 투수 볼넷 통계 증가`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.WALK,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then
+            assertThat(pitchingStats.battersFaced).isEqualTo(1)
+            assertThat(pitchingStats.walksAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `투수 시즌 통계가 없는 경우 투수 통계 갱신 건너뜀`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
+
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when
+            listener.onPlateAppearanceRecorded(event)
+
+            // then: 타격 통계는 저장, 투수 통계는 저장 안 됨
+            verify(exactly = 1) { seasonBattingStatsRepository.save(any()) }
+            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
         }
     }
 
@@ -304,16 +489,23 @@ class StatsEventListenerTest {
             // given: 이미 단타가 반영된 통계
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            pitchingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
 
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceUndoneEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -332,16 +524,23 @@ class StatsEventListenerTest {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             stats.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            pitchingStats.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
 
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
             val event =
                 PlateAppearanceUndoneEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.HOME_RUN,
                 )
 
@@ -359,6 +558,9 @@ class StatsEventListenerTest {
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns null
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
 
@@ -366,6 +568,7 @@ class StatsEventListenerTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -375,6 +578,41 @@ class StatsEventListenerTest {
             // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
             verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
             verify { playerRepository.findByIdOrNull(testPlayer.id) }
+            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `Undo 시 투수 통계도 역산됨`() {
+            // given
+            val battingStats = SeasonBattingStats.create(testPlayer, 2024)
+            battingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
+            pitchingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns battingStats
+            every { seasonBattingStatsRepository.save(any()) } returns battingStats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns pitchingStats
+            every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
+
+            val event =
+                PlateAppearanceUndoneEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when
+            listener.onPlateAppearanceUndone(event)
+
+            // then
+            assertThat(pitchingStats.battersFaced).isZero
+            assertThat(pitchingStats.hitsAllowed).isZero
+            verify { seasonPitchingStatsRepository.save(pitchingStats) }
         }
 
         @Test
@@ -386,6 +624,7 @@ class StatsEventListenerTest {
                 PlateAppearanceUndoneEvent(
                     gameId = 999L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -837,11 +1076,15 @@ class StatsEventListenerTest {
             // 첫 번째 save 시 충돌, 두 번째에 성공
             every { seasonBattingStatsRepository.save(any()) } throws
                 ObjectOptimisticLockingFailureException("conflict", null) andThen stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 

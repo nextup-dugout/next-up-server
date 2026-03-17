@@ -65,13 +65,16 @@ class GameUndoServiceImpl(
         if (lastEvent.eventType == GameEventType.PLATE_APPEARANCE) {
             lastEvent.plateAppearanceResult?.let { result ->
                 lastEvent.batter?.let { batter ->
-                    eventPublisher.publishEvent(
-                        PlateAppearanceUndoneEvent(
-                            gameId = gameId,
-                            playerId = batter.player.id,
-                            result = result,
-                        ),
-                    )
+                    lastEvent.pitcher?.let { pitcher ->
+                        eventPublisher.publishEvent(
+                            PlateAppearanceUndoneEvent(
+                                gameId = gameId,
+                                playerId = batter.player.id,
+                                pitcherId = pitcher.player.id,
+                                result = result,
+                            ),
+                        )
+                    }
                 }
             }
         }

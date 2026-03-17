@@ -20,4 +20,9 @@ interface NotificationRepositoryPort {
      * 사용자의 미읽은 알림 개수를 조회합니다.
      */
     fun countUnreadByUserId(userId: Long): Long
+
+    /**
+     * 사용자의 모든 미읽은 알림을 읽음 처리합니다.
+     */
+    fun markAllAsReadByUserId(userId: Long)
 }
