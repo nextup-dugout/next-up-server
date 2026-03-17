@@ -1,5 +1,6 @@
 package com.nextup.core.domain.game
 
+import com.nextup.core.domain.player.Position
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -328,6 +329,18 @@ class FieldingRecordTest {
         fun `create로 생성된 FieldingRecord는 gamePlayer를 올바르게 설정한다`() {
             val record = FieldingRecord.create(gamePlayer)
             assertThat(record.gamePlayer).isEqualTo(gamePlayer)
+        }
+
+        @Test
+        fun `create에 position을 전달하면 해당 포지션이 설정된다`() {
+            val record = FieldingRecord.create(gamePlayer, position = Position.CATCHER)
+            assertThat(record.position).isEqualTo(Position.CATCHER)
+        }
+
+        @Test
+        fun `create에 position을 전달하지 않으면 null이다`() {
+            val record = FieldingRecord.create(gamePlayer)
+            assertThat(record.position).isNull()
         }
     }
 

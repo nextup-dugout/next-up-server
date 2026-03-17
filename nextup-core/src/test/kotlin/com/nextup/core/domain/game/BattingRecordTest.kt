@@ -1796,4 +1796,59 @@ class BattingRecordTest {
             assertThat(battingRecord.atBats).isEqualTo(0)
         }
     }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - OBP/SBP 분기")
+    inner class OnBaseAndStolenBasePartialBranchTest {
+
+        @Test
+        fun `초기 상태에서 OBP denominator가 0이면 0_000을 반환한다`() {
+            // denominator = atBats + totalWalks + hitByPitch + sacrificeFlies = 0
+            assertThat(battingRecord.onBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `안타와 볼넷이 있으면 OBP를 정상 계산한다`() {
+            // denominator > 0 분기
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE) // hit=1, atBats=1
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK) // walks=1
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT) // atBats=2
+            // OBP = (1 + 1 + 0) / (2 + 1 + 0 + 0) = 2/3 = 0.667
+            assertThat(battingRecord.onBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.667"))
+        }
+
+        @Test
+        fun `도루 시도가 없으면 도루 성공률은 0_000이다`() {
+            // attempts == 0 분기
+            assertThat(battingRecord.stolenBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `도루 시도가 있으면 도루 성공률을 계산한다`() {
+            // attempts > 0 분기
+            battingRecord.recordStolenBase()
+            battingRecord.recordStolenBase()
+            battingRecord.recordCaughtStealing()
+            // SB% = 2 / (2 + 1) = 0.667
+            assertThat(battingRecord.stolenBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.667"))
+        }
+
+        @Test
+        fun `타율 atBats가 0이면 0_000이다`() {
+            // atBats == 0 분기
+            assertThat(battingRecord.battingAverage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `장타율 atBats가 0이면 0_000이다`() {
+            // atBats == 0 분기
+            assertThat(battingRecord.sluggingPercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+    }
 }

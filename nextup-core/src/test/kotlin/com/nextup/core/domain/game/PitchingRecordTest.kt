@@ -1524,4 +1524,192 @@ class PitchingRecordTest {
             assertThat(pitchingRecord.pickoffs).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - strikeoutToWalkRatio 분기")
+    inner class StrikeoutToWalkRatioPartialBranchTest {
+
+        @Test
+        fun `볼넷 0이고 삼진 0이면 setScale 적용된 0_00을 반환한다`() {
+            // walksAllowed == 0, strikeouts == 0 → BigDecimal.ZERO
+            assertThat(pitchingRecord.strikeoutToWalkRatio)
+                .isEqualByComparingTo(BigDecimal("0.00"))
+            assertThat(pitchingRecord.strikeoutToWalkRatio.scale()).isEqualTo(2)
+        }
+
+        @Test
+        fun `볼넷 0이고 삼진이 있으면 삼진 수에 setScale 적용된다`() {
+            // walksAllowed == 0, strikeouts > 0 → BigDecimal(strikeouts)
+            repeat(3) { pitchingRecord.recordOut(isStrikeout = true) }
+            assertThat(pitchingRecord.strikeoutToWalkRatio)
+                .isEqualByComparingTo(BigDecimal("3.00"))
+            assertThat(pitchingRecord.strikeoutToWalkRatio.scale()).isEqualTo(2)
+        }
+
+        @Test
+        fun `볼넷만 있고 삼진이 없으면 나눗셈 결과 0_00이다`() {
+            // walksAllowed > 0, strikeouts == 0 → 0 / walksAllowed = 0.00
+            pitchingRecord.recordWalk()
+            assertThat(pitchingRecord.strikeoutToWalkRatio)
+                .isEqualByComparingTo(BigDecimal("0.00"))
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - strikePercentage 조건 분기")
+    inner class StrikePercentagePartialBranchTest {
+
+        @Test
+        fun `pitchesThrown만 설정되고 strikesThrown은 null이면 null이다`() {
+            // pitchesThrown != null, strikesThrown == null → null 반환
+            val field =
+                PitchingRecord::class.java.getDeclaredField("pitchesThrown")
+            field.isAccessible = true
+            field.set(pitchingRecord, 50)
+
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+
+        @Test
+        fun `pitchesThrown과 strikesThrown 모두 양수이면 비율을 계산한다`() {
+            // 모든 null/0 조건 통과 → 정상 계산 분기
+            pitchingRecord.recordPitchCount(totalPitches = 80, strikes = 50)
+            assertThat(pitchingRecord.strikePercentage)
+                .isEqualByComparingTo(BigDecimal("0.625"))
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - assignWin 조건 분기")
+    inner class AssignWinPartialBranchTest {
+
+        @Test
+        fun `선발 투수는 decision이 NONE이 아니어도 assignWin 가능하다`() {
+            // isStartingPitcher == true → || short-circuit으로 require 통과
+            pitchingRecord.setAsStartingPitcher()
+            val decisionField =
+                PitchingRecord::class.java.getDeclaredField("decision")
+            decisionField.isAccessible = true
+            decisionField.set(pitchingRecord, PitchingDecision.HOLD)
+
+            pitchingRecord.assignWin()
+            assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `비선발 투수에게 이미 다른 결정이 있으면 assignWin 실패한다`() {
+            // isStartingPitcher == false, decision != NONE → 예외
+            pitchingRecord.assignLoss()
+            assertThatThrownBy { pitchingRecord.assignWin() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 다른 결정")
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - assignSave HOLD에서 전환")
+    inner class AssignSaveFromHoldBranchTest {
+
+        @Test
+        fun `HOLD 상태에서 assignSave를 호출하면 SAVE로 변경된다`() {
+            // decision == HOLD 분기 (assignSave require의 두 번째 OR 조건)
+            pitchingRecord.assignHold()
+            assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.HOLD)
+
+            pitchingRecord.assignSave()
+            assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.SAVE)
+        }
+
+        @Test
+        fun `WIN 상태에서 assignSave를 호출하면 예외가 발생한다`() {
+            // decision이 NONE도 HOLD도 아닌 경우 → 예외
+            pitchingRecord.assignWin()
+            assertThatThrownBy { pitchingRecord.assignSave() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 다른 결정")
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - validate 조건 분기")
+    inner class ValidatePartialBranchTest {
+
+        private fun setField(
+            fieldName: String,
+            value: Any?,
+        ) {
+            val field = PitchingRecord::class.java.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.set(pitchingRecord, value)
+        }
+
+        @Test
+        fun `pitchesThrown만 설정되고 strikesThrown은 null이면 투구수 검증을 건너뛴다`() {
+            // pitchesThrown != null && strikesThrown != null 에서 두 번째가 false
+            setField("pitchesThrown", 100)
+            pitchingRecord.validate()
+        }
+
+        @Test
+        fun `strikesThrown만 설정되고 pitchesThrown은 null이면 투구수 검증을 건너뛴다`() {
+            // pitchesThrown != null 이 false → && short-circuit
+            setField("strikesThrown", 50)
+            pitchingRecord.validate()
+        }
+
+        @Test
+        fun `비선발 투수가 WIN이면 선발 승리 자격 검증을 건너뛴다`() {
+            // isStartingPitcher == false → && short-circuit
+            pitchingRecord.assignWin()
+            pitchingRecord.validate()
+        }
+
+        @Test
+        fun `선발 투수가 LOSS이면 선발 승리 자격 검증을 건너뛴다`() {
+            // isStartingPitcher == true, decision != WIN
+            pitchingRecord.setAsStartingPitcher()
+            pitchingRecord.assignLoss()
+            pitchingRecord.validate()
+        }
+
+        @Test
+        fun `선발 투수가 5이닝 이상 소화 후 WIN이면 검증에 통과한다`() {
+            // isStartingPitcher == true, decision == WIN, isQualifiedForWin == true
+            pitchingRecord.setAsStartingPitcher()
+            repeat(15) { pitchingRecord.recordOut() }
+            pitchingRecord.assignWin()
+            pitchingRecord.validate()
+        }
+
+        @Test
+        fun `선발 투수가 NONE이면 선발 승리 자격 검증을 건너뛴다`() {
+            // isStartingPitcher == true, decision == NONE → 검증 불필요
+            pitchingRecord.setAsStartingPitcher()
+            pitchingRecord.validate()
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - earnedRunAverage 분기")
+    inner class EarnedRunAveragePartialBranchTest {
+
+        @Test
+        fun `이닝 0이고 자책점 0이면 BigDecimal_ZERO를 반환한다`() {
+            assertThat(pitchingRecord.earnedRunAverage)
+                .isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `이닝 0이고 자책점이 있으면 null을 반환한다`() {
+            pitchingRecord.recordRun(isEarned = true)
+            assertThat(pitchingRecord.earnedRunAverage).isNull()
+        }
+
+        @Test
+        fun `이닝이 있고 자책점이 0이면 ERA는 0이다`() {
+            repeat(9) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.earnedRunAverage)
+                .isEqualByComparingTo(BigDecimal("0.00"))
+        }
+    }
 }
