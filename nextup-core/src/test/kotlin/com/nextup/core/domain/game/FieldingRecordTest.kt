@@ -330,4 +330,32 @@ class FieldingRecordTest {
             assertThat(record.gamePlayer).isEqualTo(gamePlayer)
         }
     }
+
+    @Nested
+    @DisplayName("삼중살 관여 - 분기 커버리지 보완")
+    inner class TriplePlayBranchTest {
+
+        @Test
+        fun `삼중살 관여가 포함된 상태에서 validate는 예외를 발생시키지 않는다`() {
+            // given: triplePlays > 0 분기 커버 (validate의 triplePlays >= 0 경로)
+            fieldingRecord.recordTriplePlay()
+
+            // when & then (no exception)
+            fieldingRecord.validate()
+            assertThat(fieldingRecord.triplePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `삼중살 관여와 병살 관여가 함께 있을 때 수비 기회는 포함되지 않는다`() {
+            // given: triplePlays, doublePlays는 totalChances에 포함되지 않음
+            fieldingRecord.recordTriplePlay()
+            fieldingRecord.recordDoublePlay()
+            fieldingRecord.recordPutOut()
+
+            // then: totalChances = putOuts + assists + errors = 1
+            assertThat(fieldingRecord.totalChances).isEqualTo(1)
+            assertThat(fieldingRecord.triplePlays).isEqualTo(1)
+            assertThat(fieldingRecord.doublePlays).isEqualTo(1)
+        }
+    }
 }

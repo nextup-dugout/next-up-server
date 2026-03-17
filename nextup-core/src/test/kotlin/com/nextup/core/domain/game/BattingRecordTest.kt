@@ -1768,4 +1768,32 @@ class BattingRecordTest {
             assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isAtBat).isFalse()
         }
     }
+
+    @Nested
+    @DisplayName("인필드플라이 (INFIELD_FLY) 처리")
+    inner class InfieldFlyTest {
+        @Test
+        fun `인필드플라이를 기록하면 타석과 타수가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `인필드플라이 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+    }
 }

@@ -175,4 +175,74 @@ class PlateAppearanceResultTest {
             assertThat(PlateAppearanceResult.FLY_OUT.isSacrifice).isFalse()
         }
     }
+
+    @Nested
+    @DisplayName("STRIKEOUT_DROPPED_THIRD 및 신규 방해 타입 분기 커버리지")
+    inner class DroppedThirdAndInterferenceBranchTest {
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 타수에 포함된다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isAtBat).isTrue()
+        }
+
+        @Test
+        fun `INFIELD_FLY는 타수에 포함된다`() {
+            assertThat(PlateAppearanceResult.INFIELD_FLY.isAtBat).isTrue()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isAtBat).isFalse()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isAtBat).isFalse()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 출루에 실패한다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isOnBase).isFalse()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 낫아웃 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isDroppedThirdStrike).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 안타가 아니다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isHit).isFalse()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD의 루타는 0이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.totalBases).isEqualTo(0)
+        }
+
+        @Test
+        fun `INFIELD_FLY는 안타가 아니다`() {
+            assertThat(PlateAppearanceResult.INFIELD_FLY.isHit).isFalse()
+        }
+
+        @Test
+        fun `INFIELD_FLY는 출루에 실패한다`() {
+            assertThat(PlateAppearanceResult.INFIELD_FLY.isOnBase).isFalse()
+        }
+    }
 }

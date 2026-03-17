@@ -1403,4 +1403,125 @@ class PitchingRecordTest {
                 .hasMessageContaining("선발 승리 자격")
         }
     }
+
+    @Nested
+    @DisplayName("스트라이크 비율 - 분기 커버리지 보완")
+    inner class StrikePercentageBranchTest {
+
+        @Test
+        fun `투구 수가 0이면 null이다`() {
+            // given: pitchesThrown=0 분기 커버
+            val pitchesField = PitchingRecord::class.java.getDeclaredField("pitchesThrown")
+            pitchesField.isAccessible = true
+            pitchesField.set(pitchingRecord, 0)
+            val strikesField = PitchingRecord::class.java.getDeclaredField("strikesThrown")
+            strikesField.isAccessible = true
+            strikesField.set(pitchingRecord, 0)
+
+            // then
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+
+        @Test
+        fun `strikesThrown이 null이면 null이다`() {
+            // given: pitchesThrown은 설정되고 strikesThrown은 null 분기 커버
+            val pitchesField = PitchingRecord::class.java.getDeclaredField("pitchesThrown")
+            pitchesField.isAccessible = true
+            pitchesField.set(pitchingRecord, 100)
+            // strikesThrown은 기본값 null 유지
+
+            // then
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("applyBatterFaced - 3루타 분기 커버리지")
+    inner class ApplyBatterFacedTripleTest {
+
+        @Test
+        fun `3루타를 적용하면 battersFaced와 hitsAllowed가 증가한다`() {
+            // when
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.TRIPLE)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(1)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(1)
+            assertThat(pitchingRecord.homeRunsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `3루타 롤백을 적용하면 battersFaced와 hitsAllowed가 감소한다`() {
+            // given
+            pitchingRecord.applyBatterFaced(PlateAppearanceResult.TRIPLE)
+
+            // when
+            pitchingRecord.revertBatterFaced(PlateAppearanceResult.TRIPLE)
+
+            // then
+            assertThat(pitchingRecord.battersFaced).isEqualTo(0)
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("도루/도루저지/견제 - 경계값 분기 커버리지")
+    inner class BaseRunningBoundaryTest {
+
+        @Test
+        fun `도루 허용 0인 상태에서 revert하면 예외가 발생한다`() {
+            assertThatThrownBy { pitchingRecord.revertStolenBaseAllowed() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 도루 허용 기록이 없습니다")
+        }
+
+        @Test
+        fun `도루 저지 0인 상태에서 revert하면 예외가 발생한다`() {
+            assertThatThrownBy { pitchingRecord.revertCaughtStealing() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 도루 저지 기록이 없습니다")
+        }
+
+        @Test
+        fun `견제 아웃 0인 상태에서 revert하면 예외가 발생한다`() {
+            assertThatThrownBy { pitchingRecord.revertPickoff() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("롤백할 견제 아웃 기록이 없습니다")
+        }
+
+        @Test
+        fun `도루 허용을 여러 번 기록하면 누적된다`() {
+            // when
+            repeat(3) { pitchingRecord.recordStolenBaseAllowed() }
+
+            // then
+            assertThat(pitchingRecord.stolenBasesAllowed).isEqualTo(3)
+        }
+
+        @Test
+        fun `도루 저지 여러 번 기록 후 한 번 revert하면 1 감소한다`() {
+            // given
+            pitchingRecord.recordCaughtStealing()
+            pitchingRecord.recordCaughtStealing()
+
+            // when
+            pitchingRecord.revertCaughtStealing()
+
+            // then
+            assertThat(pitchingRecord.runnersCaughtStealing).isEqualTo(1)
+        }
+
+        @Test
+        fun `견제 아웃을 여러 번 기록 후 한 번 revert하면 1 감소한다`() {
+            // given
+            pitchingRecord.recordPickoff()
+            pitchingRecord.recordPickoff()
+
+            // when
+            pitchingRecord.revertPickoff()
+
+            // then
+            assertThat(pitchingRecord.pickoffs).isEqualTo(1)
+        }
+    }
 }
