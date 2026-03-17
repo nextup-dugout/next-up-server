@@ -94,6 +94,18 @@ class CorrectionRequestService(
                             reason = request.reason,
                         ),
                 )
+            CorrectionType.FIELDING ->
+                recordCorrectionService.correctFieldingRecord(
+                    gameId = request.gameId,
+                    recordId = request.targetRecordId,
+                    request =
+                        FieldingCorrectionRequest(
+                            adminUserId = reviewerUserId,
+                            fieldName = request.fieldName,
+                            newValue = request.newValue,
+                            reason = request.reason,
+                        ),
+                )
         }
 
         return request

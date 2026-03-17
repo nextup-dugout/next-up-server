@@ -4,8 +4,8 @@ import com.nextup.api.dto.competition.CompetitionResponse
 import com.nextup.api.dto.competition.CompetitionTeamResponse
 import com.nextup.api.dto.standings.StandingsResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
+import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService

@@ -40,7 +40,7 @@ interface GameLifecycleService {
         gameId: Long,
         newScheduledAt: LocalDateTime,
     ): Game
-    
+
     /**
      * 기록원이 경기를 독점 잠금합니다.
      *
