@@ -5,12 +5,14 @@ import com.nextup.api.dto.competition.CompetitionTeamResponse
 import com.nextup.api.dto.standings.StandingsResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
+import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -24,11 +26,21 @@ class CompetitionController(
     private val competitionPlayerRepository: CompetitionPlayerRepositoryPort,
 ) {
     /**
-     * 진행 중인 대회 목록을 조회합니다.
+     * 대회 목록을 조회합니다.
+     *
+     * @param status 대회 상태 필터 (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, POSTPONED)
+     *               null이면 진행 중인 대회만 조회합니다.
      */
     @GetMapping
-    fun getCompetitions(): ApiResponse<List<CompetitionResponse>> {
-        val competitions = competitionService.getInProgress()
+    fun getCompetitions(
+        @RequestParam(required = false) status: CompetitionStatus?,
+    ): ApiResponse<List<CompetitionResponse>> {
+        val competitions =
+            if (status != null) {
+                competitionService.getByStatus(status)
+            } else {
+                competitionService.getInProgress()
+            }
         return ApiResponse.success(
             competitions.map { CompetitionResponse.from(it) },
         )

@@ -15,6 +15,7 @@ import com.nextup.core.domain.match.MatchResponseStatus
 import com.nextup.core.domain.match.SkillLevel
 import com.nextup.core.domain.team.Team
 import com.nextup.core.service.match.MatchingService
+import com.nextup.core.service.match.dto.MatchRequestFilterDto
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -161,7 +162,7 @@ class MatchRequestControllerTest {
     @Test
     fun `should get open match requests`() {
         // given
-        every { matchingService.getOpenRequests() } returns listOf(mockMatchRequest)
+        every { matchingService.getOpenRequests(any<MatchRequestFilterDto>()) } returns listOf(mockMatchRequest)
 
         // when & then
         mockMvc
@@ -172,13 +173,13 @@ class MatchRequestControllerTest {
             .andExpect(jsonPath("$.data[0].id").value(1))
             .andExpect(jsonPath("$.data[0].status").value("OPEN"))
 
-        verify(exactly = 1) { matchingService.getOpenRequests() }
+        verify(exactly = 1) { matchingService.getOpenRequests(any<MatchRequestFilterDto>()) }
     }
 
     @Test
     fun `should get empty list when no open requests`() {
         // given
-        every { matchingService.getOpenRequests() } returns emptyList()
+        every { matchingService.getOpenRequests(any<MatchRequestFilterDto>()) } returns emptyList()
 
         // when & then
         mockMvc
@@ -188,7 +189,7 @@ class MatchRequestControllerTest {
             .andExpect(jsonPath("$.data").isArray)
             .andExpect(jsonPath("$.data").isEmpty)
 
-        verify(exactly = 1) { matchingService.getOpenRequests() }
+        verify(exactly = 1) { matchingService.getOpenRequests(any<MatchRequestFilterDto>()) }
     }
 
     @Test
