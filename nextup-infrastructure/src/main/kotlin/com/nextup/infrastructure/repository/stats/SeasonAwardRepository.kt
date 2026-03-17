@@ -11,6 +11,11 @@ import org.springframework.data.repository.query.Param
 interface SeasonAwardRepository :
     JpaRepository<SeasonAward, Long>,
     SeasonAwardRepositoryPort {
+    override fun findByIdOrNull(id: Long): SeasonAward? = findById(id).orElse(null)
+
+    override fun saveAll(seasonAwards: List<SeasonAward>): List<SeasonAward> =
+        saveAll(seasonAwards as Iterable<SeasonAward>)
+
     /**
      * 특정 연도의 모든 시즌 타이틀을 조회합니다.
      */

@@ -233,11 +233,15 @@ class StatsEventListenerTest {
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(capture(savedStats)) } answers { firstArg() }
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.HOME_RUN,
                 )
 
@@ -266,6 +270,7 @@ class StatsEventListenerTest {
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = 999L,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -1071,11 +1076,15 @@ class StatsEventListenerTest {
             // 첫 번째 save 시 충돌, 두 번째에 성공
             every { seasonBattingStatsRepository.save(any()) } throws
                 ObjectOptimisticLockingFailureException("conflict", null) andThen stats
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns null
 
             val event =
                 PlateAppearanceRecordedEvent(
                     gameId = 10L,
                     playerId = testPlayer.id,
+                    pitcherId = testPitcher.id,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
