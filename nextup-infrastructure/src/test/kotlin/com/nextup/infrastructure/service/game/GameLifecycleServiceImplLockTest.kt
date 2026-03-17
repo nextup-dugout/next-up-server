@@ -12,6 +12,7 @@ import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
+import com.nextup.core.service.game.PitchingDecisionService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -30,6 +31,7 @@ class GameLifecycleServiceImplLockTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var pitchingDecisionService: PitchingDecisionService
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var service: GameLifecycleServiceImpl
 
@@ -41,12 +43,14 @@ class GameLifecycleServiceImplLockTest {
         gameRepository = mockk()
         gameTeamRepository = mockk()
         pitchingRecordRepository = mockk()
+        pitchingDecisionService = mockk(relaxed = true)
         eventPublisher = mockk(relaxed = true)
         service =
             GameLifecycleServiceImpl(
                 gameRepository,
                 gameTeamRepository,
                 pitchingRecordRepository,
+                pitchingDecisionService,
                 eventPublisher,
             )
 
