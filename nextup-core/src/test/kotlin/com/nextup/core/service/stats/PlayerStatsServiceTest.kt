@@ -458,6 +458,298 @@ class PlayerStatsServiceTest {
     }
 
     @Nested
+    @DisplayName("대회별 타격 통계 조회")
+    inner class GetBattingStatsByCompetition {
+        private val competitionId = 100L
+
+        @Test
+        fun `should return competition batting stats with calculated averages`() {
+            // given
+            val gamePlayer = mockk<GamePlayer>()
+            val record1 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 4, h = 2)
+                    setExtraStats(
+                        doubles = 1,
+                        triples = 0,
+                        homeRuns = 0,
+                        runs = 1,
+                        rbi = 2,
+                        walks = 0,
+                        strikeouts = 1,
+                        stolenBases = 0,
+                    )
+                }
+            val record2 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 4, h = 1)
+                    setExtraStats(
+                        doubles = 0,
+                        triples = 1,
+                        homeRuns = 0,
+                        runs = 0,
+                        rbi = 1,
+                        walks = 1,
+                        strikeouts = 2,
+                        stolenBases = 1,
+                    )
+                }
+
+            every {
+                battingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns listOf(record1, record2)
+
+            // when
+            val result = playerStatsService.getBattingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.playerId).isEqualTo(playerId)
+            assertThat(result.competitionId).isEqualTo(competitionId)
+            assertThat(result.gamesPlayed).isEqualTo(2)
+            assertThat(result.plateAppearances).isEqualTo(9)
+            assertThat(result.atBats).isEqualTo(8)
+            assertThat(result.hits).isEqualTo(3)
+            assertThat(result.doubles).isEqualTo(1)
+            assertThat(result.triples).isEqualTo(1)
+            assertThat(result.homeRuns).isEqualTo(0)
+            assertThat(result.runs).isEqualTo(1)
+            assertThat(result.runsBattedIn).isEqualTo(3)
+            assertThat(result.walks).isEqualTo(1)
+            assertThat(result.strikeouts).isEqualTo(3)
+            assertThat(result.stolenBases).isEqualTo(1)
+            assertThat(result.battingAverage).isEqualTo("0.375")
+            verify {
+                battingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            }
+        }
+
+        @Test
+        fun `should return zero averages when no at-bats`() {
+            // given
+            every {
+                battingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns emptyList()
+
+            // when
+            val result = playerStatsService.getBattingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.gamesPlayed).isZero
+            assertThat(result.atBats).isZero
+            assertThat(result.battingAverage).isEqualTo("0")
+            assertThat(result.onBasePercentage).isEqualTo("0")
+            assertThat(result.sluggingPercentage).isEqualTo("0")
+            assertThat(result.ops).isEqualTo("0")
+        }
+
+        @Test
+        fun `should calculate OPS correctly with home runs`() {
+            // given
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 4, h = 2)
+                    setExtraStats(
+                        doubles = 0,
+                        triples = 0,
+                        homeRuns = 1,
+                        runs = 2,
+                        rbi = 3,
+                        walks = 1,
+                        strikeouts = 1,
+                        stolenBases = 0,
+                    )
+                }
+
+            every {
+                battingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns listOf(record)
+
+            // when
+            val result = playerStatsService.getBattingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.homeRuns).isEqualTo(1)
+            // totalBases = hits(2) + doubles(0) + triples(0)*2 + homeRuns(1)*3 = 5
+            // slugging = 5/4 = 1.250
+            assertThat(result.sluggingPercentage).isEqualTo("1.250")
+            // OBP = (hits(2) + walks(1)) / (atBats(4) + walks(1)) = 3/5 = 0.600
+            assertThat(result.onBasePercentage).isEqualTo("0.600")
+        }
+    }
+
+    @Nested
+    @DisplayName("대회별 투수 통계 조회")
+    inner class GetPitchingStatsByCompetition {
+        private val competitionId = 100L
+
+        @Test
+        fun `should return competition pitching stats with calculated ERA`() {
+            // given
+            val gamePlayer =
+                mockk<GamePlayer> {
+                    every { isStarter } returns true
+                }
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 2,
+                        strikeouts = 6,
+                        decision = PitchingDecision.WIN,
+                    )
+                    setPitchingExtraStats(
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        homeRunsAllowed = 1,
+                    )
+                }
+
+            every {
+                pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns listOf(record)
+
+            // when
+            val result = playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.playerId).isEqualTo(playerId)
+            assertThat(result.competitionId).isEqualTo(competitionId)
+            assertThat(result.gamesPlayed).isEqualTo(1)
+            assertThat(result.gamesStarted).isEqualTo(1)
+            assertThat(result.wins).isEqualTo(1)
+            assertThat(result.losses).isEqualTo(0)
+            assertThat(result.earnedRuns).isEqualTo(2)
+            assertThat(result.strikeouts).isEqualTo(6)
+            assertThat(result.hitsAllowed).isEqualTo(5)
+            assertThat(result.walksAllowed).isEqualTo(2)
+            assertThat(result.homeRunsAllowed).isEqualTo(1)
+            // ERA = (earnedRuns * 27) / inningsPitchedOuts = 54 / 18 = 3.00
+            assertThat(result.earnedRunAverage).isEqualTo("3.00")
+            assertThat(result.inningsPitchedDisplay).isEqualTo("6")
+            verify {
+                pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            }
+        }
+
+        @Test
+        fun `should return null ERA when no innings pitched`() {
+            // given
+            every {
+                pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns emptyList()
+
+            // when
+            val result = playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.gamesPlayed).isZero
+            assertThat(result.earnedRunAverage).isNull()
+            assertThat(result.whip).isEqualTo("0")
+            assertThat(result.inningsPitchedDisplay).isEqualTo("0")
+        }
+
+        @Test
+        fun `should display partial innings correctly`() {
+            // given
+            val gamePlayer =
+                mockk<GamePlayer> {
+                    every { isStarter } returns false
+                }
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 7,
+                        earnedRuns = 1,
+                        runsAllowed = 1,
+                        strikeouts = 3,
+                        decision = PitchingDecision.HOLD,
+                    )
+                    setPitchingExtraStats(
+                        hitsAllowed = 2,
+                        walksAllowed = 1,
+                        homeRunsAllowed = 0,
+                    )
+                }
+
+            every {
+                pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns listOf(record)
+
+            // when
+            val result = playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.inningsPitchedDisplay).isEqualTo("2.1")
+            assertThat(result.gamesStarted).isEqualTo(0)
+            assertThat(result.holds).isEqualTo(1)
+        }
+
+        @Test
+        fun `should aggregate multiple records with different decisions`() {
+            // given
+            val starterPlayer =
+                mockk<GamePlayer> {
+                    every { isStarter } returns true
+                }
+            val reliefPlayer =
+                mockk<GamePlayer> {
+                    every { isStarter } returns false
+                }
+
+            val record1 =
+                PitchingRecord.create(starterPlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 3,
+                        runsAllowed = 3,
+                        strikeouts = 5,
+                        decision = PitchingDecision.WIN,
+                    )
+                    setPitchingExtraStats(
+                        hitsAllowed = 6,
+                        walksAllowed = 2,
+                        homeRunsAllowed = 1,
+                    )
+                }
+            val record2 =
+                PitchingRecord.create(reliefPlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 9,
+                        earnedRuns = 0,
+                        runsAllowed = 0,
+                        strikeouts = 4,
+                        decision = PitchingDecision.SAVE,
+                    )
+                    setPitchingExtraStats(
+                        hitsAllowed = 1,
+                        walksAllowed = 0,
+                        homeRunsAllowed = 0,
+                    )
+                }
+
+            every {
+                pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+            } returns listOf(record1, record2)
+
+            // when
+            val result = playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+
+            // then
+            assertThat(result.gamesPlayed).isEqualTo(2)
+            assertThat(result.gamesStarted).isEqualTo(1)
+            assertThat(result.wins).isEqualTo(1)
+            assertThat(result.saves).isEqualTo(1)
+            assertThat(result.earnedRuns).isEqualTo(3)
+            assertThat(result.strikeouts).isEqualTo(9)
+            assertThat(result.hitsAllowed).isEqualTo(7)
+            assertThat(result.walksAllowed).isEqualTo(2)
+            assertThat(result.inningsPitchedDisplay).isEqualTo("9")
+        }
+    }
+
+    @Nested
     @DisplayName("시즌 타격 리더보드")
     inner class GetSeasonBattingLeaders {
         @Test
@@ -661,6 +953,36 @@ class PlayerStatsServiceTest {
         val field = PitchingRecord::class.java.getDeclaredField(fieldName)
         field.isAccessible = true
         field.set(this, value)
+    }
+
+    private fun BattingRecord.setExtraStats(
+        doubles: Int = 0,
+        triples: Int = 0,
+        homeRuns: Int = 0,
+        runs: Int = 0,
+        rbi: Int = 0,
+        walks: Int = 0,
+        strikeouts: Int = 0,
+        stolenBases: Int = 0,
+    ) {
+        setField("doubles", doubles)
+        setField("triples", triples)
+        setField("homeRuns", homeRuns)
+        setField("runs", runs)
+        setField("runsBattedIn", rbi)
+        setField("walks", walks)
+        setField("strikeouts", strikeouts)
+        setField("stolenBases", stolenBases)
+    }
+
+    private fun PitchingRecord.setPitchingExtraStats(
+        hitsAllowed: Int = 0,
+        walksAllowed: Int = 0,
+        homeRunsAllowed: Int = 0,
+    ) {
+        setField("hitsAllowed", hitsAllowed)
+        setField("walksAllowed", walksAllowed)
+        setField("homeRunsAllowed", homeRunsAllowed)
     }
 
     private fun createMockGame(year: Int): Game =
