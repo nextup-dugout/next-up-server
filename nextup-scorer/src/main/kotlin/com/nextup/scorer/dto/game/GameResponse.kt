@@ -17,6 +17,7 @@ data class GameResponse(
     val scheduledAt: LocalDateTime,
     val startedAt: LocalDateTime?,
     val endedAt: LocalDateTime?,
+    val scorerId: Long? = null,
     val warnings: List<String> = emptyList(),
 )
 

@@ -40,4 +40,28 @@ interface GameLifecycleService {
         gameId: Long,
         newScheduledAt: LocalDateTime,
     ): Game
+    
+    /**
+     * 기록원이 경기를 독점 잠금합니다.
+     *
+     * @param gameId 경기 ID
+     * @param scorerId 기록원 ID
+     * @return 잠금된 Game
+     */
+    fun lockGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
+
+    /**
+     * 기록원의 경기 잠금을 해제합니다.
+     *
+     * @param gameId 경기 ID
+     * @param scorerId 기록원 ID
+     * @return 잠금 해제된 Game
+     */
+    fun unlockGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
 }

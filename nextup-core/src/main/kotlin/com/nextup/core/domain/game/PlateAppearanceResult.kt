@@ -35,7 +35,11 @@ enum class PlateAppearanceResult(
     HIT_BY_PITCH("사구", "몸에 맞는 공으로 출루", false, false),
     SACRIFICE_BUNT("희생번트", "희생번트로 아웃", false, false),
     SACRIFICE_FLY("희생플라이", "희생플라이로 아웃", false, false),
+
+    /** L-2: 기존 INTERFERENCE를 유지하면서 타격방해/주루방해 세분화 */
     INTERFERENCE("방해", "수비 방해로 출루", false, false),
+    BATTER_INTERFERENCE("타격방해", "타격 방해로 출루", false, false),
+    RUNNER_INTERFERENCE("주루방해", "주루 방해로 아웃", false, false),
     ;
 
     /**
@@ -96,7 +100,18 @@ enum class PlateAppearanceResult(
      * 출루에 성공했는지 확인합니다.
      */
     val isOnBase: Boolean
-        get() = isHit || this in listOf(WALK, INTENTIONAL_WALK, HIT_BY_PITCH, FIELDERS_CHOICE, ERROR, INTERFERENCE)
+        get() =
+            isHit ||
+                this in
+                listOf(
+                    WALK,
+                    INTENTIONAL_WALK,
+                    HIT_BY_PITCH,
+                    FIELDERS_CHOICE,
+                    ERROR,
+                    INTERFERENCE,
+                    BATTER_INTERFERENCE,
+                )
 
     /**
      * 루타 수를 반환합니다 (안타가 아니면 0).

@@ -2,6 +2,7 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
+import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.common.exception.UnregisteredPlayerInLineupException
@@ -20,16 +21,21 @@ object LineupValidator {
      * @param entries 검증할 라인업 엔트리 목록
      * @param attendingPlayerIds 참석(ATTENDING) 상태인 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param registeredPlayerIds 대회에 등록된 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param mercenaryPlayerIds L-3: 용병 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param maxMercenaryCount L-3: 용병 쿼터 제한 (nullable, null이면 무제한)
      * @throws DuplicatePlayerInLineupException 동일 선수가 중복 등록된 경우
      * @throws NoCatcherInLineupException 포수가 없는 경우
      * @throws InvalidDhRuleException DH 규칙 위반 시
      * @throws NonAttendingPlayerInLineupException 참석하지 않는 선수가 라인업에 포함된 경우
      * @throws UnregisteredPlayerInLineupException 리그에 등록되지 않은 선수가 라인업에 포함된 경우
+     * @throws MercenaryQuotaExceededException 용병 쿼터 초과 시
      */
     fun validate(
         entries: List<LineupEntry>,
         attendingPlayerIds: Set<Long>? = null,
         registeredPlayerIds: Set<Long>? = null,
+        mercenaryPlayerIds: Set<Long>? = null,
+        maxMercenaryCount: Int? = null,
     ) {
         val starters = entries.filter { it.isStarter }
         validateNoDuplicatePlayers(entries)
@@ -40,6 +46,9 @@ object LineupValidator {
         }
         if (registeredPlayerIds != null) {
             validateLeagueRegisteredPlayers(entries, registeredPlayerIds)
+        }
+        if (mercenaryPlayerIds != null && maxMercenaryCount != null) {
+            validateMercenaryQuota(entries, mercenaryPlayerIds, maxMercenaryCount)
         }
     }
 
@@ -128,6 +137,29 @@ object LineupValidator {
 
         if (unregisteredPlayerIds.isNotEmpty()) {
             throw UnregisteredPlayerInLineupException(unregisteredPlayerIds)
+        }
+    }
+
+    /**
+     * L-3: 용병 쿼터 검증
+     *
+     * 라인업에 포함된 용병 수가 대회 규칙의 최대 허용 수를 초과하는지 검증합니다.
+     *
+     * @param entries 검증할 라인업 엔트리 목록
+     * @param mercenaryPlayerIds 용병으로 등록된 선수 ID 목록
+     * @param maxMercenaryCount 최대 용병 허용 수
+     * @throws MercenaryQuotaExceededException 용병 쿼터 초과 시
+     */
+    fun validateMercenaryQuota(
+        entries: List<LineupEntry>,
+        mercenaryPlayerIds: Set<Long>,
+        maxMercenaryCount: Int,
+    ) {
+        val lineupPlayerIds = entries.map { it.player.id }.toSet()
+        val mercenaryCountInLineup = lineupPlayerIds.count { it in mercenaryPlayerIds }
+
+        if (mercenaryCountInLineup > maxMercenaryCount) {
+            throw MercenaryQuotaExceededException(mercenaryCountInLineup, maxMercenaryCount)
         }
     }
 }

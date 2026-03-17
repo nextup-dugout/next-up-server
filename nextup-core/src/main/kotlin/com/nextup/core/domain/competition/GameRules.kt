@@ -56,6 +56,9 @@ data class GameRules(
     /** 투구 수 경고 임박 기준 (제한 대비 몇 구 전에 경고할지, 기본 10구) */
     @Column(name = "pitch_count_warning_threshold")
     val pitchCountWarningThreshold: Int = 10,
+    /** L-3: 용병(머서너리) 쿼터 제한 (null이면 무제한) */
+    @Column(name = "max_mercenary_count")
+    val maxMercenaryCount: Int? = null,
 ) {
     init {
         require(defaultInnings in 3..12) { "기본 이닝은 3~12 사이여야 합니다." }
@@ -88,5 +91,9 @@ data class GameRules(
         }
 
         require(pitchCountWarningThreshold > 0) { "투구 수 경고 임박 기준은 양수여야 합니다." }
+
+        maxMercenaryCount?.let {
+            require(it >= 0) { "용병 쿼터 제한은 0 이상이어야 합니다." }
+        }
     }
 }

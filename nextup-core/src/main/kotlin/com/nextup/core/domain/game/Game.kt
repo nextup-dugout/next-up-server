@@ -1,9 +1,12 @@
 package com.nextup.core.domain.game
 
+import com.nextup.common.exception.GameAlreadyLockedException
+import com.nextup.common.exception.GameNotLockedByCurrentScorerException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.team.Team
 import jakarta.persistence.*
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -56,6 +59,8 @@ class Game private constructor(
     var forfeitReason: String? = null,
     @Embedded
     var gameState: GameState = GameState(),
+    @Column(name = "scorer_id")
+    var scorerId: Long? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -78,6 +83,55 @@ class Game private constructor(
         startedAt = LocalDateTime.now()
         gameState.resetForNewInning()
     }
+
+    /**
+     * 기록원이 경기를 독점 잠금합니다.
+     *
+     * 이미 다른 기록원이 잠금한 경우 [GameAlreadyLockedException]이 발생합니다.
+     * 동일 기록원이 중복 잠금 시도하면 멱등하게 무시합니다.
+     *
+     * @param scorerId 잠금을 요청하는 기록원 ID
+     * @throws GameAlreadyLockedException 다른 기록원이 이미 잠금한 경우
+     */
+    fun lockForScorer(scorerId: Long) {
+        if (this.scorerId != null && this.scorerId != scorerId) {
+            throw GameAlreadyLockedException(id, this.scorerId!!)
+        }
+        this.scorerId = scorerId
+    }
+
+    /**
+     * 기록원의 경기 잠금을 해제합니다.
+     *
+     * 잠금한 기록원 본인만 해제할 수 있습니다.
+     *
+     * @param scorerId 잠금 해제를 요청하는 기록원 ID
+     * @throws GameNotLockedByCurrentScorerException 해당 기록원이 잠금하지 않은 경우
+     */
+    fun unlockScorer(scorerId: Long) {
+        if (this.scorerId == null || this.scorerId != scorerId) {
+            throw GameNotLockedByCurrentScorerException(id, scorerId)
+        }
+        this.scorerId = null
+    }
+
+    /**
+     * 강제로 기록원 잠금을 해제합니다 (관리자용).
+     */
+    fun forceUnlockScorer() {
+        this.scorerId = null
+    }
+
+    /**
+     * 현재 기록원이 경기를 잠금하고 있는지 확인합니다.
+     */
+    fun isLockedByScorer(scorerId: Long): Boolean = this.scorerId == scorerId
+
+    /**
+     * 경기가 잠금 상태인지 확인합니다.
+     */
+    val isLocked: Boolean
+        get() = scorerId != null
 
     /**
      * 다음 이닝으로 진행합니다.
@@ -395,6 +449,12 @@ class Game private constructor(
         /** 투수 교체 시 최소 대면 타자 수 기본값 */
         const val DEFAULT_MIN_BATTERS_FACED = 1
 
+        /** L-4: 더블헤더 이닝 축소 기본값 (기본 이닝 - 2) */
+        const val DEFAULT_DOUBLEHEADER_INNING_REDUCTION = 2
+
+        /** L-11: SUSPENDED 경기 자동 타임아웃 기본값 (48시간) */
+        const val DEFAULT_SUSPENDED_TIMEOUT_HOURS = 48L
+
         /**
          * 프로덕션 팩토리 메서드.
          *
@@ -418,6 +478,14 @@ class Game private constructor(
                 }
             }
 
+            // L-4: 더블헤더 시 이닝 자동 축소
+            val effectiveInnings =
+                if (isDoubleheader) {
+                    maxOf(3, competition.gameRules.defaultInnings - DEFAULT_DOUBLEHEADER_INNING_REDUCTION)
+                } else {
+                    competition.gameRules.defaultInnings
+                }
+
             val game =
                 Game(
                     competition = competition,
@@ -426,7 +494,7 @@ class Game private constructor(
                     fieldName = fieldName,
                     gameNumber = gameNumber,
                     isDoubleheader = isDoubleheader,
-                    totalInnings = competition.gameRules.defaultInnings,
+                    totalInnings = effectiveInnings,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME))
             game._gameTeams.add(GameTeam(game = game, team = awayTeam, homeAway = HomeAway.AWAY))
@@ -458,6 +526,7 @@ class Game private constructor(
             note: String? = null,
             forfeitReason: String? = null,
             gameState: GameState = GameState(),
+            scorerId: Long? = null,
             id: Long = 0L,
         ): Game {
             val game =
@@ -477,6 +546,7 @@ class Game private constructor(
                     note = note,
                     forfeitReason = forfeitReason,
                     gameState = gameState,
+                    scorerId = scorerId,
                     id = id,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = id * 100 + 1))
@@ -548,6 +618,32 @@ class Game private constructor(
             } else {
                 null
             }
+
+    /**
+     * L-11: 중단된 경기가 타임아웃 되었는지 확인합니다.
+     *
+     * @param timeoutHours 타임아웃 시간 (기본 48시간)
+     * @param now 현재 시각 (Instant)
+     * @return 타임아웃 여부
+     */
+    fun isSuspendedTimeout(
+        timeoutHours: Long = DEFAULT_SUSPENDED_TIMEOUT_HOURS,
+        now: java.time.Instant = java.time.Instant.now(),
+    ): Boolean {
+        if (status != GameStatus.SUSPENDED) return false
+        return Duration.between(updatedAt, now).toHours() >= timeoutHours
+    }
+
+    /**
+     * L-11: 타임아웃으로 중단된 경기를 취소 처리합니다.
+     */
+    fun cancelByTimeout() {
+        require(status == GameStatus.SUSPENDED) {
+            "중단 상태의 경기만 타임아웃으로 취소할 수 있습니다."
+        }
+        status = GameStatus.CANCELLED
+        note = (note?.let { "$it\n" } ?: "") + "타임아웃으로 자동 취소됨"
+    }
 
     /**
      * 아웃을 기록합니다.

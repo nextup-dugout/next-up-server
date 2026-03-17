@@ -16,7 +16,9 @@ import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.service.game.BaseRunningRecordService
 import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.GameStateQueryService
 import com.nextup.core.service.game.GameSubstitutionService
+import com.nextup.core.service.game.GameTimelineService
 import com.nextup.core.service.game.GameUndoService
 import com.nextup.core.service.game.PlateAppearanceRecordService
 import com.nextup.scorer.dto.game.BaseRunningRequestDto
@@ -45,6 +47,8 @@ class BaseRunningControllerTest {
     private lateinit var gameUndoService: GameUndoService
     private lateinit var baseRunningRecordService: BaseRunningRecordService
     private lateinit var gameSubstitutionService: GameSubstitutionService
+    private lateinit var gameStateQueryService: GameStateQueryService
+    private lateinit var gameTimelineService: GameTimelineService
     private lateinit var controller: GameScorerController
     private lateinit var objectMapper: ObjectMapper
 
@@ -55,6 +59,8 @@ class BaseRunningControllerTest {
         gameUndoService = mockk()
         baseRunningRecordService = mockk()
         gameSubstitutionService = mockk()
+        gameStateQueryService = mockk()
+        gameTimelineService = mockk()
         controller =
             GameScorerController(
                 gameLifecycleService,
@@ -62,6 +68,8 @@ class BaseRunningControllerTest {
                 gameUndoService,
                 baseRunningRecordService,
                 gameSubstitutionService,
+                gameStateQueryService,
+                gameTimelineService,
             )
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())
