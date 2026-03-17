@@ -2,6 +2,7 @@ package com.nextup.backoffice.dto.correction
 
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.CorrectionType
+import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.service.game.correction.RecordCorrectionDto
 import java.math.BigDecimal
@@ -63,6 +64,21 @@ data class PitchingRecordCorrectionResponse(
 )
 
 /**
+ * 수비 기록 정정 응답 DTO
+ */
+data class FieldingRecordCorrectionResponse(
+    val recordId: Long,
+    val gamePlayerId: Long,
+    val putOuts: Int,
+    val assists: Int,
+    val errors: Int,
+    val doublePlays: Int,
+    val passedBalls: Int,
+    val totalChances: Int,
+    val fieldingPercentage: BigDecimal?,
+)
+
+/**
  * 기록 정정 이력 응답 DTO
  */
 data class RecordCorrectionHistoryResponse(
@@ -105,6 +121,19 @@ fun BattingRecord.toCorrectionResponse(): BattingRecordCorrectionResponse =
         onBasePercentage = this.onBasePercentage,
         sluggingPercentage = this.sluggingPercentage,
         ops = this.ops,
+    )
+
+fun FieldingRecord.toCorrectionResponse(): FieldingRecordCorrectionResponse =
+    FieldingRecordCorrectionResponse(
+        recordId = this.id,
+        gamePlayerId = this.gamePlayer.id,
+        putOuts = this.putOuts,
+        assists = this.assists,
+        errors = this.errors,
+        doublePlays = this.doublePlays,
+        passedBalls = this.passedBalls,
+        totalChances = this.totalChances,
+        fieldingPercentage = this.fieldingPercentage,
     )
 
 fun PitchingRecord.toCorrectionResponse(): PitchingRecordCorrectionResponse =

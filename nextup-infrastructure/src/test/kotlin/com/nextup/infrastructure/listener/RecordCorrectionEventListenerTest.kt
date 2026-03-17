@@ -10,13 +10,17 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
 import com.nextup.core.domain.stats.CareerBattingStats
+import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
+import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -36,8 +40,10 @@ import java.time.LocalDateTime
 class RecordCorrectionEventListenerTest {
     private val seasonBattingStatsRepository = mockk<SeasonBattingStatsRepositoryPort>()
     private val seasonPitchingStatsRepository = mockk<SeasonPitchingStatsRepositoryPort>()
+    private val seasonFieldingStatsRepository = mockk<SeasonFieldingStatsRepositoryPort>()
     private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
     private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
+    private val careerFieldingStatsRepository = mockk<CareerFieldingStatsRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
     private val cacheManager = mockk<CacheManager>()
     private val mockCache = mockk<Cache>(relaxed = true)
@@ -46,8 +52,10 @@ class RecordCorrectionEventListenerTest {
         RecordCorrectionEventListener(
             seasonBattingStatsRepository = seasonBattingStatsRepository,
             seasonPitchingStatsRepository = seasonPitchingStatsRepository,
+            seasonFieldingStatsRepository = seasonFieldingStatsRepository,
             careerBattingStatsRepository = careerBattingStatsRepository,
             careerPitchingStatsRepository = careerPitchingStatsRepository,
+            careerFieldingStatsRepository = careerFieldingStatsRepository,
             gameRepository = gameRepository,
             cacheManager = cacheManager,
         )
@@ -359,6 +367,212 @@ class RecordCorrectionEventListenerTest {
 
             // then
             verify(exactly = 0) { cacheManager.getCache(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("수비 기록 정정 이벤트")
+    inner class FieldingCorrectionEvent {
+        @Test
+        fun `수비 기록 정정 시 시즌 및 커리어 통계에 델타가 반영됨`() {
+            // given
+            val seasonStats = SeasonFieldingStats.create(testPlayer, 2024)
+            val careerStats = CareerFieldingStats.create(testPlayer)
+            seasonStats.applyFieldCorrection("putOuts", 10)
+            careerStats.applyFieldCorrection("putOuts", 10)
+
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(1L) } returns careerStats
+            every { careerFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "putOuts",
+                    oldValue = "2",
+                    newValue = "5",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: delta = 5 - 2 = 3, so putOuts = 10 + 3 = 13
+            assertThat(seasonStats.putOuts).isEqualTo(13)
+            assertThat(careerStats.putOuts).isEqualTo(13)
+            verify(exactly = 1) { seasonFieldingStatsRepository.save(seasonStats) }
+            verify(exactly = 1) { careerFieldingStatsRepository.save(careerStats) }
+        }
+
+        @Test
+        fun `수비 실책 감소 정정이 올바르게 반영됨`() {
+            // given
+            val seasonStats = SeasonFieldingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("errors", 5)
+
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "errors",
+                    oldValue = "3",
+                    newValue = "1",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: delta = 1 - 3 = -2, errors = 5 - 2 = 3
+            assertThat(seasonStats.errors).isEqualTo(3)
+        }
+
+        @Test
+        fun `수비 시즌 통계가 없으면 스탯 갱신을 건너뜀`() {
+            // given
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns null
+            every { careerFieldingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "assists",
+                    oldValue = "2",
+                    newValue = "3",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then
+            verify(exactly = 0) { seasonFieldingStatsRepository.save(any()) }
+            verify(exactly = 0) { careerFieldingStatsRepository.save(any()) }
+        }
+
+        @Test
+        fun `병살 관여 정정이 올바르게 반영됨`() {
+            // given
+            val seasonStats = SeasonFieldingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("doublePlays", 3)
+
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "doublePlays",
+                    oldValue = "1",
+                    newValue = "3",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: delta = 3 - 1 = 2, doublePlays = 3 + 2 = 5
+            assertThat(seasonStats.doublePlays).isEqualTo(5)
+        }
+
+        @Test
+        fun `포일 정정이 올바르게 반영됨`() {
+            // given
+            val seasonStats = SeasonFieldingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("passedBalls", 2)
+
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerFieldingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "passedBalls",
+                    oldValue = "0",
+                    newValue = "1",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: delta = 1 - 0 = 1, passedBalls = 2 + 1 = 3
+            assertThat(seasonStats.passedBalls).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("델타 타입 안전성")
+    inner class DeltaTypeSafety {
+        @Test
+        fun `소수 값이 전달되면 델타 0으로 처리되어 스탯 갱신을 건너뜀`() {
+            // given
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "2.5",
+                    newValue = "3.7",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: 파싱 실패로 delta = 0, 스탯 갱신 건너뜀
+            verify(exactly = 0) { seasonBattingStatsRepository.findByPlayerIdAndYear(any(), any()) }
+        }
+
+        @Test
+        fun `빈 문자열이 전달되면 델타 0으로 처리됨`() {
+            // given
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.PITCHING,
+                    playerId = 1L,
+                    fieldName = "strikeouts",
+                    oldValue = "",
+                    newValue = "5",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: 파싱 실패로 delta = 0, 스탯 갱신 건너뜀
+            verify(exactly = 0) { seasonPitchingStatsRepository.findByPlayerIdAndYear(any(), any()) }
+        }
+
+        @Test
+        fun `비숫자 문자열이 전달되면 델타 0으로 처리됨`() {
+            // given
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.FIELDING,
+                    playerId = 1L,
+                    fieldName = "errors",
+                    oldValue = "abc",
+                    newValue = "2",
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: 파싱 실패로 delta = 0, 스탯 갱신 건너뜀
+            verify(exactly = 0) { seasonFieldingStatsRepository.findByPlayerIdAndYear(any(), any()) }
         }
     }
 
