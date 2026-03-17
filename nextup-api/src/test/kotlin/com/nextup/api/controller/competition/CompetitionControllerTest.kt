@@ -2,8 +2,14 @@ package com.nextup.api.controller.competition
 
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionPlayer
+import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
+import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
+import com.nextup.core.domain.team.Team
+import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import io.mockk.every
@@ -24,13 +30,15 @@ class CompetitionControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var competitionService: CompetitionService
     private lateinit var standingsService: StandingsService
+    private lateinit var competitionPlayerRepository: CompetitionPlayerRepositoryPort
     private lateinit var controller: CompetitionController
 
     @BeforeEach
     fun setUp() {
         competitionService = mockk()
         standingsService = mockk()
-        controller = CompetitionController(competitionService, standingsService)
+        competitionPlayerRepository = mockk()
+        controller = CompetitionController(competitionService, standingsService, competitionPlayerRepository)
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
     }
 
@@ -148,6 +156,100 @@ class CompetitionControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(0))
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/v1/competitions/{id}/teams")
+    inner class GetCompetitionTeams {
+        @Test
+        fun `should return teams for competition`() {
+            // given
+            val competitionId = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team1 = createTeam(1L, league, "타이거즈", "서울")
+            val team2 = createTeam(2L, league, "베어스", "인천")
+            val player1 = createPlayer(1L, "선수1")
+            val player2 = createPlayer(2L, "선수2")
+            val player3 = createPlayer(3L, "선수3")
+
+            val cp1 = CompetitionPlayer.register(competition, team1, player1)
+            val cp2 = CompetitionPlayer.register(competition, team1, player2)
+            val cp3 = CompetitionPlayer.register(competition, team2, player3)
+
+            every { competitionService.getById(competitionId) } returns competition
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndStatus(
+                    competitionId,
+                    CompetitionPlayerStatus.ACTIVE,
+                )
+            } returns listOf(cp1, cp2, cp3)
+
+            // when & then
+            mockMvc
+                .perform(get("/api/v1/competitions/$competitionId/teams"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(2))
+        }
+
+        @Test
+        fun `should return empty list when no teams registered`() {
+            // given
+            val competitionId = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+
+            every { competitionService.getById(competitionId) } returns competition
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndStatus(
+                    competitionId,
+                    CompetitionPlayerStatus.ACTIVE,
+                )
+            } returns emptyList()
+
+            // when & then
+            mockMvc
+                .perform(get("/api/v1/competitions/$competitionId/teams"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data").isEmpty)
+        }
+    }
+
+    private fun createTeam(
+        id: Long,
+        league: League,
+        name: String,
+        city: String,
+    ): Team =
+        Team(
+            league = league,
+            name = name,
+            city = city,
+            foundedYear = 2020,
+        ).apply {
+            val idField = Team::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
+
+    private fun createPlayer(
+        id: Long,
+        name: String,
+    ): Player =
+        Player(
+            name = name,
+            birthDate = LocalDate.of(1995, 1, 1),
+            primaryPosition = Position.SHORTSTOP,
+        ).apply {
+            val idField = Player::class.java.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
 
     private fun createAssociation(
         id: Long,
