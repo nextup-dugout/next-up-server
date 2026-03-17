@@ -9,4 +9,7 @@ enum class CorrectionType {
 
     /** 투수 기록 정정 */
     PITCHING,
+
+    /** 수비 기록 정정 */
+    FIELDING,
 }

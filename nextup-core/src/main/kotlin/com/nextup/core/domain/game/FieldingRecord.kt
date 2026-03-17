@@ -1,8 +1,11 @@
 package com.nextup.core.domain.game
 
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.player.Position
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -18,19 +21,25 @@ import java.math.RoundingMode
  * 수비 기록 엔티티
  *
  * 경기 출전 선수(GamePlayer)의 수비 기록을 저장합니다.
- * 한 경기에서 선수당 하나의 수비 기록만 존재합니다.
+ * L-1: position 필드를 추가하여 다수 포지션 소화 선수의 포지션별 통계를 분리합니다.
+ * 한 경기에서 선수는 포지션별로 별도의 수비 기록을 가질 수 있습니다.
  */
 @Entity
 @Table(
     name = "fielding_records",
     indexes = [
         Index(name = "idx_fielding_records_game_player", columnList = "game_player_id"),
+        Index(name = "idx_fielding_records_position", columnList = "position"),
     ],
 )
 class FieldingRecord(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_player_id", nullable = false)
     val gamePlayer: GamePlayer,
+    /** L-1: 수비 기록이 발생한 포지션 (다수 포지션 소화 선수의 포지션별 통계 분리) */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    val position: Position? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -178,10 +187,51 @@ class FieldingRecord(
         require(passedBalls >= 0) { "포일($passedBalls)은 음수일 수 없습니다." }
     }
 
+    /**
+     * 기록 정정 메서드
+     *
+     * 관리자가 수비 기록의 특정 필드를 정정합니다.
+     * @param fieldName 정정할 필드명
+     * @param newValue 새로운 값 (문자열)
+     * @return 이전 값 (문자열)
+     */
+    fun correctField(
+        fieldName: String,
+        newValue: String,
+    ): String {
+        val intValue =
+            newValue.toIntOrNull()
+                ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
+        require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
+
+        val oldValue =
+            when (fieldName) {
+                "putOuts" -> putOuts.also { putOuts = intValue }
+                "assists" -> assists.also { assists = intValue }
+                "errors" -> errors.also { errors = intValue }
+                "doublePlays" -> doublePlays.also { doublePlays = intValue }
+                "passedBalls" -> passedBalls.also { passedBalls = intValue }
+                else -> throw IllegalArgumentException("유효하지 않은 수비 기록 필드입니다: $fieldName")
+            }
+
+        validate()
+        return oldValue.toString()
+    }
+
     companion object {
         /**
          * 경기 출전 선수의 수비 기록을 생성합니다.
+         *
+         * @param gamePlayer 경기 출전 선수
+         * @param position L-1: 수비 포지션 (null이면 현재 포지션 사용)
          */
-        fun create(gamePlayer: GamePlayer): FieldingRecord = FieldingRecord(gamePlayer = gamePlayer)
+        fun create(
+            gamePlayer: GamePlayer,
+            position: Position? = null,
+        ): FieldingRecord =
+            FieldingRecord(
+                gamePlayer = gamePlayer,
+                position = position,
+            )
     }
 }

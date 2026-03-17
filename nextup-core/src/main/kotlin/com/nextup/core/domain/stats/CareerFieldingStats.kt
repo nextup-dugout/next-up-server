@@ -14,6 +14,7 @@ import jakarta.persistence.Index
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -38,6 +39,10 @@ class CareerFieldingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 시즌 수
     @Column(name = "seasons_played", nullable = false)
     var seasonsPlayed: Int = 0
@@ -104,10 +109,44 @@ class CareerFieldingStats(
     }
 
     /**
+     * 경기 수비 기록을 롤백합니다 (경기 취소 시 사용).
+     * 모든 필드를 maxOf(0, ...) 로 보호하여 음수 방지합니다.
+     */
+    fun revertGameRecord(record: FieldingRecord) {
+        gamesPlayed = maxOf(0, gamesPlayed - 1)
+        putOuts = maxOf(0, putOuts - record.putOuts)
+        assists = maxOf(0, assists - record.assists)
+        errors = maxOf(0, errors - record.errors)
+        doublePlays = maxOf(0, doublePlays - record.doublePlays)
+        passedBalls = maxOf(0, passedBalls - record.passedBalls)
+    }
+
+    /**
      * 시즌을 추가합니다.
      */
     fun addSeason() {
         seasonsPlayed++
+    }
+
+    /**
+     * 기록 정정 시 델타를 적용합니다.
+     *
+     * @param fieldName 정정할 필드명
+     * @param delta 변경량 (양수: 증가, 음수: 감소)
+     */
+    fun applyFieldCorrection(
+        fieldName: String,
+        delta: Int,
+    ) {
+        when (fieldName) {
+            "putOuts" -> putOuts = maxOf(0, putOuts + delta)
+            "assists" -> assists = maxOf(0, assists + delta)
+            "errors" -> errors = maxOf(0, errors + delta)
+            "doublePlays" -> doublePlays = maxOf(0, doublePlays + delta)
+            "passedBalls" -> passedBalls = maxOf(0, passedBalls + delta)
+            else -> throw IllegalArgumentException("유효하지 않은 통산 수비 통계 필드입니다: $fieldName")
+        }
+        validate()
     }
 
     /**

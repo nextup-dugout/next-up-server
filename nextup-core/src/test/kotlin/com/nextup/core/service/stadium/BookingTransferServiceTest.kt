@@ -59,6 +59,9 @@ class BookingTransferServiceTest {
                 message = "양도합니다",
                 expiresAt = Instant.now().plusSeconds(3600),
             )
+        val idField = BookingTransfer::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(transfer, id)
         return transfer
     }
 
@@ -268,6 +271,72 @@ class BookingTransferServiceTest {
 
             // when
             val result = service.getAvailableTransfers()
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("getTransfersByTeamId")
+    inner class GetTransfersByTeamId {
+        @Test
+        fun `should return transfers where team is seller`() {
+            // given
+            val transfer = createMockTransfer(sellerTeamId = 10L)
+            every { bookingTransferRepository.findBySellerTeamId(10L) } returns listOf(transfer)
+            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns emptyList()
+
+            // when
+            val result = service.getTransfersByTeamId(10L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].sellerTeamId).isEqualTo(10L)
+        }
+
+        @Test
+        fun `should return transfers where team is buyer`() {
+            // given
+            val transfer =
+                createMockTransfer(id = 3L, sellerTeamId = 20L).also {
+                    it.accept(10L)
+                }
+            every { bookingTransferRepository.findBySellerTeamId(10L) } returns emptyList()
+            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns listOf(transfer)
+
+            // when
+            val result = service.getTransfersByTeamId(10L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].buyerTeamId).isEqualTo(10L)
+        }
+
+        @Test
+        fun `should deduplicate transfers and sort by createdAt descending`() {
+            // given
+            val transfer1 = createMockTransfer(id = 1L, sellerTeamId = 10L, bookingId = 1L)
+            val transfer2 = createMockTransfer(id = 2L, sellerTeamId = 10L, bookingId = 2L)
+            every { bookingTransferRepository.findBySellerTeamId(10L) } returns
+                listOf(transfer1, transfer2)
+            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns emptyList()
+
+            // when
+            val result = service.getTransfersByTeamId(10L)
+
+            // then
+            assertThat(result).hasSize(2)
+        }
+
+        @Test
+        fun `should return empty list when team has no transfers`() {
+            // given
+            every { bookingTransferRepository.findBySellerTeamId(99L) } returns emptyList()
+            every { bookingTransferRepository.findByBuyerTeamId(99L) } returns emptyList()
+
+            // when
+            val result = service.getTransfersByTeamId(99L)
 
             // then
             assertThat(result).isEmpty()

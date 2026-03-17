@@ -1,7 +1,10 @@
 package com.nextup.api.controller.user
 
+import com.nextup.api.dto.game.GameSummaryResponse
 import com.nextup.api.dto.user.*
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
+import com.nextup.core.service.game.GameScheduleService
 import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/me")
 class ProfileController(
     private val userService: UserService,
+    private val teamMemberRepository: TeamMemberRepositoryPort,
+    private val gameScheduleService: GameScheduleService,
 ) {
     /**
      * 내 프로필을 조회합니다.
@@ -26,6 +31,31 @@ class ProfileController(
     ): ApiResponse<ProfileResponse> {
         val user = userService.getActiveById(userId)
         return ApiResponse.success(ProfileResponse.from(user))
+    }
+
+    /**
+     * 내 소속 팀 목록을 조회합니다.
+     */
+    @GetMapping("/teams")
+    fun getMyTeams(
+        @AuthenticationPrincipal userId: Long,
+    ): ApiResponse<List<MyTeamResponse>> {
+        val activeMembers = teamMemberRepository.findAllActiveByUserId(userId)
+        return ApiResponse.success(activeMembers.map { MyTeamResponse.from(it) })
+    }
+
+    /**
+     * 내 소속 팀들의 다가오는 경기를 통합 조회합니다.
+     */
+    @GetMapping("/upcoming-games")
+    fun getMyUpcomingGames(
+        @AuthenticationPrincipal userId: Long,
+        @RequestParam(defaultValue = "10") limit: Int,
+    ): ApiResponse<List<GameSummaryResponse>> {
+        val activeMembers = teamMemberRepository.findAllActiveByUserId(userId)
+        val teamIds = activeMembers.map { it.team.id }
+        val games = gameScheduleService.getUpcomingGamesByTeamIds(teamIds, limit)
+        return ApiResponse.success(games.map { GameSummaryResponse.from(it) })
     }
 
     /**

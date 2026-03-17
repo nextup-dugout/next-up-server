@@ -38,6 +38,14 @@ interface GameScheduleService {
     ): List<GameSummaryDto>
 
     /**
+     * 여러 팀의 다가오는 경기를 통합 조회합니다.
+     */
+    fun getUpcomingGamesByTeamIds(
+        teamIds: List<Long>,
+        limit: Int = 10,
+    ): List<GameSummaryDto>
+
+    /**
      * 특정 연월에 경기가 있는 날짜(일) 목록을 반환합니다. (캘린더 뷰용)
      */
     fun getGameDaysInMonth(

@@ -139,12 +139,15 @@ class PitchingDecisionService {
      *
      * - 마지막 구원투수 = 세이브 or 블론세이브
      * - 중간 구원투수들 = 홀드 or 블론세이브
+     *
+     * @param runnersOnBase 마무리 투수 등판 시점의 주자 수 (동점 주자 세이브 조건 판단용)
      */
     private fun assignReliefDecisions(
         relievers: List<PitchingRecord>,
         finalWinnerScore: Int,
         finalLoserScore: Int,
         isSaveEligible: Boolean,
+        runnersOnBase: Int = 0,
     ) {
         if (relievers.isEmpty()) return
 
@@ -164,14 +167,37 @@ class PitchingDecisionService {
         if (lastRelief.decision == PitchingDecision.NONE && isSaveEligible) {
             val leadMargin = finalWinnerScore - finalLoserScore
             val isSaveSituation =
-                leadMargin in 1..3 ||
-                    isSaveByInnings(lastRelief)
+                qualifiesForSave(lastRelief, leadMargin, runnersOnBase)
 
             if (isSaveSituation) {
                 lastRelief.assignSave()
             }
             // 블론세이브는 패배팀 투수 분석에서 처리됨 (이 투수들은 승리팀)
         }
+    }
+
+    /**
+     * 세이브 자격을 판단합니다.
+     *
+     * 다음 조건 중 하나를 충족하면 세이브 자격:
+     * 1. 3점 이내 리드 상황으로 등판하여 마무리
+     * 2. 3이닝 이상 던지며 마무리
+     * 3. 동점 주자를 상대 (리드 점수 <= 주자 수 + 1, 즉 동점 타자가 타석/온베이스/다음 타자)
+     *
+     * @param record 마무리 투수 기록
+     * @param finalLeadMargin 최종 리드 점수 차이
+     * @param runnersOnBase 등판 시점의 주자 수
+     */
+    internal fun qualifiesForSave(
+        record: PitchingRecord,
+        finalLeadMargin: Int,
+        runnersOnBase: Int = 0,
+    ): Boolean {
+        if (record.isStartingPitcher) return false
+        if (finalLeadMargin <= 0) return false
+        return finalLeadMargin <= 3 ||
+            isSaveByInnings(record) ||
+            finalLeadMargin <= runnersOnBase + 1
     }
 
     /**
