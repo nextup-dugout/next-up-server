@@ -245,4 +245,52 @@ class PlateAppearanceResultTest {
             assertThat(PlateAppearanceResult.INFIELD_FLY.isOnBase).isFalse()
         }
     }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - isStrikeout 양쪽 OR 조건 독립 검증")
+    inner class IsStrikeoutPartialBranchTest {
+
+        @Test
+        fun `STRIKEOUT은 isStrikeout가 true이다 (첫 번째 OR 조건)`() {
+            // this == STRIKEOUT → true (|| short-circuit, 두 번째 조건 미평가)
+            assertThat(PlateAppearanceResult.STRIKEOUT.isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 isStrikeout가 true이다 (두 번째 OR 조건)`() {
+            // this == STRIKEOUT → false, this == STRIKEOUT_DROPPED_THIRD → true
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `GROUND_OUT은 isStrikeout가 false이다 (양쪽 OR 조건 모두 false)`() {
+            // this == STRIKEOUT → false, this == STRIKEOUT_DROPPED_THIRD → false
+            assertThat(PlateAppearanceResult.GROUND_OUT.isStrikeout).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - isOnBase 복합 조건 독립 검증")
+    inner class IsOnBasePartialBranchTest {
+
+        @Test
+        fun `안타(SINGLE)는 isHit=true로 isOnBase가 true이다 (|| 첫 번째 조건)`() {
+            // isHit == true → || short-circuit → true
+            assertThat(PlateAppearanceResult.SINGLE.isHit).isTrue()
+            assertThat(PlateAppearanceResult.SINGLE.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `WALK은 isHit=false이지만 리스트에 포함되어 isOnBase가 true이다 (|| 두 번째 조건)`() {
+            // isHit == false, this in listOf(...) == true
+            assertThat(PlateAppearanceResult.WALK.isHit).isFalse()
+            assertThat(PlateAppearanceResult.WALK.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT은 isHit=false이고 리스트에도 없어서 isOnBase가 false이다 (|| 양쪽 false)`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT.isHit).isFalse()
+            assertThat(PlateAppearanceResult.STRIKEOUT.isOnBase).isFalse()
+        }
+    }
 }

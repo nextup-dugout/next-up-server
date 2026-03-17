@@ -371,4 +371,75 @@ class FieldingRecordTest {
             assertThat(fieldingRecord.doublePlays).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("correctField - 기록 정정 분기 커버리지")
+    inner class CorrectFieldBranchTest {
+
+        @Test
+        fun `유효한 필드와 값으로 정정하면 이전 값을 반환한다`() {
+            // given
+            fieldingRecord.recordPutOut()
+            fieldingRecord.recordPutOut()
+
+            // when
+            val oldValue = fieldingRecord.correctField("putOuts", "5")
+
+            // then
+            assertThat(oldValue).isEqualTo("2")
+            assertThat(fieldingRecord.putOuts).isEqualTo(5)
+        }
+
+        @Test
+        fun `assists 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("assists", "3")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.assists).isEqualTo(3)
+        }
+
+        @Test
+        fun `errors 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("errors", "2")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.errors).isEqualTo(2)
+        }
+
+        @Test
+        fun `doublePlays 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("doublePlays", "1")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.doublePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `passedBalls 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("passedBalls", "4")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.passedBalls).isEqualTo(4)
+        }
+
+        @Test
+        fun `유효하지 않은 필드명이면 예외가 발생한다 (else 분기)`() {
+            assertThatThrownBy {
+                fieldingRecord.correctField("invalidField", "1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("유효하지 않은 수비 기록 필드")
+        }
+
+        @Test
+        fun `정수가 아닌 값이면 예외가 발생한다 (toIntOrNull null 분기)`() {
+            assertThatThrownBy {
+                fieldingRecord.correctField("putOuts", "abc")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+
+        @Test
+        fun `음수 값이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                fieldingRecord.correctField("putOuts", "-1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 0 이상이어야 합니다")
+        }
+    }
 }

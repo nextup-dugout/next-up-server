@@ -1006,6 +1006,82 @@ class PitchingDecisionServiceTest {
         }
 
         @Test
+        fun `qualifiesForSave에서 isSaveByInnings만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(5) > 3 → false
+            // isSaveByInnings: 9아웃 = 3이닝 → true (|| 두 번째 조건)
+            // finalLeadMargin(5) <= runnersOnBase(0) + 1 = 1 → false
+            val closer = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 5, runnersOnBase = 0)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 runnersOnBase 조건만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(4) > 3 → false (첫 번째 false)
+            // isSaveByInnings: 6아웃 < 9 → false (두 번째 false)
+            // finalLeadMargin(4) <= runnersOnBase(3) + 1 = 4 → true (세 번째 true)
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 4, runnersOnBase = 3)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 모든 OR 조건이 false이면 세이브 자격이 없다`() {
+            // finalLeadMargin(5) > 3 → false
+            // isSaveByInnings: 6아웃 < 9 → false
+            // finalLeadMargin(5) <= runnersOnBase(2) + 1 = 3 → false
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 5, runnersOnBase = 2)
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 finalLeadMargin 3이하만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(2) <= 3 → true (|| 첫 번째 조건으로 short-circuit)
+            val closer = makeRecord(isStarter = false, outs = 3, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 2, runnersOnBase = 0)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `assignDecisions에서 winnerTeamRecords만 비어있을 때 패전 투수가 결정된다`() {
+            // winnerTeamRecords.isEmpty() == true, loserTeamRecords.isEmpty() == false
+            // → && 전체는 false → early return 하지 않음
+            val loserStarter = makeRecord(isStarter = true, outs = 27, runsAllowed = 3)
+            val winnerTeam = makeGameTeam("1,0,2,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `assignDecisions에서 loserTeamRecords만 비어있을 때 승리 투수가 결정된다`() {
+            // winnerTeamRecords.isEmpty() == false → && short-circuit (전체 false)
+            // → early return 하지 않음
+            val winStarter = makeRecord(isStarter = true, outs = 27, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("3,0,0,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = listOf(winStarter),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            assertThat(winStarter.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
         fun `선발이 자격 있고 구원 있으나 리드 없이 교체 후 구원 승리 없을 때 세이브 미부여`() {
             // given: 선발 5이닝(15아웃) 자격 있으나 리드 없이 교체, 구원 투수가 리드를 만들었으나
             // isSaveEligible=true로 assignReliefDecisions 호출됨

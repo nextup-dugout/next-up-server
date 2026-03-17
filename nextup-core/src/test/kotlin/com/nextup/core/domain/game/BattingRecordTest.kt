@@ -1851,4 +1851,172 @@ class BattingRecordTest {
                 .isEqualByComparingTo(BigDecimal("0.000"))
         }
     }
+
+    @Nested
+    @DisplayName("correctField - 기록 정정 분기 커버리지")
+    inner class CorrectFieldBranchTest {
+
+        @Test
+        fun `plateAppearances 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            val oldValue = battingRecord.correctField("plateAppearances", "5")
+            assertThat(oldValue).isEqualTo("1")
+            assertThat(battingRecord.plateAppearances).isEqualTo(5)
+        }
+
+        @Test
+        fun `atBats 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.correctField("plateAppearances", "10")
+            val oldValue = battingRecord.correctField("atBats", "4")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `hits 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("hits", "3")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `doubles 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("doubles", "2")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `triples 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("triples", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `homeRuns 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("homeRuns", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `runs 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("runs", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `runsBattedIn 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("runsBattedIn", "5")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `walks 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("walks", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `intentionalWalks 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("intentionalWalks", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `hitByPitch 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("hitByPitch", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `strikeouts 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("strikeouts", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `sacrificeBunts 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("sacrificeBunts", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `sacrificeFlies 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("sacrificeFlies", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `stolenBases 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("stolenBases", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `caughtStealing 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("caughtStealing", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `groundedIntoDoublePlays 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("groundedIntoDoublePlays", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `triplePlays 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("triplePlays", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `유효하지 않은 필드명이면 예외가 발생한다 (else 분기)`() {
+            assertThatThrownBy {
+                battingRecord.correctField("invalidField", "1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("유효하지 않은 타격 기록 필드")
+        }
+
+        @Test
+        fun `정수가 아닌 값이면 예외가 발생한다 (toIntOrNull null 분기)`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "abc")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+
+        @Test
+        fun `음수 값이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "-1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 0 이상이어야 합니다")
+        }
+
+        @Test
+        fun `소수점 값이면 정수 파싱 실패로 예외가 발생한다`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "1.5")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+    }
 }

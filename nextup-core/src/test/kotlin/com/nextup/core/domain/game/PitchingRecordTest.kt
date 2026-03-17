@@ -1712,4 +1712,228 @@ class PitchingRecordTest {
                 .isEqualByComparingTo(BigDecimal("0.00"))
         }
     }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - strikePercentage null 분기 독립 검증")
+    inner class StrikePercentageNullBranchTest {
+
+        @Test
+        fun `pitchesThrown=null이고 strikesThrown=non-null이면 null이다`() {
+            // pitchesThrown == null → || 첫 번째 조건 true (short-circuit)
+            val strikesField =
+                PitchingRecord::class.java.getDeclaredField("strikesThrown")
+            strikesField.isAccessible = true
+            strikesField.set(pitchingRecord, 50)
+            // pitchesThrown은 기본값 null 유지
+
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+
+        @Test
+        fun `pitchesThrown=non-null이고 strikesThrown=null이면 null이다`() {
+            // pitchesThrown != null → false, strikesThrown == null → true
+            val pitchesField =
+                PitchingRecord::class.java.getDeclaredField("pitchesThrown")
+            pitchesField.isAccessible = true
+            pitchesField.set(pitchingRecord, 100)
+
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+
+        @Test
+        fun `pitchesThrown=0이고 strikesThrown=non-null이면 null이다`() {
+            // pitchesThrown == null → false, strikesThrown == null → false, pitchesThrown == 0 → true
+            val pitchesField =
+                PitchingRecord::class.java.getDeclaredField("pitchesThrown")
+            pitchesField.isAccessible = true
+            pitchesField.set(pitchingRecord, 0)
+            val strikesField =
+                PitchingRecord::class.java.getDeclaredField("strikesThrown")
+            strikesField.isAccessible = true
+            strikesField.set(pitchingRecord, 0)
+
+            assertThat(pitchingRecord.strikePercentage).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("correctField - 기록 정정 분기 커버리지")
+    inner class CorrectFieldBranchTest {
+
+        @Test
+        fun `inningsPitchedOuts 필드를 정정할 수 있다`() {
+            repeat(9) { pitchingRecord.recordOut() }
+            val oldValue = pitchingRecord.correctField("inningsPitchedOuts", "12")
+            assertThat(oldValue).isEqualTo("9")
+            assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(12)
+        }
+
+        @Test
+        fun `earnedRuns 필드를 정정할 수 있다`() {
+            pitchingRecord.recordRun(isEarned = true)
+            pitchingRecord.recordRun(isEarned = true)
+            val oldValue = pitchingRecord.correctField("earnedRuns", "1")
+            assertThat(oldValue).isEqualTo("2")
+        }
+
+        @Test
+        fun `runsAllowed 필드를 정정할 수 있다`() {
+            pitchingRecord.recordRun(isEarned = true)
+            val oldValue = pitchingRecord.correctField("runsAllowed", "3")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `hitsAllowed 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("hitsAllowed", "5")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `walksAllowed 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("walksAllowed", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `strikeouts 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("strikeouts", "7")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `homeRunsAllowed 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("homeRunsAllowed", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `hitBatsmen 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("hitBatsmen", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `wildPitches 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("wildPitches", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `balks 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("balks", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `battersFaced 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("battersFaced", "30")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `pitchesThrown 필드를 정정할 수 있다 (nullable 필드 null에서 정정)`() {
+            // pitchesThrown이 null이면 이전 값은 0으로 반환
+            val oldValue = pitchingRecord.correctField("pitchesThrown", "90")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(pitchingRecord.pitchesThrown).isEqualTo(90)
+        }
+
+        @Test
+        fun `strikesThrown 필드를 정정할 수 있다 (nullable 필드 null에서 정정)`() {
+            // strikesThrown이 null이면 이전 값은 0으로 반환
+            pitchingRecord.correctField("pitchesThrown", "100")
+            val oldValue = pitchingRecord.correctField("strikesThrown", "60")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(pitchingRecord.strikesThrown).isEqualTo(60)
+        }
+
+        @Test
+        fun `stolenBasesAllowed 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("stolenBasesAllowed", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `runnersCaughtStealing 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("runnersCaughtStealing", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `pickoffs 필드를 정정할 수 있다`() {
+            val oldValue = pitchingRecord.correctField("pickoffs", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `유효하지 않은 필드명이면 예외가 발생한다 (else 분기)`() {
+            assertThatThrownBy {
+                pitchingRecord.correctField("invalidField", "1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("유효하지 않은 투수 기록 필드")
+        }
+
+        @Test
+        fun `정수가 아닌 값이면 예외가 발생한다 (toIntOrNull null 분기)`() {
+            assertThatThrownBy {
+                pitchingRecord.correctField("inningsPitchedOuts", "abc")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+
+        @Test
+        fun `음수 값이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.correctField("inningsPitchedOuts", "-1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 0 이상이어야 합니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - isQualifiedForWin 양쪽 AND 조건 독립 검증")
+    inner class IsQualifiedForWinPartialBranchTest {
+
+        @Test
+        fun `선발투수이고 15아웃 이상이면 isQualifiedForWin은 true이다 (양쪽 true)`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(15) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin).isTrue()
+        }
+
+        @Test
+        fun `선발투수이지만 15아웃 미만이면 isQualifiedForWin은 false이다 (첫 번째 true, 두 번째 false)`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(14) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+        }
+
+        @Test
+        fun `비선발투수이고 15아웃 이상이면 isQualifiedForWin은 false이다 (첫 번째 false)`() {
+            // isStartingPitcher == false → && short-circuit → false
+            repeat(15) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - validateInningReduction")
+    inner class ValidateInningReductionBranchTest {
+
+        @Test
+        fun `이닝 축소가 기존 기록과 충돌하면 예외가 발생한다`() {
+            repeat(12) { pitchingRecord.recordOut() } // 4이닝
+            assertThatThrownBy {
+                pitchingRecord.validateInningReduction(3) // 3이닝 = 9아웃이 최대
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 축소")
+        }
+
+        @Test
+        fun `이닝 축소가 기존 기록과 충돌하지 않으면 정상 통과한다`() {
+            repeat(9) { pitchingRecord.recordOut() } // 3이닝
+            pitchingRecord.validateInningReduction(5) // 5이닝 = 15아웃이 최대
+        }
+    }
 }
