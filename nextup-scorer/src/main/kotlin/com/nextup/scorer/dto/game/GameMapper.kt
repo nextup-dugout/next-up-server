@@ -20,6 +20,7 @@ fun Game.toResponse(warnings: List<String> = emptyList()): GameResponse {
         scheduledAt = this.scheduledAt,
         startedAt = this.startedAt,
         endedAt = this.endedAt,
+        scorerId = this.scorerId,
         warnings = warnings,
     )
 }

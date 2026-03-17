@@ -2,6 +2,7 @@ package com.nextup.api.controller.lineup
 
 import com.nextup.api.dto.lineup.AddLineupEntryRequest
 import com.nextup.api.dto.lineup.CreateLineupRequest
+import com.nextup.api.dto.lineup.LineupDetailResponse
 import com.nextup.api.dto.lineup.LineupEntryResponse
 import com.nextup.api.dto.lineup.LineupSubmissionResponse
 import com.nextup.api.dto.lineup.LineupSubmissionSummaryResponse
@@ -82,6 +83,25 @@ class LineupController(
                 val entries = lineupService.getLineupEntries(submission.id)
                 val starterCount = entries.count { it.isStarter }
                 LineupSubmissionSummaryResponse.from(submission, starterCount)
+            }
+
+        return ResponseEntity.ok(ApiResponse.success(responses))
+    }
+
+    /**
+     * 경기 라인업 확정 상태를 상세 조회합니다.
+     *
+     * 확정 여부뿐 아니라 선수 상세 정보(이름, 포지션, 타순)를 포함합니다.
+     */
+    @GetMapping("/games/{gameId}/detail")
+    fun getLineupDetailByGame(
+        @PathVariable gameId: Long,
+    ): ResponseEntity<ApiResponse<List<LineupDetailResponse>>> {
+        val submissions = lineupService.getLineupSubmissionsByGame(gameId)
+        val responses =
+            submissions.map { submission ->
+                val entries = lineupService.getLineupEntries(submission.id)
+                LineupDetailResponse.from(submission, entries)
             }
 
         return ResponseEntity.ok(ApiResponse.success(responses))

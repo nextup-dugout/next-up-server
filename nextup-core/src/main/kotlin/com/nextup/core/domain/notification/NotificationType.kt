@@ -48,4 +48,34 @@ enum class NotificationType {
      * 라인업 확정
      */
     LINEUP_CONFIRMED,
+
+    /**
+     * 경기 취소
+     */
+    GAME_CANCELLED,
+
+    /**
+     * 경기 일정 변경
+     */
+    GAME_RESCHEDULED,
+
+    /**
+     * 경기 연기
+     */
+    GAME_POSTPONED,
+
+    /**
+     * 팀원 탈퇴
+     */
+    TEAM_MEMBER_LEFT,
+
+    /**
+     * 팀원 강퇴
+     */
+    TEAM_MEMBER_KICKED,
+
+    /**
+     * 기록 정정
+     */
+    RECORD_CORRECTED,
 }

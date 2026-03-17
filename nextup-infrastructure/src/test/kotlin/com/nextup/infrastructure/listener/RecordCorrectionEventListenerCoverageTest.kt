@@ -10,9 +10,11 @@ import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -26,8 +28,10 @@ import java.time.LocalDateTime
 class RecordCorrectionEventListenerCoverageTest {
     private val seasonBattingStatsRepository = mockk<SeasonBattingStatsRepositoryPort>()
     private val seasonPitchingStatsRepository = mockk<SeasonPitchingStatsRepositoryPort>()
+    private val seasonFieldingStatsRepository = mockk<SeasonFieldingStatsRepositoryPort>()
     private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
     private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
+    private val careerFieldingStatsRepository = mockk<CareerFieldingStatsRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
     private val cacheManager = mockk<CacheManager>()
 
@@ -35,8 +39,10 @@ class RecordCorrectionEventListenerCoverageTest {
         RecordCorrectionEventListener(
             seasonBattingStatsRepository = seasonBattingStatsRepository,
             seasonPitchingStatsRepository = seasonPitchingStatsRepository,
+            seasonFieldingStatsRepository = seasonFieldingStatsRepository,
             careerBattingStatsRepository = careerBattingStatsRepository,
             careerPitchingStatsRepository = careerPitchingStatsRepository,
+            careerFieldingStatsRepository = careerFieldingStatsRepository,
             gameRepository = gameRepository,
             cacheManager = cacheManager,
         )
