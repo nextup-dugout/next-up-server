@@ -44,6 +44,7 @@ class GameLifecycleServiceImplTest {
                 gameRepository = gameRepository,
                 gameTeamRepository = gameTeamRepository,
                 pitchingRecordRepository = pitchingRecordRepository,
+                pitchingDecisionService = mockk(relaxed = true),
                 eventPublisher = eventPublisher,
             )
     }

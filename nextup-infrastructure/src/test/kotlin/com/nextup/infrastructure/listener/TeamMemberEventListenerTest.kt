@@ -291,7 +291,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("팀원 탈퇴 시 활성 CompetitionPlayer를 WITHDRAWN 처리한다")
         fun `should withdraw active competition players on member left`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
             val competitionPlayer = mockk<CompetitionPlayer>(relaxed = true)
             every { competitionPlayer.id } returns 50L
 
@@ -327,7 +328,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("CONFIRMED 라인업에서도 탈퇴한 선수 엔트리를 제거한다")
         fun `should remove player entry from CONFIRMED lineup submission`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
 
             val submission = mockk<LineupSubmission>(relaxed = true)
             every { submission.id } returns 10L
@@ -501,7 +503,8 @@ class TeamMemberEventListenerTest {
         @DisplayName("팀원 강퇴 시 활성 CompetitionPlayer를 WITHDRAWN 처리한다")
         fun `should withdraw active competition players on member kicked`() {
             // given
-            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberKickedEvent(teamId = 1L, userId = 10L, playerId = 20L, memberId = 100L, teamName = "타이거즈")
             val competitionPlayer = mockk<CompetitionPlayer>(relaxed = true)
             every { competitionPlayer.id } returns 50L
 
