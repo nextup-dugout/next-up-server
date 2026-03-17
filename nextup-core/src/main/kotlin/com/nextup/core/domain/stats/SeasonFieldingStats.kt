@@ -127,6 +127,27 @@ class SeasonFieldingStats(
     }
 
     /**
+     * 기록 정정 시 델타를 적용합니다.
+     *
+     * @param fieldName 정정할 필드명
+     * @param delta 변경량 (양수: 증가, 음수: 감소)
+     */
+    fun applyFieldCorrection(
+        fieldName: String,
+        delta: Int,
+    ) {
+        when (fieldName) {
+            "putOuts" -> putOuts = maxOf(0, putOuts + delta)
+            "assists" -> assists = maxOf(0, assists + delta)
+            "errors" -> errors = maxOf(0, errors + delta)
+            "doublePlays" -> doublePlays = maxOf(0, doublePlays + delta)
+            "passedBalls" -> passedBalls = maxOf(0, passedBalls + delta)
+            else -> throw IllegalArgumentException("유효하지 않은 시즌 수비 통계 필드입니다: $fieldName")
+        }
+        validate()
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

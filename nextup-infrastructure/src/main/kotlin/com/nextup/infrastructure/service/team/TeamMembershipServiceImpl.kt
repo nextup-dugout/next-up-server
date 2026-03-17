@@ -222,8 +222,10 @@ class TeamMembershipServiceImpl(
         eventPublisher.publishEvent(
             TeamMemberKickedEvent(
                 teamId = member.team.id,
+                userId = member.user.id,
                 playerId = member.player.id,
                 memberId = member.id,
+                teamName = member.team.name,
             ),
         )
     }
@@ -249,8 +251,10 @@ class TeamMembershipServiceImpl(
         eventPublisher.publishEvent(
             TeamMemberLeftEvent(
                 teamId = member.team.id,
+                userId = member.user.id,
                 playerId = member.player.id,
                 memberId = member.id,
+                teamName = member.team.name,
             ),
         )
     }
