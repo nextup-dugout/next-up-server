@@ -8,6 +8,7 @@ import com.nextup.core.common.PageResult
 import com.nextup.core.domain.notification.DeviceToken
 import com.nextup.core.domain.notification.Notification
 import com.nextup.core.domain.notification.NotificationPreference
+import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.port.repository.DeviceTokenRepositoryPort
 import com.nextup.core.port.repository.NotificationPreferenceRepositoryPort
 import com.nextup.core.port.repository.NotificationRepositoryPort
@@ -37,10 +38,24 @@ class NotificationService(
     /**
      * 알림을 전송합니다.
      *
-     * DB에 알림을 저장한 후, 사용자의 등록된 디바이스로 푸시 알림을 발송합니다.
+     * 사용자의 알림 설정(Preference)을 확인한 후,
+     * DB에 알림을 저장하고 사용자의 등록된 디바이스로 푸시 알림을 발송합니다.
+     * 사용자가 해당 알림 타입을 비활성화한 경우 발송을 스킵합니다.
+     * 설정이 없는 경우 기본적으로 발송합니다 (opt-out 모델).
+     *
+     * @return 알림이 발송된 경우 Notification, 스킵된 경우 null
      */
     @Transactional
-    fun sendNotification(request: SendNotificationRequest): Notification {
+    fun sendNotification(request: SendNotificationRequest): Notification? {
+        if (!isNotificationEnabled(request.userId, request.type)) {
+            log.debug(
+                "알림 설정에 의해 발송 스킵: userId={}, type={}",
+                request.userId,
+                request.type,
+            )
+            return null
+        }
+
         val notification =
             Notification.create(
                 userId = request.userId,
@@ -56,6 +71,20 @@ class NotificationService(
         sendPushToUser(request)
 
         return saved
+    }
+
+    /**
+     * 사용자의 알림 설정을 확인합니다.
+     *
+     * 설정이 존재하지 않으면 기본적으로 활성화(opt-out 모델)입니다.
+     */
+    private fun isNotificationEnabled(
+        userId: Long,
+        type: NotificationType,
+    ): Boolean {
+        val preference =
+            preferenceRepository.findByUserIdAndType(userId, type)
+        return preference?.enabled ?: true
     }
 
     private fun sendPushToUser(request: SendNotificationRequest) {

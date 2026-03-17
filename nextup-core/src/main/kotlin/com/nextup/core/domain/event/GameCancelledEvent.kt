@@ -14,5 +14,7 @@ import java.time.Instant
  */
 data class GameCancelledEvent(
     val gameId: Long,
+    val homeTeamId: Long = 0L,
+    val awayTeamId: Long = 0L,
     val timestamp: Instant = Instant.now(),
 )

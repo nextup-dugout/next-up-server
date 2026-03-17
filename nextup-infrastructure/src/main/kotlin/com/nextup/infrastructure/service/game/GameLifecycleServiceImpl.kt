@@ -3,6 +3,8 @@ package com.nextup.infrastructure.service.game
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.core.domain.event.GameCancelledEvent
+import com.nextup.core.domain.event.GamePostponedEvent
+import com.nextup.core.domain.event.GameRescheduledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 경기 생명주기 관리 서비스 구현
@@ -135,7 +138,83 @@ class GameLifecycleServiceImpl(
         game.cancel(reason)
         val savedGame = gameRepository.save(game)
 
-        eventPublisher.publishEvent(GameCancelledEvent(gameId = gameId))
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME }
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY }
+        eventPublisher.publishEvent(
+            GameCancelledEvent(
+                gameId = gameId,
+                homeTeamId = homeTeam?.team?.id ?: 0L,
+                awayTeamId = awayTeam?.team?.id ?: 0L,
+            ),
+        )
+
+        return savedGame
+    }
+
+    @Transactional
+    override fun postponeGame(
+        gameId: Long,
+        newScheduledAt: LocalDateTime,
+        reason: String?,
+    ): Game {
+        val game = findGame(gameId)
+
+        if (game.status != GameStatus.SCHEDULED) {
+            throw InvalidGameStateException(
+                "예정 상태의 경기만 연기할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        game.postpone(newScheduledAt, reason)
+        val savedGame = gameRepository.save(game)
+
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME }
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY }
+        if (homeTeam != null && awayTeam != null) {
+            eventPublisher.publishEvent(
+                GamePostponedEvent(
+                    gameId = gameId,
+                    homeTeamId = homeTeam.team.id,
+                    awayTeamId = awayTeam.team.id,
+                    newScheduledAt = newScheduledAt,
+                ),
+            )
+        }
+
+        return savedGame
+    }
+
+    @Transactional
+    override fun rescheduleGame(
+        gameId: Long,
+        newScheduledAt: LocalDateTime,
+    ): Game {
+        val game = findGame(gameId)
+
+        if (game.status != GameStatus.SCHEDULED && game.status != GameStatus.POSTPONED) {
+            throw InvalidGameStateException(
+                "예정 또는 연기 상태의 경기만 일정을 변경할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        game.reschedule(newScheduledAt)
+        val savedGame = gameRepository.save(game)
+
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME }
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY }
+        if (homeTeam != null && awayTeam != null) {
+            eventPublisher.publishEvent(
+                GameRescheduledEvent(
+                    gameId = gameId,
+                    homeTeamId = homeTeam.team.id,
+                    awayTeamId = awayTeam.team.id,
+                    newScheduledAt = newScheduledAt,
+                ),
+            )
+        }
 
         return savedGame
     }

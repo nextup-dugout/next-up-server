@@ -2,10 +2,15 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
+import com.nextup.core.domain.event.GameCancelledEvent
+import com.nextup.core.domain.event.GamePostponedEvent
+import com.nextup.core.domain.event.GameRescheduledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
+import com.nextup.core.domain.event.TeamMemberKickedEvent
+import com.nextup.core.domain.event.TeamMemberLeftEvent
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.notification.NotificationType
 import com.nextup.core.domain.player.Player
@@ -309,6 +314,321 @@ class NotificationEventListenerTest {
 
             // then
             verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleGameCancelled")
+    inner class HandleGameCancelled {
+        @Test
+        fun `should send GAME_CANCELLED notification to both teams members`() {
+            // given
+            val event =
+                GameCancelledEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                )
+
+            val awayUser = User.createLocalUser("away@example.com", "pw", "원정멤버")
+            setFieldId(awayUser, User::class.java, 11L)
+            val awayPlayer = Player(name = "원정멤버", primaryPosition = Position.CATCHER)
+            awayUser.player = awayPlayer
+
+            val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2015)
+            setFieldId(awayTeam, Team::class.java, 2L)
+            val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(member)
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns listOf(awayMember)
+            every { notificationService.sendNotification(any()) } returns mockk()
+
+            // when
+            listener.handleGameCancelled(event)
+
+            // then
+            verify(exactly = 2) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) {
+                notificationService.sendNotification(
+                    match {
+                        it.userId == 10L && it.type == NotificationType.GAME_CANCELLED
+                    },
+                )
+            }
+            verify(exactly = 1) {
+                notificationService.sendNotification(
+                    match {
+                        it.userId == 11L && it.type == NotificationType.GAME_CANCELLED
+                    },
+                )
+            }
+        }
+
+        @Test
+        fun `should skip notification when team IDs are zero`() {
+            // given
+            val event =
+                GameCancelledEvent(
+                    gameId = 100L,
+                    homeTeamId = 0L,
+                    awayTeamId = 0L,
+                )
+
+            // when
+            listener.handleGameCancelled(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleGamePostponed")
+    inner class HandleGamePostponed {
+        @Test
+        fun `should not send notification when no active members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 4, 1, 14, 0)
+            val event =
+                GamePostponedEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            listener.handleGamePostponed(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+
+        @Test
+        fun `should send GAME_POSTPONED notification to both teams members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 4, 1, 14, 0)
+            val event =
+                GamePostponedEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            val awayUser = User.createLocalUser("away@example.com", "pw", "원정멤버")
+            setFieldId(awayUser, User::class.java, 11L)
+            val awayPlayer = Player(name = "원정멤버", primaryPosition = Position.CATCHER)
+            awayUser.player = awayPlayer
+
+            val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2015)
+            setFieldId(awayTeam, Team::class.java, 2L)
+            val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(member)
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns listOf(awayMember)
+            every { notificationService.sendNotification(any()) } returns mockk()
+
+            // when
+            listener.handleGamePostponed(event)
+
+            // then
+            verify(exactly = 2) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) {
+                notificationService.sendNotification(
+                    match {
+                        it.userId == 10L &&
+                            it.type == NotificationType.GAME_POSTPONED &&
+                            it.body.contains("2026-04-01")
+                    },
+                )
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleGameRescheduled")
+    inner class HandleGameRescheduled {
+        @Test
+        fun `should not send notification when no active members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 5, 10, 18, 0)
+            val event =
+                GameRescheduledEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns emptyList()
+
+            // when
+            listener.handleGameRescheduled(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+
+        @Test
+        fun `should send GAME_RESCHEDULED notification to both teams members`() {
+            // given
+            val newDate = LocalDateTime.of(2026, 5, 10, 18, 0)
+            val event =
+                GameRescheduledEvent(
+                    gameId = 100L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    newScheduledAt = newDate,
+                )
+
+            val awayUser = User.createLocalUser("away@example.com", "pw", "원정멤버")
+            setFieldId(awayUser, User::class.java, 11L)
+            val awayPlayer = Player(name = "원정멤버", primaryPosition = Position.CATCHER)
+            awayUser.player = awayPlayer
+
+            val awayTeam = Team(league = league, name = "원정팀", city = "부산", foundedYear = 2015)
+            setFieldId(awayTeam, Team::class.java, 2L)
+            val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(member)
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+            } returns listOf(awayMember)
+            every { notificationService.sendNotification(any()) } returns mockk()
+
+            // when
+            listener.handleGameRescheduled(event)
+
+            // then
+            verify(exactly = 2) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) {
+                notificationService.sendNotification(
+                    match {
+                        it.userId == 10L &&
+                            it.type == NotificationType.GAME_RESCHEDULED &&
+                            it.body.contains("2026-05-10")
+                    },
+                )
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleTeamMemberLeft")
+    inner class HandleTeamMemberLeft {
+        @Test
+        fun `should send TEAM_MEMBER_LEFT notification to team admins`() {
+            // given
+            val event =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+
+            val ownerUser = User.createLocalUser("owner@example.com", "pw", "팀장")
+            setFieldId(ownerUser, User::class.java, 50L)
+            val ownerPlayer = Player(name = "팀장", primaryPosition = Position.STARTING_PITCHER)
+            ownerUser.player = ownerPlayer
+            val ownerMember = TeamMember.create(team, ownerUser, ownerPlayer, 1, TeamMemberRole.OWNER)
+
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(ownerMember)
+            every { notificationService.sendNotification(any()) } returns mockk()
+
+            // when
+            listener.handleTeamMemberLeft(event)
+
+            // then
+            verify(exactly = 1) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) {
+                notificationService.sendNotification(
+                    match {
+                        it.userId == 50L &&
+                            it.type == NotificationType.TEAM_MEMBER_LEFT &&
+                            it.body.contains("타이거즈")
+                    },
+                )
+            }
+        }
+
+        @Test
+        fun `should not send notification to regular members`() {
+            // given
+            val event =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+
+            // member has MEMBER role, not OWNER or MANAGER
+            every {
+                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
+            } returns listOf(member)
+
+            // when
+            listener.handleTeamMemberLeft(event)
+
+            // then
+            verify(exactly = 0) { notificationService.sendNotification(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleTeamMemberKicked")
+    inner class HandleTeamMemberKicked {
+        @Test
+        fun `should send TEAM_MEMBER_KICKED notification to the kicked member`() {
+            // given
+            val event =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+
+            val requestSlot = slot<SendNotificationRequest>()
+            every { notificationService.sendNotification(capture(requestSlot)) } returns mockk()
+
+            // when
+            listener.handleTeamMemberKicked(event)
+
+            // then
+            verify(exactly = 1) { notificationService.sendNotification(any()) }
+            assertThat(requestSlot.captured.userId).isEqualTo(10L)
+            assertThat(requestSlot.captured.type).isEqualTo(NotificationType.TEAM_MEMBER_KICKED)
+            assertThat(requestSlot.captured.body).contains("타이거즈")
         }
     }
 
