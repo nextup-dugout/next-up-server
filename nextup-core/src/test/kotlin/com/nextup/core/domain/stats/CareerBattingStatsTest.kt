@@ -319,6 +319,90 @@ class CareerBattingStatsTest {
     }
 
     @Nested
+    @DisplayName("경기 기록 롤백")
+    inner class RevertGameRecord {
+        @Test
+        fun `should revert single game record correctly`() {
+            // given
+            val stats = CareerBattingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 4, h = 2, doubles = 1, bb = 1, so = 1, runs = 1, rbi = 1)
+                }
+
+            stats.addGameRecord(record)
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.hits).isEqualTo(2)
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isEqualTo(0)
+            assertThat(stats.plateAppearances).isEqualTo(0)
+            assertThat(stats.atBats).isEqualTo(0)
+            assertThat(stats.hits).isEqualTo(0)
+            assertThat(stats.doubles).isEqualTo(0)
+            assertThat(stats.walks).isEqualTo(0)
+            assertThat(stats.strikeouts).isEqualTo(0)
+            assertThat(stats.runs).isEqualTo(0)
+            assertThat(stats.runsBattedIn).isEqualTo(0)
+        }
+
+        @Test
+        fun `should not go below zero when reverting`() {
+            // given: stats at zero
+            val stats = CareerBattingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 5, ab = 4, h = 2, doubles = 1, bb = 1, so = 1)
+                }
+
+            // when: revert on empty stats
+            stats.revertGameRecord(record)
+
+            // then: all should be 0 (not negative)
+            assertThat(stats.gamesPlayed).isEqualTo(0)
+            assertThat(stats.plateAppearances).isEqualTo(0)
+            assertThat(stats.atBats).isEqualTo(0)
+            assertThat(stats.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `should correctly revert one of multiple accumulated records`() {
+            // given
+            val stats = CareerBattingStats.create(testPlayer)
+            val gamePlayer = mockk<GamePlayer>()
+            val record1 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 4, h = 2, hr = 1, runs = 2, rbi = 2)
+                }
+            val record2 =
+                BattingRecord.create(gamePlayer).apply {
+                    setStats(pa = 4, ab = 3, h = 1, bb = 1)
+                }
+
+            stats.addGameRecord(record1)
+            stats.addGameRecord(record2)
+            assertThat(stats.gamesPlayed).isEqualTo(2)
+            assertThat(stats.hits).isEqualTo(3)
+
+            // when: revert the first game only
+            stats.revertGameRecord(record1)
+
+            // then: only record2 remains
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.plateAppearances).isEqualTo(4)
+            assertThat(stats.atBats).isEqualTo(3)
+            assertThat(stats.hits).isEqualTo(1)
+            assertThat(stats.homeRuns).isEqualTo(0)
+            assertThat(stats.walks).isEqualTo(1)
+        }
+    }
+
+    @Nested
     @DisplayName("유효성 검증")
     inner class Validation {
         @Test

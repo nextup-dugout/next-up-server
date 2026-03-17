@@ -78,6 +78,7 @@ class GameScorerServiceImplTest {
                 gameRepository,
                 gameTeamRepository,
                 pitchingRecordRepository,
+                com.nextup.core.service.game.PitchingDecisionService(),
                 eventPublisher,
             )
         plateAppearanceRecordService =
@@ -165,6 +166,7 @@ class GameScorerServiceImplTest {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
             every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns game.gameTeams
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -180,6 +182,7 @@ class GameScorerServiceImplTest {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
             every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns game.gameTeams
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -195,6 +198,7 @@ class GameScorerServiceImplTest {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
             every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns game.gameTeams
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -221,6 +225,7 @@ class GameScorerServiceImplTest {
             // given
             val game = createGame(1L, GameStatus.IN_PROGRESS)
             every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gameTeamRepository.findAllByGameId(1L) } returns game.gameTeams
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -1039,7 +1044,9 @@ class GameScorerServiceImplTest {
             val homeGameTeam = createMockGameTeam(1L, game, homeTeam)
 
             every { gameRepository.findByIdOrNull(1L) } returns game
-            every { gameTeamRepository.findAllByGameId(1L) } returns listOf(homeGameTeam)
+            // 첫 호출(endGame에서 finish용): 정상 2개, 이후 호출(assignPitchingDecisions/publishGameResultEvent): 1개
+            every { gameTeamRepository.findAllByGameId(1L) } returnsMany
+                listOf(game.gameTeams, listOf(homeGameTeam), listOf(homeGameTeam))
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -1100,7 +1107,7 @@ class GameScorerServiceImplTest {
             // when
             gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
 
-            // then - 무승부이므로 PitchingDecisionCalculator.calculate가 emptyMap 반환
+            // then - 무승부이므로 PitchingDecisionService가 투수 결정을 부여하지 않음
             // → save 호출 없음
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
         }

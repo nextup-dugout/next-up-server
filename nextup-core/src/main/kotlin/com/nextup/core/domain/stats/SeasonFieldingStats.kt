@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import jakarta.persistence.Version
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -51,6 +52,10 @@ class SeasonFieldingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0
@@ -121,6 +126,27 @@ class SeasonFieldingStats(
         errors -= record.errors
         doublePlays -= record.doublePlays
         passedBalls -= record.passedBalls
+        validate()
+    }
+
+    /**
+     * 기록 정정 시 델타를 적용합니다.
+     *
+     * @param fieldName 정정할 필드명
+     * @param delta 변경량 (양수: 증가, 음수: 감소)
+     */
+    fun applyFieldCorrection(
+        fieldName: String,
+        delta: Int,
+    ) {
+        when (fieldName) {
+            "putOuts" -> putOuts = maxOf(0, putOuts + delta)
+            "assists" -> assists = maxOf(0, assists + delta)
+            "errors" -> errors = maxOf(0, errors + delta)
+            "doublePlays" -> doublePlays = maxOf(0, doublePlays + delta)
+            "passedBalls" -> passedBalls = maxOf(0, passedBalls + delta)
+            else -> throw IllegalArgumentException("유효하지 않은 시즌 수비 통계 필드입니다: $fieldName")
+        }
         validate()
     }
 

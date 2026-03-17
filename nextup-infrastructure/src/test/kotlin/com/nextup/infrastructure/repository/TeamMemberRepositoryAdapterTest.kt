@@ -164,6 +164,22 @@ class TeamMemberRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("findAllActiveByUserId - 활성 상태 멤버 전체 조회 시 JPA repository에 위임한다")
+    fun `should delegate findAllActiveByUserId to jpa repository`() {
+        // given
+        val members = listOf(mockk<TeamMember>(), mockk<TeamMember>())
+        every { jpaRepository.findAllActiveByUserId(10L) } returns members
+
+        // when
+        val result = adapter.findAllActiveByUserId(10L)
+
+        // then
+        assertThat(result).hasSize(2)
+        assertThat(result).isEqualTo(members)
+        verify(exactly = 1) { jpaRepository.findAllActiveByUserId(10L) }
+    }
+
+    @Test
     @DisplayName("findByTeamIdWithUserAndPlayer - 페이지 조회 시 JPA repository에 위임한다")
     fun `should delegate findByTeamIdWithUserAndPlayer to jpa repository`() {
         // given

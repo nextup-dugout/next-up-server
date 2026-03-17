@@ -147,9 +147,10 @@ class GameTest {
         fun `진행 중인 경기를 종료할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gameTeams = game.gameTeams
 
             // when
-            game.finish()
+            game.finish(gameTeams)
 
             // then
             assertThat(game.status).isEqualTo(GameStatus.FINISHED)
@@ -160,10 +161,65 @@ class GameTest {
         fun `예정된 경기는 종료할 수 없다`() {
             // given
             val game = createGame(status = GameStatus.SCHEDULED)
+            val gameTeams = game.gameTeams
 
             // when & then
-            assertThatThrownBy { game.finish() }
+            assertThatThrownBy { game.finish(gameTeams) }
                 .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `정상 종료 시 홈팀 점수가 높으면 홈팀 WIN, 원정팀 LOSS`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(5)
+            awayTeam.addScore(3)
+
+            // when
+            game.finish(gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.WIN)
+            assertThat(awayTeam.result).isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `정상 종료 시 원정팀 점수가 높으면 원정팀 WIN, 홈팀 LOSS`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(2)
+            awayTeam.addScore(7)
+
+            // when
+            game.finish(gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.LOSS)
+            assertThat(awayTeam.result).isEqualTo(GameResult.WIN)
+        }
+
+        @Test
+        fun `정상 종료 시 동점이면 양 팀 모두 DRAW`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(4)
+            awayTeam.addScore(4)
+
+            // when
+            game.finish(gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.DRAW)
+            assertThat(awayTeam.result).isEqualTo(GameResult.DRAW)
         }
     }
 
@@ -373,6 +429,89 @@ class GameTest {
             assertThatThrownBy { game.callGame(isHomeTeamLeading = true) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("최소 5이닝")
+        }
+
+        @Test
+        fun `콜드게임 종료 시 홈팀 점수가 높으면 홈팀 WIN, 원정팀 LOSS`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(10)
+            awayTeam.addScore(0)
+
+            // when
+            game.callGame(reason = "점수차", gameTeams = gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.WIN)
+            assertThat(awayTeam.result).isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `콜드게임 종료 시 원정팀 점수가 높으면 원정팀 WIN, 홈팀 LOSS`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 6
+                    isTopInning = false
+                }
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(1)
+            awayTeam.addScore(11)
+
+            // when
+            game.callGame(gameTeams = gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.LOSS)
+            assertThat(awayTeam.result).isEqualTo(GameResult.WIN)
+        }
+
+        @Test
+        fun `콜드게임 종료 시 동점이면 양 팀 모두 DRAW`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 7
+                    isTopInning = false
+                }
+            val gameTeams = game.gameTeams
+            val homeTeam = gameTeams.first { it.homeAway == HomeAway.HOME }
+            val awayTeam = gameTeams.first { it.homeAway == HomeAway.AWAY }
+            homeTeam.addScore(3)
+            awayTeam.addScore(3)
+
+            // when
+            game.callGame(gameTeams = gameTeams)
+
+            // then
+            assertThat(homeTeam.result).isEqualTo(GameResult.DRAW)
+            assertThat(awayTeam.result).isEqualTo(GameResult.DRAW)
+        }
+
+        @Test
+        fun `gameTeams 없이 콜드게임 처리하면 result는 UNDECIDED 유지`() {
+            // given
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+            val gameTeams = game.gameTeams
+
+            // when
+            game.callGame()
+
+            // then
+            gameTeams.forEach { assertThat(it.result).isEqualTo(GameResult.UNDECIDED) }
         }
     }
 

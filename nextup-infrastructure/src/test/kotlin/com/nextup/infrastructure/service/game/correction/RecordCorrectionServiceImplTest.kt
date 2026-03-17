@@ -1,20 +1,24 @@
 package com.nextup.infrastructure.service.game.correction
 
 import com.nextup.common.exception.BattingRecordNotFoundByIdException
+import com.nextup.common.exception.FieldingRecordNotFoundByIdException
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PitchingRecordNotFoundByIdException
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.CorrectionType
+import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.RecordCorrection
 import com.nextup.core.port.repository.AuditLogRepositoryPort
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
+import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.RecordCorrectionRepositoryPort
 import com.nextup.core.service.game.correction.BattingCorrectionRequest
+import com.nextup.core.service.game.correction.FieldingCorrectionRequest
 import com.nextup.core.service.game.correction.PitchingCorrectionRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -31,6 +35,7 @@ import org.springframework.context.ApplicationEventPublisher
 class RecordCorrectionServiceImplTest {
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var fieldingRecordRepository: FieldingRecordRepositoryPort
     private lateinit var recordCorrectionRepository: RecordCorrectionRepositoryPort
     private lateinit var auditLogRepository: AuditLogRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
@@ -45,6 +50,7 @@ class RecordCorrectionServiceImplTest {
     fun setUp() {
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
+        fieldingRecordRepository = mockk()
         recordCorrectionRepository = mockk()
         auditLogRepository = mockk()
         gameRepository = mockk()
@@ -54,6 +60,7 @@ class RecordCorrectionServiceImplTest {
             RecordCorrectionServiceImpl(
                 battingRecordRepository = battingRecordRepository,
                 pitchingRecordRepository = pitchingRecordRepository,
+                fieldingRecordRepository = fieldingRecordRepository,
                 recordCorrectionRepository = recordCorrectionRepository,
                 auditLogRepository = auditLogRepository,
                 gameRepository = gameRepository,
@@ -220,6 +227,87 @@ class RecordCorrectionServiceImplTest {
             assertThatThrownBy {
                 service.correctPitchingRecord(gameId, recordId, request)
             }.isInstanceOf(PitchingRecordNotFoundByIdException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("correctFieldingRecord")
+    inner class CorrectFieldingRecordTest {
+        private lateinit var mockGame: Game
+        private lateinit var mockGamePlayer: GamePlayer
+        private lateinit var mockFieldingRecord: FieldingRecord
+        private lateinit var mockCorrection: RecordCorrection
+
+        @BeforeEach
+        fun setUp() {
+            mockGame = mockk(relaxed = true)
+            mockGamePlayer = mockk(relaxed = true)
+            mockFieldingRecord = mockk(relaxed = true)
+            mockCorrection = mockk(relaxed = true)
+        }
+
+        @Test
+        fun `수비 기록을 정정하면 정정된 기록이 반환된다`() {
+            // given
+            val request =
+                FieldingCorrectionRequest(
+                    adminUserId = adminUserId,
+                    fieldName = "putOuts",
+                    newValue = "5",
+                    reason = "기록원 오류 정정",
+                )
+            every { gameRepository.findByIdOrNull(gameId) } returns mockGame
+            every { fieldingRecordRepository.findByIdOrNull(recordId) } returns mockFieldingRecord
+            every { mockFieldingRecord.correctField("putOuts", "5") } returns "3"
+            every { recordCorrectionRepository.save(any()) } returns mockCorrection
+            every { auditLogRepository.save(any()) } returns mockk()
+
+            // when
+            val result = service.correctFieldingRecord(gameId, recordId, request)
+
+            // then
+            assertThat(result).isNotNull
+            verify(exactly = 1) { mockFieldingRecord.correctField("putOuts", "5") }
+            verify(exactly = 1) { recordCorrectionRepository.save(any()) }
+            verify(exactly = 1) { auditLogRepository.save(any()) }
+            verify(exactly = 1) { eventPublisher.publishEvent(any<Any>()) }
+        }
+
+        @Test
+        fun `경기가 존재하지 않으면 GameNotFoundException이 발생한다`() {
+            // given
+            val request =
+                FieldingCorrectionRequest(
+                    adminUserId = adminUserId,
+                    fieldName = "putOuts",
+                    newValue = "5",
+                    reason = "정정 사유",
+                )
+            every { gameRepository.findByIdOrNull(gameId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.correctFieldingRecord(gameId, recordId, request)
+            }.isInstanceOf(GameNotFoundException::class.java)
+        }
+
+        @Test
+        fun `수비 기록이 존재하지 않으면 FieldingRecordNotFoundByIdException이 발생한다`() {
+            // given
+            val request =
+                FieldingCorrectionRequest(
+                    adminUserId = adminUserId,
+                    fieldName = "putOuts",
+                    newValue = "5",
+                    reason = "정정 사유",
+                )
+            every { gameRepository.findByIdOrNull(gameId) } returns mockGame
+            every { fieldingRecordRepository.findByIdOrNull(recordId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.correctFieldingRecord(gameId, recordId, request)
+            }.isInstanceOf(FieldingRecordNotFoundByIdException::class.java)
         }
     }
 

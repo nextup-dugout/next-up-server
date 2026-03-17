@@ -2,13 +2,16 @@ package com.nextup.backoffice.controller.correction
 
 import com.nextup.backoffice.dto.correction.BattingRecordCorrectionResponse
 import com.nextup.backoffice.dto.correction.CorrectBattingRecordRequest
+import com.nextup.backoffice.dto.correction.CorrectFieldingRecordRequest
 import com.nextup.backoffice.dto.correction.CorrectPitchingRecordRequest
+import com.nextup.backoffice.dto.correction.FieldingRecordCorrectionResponse
 import com.nextup.backoffice.dto.correction.PitchingRecordCorrectionResponse
 import com.nextup.backoffice.dto.correction.RecordCorrectionHistoryResponse
 import com.nextup.backoffice.dto.correction.toCorrectionResponse
 import com.nextup.backoffice.dto.correction.toHistoryResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.correction.BattingCorrectionRequest
+import com.nextup.core.service.game.correction.FieldingCorrectionRequest
 import com.nextup.core.service.game.correction.PitchingCorrectionRequest
 import com.nextup.core.service.game.correction.RecordCorrectionService
 import jakarta.validation.Valid
@@ -75,6 +78,31 @@ class RecordCorrectionAdminController(
                 reason = request.reason,
             )
         val updatedRecord = recordCorrectionService.correctPitchingRecord(gameId, recordId, correctionRequest)
+        return ApiResponse.success(updatedRecord.toCorrectionResponse())
+    }
+
+    /**
+     * 수비 기록을 정정합니다.
+     *
+     * @param gameId 경기 ID
+     * @param recordId 수비 기록 ID
+     * @param request 정정 요청 정보
+     */
+    @PutMapping("/fielding-records/{recordId}")
+    fun correctFieldingRecord(
+        @PathVariable gameId: Long,
+        @PathVariable recordId: Long,
+        @Valid @RequestBody request: CorrectFieldingRecordRequest,
+    ): ApiResponse<FieldingRecordCorrectionResponse> {
+        val correctionRequest =
+            FieldingCorrectionRequest(
+                adminUserId = request.adminUserId,
+                fieldName = request.fieldName,
+                newValue = request.newValue,
+                reason = request.reason,
+            )
+        val updatedRecord =
+            recordCorrectionService.correctFieldingRecord(gameId, recordId, correctionRequest)
         return ApiResponse.success(updatedRecord.toCorrectionResponse())
     }
 
