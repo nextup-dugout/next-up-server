@@ -48,6 +48,13 @@ class SeasonFieldingStatsTest {
             assertThatThrownBy { SeasonFieldingStats.create(player, -1) }
                 .isInstanceOf(StatsValidationException::class.java)
         }
+
+        @Test
+        fun `teamId를 포함하여 생성할 수 있다`() {
+            val stats = SeasonFieldingStats.create(player, 2026, teamId = 3L)
+            assertThat(stats.teamId).isEqualTo(3L)
+            assertThat(stats.year).isEqualTo(2026)
+        }
     }
 
     @Nested

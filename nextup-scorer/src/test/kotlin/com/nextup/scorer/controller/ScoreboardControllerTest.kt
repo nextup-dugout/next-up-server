@@ -96,6 +96,25 @@ class ScoreboardControllerTest {
     }
 
     @Test
+    fun `원정팀 정보가 없으면 예외를 발생시킨다`() {
+        // given
+        val gameId = 1L
+        val game: Game = mockk()
+        val homeTeam: GameTeam =
+            mockk {
+                every { homeAway } returns HomeAway.HOME
+            }
+
+        every { gameRepository.findByIdOrNull(gameId) } returns game
+        every { gameTeamRepository.findAllByGameId(gameId) } returns listOf(homeTeam)
+
+        // when & then
+        assertThatThrownBy {
+            controller.getScoreboard(gameId)
+        }.isInstanceOf(GameNotFoundException::class.java)
+    }
+
+    @Test
     fun `홈팀 정보가 없으면 예외를 발생시킨다`() {
         // given
         val gameId = 1L

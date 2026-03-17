@@ -50,6 +50,18 @@ class SeasonPitchingStatsTest {
                 SeasonPitchingStats.create(testPlayer, -1)
             }
         }
+
+        @Test
+        fun `should create season pitching stats with teamId`() {
+            // when
+            val stats = SeasonPitchingStats.create(testPlayer, 2024, teamId = 7L)
+
+            // then
+            assertThat(stats.player).isEqualTo(testPlayer)
+            assertThat(stats.year).isEqualTo(2024)
+            assertThat(stats.teamId).isEqualTo(7L)
+            assertThat(stats.gamesPlayed).isZero
+        }
     }
 
     @Nested

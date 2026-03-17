@@ -69,23 +69,48 @@ class TeamMemberEventTest {
             val event =
                 TeamMemberKickedEvent(
                     teamId = 1L,
+                    userId = 10L,
                     playerId = 20L,
                     memberId = 100L,
+                    teamName = "타이거즈",
                 )
 
             // then
             assertThat(event.teamId).isEqualTo(1L)
+            assertThat(event.userId).isEqualTo(10L)
             assertThat(event.playerId).isEqualTo(20L)
             assertThat(event.memberId).isEqualTo(100L)
+            assertThat(event.teamName).isEqualTo("타이거즈")
         }
 
         @Test
         @DisplayName("equals와 hashCode를 지원한다")
         fun `should support equals and hashCode`() {
             // given
-            val event1 = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
-            val event2 = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
-            val event3 = TeamMemberKickedEvent(teamId = 2L, playerId = 30L, memberId = 200L)
+            val event1 =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+            val event2 =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+            val event3 =
+                TeamMemberKickedEvent(
+                    teamId = 2L,
+                    userId = 11L,
+                    playerId = 30L,
+                    memberId = 200L,
+                    teamName = "라이온즈",
+                )
 
             // then
             assertThat(event1).isEqualTo(event2)
@@ -97,7 +122,14 @@ class TeamMemberEventTest {
         @DisplayName("copy 메서드를 지원한다")
         fun `should support copy`() {
             // given
-            val original = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val original =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
 
             // when
             val copied = original.copy(playerId = 99L)
@@ -112,7 +144,14 @@ class TeamMemberEventTest {
         @DisplayName("toString이 필드 정보를 포함한다")
         fun `should include field info in toString`() {
             // given
-            val event = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
 
             // then
             val str = event.toString()
@@ -132,23 +171,48 @@ class TeamMemberEventTest {
             val event =
                 TeamMemberLeftEvent(
                     teamId = 1L,
+                    userId = 10L,
                     playerId = 20L,
                     memberId = 100L,
+                    teamName = "타이거즈",
                 )
 
             // then
             assertThat(event.teamId).isEqualTo(1L)
+            assertThat(event.userId).isEqualTo(10L)
             assertThat(event.playerId).isEqualTo(20L)
             assertThat(event.memberId).isEqualTo(100L)
+            assertThat(event.teamName).isEqualTo("타이거즈")
         }
 
         @Test
         @DisplayName("equals와 hashCode를 지원한다")
         fun `should support equals and hashCode`() {
             // given
-            val event1 = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
-            val event2 = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
-            val event3 = TeamMemberLeftEvent(teamId = 2L, playerId = 30L, memberId = 200L)
+            val event1 =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+            val event2 =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+            val event3 =
+                TeamMemberLeftEvent(
+                    teamId = 2L,
+                    userId = 11L,
+                    playerId = 30L,
+                    memberId = 200L,
+                    teamName = "라이온즈",
+                )
 
             // then
             assertThat(event1).isEqualTo(event2)
@@ -160,7 +224,14 @@ class TeamMemberEventTest {
         @DisplayName("copy 메서드를 지원한다")
         fun `should support copy`() {
             // given
-            val original = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val original =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
 
             // when
             val copied = original.copy(memberId = 999L)
@@ -175,7 +246,14 @@ class TeamMemberEventTest {
         @DisplayName("toString이 필드 정보를 포함한다")
         fun `should include field info in toString`() {
             // given
-            val event = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val event =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
 
             // then
             val str = event.toString()
@@ -188,8 +266,22 @@ class TeamMemberEventTest {
         @DisplayName("TeamMemberLeftEvent와 TeamMemberKickedEvent는 서로 다른 타입이다")
         fun `should be different types from TeamMemberKickedEvent`() {
             // given
-            val leftEvent = TeamMemberLeftEvent(teamId = 1L, playerId = 20L, memberId = 100L)
-            val kickedEvent = TeamMemberKickedEvent(teamId = 1L, playerId = 20L, memberId = 100L)
+            val leftEvent =
+                TeamMemberLeftEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
+            val kickedEvent =
+                TeamMemberKickedEvent(
+                    teamId = 1L,
+                    userId = 10L,
+                    playerId = 20L,
+                    memberId = 100L,
+                    teamName = "타이거즈",
+                )
 
             // then
             assertThat(leftEvent).isNotEqualTo(kickedEvent)
