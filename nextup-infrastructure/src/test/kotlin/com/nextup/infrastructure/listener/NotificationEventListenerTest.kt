@@ -1,11 +1,12 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.association.Association
+import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
+import com.nextup.core.domain.event.ElectionTiedEvent
 import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.domain.event.GamePostponedEvent
 import com.nextup.core.domain.event.GameRescheduledEvent
-import com.nextup.core.domain.event.ElectionTiedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.LineupConfirmedEvent
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
@@ -629,8 +630,9 @@ class NotificationEventListenerTest {
                 ElectionTiedEvent(
                     teamId = 1L,
                     electionId = 42L,
+                    electionType = ElectionType.OWNER_ELECTION,
                     tiedCandidateCount = 3,
-                    tiedVoteCount = 5,
+                    tiedVoteCount = 5L,
                 )
 
             val ownerUser = User.createLocalUser("owner@example.com", "pw", "팀장")
@@ -669,8 +671,9 @@ class NotificationEventListenerTest {
                 ElectionTiedEvent(
                     teamId = 1L,
                     electionId = 42L,
+                    electionType = ElectionType.OWNER_ELECTION,
                     tiedCandidateCount = 2,
-                    tiedVoteCount = 3,
+                    tiedVoteCount = 3L,
                 )
 
             every {
