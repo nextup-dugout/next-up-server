@@ -191,6 +191,12 @@ class LineupValidatorTest {
                 ),
                 createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
                 createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 3, true),
+                createEntry(submission, createPlayer("2루수", Position.SECOND_BASE, 4L), Position.SECOND_BASE, 4, true),
+                createEntry(submission, createPlayer("3루수", Position.THIRD_BASE, 5L), Position.THIRD_BASE, 5, true),
+                createEntry(submission, createPlayer("유격수", Position.SHORTSTOP, 6L), Position.SHORTSTOP, 6, true),
+                createEntry(submission, createPlayer("좌익수", Position.LEFT_FIELD, 7L), Position.LEFT_FIELD, 7, true),
+                createEntry(submission, createPlayer("중견수", Position.CENTER_FIELD, 8L), Position.CENTER_FIELD, 8, true),
+                createEntry(submission, createPlayer("우익수", Position.RIGHT_FIELD, 9L), Position.RIGHT_FIELD, 9, true),
                 createEntry(
                     submission,
                     createPlayer("대기선수", Position.LEFT_FIELD, 10L),
@@ -199,7 +205,7 @@ class LineupValidatorTest {
                     false
                 ),
             )
-        val attendingPlayerIds = setOf(1L, 2L, 3L)
+        val attendingPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
 
         // when & then - substitute (player 10) is not attending
         assertThrows<NonAttendingPlayerInLineupException> {
@@ -278,13 +284,13 @@ class LineupValidatorTest {
                     true,
                 ),
                 createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
-                createEntry(
-                    submission,
-                    createPlayer("1루수", Position.FIRST_BASE, 3L),
-                    Position.FIRST_BASE,
-                    3,
-                    true,
-                ),
+                createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 3, true),
+                createEntry(submission, createPlayer("2루수", Position.SECOND_BASE, 4L), Position.SECOND_BASE, 4, true),
+                createEntry(submission, createPlayer("3루수", Position.THIRD_BASE, 5L), Position.THIRD_BASE, 5, true),
+                createEntry(submission, createPlayer("유격수", Position.SHORTSTOP, 6L), Position.SHORTSTOP, 6, true),
+                createEntry(submission, createPlayer("좌익수", Position.LEFT_FIELD, 7L), Position.LEFT_FIELD, 7, true),
+                createEntry(submission, createPlayer("중견수", Position.CENTER_FIELD, 8L), Position.CENTER_FIELD, 8, true),
+                createEntry(submission, createPlayer("우익수", Position.RIGHT_FIELD, 9L), Position.RIGHT_FIELD, 9, true),
                 createEntry(
                     submission,
                     createPlayer("대타", Position.LEFT_FIELD, 10L),
@@ -294,7 +300,7 @@ class LineupValidatorTest {
                 ),
             )
         // substitute player 10 is not registered
-        val registeredPlayerIds = setOf(1L, 2L, 3L)
+        val registeredPlayerIds = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
 
         // when & then
         assertThrows<UnregisteredPlayerInLineupException> {
@@ -439,6 +445,13 @@ class LineupValidatorTest {
                 true
             ),
             createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+            createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 3, true),
+            createEntry(submission, createPlayer("2루수", Position.SECOND_BASE, 4L), Position.SECOND_BASE, 4, true),
+            createEntry(submission, createPlayer("3루수", Position.THIRD_BASE, 5L), Position.THIRD_BASE, 5, true),
+            createEntry(submission, createPlayer("유격수", Position.SHORTSTOP, 6L), Position.SHORTSTOP, 6, true),
+            createEntry(submission, createPlayer("좌익수", Position.LEFT_FIELD, 7L), Position.LEFT_FIELD, 7, true),
+            createEntry(submission, createPlayer("중견수", Position.CENTER_FIELD, 8L), Position.CENTER_FIELD, 8, true),
+            createEntry(submission, createPlayer("우익수", Position.RIGHT_FIELD, 9L), Position.RIGHT_FIELD, 9, true),
             createEntry(
                 submission,
                 createPlayer("DH", Position.DESIGNATED_HITTER, 10L),
@@ -457,7 +470,14 @@ class LineupValidatorTest {
                 9,
                 true
             ),
-            createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+            createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 1, true),
+            createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 2, true),
+            createEntry(submission, createPlayer("2루수", Position.SECOND_BASE, 4L), Position.SECOND_BASE, 3, true),
+            createEntry(submission, createPlayer("3루수", Position.THIRD_BASE, 5L), Position.THIRD_BASE, 4, true),
+            createEntry(submission, createPlayer("유격수", Position.SHORTSTOP, 6L), Position.SHORTSTOP, 5, true),
+            createEntry(submission, createPlayer("좌익수", Position.LEFT_FIELD, 7L), Position.LEFT_FIELD, 6, true),
+            createEntry(submission, createPlayer("중견수", Position.CENTER_FIELD, 8L), Position.CENTER_FIELD, 7, true),
+            createEntry(submission, createPlayer("우익수", Position.RIGHT_FIELD, 9L), Position.RIGHT_FIELD, 8, true),
         )
 
     private fun createEntry(

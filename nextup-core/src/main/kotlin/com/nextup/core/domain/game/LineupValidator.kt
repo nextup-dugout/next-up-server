@@ -2,6 +2,7 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
+import com.nextup.common.exception.InvalidLineupBattingOrderCountException
 import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
@@ -41,6 +42,7 @@ object LineupValidator {
         validateNoDuplicatePlayers(entries)
         validateCatcherExists(starters)
         validateDhRule(starters)
+        validateBattingOrderCount(starters)
         if (attendingPlayerIds != null) {
             validateOnlyAttendingPlayers(entries, attendingPlayerIds)
         }
@@ -101,6 +103,29 @@ object LineupValidator {
             )
         }
     }
+
+    /**
+     * 타순 인원 수 검증 (M-7: DH 해제 후 타순 인원 검증)
+     *
+     * 선발 라인업의 타순에 배치된 선수가 정확히 9명이어야 합니다.
+     * DH가 없는 경우 투수 포함 9명, DH가 있는 경우 투수 제외 DH 포함 9명.
+     * DH 해제 후 타순 인원이 9명이 아닌 경우(8명 등) 예외를 발생시킵니다.
+     *
+     * @param starters 선발 라인업 엔트리 목록
+     * @throws InvalidLineupBattingOrderCountException 타순 인원이 9명이 아닌 경우
+     */
+    private fun validateBattingOrderCount(starters: List<LineupEntry>) {
+        val battersInOrder = starters.filter { it.battingOrder != null }
+        if (battersInOrder.size != REQUIRED_BATTING_ORDER_COUNT) {
+            throw InvalidLineupBattingOrderCountException(
+                expected = REQUIRED_BATTING_ORDER_COUNT,
+                actual = battersInOrder.size,
+            )
+        }
+    }
+
+    /** 타순에 필요한 선수 수 */
+    private const val REQUIRED_BATTING_ORDER_COUNT = 9
 
     /**
      * 참석(ATTENDING) 선수만 라인업에 포함되었는지 검증

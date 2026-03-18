@@ -229,6 +229,10 @@ class BattingRecord(
                 atBats++
                 strikeouts++
             }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
+                atBats++
+                strikeouts++
+            }
             PlateAppearanceResult.GROUND_OUT,
             PlateAppearanceResult.FLY_OUT,
             PlateAppearanceResult.INFIELD_FLY,
@@ -341,6 +345,12 @@ class BattingRecord(
                 runs--
             }
             PlateAppearanceResult.STRIKEOUT -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
+                atBats--
+                strikeouts--
+            }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
                 require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
                 require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
                 atBats--

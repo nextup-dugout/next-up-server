@@ -20,6 +20,7 @@ enum class PlateAppearanceResult(
 
     // 아웃 (Out) - 타수 O, 안타 X
     STRIKEOUT("삼진", "3스트라이크 아웃", true, false),
+    STRIKEOUT_DROPPED_THIRD("낫아웃 삼진", "낫아웃(포수가 제3스트라이크 포구 실패)으로 타자 출루", true, false),
     GROUND_OUT("땅볼 아웃", "땅볼로 아웃", true, false),
     FLY_OUT("플라이 아웃", "뜬공으로 아웃", true, false),
     INFIELD_FLY("인필드플라이", "내야 뜬공으로 아웃 (인필드플라이 룰 적용)", true, false),
@@ -73,10 +74,17 @@ enum class PlateAppearanceResult(
         get() = this in listOf(DOUBLE, TRIPLE, HOME_RUN)
 
     /**
-     * 삼진인지 확인합니다.
+     * 삼진인지 확인합니다 (낫아웃 삼진 포함).
      */
     val isStrikeout: Boolean
-        get() = this == STRIKEOUT
+        get() = this == STRIKEOUT || this == STRIKEOUT_DROPPED_THIRD
+
+    /**
+     * 낫아웃 삼진인지 확인합니다.
+     * 낫아웃 삼진은 삼진이지만 타자가 출루합니다.
+     */
+    val isDroppedThirdStrike: Boolean
+        get() = this == STRIKEOUT_DROPPED_THIRD
 
     /**
      * 볼넷 또는 고의4구인지 확인합니다.
@@ -111,6 +119,7 @@ enum class PlateAppearanceResult(
                     ERROR,
                     INTERFERENCE,
                     BATTER_INTERFERENCE,
+                    STRIKEOUT_DROPPED_THIRD,
                 )
 
     /**

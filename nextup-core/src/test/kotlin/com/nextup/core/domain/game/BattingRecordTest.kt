@@ -1650,4 +1650,373 @@ class BattingRecordTest {
             assertAllFieldsZero(battingRecord)
         }
     }
+
+    @Nested
+    @DisplayName("낫아웃 삼진 (STRIKEOUT_DROPPED_THIRD) 처리")
+    inner class DroppedThirdStrikeTest {
+        @Test
+        fun `낫아웃 삼진을 기록하면 타석, 타수, 삼진이 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.strikeouts).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `낫아웃 삼진 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+            assertThat(battingRecord.strikeouts).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("방해 결과 타입 (BATTER_INTERFERENCE, RUNNER_INTERFERENCE) 처리")
+    inner class InterferenceResultTest {
+        @Test
+        fun `타격방해를 기록하면 타석만 증가하고 타수는 증가하지 않는다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `주루방해를 기록하면 타석만 증가하고 타수는 증가하지 않는다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `타격방해 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.BATTER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+
+        @Test
+        fun `주루방해 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.RUNNER_INTERFERENCE)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("PlateAppearanceResult - 새 결과 타입 속성 확인")
+    inner class NewResultTypePropertyTest {
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 낫아웃 삼진이다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isDroppedThirdStrike).isTrue()
+        }
+
+        @Test
+        fun `STRIKEOUT_DROPPED_THIRD는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 출루에 성공한다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isOnBase).isTrue()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 출루에 성공하지 못한다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isOnBase).isFalse()
+        }
+
+        @Test
+        fun `BATTER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isAtBat).isFalse()
+        }
+
+        @Test
+        fun `RUNNER_INTERFERENCE는 타수에 포함되지 않는다`() {
+            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isAtBat).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("인필드플라이 (INFIELD_FLY) 처리")
+    inner class InfieldFlyTest {
+        @Test
+        fun `인필드플라이를 기록하면 타석과 타수가 증가한다`() {
+            // when
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(1)
+            assertThat(battingRecord.atBats).isEqualTo(1)
+            assertThat(battingRecord.hits).isEqualTo(0)
+        }
+
+        @Test
+        fun `인필드플라이 롤백이 정상적으로 동작한다`() {
+            // given
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // when
+            battingRecord.revertPlateAppearanceResult(PlateAppearanceResult.INFIELD_FLY)
+
+            // then
+            assertThat(battingRecord.plateAppearances).isEqualTo(0)
+            assertThat(battingRecord.atBats).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("partial branch 커버리지 - OBP/SBP 분기")
+    inner class OnBaseAndStolenBasePartialBranchTest {
+
+        @Test
+        fun `초기 상태에서 OBP denominator가 0이면 0_000을 반환한다`() {
+            // denominator = atBats + totalWalks + hitByPitch + sacrificeFlies = 0
+            assertThat(battingRecord.onBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `안타와 볼넷이 있으면 OBP를 정상 계산한다`() {
+            // denominator > 0 분기
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE) // hit=1, atBats=1
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.WALK) // walks=1
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.GROUND_OUT) // atBats=2
+            // OBP = (1 + 1 + 0) / (2 + 1 + 0 + 0) = 2/3 = 0.667
+            assertThat(battingRecord.onBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.667"))
+        }
+
+        @Test
+        fun `도루 시도가 없으면 도루 성공률은 0_000이다`() {
+            // attempts == 0 분기
+            assertThat(battingRecord.stolenBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `도루 시도가 있으면 도루 성공률을 계산한다`() {
+            // attempts > 0 분기
+            battingRecord.recordStolenBase()
+            battingRecord.recordStolenBase()
+            battingRecord.recordCaughtStealing()
+            // SB% = 2 / (2 + 1) = 0.667
+            assertThat(battingRecord.stolenBasePercentage)
+                .isEqualByComparingTo(BigDecimal("0.667"))
+        }
+
+        @Test
+        fun `타율 atBats가 0이면 0_000이다`() {
+            // atBats == 0 분기
+            assertThat(battingRecord.battingAverage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `장타율 atBats가 0이면 0_000이다`() {
+            // atBats == 0 분기
+            assertThat(battingRecord.sluggingPercentage)
+                .isEqualByComparingTo(BigDecimal("0.000"))
+        }
+    }
+
+    @Nested
+    @DisplayName("correctField - 기록 정정 분기 커버리지")
+    inner class CorrectFieldBranchTest {
+
+        @Test
+        fun `plateAppearances 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            val oldValue = battingRecord.correctField("plateAppearances", "5")
+            assertThat(oldValue).isEqualTo("1")
+            assertThat(battingRecord.plateAppearances).isEqualTo(5)
+        }
+
+        @Test
+        fun `atBats 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.correctField("plateAppearances", "10")
+            val oldValue = battingRecord.correctField("atBats", "4")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `hits 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE)
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("hits", "3")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `doubles 필드를 정정할 수 있다`() {
+            battingRecord.applyPlateAppearanceResult(PlateAppearanceResult.DOUBLE)
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("doubles", "2")
+            assertThat(oldValue).isEqualTo("1")
+        }
+
+        @Test
+        fun `triples 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("triples", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `homeRuns 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            battingRecord.correctField("hits", "5")
+            val oldValue = battingRecord.correctField("homeRuns", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `runs 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("runs", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `runsBattedIn 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("runsBattedIn", "5")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `walks 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("walks", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `intentionalWalks 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("intentionalWalks", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `hitByPitch 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("hitByPitch", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `strikeouts 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("strikeouts", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `sacrificeBunts 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("sacrificeBunts", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `sacrificeFlies 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("sacrificeFlies", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `stolenBases 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("stolenBases", "3")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `caughtStealing 필드를 정정할 수 있다`() {
+            val oldValue = battingRecord.correctField("caughtStealing", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `groundedIntoDoublePlays 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("groundedIntoDoublePlays", "2")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `triplePlays 필드를 정정할 수 있다`() {
+            battingRecord.correctField("plateAppearances", "10")
+            battingRecord.correctField("atBats", "10")
+            val oldValue = battingRecord.correctField("triplePlays", "1")
+            assertThat(oldValue).isEqualTo("0")
+        }
+
+        @Test
+        fun `유효하지 않은 필드명이면 예외가 발생한다 (else 분기)`() {
+            assertThatThrownBy {
+                battingRecord.correctField("invalidField", "1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("유효하지 않은 타격 기록 필드")
+        }
+
+        @Test
+        fun `정수가 아닌 값이면 예외가 발생한다 (toIntOrNull null 분기)`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "abc")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+
+        @Test
+        fun `음수 값이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "-1")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 0 이상이어야 합니다")
+        }
+
+        @Test
+        fun `소수점 값이면 정수 파싱 실패로 예외가 발생한다`() {
+            assertThatThrownBy {
+                battingRecord.correctField("plateAppearances", "1.5")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("정정 값은 정수여야 합니다")
+        }
+    }
 }
