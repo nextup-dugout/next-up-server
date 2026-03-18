@@ -150,25 +150,54 @@ DH 해제 트리거:
 
 ## 프로젝트 Entity 매핑
 
-검증 시 아래 Entity 메서드가 이 문서의 규칙과 일치하는지 확인:
+검증 시 아래 Entity/클래스가 이 문서의 규칙과 일치하는지 확인:
 
-### Game Entity (경기 진행)
+### Game 엔티티 (경기 진행)
+- `Game` — 경기 본체 (상태 머신: SCHEDULED → IN_PROGRESS → FINISHED/CANCELLED)
+- `GameTeam` — 경기 참여 팀 (홈/원정)
+- `GamePlayer` — 경기 참여 선수
+- `GameEvent` — 경기 이벤트 로그
+- `GameParticipation` — 선수 출전 기록
+- `GameResult` — 경기 결과
+- `GameState` — 임베디드 값 객체 (이닝, 아웃카운트, 볼카운트 등)
+- `GameRules` — 대회별 게임 규칙 설정
+
+주요 메서드:
 - `Game.start()`, `Game.finish()` — 경기 시작/종료
 - `Game.cancel(reason)`, `Game.callGame(reason)` — 취소/콜드게임
 - `Game.forfeit(winnerTeamId, reason, teams)` — 몰수패
 - `Game.postpone(newScheduledAt, reason)`, `Game.reschedule(newScheduledAt)` — 연기/일정변경
-- `Game.recordOut(): Boolean` — 아웃 기록, `Game.advanceBatter()` — 타순 진행
+- `Game.recordOut(): Boolean` — 아웃 기록
+- `Game.advanceBatter()` — 타순 진행
 - `Game.setRunner(base, playerId)` — 주자 설정
 - `Game.addBall(): Boolean`, `Game.addStrike(): Boolean` — 볼/스트라이크 카운트
-- Computed: `currentInningDisplay`, `isExtraInning`
 
-### BattingRecord / PitchingRecord (기록)
+### 기록 엔티티
+- `BattingRecord` — 타격 기록
+- `PitchingRecord` — 투구 기록
+- `FieldingRecord` — 수비 기록
+- `PitchEvent` — 개별 투구 이벤트
 - `PlateAppearanceResult` enum — 타석 결과 (안타, 삼진, 볼넷 등)
-- `PitchResult` enum — 투구 결과
 - `PitchingDecision` enum — 승/패/세이브/홀드
+- `PitchingDecisionCalculator` — 투수 판정 로직
+- `BaseRunningResult` — 주루 결과
 
-### LineupEntry / LineupSubmission (라인업)
+### 특수 기록
+- `SpecialGameRecord` — 노히트/퍼펙트게임 기록
+- `SpecialGameRecordDetector` — 자동 감지 로직
+- `CorrectionRequest` — 기록 정정 요청
+- `RecordCorrection` — 기록 정정 적용
+
+### 라인업 엔티티
+- `LineupEntry` — 라인업 개별 항목
+- `LineupSubmission` — 라인업 제출
 - `LineupValidator` — DH 규칙 포함 라인업 검증
+- `PositionHistoryEntry` — 포지션 변경 이력
+
+### 대회 엔티티
+- `Competition` — 대회 본체
+- `CompetitionPlayer` — 대회 등록 선수
+- `BracketEntry` — 토너먼트 대진표
 
 ## 규칙 참조
 
@@ -182,4 +211,3 @@ DH 해제 트리거:
 이 Skill을 활용하는 Agent:
 - **reviewer**: 도메인 로직 검증 시 이 Skill의 체크리스트 활용
 - **architect**: Entity 비즈니스 로직 구현 시 규칙 참조
-- **reviewer**: 최종 검수 시 야구 규칙 준수 여부 확인

@@ -4,7 +4,7 @@ description: |
   GitHub 브랜치/커밋/PR 워크플로우 및 CI/CD 연동 가이드.
   브랜치 명명, 커밋 메시지 컨벤션(Udacity Style), PR 템플릿을 제공한다.
 user-invocable: false
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read, Glob, Grep
 ---
 
 # Git Workflow - GitHub Automation & CI/CD
@@ -13,14 +13,21 @@ allowed-tools: Read, Glob, Grep, Bash
 
 ## 개요
 
-이 스킬은 GitHub 조작 및 CI/CD 파이프라인 연동을 수행합니다. MCP GitHub 서버를 우선 사용하고, 지원하지 않는 기능은 GitHub CLI를 사용합니다.
+이 스킬은 GitHub 조작 및 CI/CD 파이프라인 연동 규칙을 제공합니다.
 
-## 접근 방식
+## GitHub 도구
 
-| 방식 | 용도 | 우선순위 |
-|------|------|----------|
-| **MCP GitHub** | 이슈/PR 조회, 생성, 관리 | **1순위 (권장)** |
-| **GitHub CLI (`gh`)** | MCP 미지원 기능, 로컬 스크립트 | 2순위 (대안) |
+> **`gh` CLI는 미인증 상태입니다.** 모든 GitHub 작업은 **MCP GitHub 도구**를 사용합니다.
+
+| 작업 | MCP 도구 |
+|------|----------|
+| 이슈 생성/수정 | `mcp__github__issue_write` |
+| 이슈 조회 | `mcp__github__issue_read`, `mcp__github__list_issues` |
+| PR 생성 | `mcp__github__create_pull_request` |
+| PR 조회 | `mcp__github__pull_request_read`, `mcp__github__list_pull_requests` |
+| 브랜치 생성 | `mcp__github__create_branch` |
+| PR 머지 | `mcp__github__merge_pull_request` |
+| 파일 조회 | `mcp__github__get_file_contents` |
 
 ## 브랜치 명명 규칙
 
@@ -30,6 +37,7 @@ allowed-tools: Read, Glob, Grep, Bash
 | 수정 | `fix/#[이슈번호]-[버그명]` | `fix/#2-build-failure` |
 | 리팩토링 | `refactor/#[이슈번호]-[대상]` | `refactor/#3-player-service` |
 | 문서 | `docs/#[이슈번호]-[문서명]` | `docs/#4-api-documentation` |
+| 기타 | `chore/#[이슈번호]-[설명]` | `chore/#5-gradle-config` |
 
 ## PR 제목 규칙
 
@@ -142,17 +150,15 @@ comment:
 
 ### 이슈 관리
 ```
+mcp__github__issue_write: method, owner, repo, title, body, labels
 mcp__github__list_issues: owner, repo, state
-mcp__github__get_issue: owner, repo, issue_number
-mcp__github__create_issue: owner, repo, title, body, labels
-mcp__github__update_issue: owner, repo, issue_number, state, title, body
+mcp__github__issue_read: owner, repo, issue_number
 ```
 
 ### PR 관리
 ```
 mcp__github__create_pull_request: owner, repo, title, body, head, base
-mcp__github__get_pull_request: owner, repo, pull_number
-mcp__github__get_pull_request_files: owner, repo, pull_number
+mcp__github__pull_request_read: owner, repo, pull_number
 mcp__github__merge_pull_request: owner, repo, pull_number, merge_method
 ```
 

@@ -77,7 +77,6 @@ throw InvalidStateException("TEAM_MEMBER_001", "You are not a member of this tea
 - `InvalidStateException(code, message)` — 잘못된 상태
 - `InvalidInputException(code, message)` — 잘못된 입력
 - `ForbiddenException(code, message)` — 권한 부족
-- `AuthenticationException(code, message)` — 인증 실패
 
 ### Step 3: require/check 함수 사용 탐지
 
