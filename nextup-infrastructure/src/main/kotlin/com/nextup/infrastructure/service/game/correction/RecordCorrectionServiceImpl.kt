@@ -14,6 +14,7 @@ import com.nextup.core.domain.game.RecordCorrection
 import com.nextup.core.port.repository.AuditLogRepositoryPort
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.RecordCorrectionRepositoryPort
@@ -41,6 +42,7 @@ class RecordCorrectionServiceImpl(
     private val recordCorrectionRepository: RecordCorrectionRepositoryPort,
     private val auditLogRepository: AuditLogRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val gameEventRepository: GameEventRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : RecordCorrectionService {
     /**
@@ -91,6 +93,14 @@ class RecordCorrectionServiceImpl(
             )
         auditLogRepository.save(auditLog)
 
+        // 타석 결과와 관련된 GameEvent ID 조회 (H6: GameEvent 타임라인 정정)
+        val gameEventId =
+            gameEventRepository
+                .findPlateAppearancesByGameIdAndBatterGamePlayerId(
+                    gameId = gameId,
+                    batterGamePlayerId = battingRecord.gamePlayer.id,
+                ).lastOrNull()?.id
+
         // 시즌/커리어 스탯 재집계 이벤트 발행
         eventPublisher.publishEvent(
             RecordCorrectedEvent(
@@ -100,6 +110,7 @@ class RecordCorrectionServiceImpl(
                 fieldName = request.fieldName,
                 oldValue = oldValue,
                 newValue = request.newValue,
+                gameEventId = gameEventId,
             ),
         )
 

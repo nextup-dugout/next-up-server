@@ -8,6 +8,7 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.player.PositionCategory
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -115,6 +116,17 @@ class GameSubstitutionServiceImpl(
         // M-11: 교체 선수 기록 자동 생성
         createRecordsForSubstitute(incomingPlayer)
 
+        // C2: 투수 교체 시 currentPitcherId 갱신
+        if (request.newPosition.category == PositionCategory.PITCHER) {
+            game.gameState.currentPitcherId = incomingPlayer.id
+            gameRepository.save(game)
+            log.debug(
+                "currentPitcherId 갱신 (gameId={}, newPitcherId={})",
+                game.id,
+                incomingPlayer.id,
+            )
+        }
+
         val halfInning = if (game.isTopInning) "초" else "말"
         val dhReleaseNote = if (dhReleaseRequired) " (DH 규칙 해제)" else ""
         val description =
@@ -138,7 +150,7 @@ class GameSubstitutionServiceImpl(
      * - 투수 포지션 교체 선수(구원투수): PitchingRecord 자동 생성
      * - 이미 기록이 존재하는 경우에는 생성하지 않습니다.
      */
-    private fun createRecordsForSubstitute(incomingPlayer: com.nextup.core.domain.game.GamePlayer,) {
+    private fun createRecordsForSubstitute(incomingPlayer: com.nextup.core.domain.game.GamePlayer) {
         // 타순이 있는 교체 선수는 BattingRecord 생성
         if (incomingPlayer.battingOrder != null) {
             val existingBattingRecord =

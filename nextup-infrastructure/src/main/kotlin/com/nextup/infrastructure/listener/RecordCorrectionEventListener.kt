@@ -6,6 +6,7 @@ import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
@@ -41,6 +42,7 @@ class RecordCorrectionEventListener(
     private val gameRepository: GameRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
     private val gameTeamRepository: GameTeamRepositoryPort,
+    private val gameEventRepository: GameEventRepositoryPort,
     private val cacheManager: CacheManager,
 ) {
     private val logger = LoggerFactory.getLogger(RecordCorrectionEventListener::class.java)
@@ -87,6 +89,11 @@ class RecordCorrectionEventListener(
             event.fieldName,
             delta,
         )
+
+        // BATTING 정정 시 GameEvent 타임라인 갱신 (H6)
+        if (event.correctionType == CorrectionType.BATTING) {
+            applyGameEventCorrection(event)
+        }
 
         // 기록 정정으로 순위가 변경될 수 있으므로 순위 캐시 무효화
         evictStandingsCache(event.gameId)
@@ -230,6 +237,52 @@ class RecordCorrectionEventListener(
         } else {
             logger.debug("커리어 수비 통계 없음 - 정정 건너뜀 (playerId={})", playerId)
         }
+    }
+
+    /**
+     * BATTING 정정 시 GameEvent 타임라인의 description을 갱신합니다 (H6).
+     *
+     * gameEventId가 제공된 경우 해당 GameEvent의 description에 정정 내역을 추가합니다.
+     */
+    private fun applyGameEventCorrection(event: RecordCorrectedEvent) {
+        val gameEventId =
+            event.gameEventId ?: run {
+                logger.debug(
+                    "gameEventId 없음 - GameEvent 정정 건너뜀 (gameId={}, playerId={})",
+                    event.gameId,
+                    event.playerId,
+                )
+                return
+            }
+
+        val gameEvent =
+            gameEventRepository.findByIdOrNull(gameEventId) ?: run {
+                logger.warn(
+                    "GameEvent를 찾을 수 없음 - GameEvent 정정 건너뜀 (gameEventId={}, gameId={})",
+                    gameEventId,
+                    event.gameId,
+                )
+                return
+            }
+
+        val correctionNote =
+            "[정정] ${event.fieldName}: ${event.oldValue} → ${event.newValue}"
+        val updatedDescription =
+            if (gameEvent.description.contains("[정정]")) {
+                gameEvent.description.replaceAfterLast("[정정]", correctionNote.removePrefix("[정정]"))
+            } else {
+                "${gameEvent.description} $correctionNote"
+            }
+
+        gameEvent.description = updatedDescription
+        gameEventRepository.save(gameEvent)
+
+        logger.info(
+            "GameEvent 타임라인 정정 완료 (gameEventId={}, gameId={}, field={})",
+            gameEventId,
+            event.gameId,
+            event.fieldName,
+        )
     }
 
     /**

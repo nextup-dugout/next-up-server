@@ -5,6 +5,7 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.event.RecordCorrectedEvent
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.HomeAway
@@ -22,6 +23,7 @@ import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
@@ -53,6 +55,7 @@ class RecordCorrectionEventListenerTest {
     private val gameRepository = mockk<GameRepositoryPort>()
     private val gamePlayerRepository = mockk<GamePlayerRepositoryPort>()
     private val gameTeamRepository = mockk<GameTeamRepositoryPort>()
+    private val gameEventRepository = mockk<GameEventRepositoryPort>()
     private val cacheManager = mockk<CacheManager>()
     private val mockCache = mockk<Cache>(relaxed = true)
 
@@ -67,6 +70,7 @@ class RecordCorrectionEventListenerTest {
             gameRepository = gameRepository,
             gamePlayerRepository = gamePlayerRepository,
             gameTeamRepository = gameTeamRepository,
+            gameEventRepository = gameEventRepository,
             cacheManager = cacheManager,
         )
 
@@ -100,6 +104,8 @@ class RecordCorrectionEventListenerTest {
         every { cacheManager.getCache(any()) } returns mockCache
         // 기본값: GamePlayer 없음 (GameTeam 갱신 건너뜀)
         every { gamePlayerRepository.findByGameIdAndPlayerId(any(), any()) } returns null
+        // H6: gameEventId 없는 경우 기본 처리 (gameEventId = null → 건너뜀)
+        every { gameEventRepository.findByIdOrNull(any()) } returns null
     }
 
     @Nested
@@ -110,7 +116,6 @@ class RecordCorrectionEventListenerTest {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
             val careerStats = CareerBattingStats.create(testPlayer)
-            // 기존 값 설정 (불변식을 만족하는 순서: PA >= AB >= H)
             seasonStats.applyFieldCorrection("plateAppearances", 15)
             seasonStats.applyFieldCorrection("atBats", 12)
             seasonStats.applyFieldCorrection("hits", 10)
@@ -147,7 +152,6 @@ class RecordCorrectionEventListenerTest {
         fun `음수 델타 적용 시 통계가 감소됨`() {
             // given
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
-            // 불변식을 만족하는 순서: PA >= AB >= H >= 2B+3B+HR
             seasonStats.applyFieldCorrection("plateAppearances", 10)
             seasonStats.applyFieldCorrection("atBats", 8)
             seasonStats.applyFieldCorrection("hits", 5)
@@ -190,7 +194,7 @@ class RecordCorrectionEventListenerTest {
             // when
             listener.onRecordCorrected(event)
 
-            // then: 아무 repository 호출도 없어야 함
+            // then
             verify(exactly = 0) { seasonBattingStatsRepository.findByPlayerIdAndYear(any(), any()) }
             verify(exactly = 0) { careerBattingStatsRepository.findByPlayerId(any()) }
         }
@@ -311,7 +315,6 @@ class RecordCorrectionEventListenerTest {
         fun `자책점 감소 정정이 올바르게 반영됨`() {
             // given
             val seasonStats = SeasonPitchingStats.create(testPlayer, 2024)
-            // 불변식을 만족하는 순서: RA >= ER
             seasonStats.applyFieldCorrection("runsAllowed", 12)
             seasonStats.applyFieldCorrection("earnedRuns", 10)
 
@@ -530,6 +533,106 @@ class RecordCorrectionEventListenerTest {
 
             // then: delta = 1 - 0 = 1, passedBalls = 2 + 1 = 3
             assertThat(seasonStats.passedBalls).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("GameEvent 타임라인 정정 (H6)")
+    inner class GameEventCorrection {
+        @Test
+        fun `gameEventId가 있으면 GameEvent description이 갱신된다`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("plateAppearances", 10)
+            seasonStats.applyFieldCorrection("atBats", 8)
+            seasonStats.applyFieldCorrection("hits", 5)
+
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+
+            val mockGameEvent = mockk<GameEvent>(relaxed = true)
+            every { mockGameEvent.description } returns "헛스윙 삼진"
+            every { gameEventRepository.findByIdOrNull(42L) } returns mockGameEvent
+            every { gameEventRepository.save(any()) } answers { firstArg() }
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "2",
+                    newValue = "3",
+                    gameEventId = 42L,
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then
+            verify(exactly = 1) { gameEventRepository.findByIdOrNull(42L) }
+            verify(exactly = 1) { gameEventRepository.save(any()) }
+        }
+
+        @Test
+        fun `gameEventId가 null이면 GameEvent 정정을 건너뜀`() {
+            // given
+            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("plateAppearances", 10)
+            seasonStats.applyFieldCorrection("atBats", 8)
+            seasonStats.applyFieldCorrection("hits", 5)
+
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 1L,
+                    fieldName = "hits",
+                    oldValue = "2",
+                    newValue = "3",
+                    gameEventId = null,
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: gameEventRepository.findByIdOrNull은 호출되지 않아야 함
+            verify(exactly = 0) { gameEventRepository.findByIdOrNull(any()) }
+            verify(exactly = 0) { gameEventRepository.save(any()) }
+        }
+
+        @Test
+        fun `PITCHING 정정 시에는 GameEvent 정정을 건너뜀`() {
+            // given
+            val seasonStats = SeasonPitchingStats.create(testPlayer, 2024)
+            seasonStats.applyFieldCorrection("strikeouts", 10)
+
+            every { seasonPitchingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerPitchingStatsRepository.findByPlayerId(1L) } returns null
+
+            val event =
+                RecordCorrectedEvent(
+                    gameId = 10L,
+                    correctionType = CorrectionType.PITCHING,
+                    playerId = 1L,
+                    fieldName = "strikeouts",
+                    oldValue = "3",
+                    newValue = "5",
+                    gameEventId = 42L,
+                )
+
+            // when
+            listener.onRecordCorrected(event)
+
+            // then: PITCHING 정정은 GameEvent를 건드리지 않음
+            verify(exactly = 0) { gameEventRepository.findByIdOrNull(any()) }
+            verify(exactly = 0) { gameEventRepository.save(any()) }
         }
     }
 

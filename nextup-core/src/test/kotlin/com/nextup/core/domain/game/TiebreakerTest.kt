@@ -159,29 +159,29 @@ class TiebreakerTest {
         }
 
         @Test
-        fun `타이브레이커 연장 이닝 말 전환은 NORMAL을 반환한다`() {
+        fun `타이브레이커 연장 이닝 말 전환에도 타이브레이크가 적용된다 (C3 버그 수정)`() {
             // given: 이미 10회초인 상태에서 말로 전환
             val competition = createCompetition(GameRules(tiebreakerEnabled = true))
             val game = createGame(competition, currentInning = 10, isTopInning = true)
 
-            // when: 10회초 → 10회말 (말은 타이브레이커 미적용)
+            // when: 10회초 → 10회말 (말에도 타이브레이커 적용 - C3 수정)
             val result =
                 game.nextHalfInning(
                     tiebreakerFirstRunnerId = 101L,
                     tiebreakerSecondRunnerId = 102L,
                 )
 
-            // then
-            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            // then: 말에도 타이브레이커가 적용되어야 함 (C3 fix)
+            assertThat(result).isEqualTo(TiebreakerResult.TIEBREAKER_APPLIED)
             assertThat(game.currentInning).isEqualTo(10)
             assertThat(game.isTopInning).isFalse()
-            // 말에는 타이브레이커 주자 배치 안 함
-            assertThat(game.gameState.runnerOnFirstId).isNull()
-            assertThat(game.gameState.runnerOnSecondId).isNull()
+            // 말에도 타이브레이커 주자 배치
+            assertThat(game.gameState.runnerOnFirstId).isEqualTo(101L)
+            assertThat(game.gameState.runnerOnSecondId).isEqualTo(102L)
         }
 
         @Test
-        fun `연속 연장 이닝에서 매 초마다 타이브레이커가 적용된다`() {
+        fun `연속 연장 이닝에서 초와 말 모두 타이브레이커가 적용된다 (C3 버그 수정)`() {
             // given
             val competition = createCompetition(GameRules(tiebreakerEnabled = true))
             val game = createGame(competition, currentInning = 9, isTopInning = false)
@@ -194,9 +194,15 @@ class TiebreakerTest {
                 )
             assertThat(result1).isEqualTo(TiebreakerResult.TIEBREAKER_APPLIED)
 
-            // when: 10회초 → 10회말 (일반)
-            val result2 = game.nextHalfInning()
-            assertThat(result2).isEqualTo(TiebreakerResult.NORMAL)
+            // when: 10회초 → 10회말 (C3 수정: 말에도 타이브레이커 적용)
+            val result2 =
+                game.nextHalfInning(
+                    tiebreakerFirstRunnerId = 151L,
+                    tiebreakerSecondRunnerId = 152L,
+                )
+            assertThat(result2).isEqualTo(TiebreakerResult.TIEBREAKER_APPLIED)
+            assertThat(game.gameState.runnerOnFirstId).isEqualTo(151L)
+            assertThat(game.gameState.runnerOnSecondId).isEqualTo(152L)
 
             // when: 10회말 → 11회초 (타이브레이커 재적용)
             val result3 =

@@ -18,6 +18,22 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+private fun createCompetitionWithTiebreaker(league: League): Competition =
+    Competition(
+        league = league,
+        name = "타이브레이크 대회",
+        year = 2025,
+        season = 1,
+        type = CompetitionType.LEAGUE,
+        startDate = LocalDate.of(2025, 3, 1),
+        status = CompetitionStatus.IN_PROGRESS,
+        gameRules =
+            GameRules(
+                tiebreakerEnabled = true,
+                maxExtraInnings = 3,
+            ),
+    )
+
 @DisplayName("Game 엔티티 테스트")
 class GameTest {
     private lateinit var competition: Competition
@@ -139,6 +155,114 @@ class GameTest {
             // when & then
             assertThatThrownBy { game.nextHalfInning() }
                 .isInstanceOf(IllegalArgumentException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("타이브레이크 (C3)")
+    inner class Tiebreaker {
+        private fun createGameWithTiebreaker(
+            currentInning: Int,
+            isTopInning: Boolean,
+        ): Game {
+            val association = Association(name = "서울시야구협회", region = "서울")
+            val leagueWithTiebreaker =
+                League(association = association, name = "1부 리그", foundedYear = 2020)
+            val competitionWithTiebreaker =
+                createCompetitionWithTiebreaker(leagueWithTiebreaker)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            return Game.createForTest(
+                competition = competitionWithTiebreaker,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                status = GameStatus.IN_PROGRESS,
+                currentInning = currentInning,
+                isTopInning = isTopInning,
+                totalInnings = 9,
+            )
+        }
+
+        @Test
+        fun `연장전 초(Top) 시작 시 타이브레이크가 적용된다`() {
+            // given: 9회말 종료 후 10회초 진입 상황
+            val game = createGameWithTiebreaker(currentInning = 9, isTopInning = false)
+
+            // when
+            val result =
+                game.nextHalfInning(
+                    tiebreakerFirstRunnerId = 10L,
+                    tiebreakerSecondRunnerId = 11L,
+                )
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.TIEBREAKER_APPLIED)
+            assertThat(game.currentInning).isEqualTo(10)
+            assertThat(game.isTopInning).isTrue()
+            assertThat(game.gameState.runnerOnFirstId).isEqualTo(10L)
+            assertThat(game.gameState.runnerOnSecondId).isEqualTo(11L)
+        }
+
+        @Test
+        fun `연장전 말(Bottom) 시작 시에도 타이브레이크가 적용된다 (C3 버그 수정)`() {
+            // given: 10회초 종료 후 10회말 진입 상황
+            val game = createGameWithTiebreaker(currentInning = 10, isTopInning = true)
+
+            // when
+            val result =
+                game.nextHalfInning(
+                    tiebreakerFirstRunnerId = 20L,
+                    tiebreakerSecondRunnerId = 21L,
+                )
+
+            // then: 말(Bottom)에도 타이브레이크가 적용되어야 함
+            assertThat(result).isEqualTo(TiebreakerResult.TIEBREAKER_APPLIED)
+            assertThat(game.currentInning).isEqualTo(10)
+            assertThat(game.isTopInning).isFalse()
+            assertThat(game.gameState.runnerOnFirstId).isEqualTo(20L)
+            assertThat(game.gameState.runnerOnSecondId).isEqualTo(21L)
+        }
+
+        @Test
+        fun `타이브레이크 비활성화 시 연장전 말에서 타이브레이크 미적용`() {
+            // given: 타이브레이크 비활성화 대회
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 10
+                    isTopInning = true
+                    totalInnings = 9
+                }
+
+            // when
+            val result =
+                game.nextHalfInning(
+                    tiebreakerFirstRunnerId = 10L,
+                    tiebreakerSecondRunnerId = 11L,
+                )
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.gameState.runnerOnFirstId).isNull()
+            assertThat(game.gameState.runnerOnSecondId).isNull()
+        }
+
+        @Test
+        fun `정규 이닝에서는 타이브레이크가 적용되지 않는다`() {
+            // given: 5회초 종료 후 5회말 진입
+            val game = createGameWithTiebreaker(currentInning = 5, isTopInning = true)
+
+            // when
+            val result =
+                game.nextHalfInning(
+                    tiebreakerFirstRunnerId = 10L,
+                    tiebreakerSecondRunnerId = 11L,
+                )
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.gameState.runnerOnFirstId).isNull()
+            assertThat(game.gameState.runnerOnSecondId).isNull()
         }
     }
 
