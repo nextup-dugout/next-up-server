@@ -312,4 +312,112 @@ class GameTeamTest {
             }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
+
+    @Nested
+    @DisplayName("득점 정정 (correctScore)")
+    inner class CorrectScoreTest {
+        @Test
+        fun `양수 델타로 득점을 증가시킬 수 있다`() {
+            // given
+            gameTeam.addScore(3)
+
+            // when
+            gameTeam.correctScore(2)
+
+            // then
+            assertThat(gameTeam.totalScore).isEqualTo(5)
+        }
+
+        @Test
+        fun `음수 델타로 득점을 감소시킬 수 있다`() {
+            // given
+            gameTeam.addScore(5)
+
+            // when
+            gameTeam.correctScore(-2)
+
+            // then
+            assertThat(gameTeam.totalScore).isEqualTo(3)
+        }
+
+        @Test
+        fun `득점이 0 미만이 되면 0으로 보호된다`() {
+            // given
+            gameTeam.addScore(2)
+
+            // when
+            gameTeam.correctScore(-10)
+
+            // then
+            assertThat(gameTeam.totalScore).isEqualTo(0)
+        }
+
+        @Test
+        fun `델타가 0이면 득점이 변경되지 않는다`() {
+            // given
+            gameTeam.addScore(3)
+
+            // when
+            gameTeam.correctScore(0)
+
+            // then
+            assertThat(gameTeam.totalScore).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("안타 정정 (correctHits)")
+    inner class CorrectHitsTest {
+        @Test
+        fun `양수 델타로 안타를 증가시킬 수 있다`() {
+            // given
+            gameTeam.addHit()
+            gameTeam.addHit()
+
+            // when
+            gameTeam.correctHits(1)
+
+            // then
+            assertThat(gameTeam.totalHits).isEqualTo(3)
+        }
+
+        @Test
+        fun `음수 델타로 안타를 감소시킬 수 있다`() {
+            // given
+            gameTeam.addHit()
+            gameTeam.addHit()
+            gameTeam.addHit()
+
+            // when
+            gameTeam.correctHits(-2)
+
+            // then
+            assertThat(gameTeam.totalHits).isEqualTo(1)
+        }
+
+        @Test
+        fun `안타가 0 미만이 되면 0으로 보호된다`() {
+            // given
+            gameTeam.addHit()
+
+            // when
+            gameTeam.correctHits(-5)
+
+            // then
+            assertThat(gameTeam.totalHits).isEqualTo(0)
+        }
+
+        @Test
+        fun `델타가 0이면 안타가 변경되지 않는다`() {
+            // given
+            gameTeam.addHit()
+            gameTeam.addHit()
+
+            // when
+            gameTeam.correctHits(0)
+
+            // then
+            assertThat(gameTeam.totalHits).isEqualTo(2)
+        }
+    }
 }

@@ -6,7 +6,9 @@ import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
@@ -37,6 +39,8 @@ class RecordCorrectionEventListener(
     private val careerPitchingStatsRepository: CareerPitchingStatsRepositoryPort,
     private val careerFieldingStatsRepository: CareerFieldingStatsRepositoryPort,
     private val gameRepository: GameRepositoryPort,
+    private val gamePlayerRepository: GamePlayerRepositoryPort,
+    private val gameTeamRepository: GameTeamRepositoryPort,
     private val cacheManager: CacheManager,
 ) {
     private val logger = LoggerFactory.getLogger(RecordCorrectionEventListener::class.java)
@@ -68,7 +72,7 @@ class RecordCorrectionEventListener(
         StatsEventListener.retryOnOptimisticLock("onRecordCorrected(playerId=${event.playerId})") {
             when (event.correctionType) {
                 CorrectionType.BATTING ->
-                    applyBattingCorrection(event.playerId, year, event.fieldName, delta)
+                    applyBattingCorrection(event.gameId, event.playerId, year, event.fieldName, delta)
                 CorrectionType.PITCHING ->
                     applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
                 CorrectionType.FIELDING ->
@@ -89,6 +93,7 @@ class RecordCorrectionEventListener(
     }
 
     private fun applyBattingCorrection(
+        gameId: Long,
         playerId: Long,
         year: Int,
         fieldName: String,
@@ -112,6 +117,64 @@ class RecordCorrectionEventListener(
             logger.debug("커리어 타격 통계 정정 반영 완료 (playerId={})", playerId)
         } else {
             logger.debug("커리어 타격 통계 없음 - 정정 건너뜀 (playerId={})", playerId)
+        }
+
+        // GameTeam 득점/안타 동기화
+        applyGameTeamBattingCorrection(gameId, playerId, fieldName, delta)
+    }
+
+    /**
+     * 타격 기록 정정 시 GameTeam의 totalScore / totalHits를 동기화합니다.
+     *
+     * - "runs": 득점 정정 → totalScore 갱신
+     * - "hits", "doubles", "triples", "homeRuns": 안타 관련 → totalHits 갱신
+     */
+    private fun applyGameTeamBattingCorrection(
+        gameId: Long,
+        playerId: Long,
+        fieldName: String,
+        delta: Int,
+    ) {
+        val gamePlayer =
+            gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId)
+                ?: run {
+                    logger.debug(
+                        "GamePlayer 없음 - GameTeam 갱신 건너뜀 (gameId={}, playerId={})",
+                        gameId,
+                        playerId,
+                    )
+                    return
+                }
+
+        val gameTeam = gamePlayer.gameTeam
+
+        when (fieldName) {
+            "runs" -> {
+                gameTeam.correctScore(delta)
+                gameTeamRepository.save(gameTeam)
+                logger.debug(
+                    "GameTeam 득점 정정 반영 완료 (gameTeamId={}, delta={})",
+                    gameTeam.id,
+                    delta,
+                )
+            }
+            "hits", "doubles", "triples", "homeRuns" -> {
+                gameTeam.correctHits(delta)
+                gameTeamRepository.save(gameTeam)
+                logger.debug(
+                    "GameTeam 안타 정정 반영 완료 (gameTeamId={}, fieldName={}, delta={})",
+                    gameTeam.id,
+                    fieldName,
+                    delta,
+                )
+            }
+            else -> {
+                logger.debug(
+                    "GameTeam 갱신 불필요한 필드 (gameTeamId={}, fieldName={})",
+                    gameTeam.id,
+                    fieldName,
+                )
+            }
         }
     }
 
