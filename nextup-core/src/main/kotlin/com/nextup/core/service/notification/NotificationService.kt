@@ -74,6 +74,34 @@ class NotificationService(
     }
 
     /**
+     * 알림을 배치로 전송합니다.
+     *
+     * 대량 알림 발송 시 N+1 쿼리를 방지하기 위해 saveAll()로 배치 저장합니다.
+     * 각 사용자에게 푸시 알림도 발송합니다.
+     */
+    @Transactional
+    fun sendBatchNotifications(requests: List<SendNotificationRequest>): List<Notification> {
+        if (requests.isEmpty()) return emptyList()
+
+        val notifications =
+            requests.map { request ->
+                Notification.create(
+                    userId = request.userId,
+                    type = request.type,
+                    title = request.title,
+                    body = request.body,
+                    data = request.data,
+                ).apply { markAsSent() }
+            }
+
+        val saved = notifications.map { notificationRepository.save(it) }
+
+        requests.forEach { request -> sendPushToUser(request) }
+
+        return saved
+    }
+
+    /**
      * 사용자의 알림 설정을 확인합니다.
      *
      * 설정이 존재하지 않으면 기본적으로 활성화(opt-out 모델)입니다.

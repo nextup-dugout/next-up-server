@@ -2,11 +2,13 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.event.ElectionCompletedEvent
+import com.nextup.core.domain.event.ElectionTiedEvent
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -17,6 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener
  * 선거 완료 이벤트 리스너
  *
  * OWNER_ELECTION 완료 시 당선자에게 OWNER 권한을 이양합니다.
+ * 동률 발생 시 ElectionTiedEvent를 발행하여 후속 조치를 유도합니다.
  * Election Aggregate와 TeamMember Aggregate의 변경을 분리합니다.
  */
 @Component
@@ -24,12 +27,14 @@ class ElectionEventListener(
     private val electionVoteRepository: ElectionVoteRepositoryPort,
     private val candidateRepository: CandidateRepositoryPort,
     private val teamMemberRepository: TeamMemberRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * 선거 완료 이벤트를 수신하여 OWNER 권한을 이양합니다.
-     * 동률이거나 투표가 없으면 이양하지 않습니다.
+     * 동률이면 ElectionTiedEvent를 발행합니다.
+     * 투표가 없으면 이양하지 않습니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -40,12 +45,13 @@ class ElectionEventListener(
         }
 
         log.info("OWNER 선거 완료 이벤트 수신: electionId={}, teamId={}", event.electionId, event.teamId)
-        transferOwnershipToWinner(event.electionId, event.teamId)
+        transferOwnershipToWinner(event.electionId, event.teamId, event.electionType)
     }
 
     private fun transferOwnershipToWinner(
         electionId: Long,
         teamId: Long,
+        electionType: ElectionType,
     ) {
         val voteCounts =
             electionVoteRepository.countByElectionIdGroupByCandidateId(electionId)
@@ -60,9 +66,23 @@ class ElectionEventListener(
         val maxVotes = voteCounts.values.max()
         val topCandidates = voteCounts.filter { it.value == maxVotes }
 
-        // 동률이면 이양하지 않음
+        // 동률이면 ElectionTiedEvent 발행 후 이양하지 않음
         if (topCandidates.size > 1) {
-            log.info("동률로 OWNER 이양 생략: electionId={}, 후보수={}", electionId, topCandidates.size)
+            log.info(
+                "동률로 OWNER 이양 생략, ElectionTiedEvent 발행: electionId={}, 후보수={}, 득표수={}",
+                electionId,
+                topCandidates.size,
+                maxVotes,
+            )
+            eventPublisher.publishEvent(
+                ElectionTiedEvent(
+                    electionId = electionId,
+                    teamId = teamId,
+                    electionType = electionType,
+                    tiedCandidateCount = topCandidates.size,
+                    tiedVoteCount = maxVotes,
+                ),
+            )
             return
         }
 

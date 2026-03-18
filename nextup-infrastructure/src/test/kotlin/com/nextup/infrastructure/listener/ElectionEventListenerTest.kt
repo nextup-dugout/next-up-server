@@ -3,6 +3,7 @@ package com.nextup.infrastructure.listener
 import com.nextup.core.domain.election.Candidate
 import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.event.ElectionCompletedEvent
+import com.nextup.core.domain.event.ElectionTiedEvent
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.CandidateRepositoryPort
@@ -12,12 +13,14 @@ import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 
 @DisplayName("ElectionEventListener 테스트")
 class ElectionEventListenerTest {
     private val electionVoteRepository: ElectionVoteRepositoryPort = mockk()
     private val candidateRepository: CandidateRepositoryPort = mockk()
     private val teamMemberRepository: TeamMemberRepositoryPort = mockk()
+    private val eventPublisher: ApplicationEventPublisher = mockk(relaxed = true)
 
     private lateinit var listener: ElectionEventListener
 
@@ -28,6 +31,7 @@ class ElectionEventListenerTest {
                 electionVoteRepository = electionVoteRepository,
                 candidateRepository = candidateRepository,
                 teamMemberRepository = teamMemberRepository,
+                eventPublisher = eventPublisher,
             )
     }
 
@@ -68,7 +72,7 @@ class ElectionEventListenerTest {
     }
 
     @Test
-    fun `동률이면 OWNER 이양을 생략한다`() {
+    fun `동률이면 OWNER 이양을 생략하고 ElectionTiedEvent를 발행한다`() {
         // given
         val event =
             ElectionCompletedEvent(
@@ -89,6 +93,17 @@ class ElectionEventListenerTest {
 
         // then
         verify(exactly = 0) { candidateRepository.findById(any()) }
+        verify {
+            eventPublisher.publishEvent(
+                ElectionTiedEvent(
+                    electionId = 1L,
+                    teamId = 1L,
+                    electionType = ElectionType.OWNER_ELECTION,
+                    tiedCandidateCount = 2,
+                    tiedVoteCount = 5L,
+                ),
+            )
+        }
     }
 
     @Test
