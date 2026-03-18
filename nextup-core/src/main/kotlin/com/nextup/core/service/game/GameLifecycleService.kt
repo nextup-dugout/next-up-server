@@ -64,4 +64,11 @@ interface GameLifecycleService {
         gameId: Long,
         scorerId: Long,
     ): Game
+
+    fun suspendGame(
+        gameId: Long,
+        reason: String? = null,
+    ): Game
+
+    fun resumeGame(gameId: Long): Game
 }

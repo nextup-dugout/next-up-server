@@ -21,6 +21,7 @@ import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
 import com.nextup.scorer.dto.game.ScoreboardResponse
 import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import com.nextup.scorer.dto.game.SubstitutionResponse
+import com.nextup.scorer.dto.game.SuspendGameRequestDto
 import com.nextup.scorer.dto.game.UndoResponse
 import com.nextup.scorer.dto.game.toBaseRunningResponse
 import com.nextup.scorer.dto.game.toCurrentGameStateResponse
@@ -280,6 +281,40 @@ class GameScorerController(
                 gameId = gameId,
                 reason = request.reason,
             )
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 경기를 중단합니다.
+     *
+     * 진행 중(IN_PROGRESS) 상태의 경기를 우천 등의 사유로 중단합니다.
+     * 중단된 경기는 resume API로 재개할 수 있습니다.
+     */
+    @PostMapping("/{gameId}/suspend")
+    @ResponseStatus(HttpStatus.OK)
+    fun suspendGame(
+        @PathVariable gameId: Long,
+        @RequestBody request: SuspendGameRequestDto = SuspendGameRequestDto(),
+    ): ApiResponse<GameResponse> {
+        val game =
+            gameLifecycleService.suspendGame(
+                gameId = gameId,
+                reason = request.reason,
+            )
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 중단된 경기를 재개합니다.
+     *
+     * SUSPENDED 상태의 경기를 중단 시점의 이닝/아웃/주자 상태부터 이어서 진행합니다.
+     */
+    @PostMapping("/{gameId}/resume")
+    @ResponseStatus(HttpStatus.OK)
+    fun resumeGame(
+        @PathVariable gameId: Long,
+    ): ApiResponse<GameResponse> {
+        val game = gameLifecycleService.resumeGame(gameId = gameId)
         return ApiResponse.success(game.toResponse())
     }
 

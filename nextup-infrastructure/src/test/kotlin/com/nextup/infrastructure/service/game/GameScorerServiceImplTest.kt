@@ -1395,7 +1395,7 @@ class GameScorerServiceImplTest {
             // when & then
             assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유") }
                 .isInstanceOf(InvalidGameStateException::class.java)
-                .hasMessageContaining("예정 또는 연기 상태의 경기만 취소할 수 있습니다")
+                .hasMessageContaining("예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다")
         }
 
         @Test
@@ -1407,7 +1407,7 @@ class GameScorerServiceImplTest {
             // when & then
             assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유") }
                 .isInstanceOf(InvalidGameStateException::class.java)
-                .hasMessageContaining("예정 또는 연기 상태의 경기만 취소할 수 있습니다")
+                .hasMessageContaining("예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다")
         }
 
         @Test
