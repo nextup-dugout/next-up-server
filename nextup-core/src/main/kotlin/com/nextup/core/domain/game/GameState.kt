@@ -43,6 +43,13 @@ class GameState(
     var runnerOnSecondPitcherId: Long? = null,
     @Column(name = "runner_on_third_pitcher_id")
     var runnerOnThirdPitcherId: Long? = null,
+    /**
+     * DH 해제 여부 플래그.
+     * 야구 규칙상 DH 해제는 해당 경기에서 비가역적입니다.
+     * 한번 해제되면 같은 경기에서 다시 DH를 사용할 수 없습니다.
+     */
+    @Column(name = "was_dh_released")
+    var wasDhReleased: Boolean = false,
 ) {
     init {
         require(outs in 0..3) { "아웃 카운트는 0-3 사이여야 합니다: $outs" }
