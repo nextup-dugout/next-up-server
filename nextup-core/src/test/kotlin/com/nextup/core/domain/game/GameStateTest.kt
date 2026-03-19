@@ -22,6 +22,7 @@ class GameStateTest {
         assertThat(gameState.awayBattingOrder).isEqualTo(1)
         assertThat(gameState.currentPitcherId).isNull()
         assertThat(gameState.currentBatterId).isNull()
+        assertThat(gameState.wasDhReleased).isFalse()
     }
 
     @Test
@@ -1029,5 +1030,56 @@ class GameStateTest {
         assertThat(awayViolation).isNotNull()
         assertThat(awayViolation!!.expectedBattingOrder).isEqualTo(7)
         assertThat(awayViolation.actualBattingOrder).isEqualTo(3)
+    }
+
+    // ── wasDhReleased Tests ──────────────────────────────────────────────────
+
+    @Test
+    fun `should default wasDhReleased to false`() {
+        // when
+        val gameState = GameState()
+
+        // then
+        assertThat(gameState.wasDhReleased).isFalse()
+    }
+
+    @Test
+    fun `should set wasDhReleased to true`() {
+        // given
+        val gameState = GameState()
+
+        // when
+        gameState.wasDhReleased = true
+
+        // then
+        assertThat(gameState.wasDhReleased).isTrue()
+    }
+
+    @Test
+    fun `should create GameState with wasDhReleased parameter`() {
+        // when
+        val gameState = GameState(wasDhReleased = true)
+
+        // then
+        assertThat(gameState.wasDhReleased).isTrue()
+    }
+
+    @Test
+    fun `should preserve wasDhReleased after resetForNewInning`() {
+        // given
+        val gameState =
+            GameState(
+                outs = 2,
+                balls = 3,
+                strikes = 2,
+                wasDhReleased = true,
+            )
+
+        // when
+        gameState.resetForNewInning()
+
+        // then - wasDhReleased should persist across innings
+        assertThat(gameState.wasDhReleased).isTrue()
+        assertThat(gameState.outs).isEqualTo(0)
     }
 }

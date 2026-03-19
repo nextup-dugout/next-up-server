@@ -416,6 +416,81 @@ class SubstitutionScenarioTest {
     }
 
     // =========================================================================
+    // DH 해제 후 재지정 방지 시나리오
+    // =========================================================================
+
+    @Nested
+    @DisplayName("DH 해제 후 재지정 방지")
+    inner class DhReleasePreventionScenario {
+
+        @Test
+        fun `DH 해제 시 GameState의 wasDhReleased 플래그가 true로 설정된다`() {
+            // given
+            val gameState = GameState()
+            assertThat(gameState.wasDhReleased).isFalse()
+
+            // when: DH 해제 발생
+            gameState.wasDhReleased = true
+
+            // then
+            assertThat(gameState.wasDhReleased).isTrue()
+        }
+
+        @Test
+        fun `DH 해제 후 wasDhReleased 플래그는 이닝이 바뀌어도 유지된다`() {
+            // given
+            val gameState = GameState(wasDhReleased = true)
+
+            // when: 이닝 전환
+            gameState.resetForNewInning()
+
+            // then: 플래그는 비가역적이므로 유지
+            assertThat(gameState.wasDhReleased).isTrue()
+        }
+
+        @Test
+        fun `DH가 해제되지 않은 상태에서는 wasDhReleased가 false이다`() {
+            // given
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = mockk<Player>(relaxed = true),
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+            val gameState = GameState()
+
+            // then: DH가 활성화된 상태에서는 플래그가 false
+            assertThat(gameState.wasDhReleased).isFalse()
+            assertThat(dhPlayer.isDesignatedHitter).isTrue()
+        }
+
+        @Test
+        fun `DH 해제 시나리오 - DH 해제 후 플래그 설정 및 releaseDH 호출`() {
+            // given: DH 선수
+            val dhPlayer =
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = mockk<Player>(relaxed = true),
+                    position = Position.DESIGNATED_HITTER,
+                    battingOrder = 4,
+                )
+            dhPlayer.setAsDesignatedHitter(pitcherOrder = 9)
+            val gameState = GameState()
+
+            // when: DH 해제
+            dhPlayer.releaseDH()
+            gameState.wasDhReleased = true
+
+            // then
+            assertThat(dhPlayer.isDesignatedHitter).isFalse()
+            assertThat(dhPlayer.pitcherBattingOrder).isNull()
+            assertThat(gameState.wasDhReleased).isTrue()
+        }
+    }
+
+    // =========================================================================
     // 복합 교체 시나리오
     // =========================================================================
 
