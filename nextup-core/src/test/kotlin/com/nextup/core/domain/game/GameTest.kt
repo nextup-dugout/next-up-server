@@ -1798,6 +1798,112 @@ class GameTest {
             assertThat(game.scorerId).isEqualTo(100L)
             assertThat(game.isLocked).isTrue()
         }
+
+        @Test
+        fun `lockForScorer 시 lockedAt이 설정된다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when
+            game.lockForScorer(100L)
+
+            // then
+            assertThat(game.lockedAt).isNotNull()
+        }
+
+        @Test
+        fun `unlockScorer 시 lockedAt이 null로 초기화된다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            game.lockForScorer(100L)
+
+            // when
+            game.unlockScorer(100L)
+
+            // then
+            assertThat(game.lockedAt).isNull()
+        }
+
+        @Test
+        fun `forceUnlockScorer 시 lockedAt이 null로 초기화된다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            game.lockForScorer(100L)
+
+            // when
+            game.forceUnlockScorer()
+
+            // then
+            assertThat(game.lockedAt).isNull()
+        }
+
+        @Test
+        fun `30분 이상 경과한 잠금은 만료된 것으로 판단한다`() {
+            // given
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scorerId = 100L,
+                    lockedAt = LocalDateTime.now().minusMinutes(31),
+                )
+
+            // then
+            assertThat(game.isLockExpired()).isTrue()
+        }
+
+        @Test
+        fun `30분 미만인 잠금은 만료되지 않은 것으로 판단한다`() {
+            // given
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scorerId = 100L,
+                    lockedAt = LocalDateTime.now().minusMinutes(10),
+                )
+
+            // then
+            assertThat(game.isLockExpired()).isFalse()
+        }
+
+        @Test
+        fun `lockedAt이 null이면 만료되지 않은 것으로 판단한다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // then
+            assertThat(game.isLockExpired()).isFalse()
+        }
+
+        @Test
+        fun `expireLock은 scorerId와 lockedAt을 모두 초기화한다`() {
+            // given
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scorerId = 100L,
+                    lockedAt = LocalDateTime.now().minusMinutes(31),
+                )
+
+            // when
+            game.expireLock()
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.lockedAt).isNull()
+            assertThat(game.isLocked).isFalse()
+        }
     }
 
     @Nested
