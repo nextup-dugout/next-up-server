@@ -46,11 +46,12 @@ import org.springframework.web.bind.annotation.RestController
  * 기록원 전용 경기 기록 컨트롤러
  *
  * 실시간 경기 기록 입력 및 경기 상태 조회를 위한 API를 제공합니다.
+ * 모든 기록(POST) API는 scorerId 파라미터를 통해 기록원 독점 잠금 검증을 수행합니다.
  * GET 엔드포인트는 기록원 재접속 시 현재 상태를 복원하거나,
  * WebSocket 단절 시 REST fallback으로 활용됩니다.
  */
 @RestController
-@RequestMapping("/api/scorer/games")
+@RequestMapping("/api/v1/scorer/games")
 class GameScorerController(
     private val gameLifecycleService: GameLifecycleService,
     private val plateAppearanceRecordService: PlateAppearanceRecordService,
@@ -158,65 +159,80 @@ class GameScorerController(
 
     /**
      * 경기를 시작합니다.
+     *
+     * 경기를 잠금한 기록원만 시작할 수 있습니다.
      */
     @PostMapping("/{gameId}/start")
     @ResponseStatus(HttpStatus.OK)
     fun startGame(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
     ): ApiResponse<GameResponse> {
-        val game = gameLifecycleService.startGame(gameId)
+        val game = gameLifecycleService.startGame(gameId, scorerId)
         return ApiResponse.success(game.toResponse())
     }
 
     /**
      * 타석 결과를 입력합니다.
      *
+     * 경기를 잠금한 기록원만 기록할 수 있습니다.
      * 응답에 경고 메시지(투구 수 경고, 타순 위반 경고)가 포함될 수 있습니다.
      */
     @PostMapping("/{gameId}/plate-appearances")
     @ResponseStatus(HttpStatus.OK)
     fun recordPlateAppearance(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody @Valid request: PlateAppearanceRequestDto,
     ): ApiResponse<GameResponse> {
-        val result = plateAppearanceRecordService.recordPlateAppearance(gameId, request.toDomain())
+        val result =
+            plateAppearanceRecordService.recordPlateAppearance(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(result.game.toResponse(warnings = result.warnings))
     }
 
     /**
      * 반 이닝을 진행합니다 (공수 교대).
+     *
+     * 경기를 잠금한 기록원만 진행할 수 있습니다.
      */
     @PostMapping("/{gameId}/half-inning")
     @ResponseStatus(HttpStatus.OK)
     fun advanceHalfInning(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
     ): ApiResponse<GameResponse> {
-        val game = gameLifecycleService.advanceHalfInning(gameId)
+        val game = gameLifecycleService.advanceHalfInning(gameId, scorerId)
         return ApiResponse.success(game.toResponse())
     }
 
     /**
      * 경기를 종료합니다.
+     *
+     * 경기를 잠금한 기록원만 종료할 수 있습니다.
      */
     @PostMapping("/{gameId}/end")
     @ResponseStatus(HttpStatus.OK)
     fun endGame(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody @Valid request: GameEndRequestDto,
     ): ApiResponse<GameResponse> {
-        val game = gameLifecycleService.endGame(gameId, request.reason!!)
+        val game = gameLifecycleService.endGame(gameId, request.reason!!, scorerId)
         return ApiResponse.success(game.toResponse())
     }
 
     /**
      * 마지막 이벤트를 되돌립니다 (Undo).
+     *
+     * 경기를 잠금한 기록원만 되돌릴 수 있습니다.
      */
     @PostMapping("/{gameId}/undo")
     @ResponseStatus(HttpStatus.OK)
     fun undoLastEvent(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
     ): ApiResponse<UndoResponse> {
-        val undoneEvent = gameUndoService.undoLastEvent(gameId)
+        val undoneEvent = gameUndoService.undoLastEvent(gameId, scorerId)
         val game = undoneEvent.game
         return ApiResponse.success(
             UndoResponse(
@@ -231,21 +247,24 @@ class GameScorerController(
     /**
      * 주루 플레이를 기록합니다.
      *
+     * 경기를 잠금한 기록원만 기록할 수 있습니다.
      * 도루, 도루 실패, 견제사, 폭투 진루 등 타석 외 주루 이벤트를 기록합니다.
      */
     @PostMapping("/{gameId}/base-running")
     @ResponseStatus(HttpStatus.OK)
     fun recordBaseRunning(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody @Valid request: BaseRunningRequestDto,
     ): ApiResponse<BaseRunningResponse> {
-        val event = baseRunningRecordService.recordBaseRunning(gameId, request.toDomain())
+        val event = baseRunningRecordService.recordBaseRunning(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(event.toBaseRunningResponse())
     }
 
     /**
      * 경기를 몰수 처리합니다.
      *
+     * 경기를 잠금한 기록원만 몰수 처리할 수 있습니다.
      * 승리팀에 7점, 패배팀에 0점을 자동 반영하고 경기를 종료합니다.
      * 몰수 시점까지의 개인 타격/투구 기록은 공식 기록으로 유효합니다 (KBO/MLB 기준).
      */
@@ -253,6 +272,7 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun forfeitGame(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody @Valid request: ForfeitRequestDto,
     ): ApiResponse<GameResponse> {
         val game =
@@ -260,6 +280,7 @@ class GameScorerController(
                 gameId = gameId,
                 winnerTeamId = request.winnerTeamId!!,
                 reason = request.reason!!,
+                scorerId = scorerId,
             )
         return ApiResponse.success(game.toResponse())
     }
@@ -267,6 +288,7 @@ class GameScorerController(
     /**
      * 경기를 취소합니다.
      *
+     * 경기를 잠금한 기록원만 취소할 수 있습니다.
      * 예정(SCHEDULED) 또는 연기(POSTPONED) 상태의 경기만 취소 가능합니다.
      * 취소된 경기에 실시간 반영된 시즌 타격/투구 통계는 자동으로 롤백됩니다.
      */
@@ -274,12 +296,14 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun cancelGame(
         @PathVariable gameId: Long,
-        @RequestBody request: CancelGameRequestDto = CancelGameRequestDto()
+        @RequestParam scorerId: Long,
+        @RequestBody request: CancelGameRequestDto = CancelGameRequestDto(),
     ): ApiResponse<GameResponse> {
         val game =
             gameLifecycleService.cancelGame(
                 gameId = gameId,
                 reason = request.reason,
+                scorerId = scorerId,
             )
         return ApiResponse.success(game.toResponse())
     }
@@ -287,6 +311,7 @@ class GameScorerController(
     /**
      * 경기를 중단합니다.
      *
+     * 경기를 잠금한 기록원만 중단할 수 있습니다.
      * 진행 중(IN_PROGRESS) 상태의 경기를 우천 등의 사유로 중단합니다.
      * 중단된 경기는 resume API로 재개할 수 있습니다.
      */
@@ -294,12 +319,14 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun suspendGame(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody request: SuspendGameRequestDto = SuspendGameRequestDto(),
     ): ApiResponse<GameResponse> {
         val game =
             gameLifecycleService.suspendGame(
                 gameId = gameId,
                 reason = request.reason,
+                scorerId = scorerId,
             )
         return ApiResponse.success(game.toResponse())
     }
@@ -307,20 +334,23 @@ class GameScorerController(
     /**
      * 중단된 경기를 재개합니다.
      *
+     * 경기를 잠금한 기록원만 재개할 수 있습니다.
      * SUSPENDED 상태의 경기를 중단 시점의 이닝/아웃/주자 상태부터 이어서 진행합니다.
      */
     @PostMapping("/{gameId}/resume")
     @ResponseStatus(HttpStatus.OK)
     fun resumeGame(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
     ): ApiResponse<GameResponse> {
-        val game = gameLifecycleService.resumeGame(gameId = gameId)
+        val game = gameLifecycleService.resumeGame(gameId = gameId, scorerId = scorerId)
         return ApiResponse.success(game.toResponse())
     }
 
     /**
      * 선수를 교체합니다.
      *
+     * 경기를 잠금한 기록원만 교체할 수 있습니다.
      * 교체 이벤트를 기록하고 다음을 검증합니다:
      * - 퇴장한 선수의 재출전 방지
      * - DH 해제 규칙 (투수가 DH 타순으로만 교체 가능)
@@ -329,9 +359,11 @@ class GameScorerController(
     @ResponseStatus(HttpStatus.OK)
     fun substitutePlayer(
         @PathVariable gameId: Long,
+        @RequestParam scorerId: Long,
         @RequestBody @Valid request: SubstitutionRequestDto,
     ): ApiResponse<SubstitutionResponse> {
-        val event = gameSubstitutionService.substitutePlayer(gameId, request.toDomain())
+        val event =
+            gameSubstitutionService.substitutePlayer(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(event.toSubstitutionResponse())
     }
 }

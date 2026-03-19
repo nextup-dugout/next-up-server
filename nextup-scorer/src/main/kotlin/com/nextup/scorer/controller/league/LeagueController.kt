@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
  * 리그 생성·수정·삭제는 관리자(backoffice)의 책임입니다.
  */
 @RestController
-@RequestMapping("/api/scorer/leagues")
+@RequestMapping("/api/v1/scorer/leagues")
 class LeagueController(
     private val leagueService: LeagueService
 ) {

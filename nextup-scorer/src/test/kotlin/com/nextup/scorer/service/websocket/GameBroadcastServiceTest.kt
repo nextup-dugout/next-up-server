@@ -46,8 +46,8 @@ class GameBroadcastServiceTest {
         val scoreboard =
             ScoreboardMessage(
                 gameId = gameId,
-                homeTeam = TeamScoreDto(1L, "홈팀", 5, 8, 1),
-                awayTeam = TeamScoreDto(2L, "원정팀", 3, 6, 0),
+                homeTeam = TeamScoreDto(1L, "홈팀", null, 5, 8, 1),
+                awayTeam = TeamScoreDto(2L, "원정팀", null, 3, 6, 0),
                 inningScores =
                     InningScoresDto(
                         homeScores = listOf(0, 1, 2, 0, 2),

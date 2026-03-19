@@ -79,9 +79,9 @@ class SecurityConfig(
                     // WebSocket endpoints - HTTP 핸드셰이크 허용 (STOMP CONNECT에서 JWT 검증)
                     .requestMatchers("/ws/**").permitAll()
                     // Scorer API endpoints
-                    .requestMatchers("/api/scorer/**").hasAnyRole("SCORER", "ADMIN")
+                    .requestMatchers("/api/v1/scorer/**").hasAnyRole("SCORER", "ADMIN")
                     // League management in scorer module
-                    .requestMatchers("/api/leagues/**").hasAnyRole("SCORER", "ADMIN")
+                    .requestMatchers("/api/v1/scorer/leagues/**").hasAnyRole("SCORER", "ADMIN")
                     // All other endpoints require authentication with SCORER or ADMIN role
                     .anyRequest().hasAnyRole("SCORER", "ADMIN")
             }

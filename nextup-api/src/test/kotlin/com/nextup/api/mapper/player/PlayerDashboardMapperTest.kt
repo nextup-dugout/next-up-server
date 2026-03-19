@@ -64,6 +64,7 @@ class PlayerDashboardMapperTest {
         val team = mockk<Team>()
         every { team.id } returns 10L
         every { team.name } returns "Tigers"
+        every { team.logoUrl } returns null
 
         val currentHistory =
             PlayerTeamHistory(
@@ -111,6 +112,7 @@ class PlayerDashboardMapperTest {
         val team = mockk<Team>()
         every { team.id } returns 5L
         every { team.name } returns "Lions"
+        every { team.logoUrl } returns null
 
         val history =
             PlayerTeamHistory(

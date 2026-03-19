@@ -20,6 +20,7 @@ data class BoxScoreDto(
 data class TeamBoxScoreDto(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val inningScores: List<Int>,
     val runs: Int,
     val hits: Int,

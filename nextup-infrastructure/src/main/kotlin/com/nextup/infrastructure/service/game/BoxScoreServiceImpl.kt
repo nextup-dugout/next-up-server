@@ -40,8 +40,22 @@ class BoxScoreServiceImpl(
 
         return BoxScoreDto(
             gameId = gameId,
-            homeTeam = buildTeamBoxScore(homeTeam.team.id, homeTeam.team.name, homeTeam, homePlayers),
-            awayTeam = buildTeamBoxScore(awayTeam.team.id, awayTeam.team.name, awayTeam, awayPlayers),
+            homeTeam =
+                buildTeamBoxScore(
+                    homeTeam.team.id,
+                    homeTeam.team.name,
+                    homeTeam.team.logoUrl,
+                    homeTeam,
+                    homePlayers,
+                ),
+            awayTeam =
+                buildTeamBoxScore(
+                    awayTeam.team.id,
+                    awayTeam.team.name,
+                    awayTeam.team.logoUrl,
+                    awayTeam,
+                    awayPlayers,
+                ),
             currentInning = game.currentInningDisplay,
             gameStatus = game.status.displayName,
         )
@@ -107,6 +121,7 @@ class BoxScoreServiceImpl(
     private fun buildTeamBoxScore(
         teamId: Long,
         teamName: String,
+        logoUrl: String?,
         gameTeam: com.nextup.core.domain.game.GameTeam,
         players: List<GamePlayer>,
     ): TeamBoxScoreDto {
@@ -126,6 +141,7 @@ class BoxScoreServiceImpl(
         return TeamBoxScoreDto(
             teamId = teamId,
             teamName = teamName,
+            logoUrl = logoUrl,
             inningScores = inningScores,
             runs = gameTeam.totalScore,
             hits = gameTeam.totalHits,

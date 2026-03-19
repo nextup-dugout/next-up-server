@@ -111,7 +111,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -144,7 +144,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -175,7 +175,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             verify { eventPublisher.publishEvent(any<PlateAppearanceRecordedEvent>()) }
@@ -204,7 +204,7 @@ class GameScorerServiceEventPublishingTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             val eventSlot = slot<PlateAppearanceRecordedEvent>()
@@ -252,7 +252,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             val eventSlot = slot<PlateAppearanceUndoneEvent>()
@@ -302,7 +302,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             val eventSlot = slot<PlateAppearanceUndoneEvent>()
@@ -338,7 +338,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then - PlateAppearanceUndoneEvent 는 발행되지 않아야 함
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }
@@ -367,7 +367,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }
@@ -399,7 +399,7 @@ class GameScorerServiceEventPublishingTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then - plateAppearanceResult가 null이므로 이벤트 발행 안 됨
             verify(exactly = 0) { eventPublisher.publishEvent(any<PlateAppearanceUndoneEvent>()) }
@@ -525,6 +525,7 @@ class GameScorerServiceEventPublishingTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

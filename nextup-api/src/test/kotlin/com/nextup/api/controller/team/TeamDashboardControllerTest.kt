@@ -57,6 +57,7 @@ class TeamDashboardControllerTest {
                 name = "테스트팀",
                 city = "서울",
                 abbreviation = "테스",
+                logoUrl = null,
                 leagueName = "서울 리그",
                 foundedYear = 2020,
             ),

@@ -28,6 +28,7 @@ data class TeamSummaryDto(
     val name: String,
     val city: String,
     val abbreviation: String?,
+    val logoUrl: String?,
     val leagueName: String?,
     val foundedYear: Int,
 )

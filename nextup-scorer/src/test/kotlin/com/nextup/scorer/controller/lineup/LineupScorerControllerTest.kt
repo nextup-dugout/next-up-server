@@ -98,7 +98,7 @@ class LineupScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/scorer/lineups/1"))
+                .perform(get("/api/v1/scorer/lineups/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -135,7 +135,7 @@ class LineupScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/scorer/lineups/submitted").param("gameId", "1"))
+                .perform(get("/api/v1/scorer/lineups/submitted").param("gameId", "1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].status").value("SUBMITTED"))
@@ -151,7 +151,7 @@ class LineupScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/scorer/lineups/1/entries"))
+                .perform(get("/api/v1/scorer/lineups/1/entries"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].playerName").value("홍길동"))
@@ -189,7 +189,7 @@ class LineupScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/lineups/1/confirm"),
+                    post("/api/v1/scorer/lineups/1/confirm"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
@@ -226,7 +226,7 @@ class LineupScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    get("/api/scorer/lineups/games/1/opponent-lineup")
+                    get("/api/v1/scorer/lineups/games/1/opponent-lineup")
                         .param("myTeamId", "1"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -244,7 +244,7 @@ class LineupScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    get("/api/scorer/lineups/games/1/opponent-lineup")
+                    get("/api/v1/scorer/lineups/games/1/opponent-lineup")
                         .param("myTeamId", "1"),
                 ).andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
@@ -285,7 +285,7 @@ class LineupScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/lineups/1/reject")
+                    post("/api/v1/scorer/lineups/1/reject")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isOk)

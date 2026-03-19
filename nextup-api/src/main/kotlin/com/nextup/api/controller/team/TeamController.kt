@@ -146,6 +146,7 @@ class TeamController(
                     name = team.name,
                     city = team.city,
                     abbreviation = team.abbreviation,
+                    logoUrl = team.logoUrl,
                     memberCount = memberCounts[team.id] ?: 0,
                 )
             }
@@ -174,6 +175,7 @@ class TeamController(
             name = this.name,
             city = this.city,
             abbreviation = this.abbreviation,
+            logoUrl = this.logoUrl,
             leagueName = this.league.name,
             foundedYear = this.foundedYear,
             memberCount = memberCount,

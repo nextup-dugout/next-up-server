@@ -47,6 +47,7 @@ class TeamStatsControllerTest {
                 TeamStatsDto(
                     teamId = teamId,
                     teamName = "테스트팀",
+                    logoUrl = null,
                     year = 2026,
                     competitionId = 10L,
                     competitionName = "봄시즌리그",
@@ -105,6 +106,7 @@ class TeamStatsControllerTest {
                 TeamStatsDto(
                     teamId = teamId,
                     teamName = "테스트팀",
+                    logoUrl = null,
                     year = year,
                     competitionId = null,
                     competitionName = null,
@@ -161,6 +163,7 @@ class TeamStatsControllerTest {
                 TeamStatsDto(
                     teamId = teamId,
                     teamName = "테스트팀",
+                    logoUrl = null,
                     year = null,
                     competitionId = competitionId,
                     competitionName = "가을리그",

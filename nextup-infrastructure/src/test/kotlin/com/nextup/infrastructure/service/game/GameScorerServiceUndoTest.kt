@@ -100,7 +100,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameUndoService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -151,7 +151,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameUndoService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -202,7 +202,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(game.gameState.outs).isEqualTo(0) // 아웃 카운트 복원
@@ -218,7 +218,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameUndoService.undoLastEvent(1L) }
+            assertThatThrownBy { gameUndoService.undoLastEvent(1L, 999L) }
                 .isInstanceOf(UndoNotAvailableException::class.java)
         }
 
@@ -230,7 +230,7 @@ class GameScorerServiceUndoTest {
             every { gameEventRepository.findLastActiveEvent(1L) } returns null
 
             // when & then
-            assertThatThrownBy { gameUndoService.undoLastEvent(1L) }
+            assertThatThrownBy { gameUndoService.undoLastEvent(1L, 999L) }
                 .isInstanceOf(NoEventToUndoException::class.java)
         }
 
@@ -273,7 +273,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when - 첫 번째 Undo
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(event2.undone).isTrue()
@@ -311,7 +311,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameUndoService.undoLastEvent(1L)
+            gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(event.undone).isTrue()
@@ -343,7 +343,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameUndoService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -375,7 +375,7 @@ class GameScorerServiceUndoTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameUndoService.undoLastEvent(1L)
+            val result = gameUndoService.undoLastEvent(1L, 999L)
 
             // then
             assertThat(result.undone).isTrue()
@@ -505,6 +505,7 @@ class GameScorerServiceUndoTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

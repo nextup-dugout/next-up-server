@@ -46,7 +46,7 @@ class LeagueControllerTest {
             every { leagueService.getAll() } returns leagues
 
             // when & then
-            mockMvc.perform(get("/api/scorer/leagues"))
+            mockMvc.perform(get("/api/v1/scorer/leagues"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -70,7 +70,7 @@ class LeagueControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/scorer/leagues")
+                get("/api/v1/scorer/leagues")
                     .param("associationId", associationId.toString())
             )
                 .andExpect(status().isOk)
@@ -95,7 +95,7 @@ class LeagueControllerTest {
             every { leagueService.getById(1L) } returns league
 
             // when & then
-            mockMvc.perform(get("/api/scorer/leagues/1"))
+            mockMvc.perform(get("/api/v1/scorer/leagues/1"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))

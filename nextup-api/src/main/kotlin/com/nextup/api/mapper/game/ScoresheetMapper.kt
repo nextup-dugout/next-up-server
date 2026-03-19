@@ -50,6 +50,7 @@ fun TeamScoresheetInfoDto.toResponse(): TeamScoresheetResponse =
     TeamScoresheetResponse(
         teamId = teamId,
         teamName = teamName,
+        logoUrl = logoUrl,
         totalScore = totalScore,
         totalHits = totalHits,
         totalErrors = totalErrors,
