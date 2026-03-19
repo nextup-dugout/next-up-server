@@ -1,8 +1,10 @@
 package com.nextup.infrastructure.listener
 
+import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.FieldingRecord
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
@@ -21,10 +23,12 @@ import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
+import com.nextup.infrastructure.config.CacheConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -33,6 +37,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.cache.Cache
+import org.springframework.cache.CacheManager
 
 @DisplayName("GameCancelEventListener 테스트")
 class GameCancelEventListenerTest {
@@ -45,6 +51,9 @@ class GameCancelEventListenerTest {
     private val battingRecordRepository = mockk<BattingRecordRepositoryPort>()
     private val pitchingRecordRepository = mockk<PitchingRecordRepositoryPort>()
     private val fieldingRecordRepository = mockk<FieldingRecordRepositoryPort>()
+    private val gameRepository = mockk<GameRepositoryPort>()
+    private val cacheManager = mockk<CacheManager>()
+    private val standingsCache = mockk<Cache>(relaxed = true)
 
     private val listener =
         GameCancelEventListener(
@@ -57,6 +66,8 @@ class GameCancelEventListenerTest {
             battingRecordRepository = battingRecordRepository,
             pitchingRecordRepository = pitchingRecordRepository,
             fieldingRecordRepository = fieldingRecordRepository,
+            gameRepository = gameRepository,
+            cacheManager = cacheManager,
         )
 
     private val testBatter =
@@ -86,6 +97,8 @@ class GameCancelEventListenerTest {
 
     private val gameId = 100L
     private val cancelEvent = GameCancelledEvent(gameId = gameId)
+    private val mockGame = mockk<Game>()
+    private val mockCompetition = mockk<Competition>()
 
     @BeforeEach
     fun setUp() {
@@ -95,6 +108,11 @@ class GameCancelEventListenerTest {
         every { mockPitcherGamePlayer.player } returns testPitcher
         every { mockFieldingRecord.gamePlayer } returns mockFielderGamePlayer
         every { mockFielderGamePlayer.player } returns testBatter
+
+        every { gameRepository.findByIdOrNull(gameId) } returns mockGame
+        every { mockGame.competition } returns mockCompetition
+        every { mockCompetition.id } returns 200L
+        every { cacheManager.getCache(CacheConfig.STANDINGS_CACHE) } returns standingsCache
     }
 
     @Nested
@@ -579,6 +597,44 @@ class GameCancelEventListenerTest {
             verify { careerBattingStatsRepository.save(careerStats) }
             assertThat(seasonStats.gamesPlayed).isEqualTo(0)
             assertThat(careerStats.gamesPlayed).isEqualTo(0)
+        }
+    }
+
+    @Nested
+    @DisplayName("onGameCancelled - 순위 캐시 무효화")
+    inner class StandingsCacheEviction {
+        @BeforeEach
+        fun setUpDefault() {
+            every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { seasonFieldingStatsRepository.findAllByGameId(gameId) } returns emptyList()
+        }
+
+        @Test
+        fun `경기 취소 시 해당 대회의 순위 캐시가 무효화된다`() {
+            // given
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            verify { cacheManager.getCache(CacheConfig.STANDINGS_CACHE) }
+            verify { standingsCache.evict(200L) }
+        }
+
+        @Test
+        fun `경기를 찾을 수 없으면 캐시 무효화를 건너뛴다`() {
+            // given
+            every { gameRepository.findByIdOrNull(gameId) } returns null
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+
+            // when
+            listener.onGameCancelled(cancelEvent)
+
+            // then
+            verify(exactly = 0) { standingsCache.evict(any()) }
         }
     }
 }

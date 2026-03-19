@@ -4,10 +4,12 @@ import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.election.ElectionStatus
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.TeamDisbandedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
 import com.nextup.core.domain.event.TeamMemberLeftEvent
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.domain.team.JoinRequestStatus
@@ -23,6 +25,7 @@ import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
 import com.nextup.core.port.repository.StadiumBookingRepositoryPort
 import com.nextup.core.port.repository.TeamJoinRequestRepositoryPort
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -48,6 +51,7 @@ class TeamMemberEventListener(
     private val electionRepository: ElectionRepositoryPort,
     private val teamJoinRequestRepository: TeamJoinRequestRepositoryPort,
     private val activityScoreRepository: ActivityScoreRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(TeamMemberEventListener::class.java)
 
@@ -212,6 +216,21 @@ class TeamMemberEventListener(
                         gameTeams = gameTeams,
                     )
                     gameRepository.save(game)
+
+                    val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME }
+                    val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY }
+                    if (homeTeam != null && awayTeam != null) {
+                        eventPublisher.publishEvent(
+                            GameResultConfirmedEvent(
+                                gameId = game.id,
+                                homeTeamId = homeTeam.team.id,
+                                awayTeamId = awayTeam.team.id,
+                                homeScore = homeTeam.totalScore,
+                                awayScore = awayTeam.totalScore,
+                            ),
+                        )
+                    }
+
                     logger.info(
                         "경기 몰수승 처리 - gameId={}, competitionId={}, winnerTeamId={}",
                         game.id,
