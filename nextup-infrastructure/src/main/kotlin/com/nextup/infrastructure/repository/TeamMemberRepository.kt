@@ -21,9 +21,15 @@ interface TeamMemberRepository : JpaRepository<TeamMember, Long> {
     @Query("SELECT tm FROM TeamMember tm WHERE tm.team.id = :teamId")
     fun findByTeamId(teamId: Long): List<TeamMember>
 
-    @Query("SELECT tm FROM TeamMember tm WHERE tm.team.id = :teamId AND tm.status = :status")
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team.id = :teamId AND tm.status = :status")
     fun findByTeamIdAndStatus(
         teamId: Long,
+        status: TeamMemberStatus,
+    ): List<TeamMember>
+
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team.id IN :teamIds AND tm.status = :status")
+    fun findByTeamIdInAndStatus(
+        teamIds: List<Long>,
         status: TeamMemberStatus,
     ): List<TeamMember>
 

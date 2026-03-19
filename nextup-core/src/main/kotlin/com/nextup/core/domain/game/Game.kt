@@ -63,6 +63,8 @@ class Game private constructor(
     var gameState: GameState = GameState(),
     @Column(name = "scorer_id")
     var scorerId: Long? = null,
+    @Column(name = "locked_at")
+    var lockedAt: LocalDateTime? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -100,6 +102,7 @@ class Game private constructor(
             throw GameAlreadyLockedException(id, this.scorerId!!)
         }
         this.scorerId = scorerId
+        this.lockedAt = LocalDateTime.now()
     }
 
     /**
@@ -115,6 +118,7 @@ class Game private constructor(
             throw GameNotLockedByCurrentScorerException(id, scorerId)
         }
         this.scorerId = null
+        this.lockedAt = null
     }
 
     /**
@@ -122,6 +126,26 @@ class Game private constructor(
      */
     fun forceUnlockScorer() {
         this.scorerId = null
+        this.lockedAt = null
+    }
+
+    /**
+     * 잠금이 만료되었는지 확인합니다.
+     *
+     * @param timeoutMinutes 타임아웃 시간 (분, 기본값 30분)
+     * @return 잠금이 만료되었으면 true
+     */
+    fun isLockExpired(timeoutMinutes: Long = DEFAULT_LOCK_TIMEOUT_MINUTES): Boolean {
+        val lockedTime = lockedAt ?: return false
+        return lockedTime.plusMinutes(timeoutMinutes).isBefore(LocalDateTime.now())
+    }
+
+    /**
+     * 만료된 잠금을 자동 해제합니다 (스케줄러용).
+     */
+    fun expireLock() {
+        this.scorerId = null
+        this.lockedAt = null
     }
 
     /**
@@ -511,6 +535,9 @@ class Game private constructor(
         /** L-11: SUSPENDED 경기 자동 타임아웃 기본값 (48시간) */
         const val DEFAULT_SUSPENDED_TIMEOUT_HOURS = 48L
 
+        /** 기록원 잠금 자동 만료 타임아웃 (분) */
+        const val DEFAULT_LOCK_TIMEOUT_MINUTES = 30L
+
         /**
          * 프로덕션 팩토리 메서드.
          *
@@ -583,6 +610,7 @@ class Game private constructor(
             forfeitReason: String? = null,
             gameState: GameState = GameState(),
             scorerId: Long? = null,
+            lockedAt: LocalDateTime? = null,
             id: Long = 0L,
         ): Game {
             val game =
@@ -603,6 +631,7 @@ class Game private constructor(
                     forfeitReason = forfeitReason,
                     gameState = gameState,
                     scorerId = scorerId,
+                    lockedAt = lockedAt,
                     id = id,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = id * 100 + 1))

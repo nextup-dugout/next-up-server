@@ -99,18 +99,16 @@ class NotificationEventListener(
     fun handleGameResultConfirmed(event: GameResultConfirmedEvent) {
         val body = "경기 결과: ${event.homeScore} - ${event.awayScore}"
         val allTeamIds = listOf(event.homeTeamId, event.awayTeamId)
+        val activeMembers =
+            teamMemberRepository.findByTeamIdInAndStatus(allTeamIds, TeamMemberStatus.ACTIVE)
         val requests =
-            allTeamIds.flatMap { teamId ->
-                val activeMembers =
-                    teamMemberRepository.findByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)
-                activeMembers.map { member ->
-                    SendNotificationRequest(
-                        userId = member.user.id,
-                        type = NotificationType.GAME_RESULT_CONFIRMED,
-                        title = "경기 결과 확정",
-                        body = body,
-                    )
-                }
+            activeMembers.map { member ->
+                SendNotificationRequest(
+                    userId = member.user.id,
+                    type = NotificationType.GAME_RESULT_CONFIRMED,
+                    title = "경기 결과 확정",
+                    body = body,
+                )
             }
         notificationService.sendBatchNotifications(requests)
     }
@@ -147,8 +145,8 @@ class NotificationEventListener(
             teamMemberRepository.findByTeamIdAndStatus(event.teamId, TeamMemberStatus.ACTIVE)
         val managers =
             activeMembers.filter {
-                it.role == com.nextup.core.domain.team.TeamMemberRole.OWNER ||
-                    it.role == com.nextup.core.domain.team.TeamMemberRole.MANAGER
+                it.role == TeamMemberRole.OWNER ||
+                    it.role == TeamMemberRole.MANAGER
             }
         val requests =
             managers.map { member ->
@@ -167,7 +165,7 @@ class NotificationEventListener(
     /**
      * 경기 취소 이벤트를 처리합니다.
      *
-     * 홈팀과 원정팀의 모든 활성 멤버에게 알림을 발송합니다.
+     * 홈팀과 원정팀의 모든 활성 멤버에게 배치로 알림을 발송합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -177,78 +175,72 @@ class NotificationEventListener(
             return
         }
         val allTeamIds = listOf(event.homeTeamId, event.awayTeamId)
-        allTeamIds.forEach { teamId ->
-            val activeMembers =
-                teamMemberRepository.findByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)
-            activeMembers.forEach { member ->
-                notificationService.sendNotification(
-                    SendNotificationRequest(
-                        userId = member.user.id,
-                        type = NotificationType.GAME_CANCELLED,
-                        title = "경기 취소",
-                        body = "예정된 경기가 취소되었습니다.",
-                    ),
+        val activeMembers =
+            teamMemberRepository.findByTeamIdInAndStatus(allTeamIds, TeamMemberStatus.ACTIVE)
+        val requests =
+            activeMembers.map { member ->
+                SendNotificationRequest(
+                    userId = member.user.id,
+                    type = NotificationType.GAME_CANCELLED,
+                    title = "경기 취소",
+                    body = "예정된 경기가 취소되었습니다.",
                 )
             }
-        }
+        notificationService.sendBatchNotifications(requests)
     }
 
     /**
      * 경기 연기 이벤트를 처리합니다.
      *
-     * 홈팀과 원정팀의 모든 활성 멤버에게 알림을 발송합니다.
+     * 홈팀과 원정팀의 모든 활성 멤버에게 배치로 알림을 발송합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun handleGamePostponed(event: GamePostponedEvent) {
         val newDateStr = event.newScheduledAt.toLocalDate().toString()
         val allTeamIds = listOf(event.homeTeamId, event.awayTeamId)
-        allTeamIds.forEach { teamId ->
-            val activeMembers =
-                teamMemberRepository.findByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)
-            activeMembers.forEach { member ->
-                notificationService.sendNotification(
-                    SendNotificationRequest(
-                        userId = member.user.id,
-                        type = NotificationType.GAME_POSTPONED,
-                        title = "경기 연기",
-                        body = "경기가 $newDateStr 으로 연기되었습니다.",
-                    ),
+        val activeMembers =
+            teamMemberRepository.findByTeamIdInAndStatus(allTeamIds, TeamMemberStatus.ACTIVE)
+        val requests =
+            activeMembers.map { member ->
+                SendNotificationRequest(
+                    userId = member.user.id,
+                    type = NotificationType.GAME_POSTPONED,
+                    title = "경기 연기",
+                    body = "경기가 $newDateStr 으로 연기되었습니다.",
                 )
             }
-        }
+        notificationService.sendBatchNotifications(requests)
     }
 
     /**
      * 경기 일정 변경 이벤트를 처리합니다.
      *
-     * 홈팀과 원정팀의 모든 활성 멤버에게 알림을 발송합니다.
+     * 홈팀과 원정팀의 모든 활성 멤버에게 배치로 알림을 발송합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun handleGameRescheduled(event: GameRescheduledEvent) {
         val newDateStr = event.newScheduledAt.toLocalDate().toString()
         val allTeamIds = listOf(event.homeTeamId, event.awayTeamId)
-        allTeamIds.forEach { teamId ->
-            val activeMembers =
-                teamMemberRepository.findByTeamIdAndStatus(teamId, TeamMemberStatus.ACTIVE)
-            activeMembers.forEach { member ->
-                notificationService.sendNotification(
-                    SendNotificationRequest(
-                        userId = member.user.id,
-                        type = NotificationType.GAME_RESCHEDULED,
-                        title = "경기 일정 변경",
-                        body = "경기 일정이 $newDateStr 으로 변경되었습니다.",
-                    ),
+        val activeMembers =
+            teamMemberRepository.findByTeamIdInAndStatus(allTeamIds, TeamMemberStatus.ACTIVE)
+        val requests =
+            activeMembers.map { member ->
+                SendNotificationRequest(
+                    userId = member.user.id,
+                    type = NotificationType.GAME_RESCHEDULED,
+                    title = "경기 일정 변경",
+                    body = "경기 일정이 $newDateStr 으로 변경되었습니다.",
                 )
             }
-        }
+        notificationService.sendBatchNotifications(requests)
     }
 
     /**
      * 팀원 탈퇴 이벤트를 처리합니다.
      *
-     * 팀 관리자(OWNER, MANAGER)에게 알림을 발송합니다.
+     * 팀 관리자(OWNER, MANAGER)에게 배치로 알림을 발송합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -256,16 +248,16 @@ class NotificationEventListener(
         val admins =
             teamMemberRepository.findByTeamIdAndStatus(event.teamId, TeamMemberStatus.ACTIVE)
                 .filter { it.role == TeamMemberRole.OWNER || it.role == TeamMemberRole.MANAGER }
-        admins.forEach { admin ->
-            notificationService.sendNotification(
+        val requests =
+            admins.map { admin ->
                 SendNotificationRequest(
                     userId = admin.user.id,
                     type = NotificationType.TEAM_MEMBER_LEFT,
                     title = "팀원 탈퇴",
                     body = "${event.teamName} 팀에서 팀원이 탈퇴했습니다.",
-                ),
-            )
-        }
+                )
+            }
+        notificationService.sendBatchNotifications(requests)
     }
 
     /**

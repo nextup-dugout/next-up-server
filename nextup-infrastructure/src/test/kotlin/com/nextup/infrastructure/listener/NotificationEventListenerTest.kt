@@ -242,11 +242,8 @@ class NotificationEventListenerTest {
                 )
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
-            } returns listOf(homeMember)
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(3L, TeamMemberStatus.ACTIVE)
-            } returns listOf(awayMember)
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(2L, 3L), TeamMemberStatus.ACTIVE)
+            } returns listOf(homeMember, awayMember)
             val requestsSlot = slot<List<SendNotificationRequest>>()
             every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
@@ -309,7 +306,7 @@ class NotificationEventListenerTest {
     @DisplayName("handleGameCancelled")
     inner class HandleGameCancelled {
         @Test
-        fun `should send GAME_CANCELLED notification to both teams members`() {
+        fun `should send GAME_CANCELLED notification to both teams members via batch`() {
             // given
             val event =
                 GameCancelledEvent(
@@ -328,32 +325,19 @@ class NotificationEventListenerTest {
             val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(member)
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
-            } returns listOf(awayMember)
-            every { notificationService.sendNotification(any()) } returns mockk()
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+            } returns listOf(member, awayMember)
+            val requestsSlot = slot<List<SendNotificationRequest>>()
+            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
             // when
             listener.handleGameCancelled(event)
 
             // then
-            verify(exactly = 2) { notificationService.sendNotification(any()) }
-            verify(exactly = 1) {
-                notificationService.sendNotification(
-                    match {
-                        it.userId == 10L && it.type == NotificationType.GAME_CANCELLED
-                    },
-                )
-            }
-            verify(exactly = 1) {
-                notificationService.sendNotification(
-                    match {
-                        it.userId == 11L && it.type == NotificationType.GAME_CANCELLED
-                    },
-                )
-            }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
+            assertThat(requestsSlot.captured).hasSize(2)
+            assertThat(requestsSlot.captured.map { it.userId }).containsExactlyInAnyOrder(10L, 11L)
+            assertThat(requestsSlot.captured.all { it.type == NotificationType.GAME_CANCELLED }).isTrue()
         }
 
         @Test
@@ -370,7 +354,7 @@ class NotificationEventListenerTest {
             listener.handleGameCancelled(event)
 
             // then
-            verify(exactly = 0) { notificationService.sendNotification(any()) }
+            verify(exactly = 0) { notificationService.sendBatchNotifications(any()) }
         }
     }
 
@@ -390,21 +374,18 @@ class NotificationEventListenerTest {
                 )
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns emptyList()
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
             } returns emptyList()
 
             // when
             listener.handleGamePostponed(event)
 
             // then
-            verify(exactly = 0) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(emptyList()) }
         }
 
         @Test
-        fun `should send GAME_POSTPONED notification to both teams members`() {
+        fun `should send GAME_POSTPONED notification to both teams members via batch`() {
             // given
             val newDate = LocalDateTime.of(2026, 4, 1, 14, 0)
             val event =
@@ -425,27 +406,20 @@ class NotificationEventListenerTest {
             val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(member)
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
-            } returns listOf(awayMember)
-            every { notificationService.sendNotification(any()) } returns mockk()
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+            } returns listOf(member, awayMember)
+            val requestsSlot = slot<List<SendNotificationRequest>>()
+            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
             // when
             listener.handleGamePostponed(event)
 
             // then
-            verify(exactly = 2) { notificationService.sendNotification(any()) }
-            verify(exactly = 1) {
-                notificationService.sendNotification(
-                    match {
-                        it.userId == 10L &&
-                            it.type == NotificationType.GAME_POSTPONED &&
-                            it.body.contains("2026-04-01")
-                    },
-                )
-            }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
+            assertThat(requestsSlot.captured).hasSize(2)
+            assertThat(requestsSlot.captured.map { it.userId }).containsExactlyInAnyOrder(10L, 11L)
+            assertThat(requestsSlot.captured.all { it.type == NotificationType.GAME_POSTPONED }).isTrue()
+            assertThat(requestsSlot.captured[0].body).contains("2026-04-01")
         }
     }
 
@@ -465,21 +439,18 @@ class NotificationEventListenerTest {
                 )
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns emptyList()
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
             } returns emptyList()
 
             // when
             listener.handleGameRescheduled(event)
 
             // then
-            verify(exactly = 0) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(emptyList()) }
         }
 
         @Test
-        fun `should send GAME_RESCHEDULED notification to both teams members`() {
+        fun `should send GAME_RESCHEDULED notification to both teams members via batch`() {
             // given
             val newDate = LocalDateTime.of(2026, 5, 10, 18, 0)
             val event =
@@ -500,27 +471,20 @@ class NotificationEventListenerTest {
             val awayMember = TeamMember.create(awayTeam, awayUser, awayPlayer, 8, TeamMemberRole.MEMBER)
 
             every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(member)
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(2L, TeamMemberStatus.ACTIVE)
-            } returns listOf(awayMember)
-            every { notificationService.sendNotification(any()) } returns mockk()
+                teamMemberRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+            } returns listOf(member, awayMember)
+            val requestsSlot = slot<List<SendNotificationRequest>>()
+            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
             // when
             listener.handleGameRescheduled(event)
 
             // then
-            verify(exactly = 2) { notificationService.sendNotification(any()) }
-            verify(exactly = 1) {
-                notificationService.sendNotification(
-                    match {
-                        it.userId == 10L &&
-                            it.type == NotificationType.GAME_RESCHEDULED &&
-                            it.body.contains("2026-05-10")
-                    },
-                )
-            }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
+            assertThat(requestsSlot.captured).hasSize(2)
+            assertThat(requestsSlot.captured.map { it.userId }).containsExactlyInAnyOrder(10L, 11L)
+            assertThat(requestsSlot.captured.all { it.type == NotificationType.GAME_RESCHEDULED }).isTrue()
+            assertThat(requestsSlot.captured[0].body).contains("2026-05-10")
         }
     }
 
@@ -528,7 +492,7 @@ class NotificationEventListenerTest {
     @DisplayName("handleTeamMemberLeft")
     inner class HandleTeamMemberLeft {
         @Test
-        fun `should send TEAM_MEMBER_LEFT notification to team admins`() {
+        fun `should send TEAM_MEMBER_LEFT notification to team admins via batch`() {
             // given
             val event =
                 TeamMemberLeftEvent(
@@ -548,22 +512,18 @@ class NotificationEventListenerTest {
             every {
                 teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
             } returns listOf(ownerMember)
-            every { notificationService.sendNotification(any()) } returns mockk()
+            val requestsSlot = slot<List<SendNotificationRequest>>()
+            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
             // when
             listener.handleTeamMemberLeft(event)
 
             // then
-            verify(exactly = 1) { notificationService.sendNotification(any()) }
-            verify(exactly = 1) {
-                notificationService.sendNotification(
-                    match {
-                        it.userId == 50L &&
-                            it.type == NotificationType.TEAM_MEMBER_LEFT &&
-                            it.body.contains("타이거즈")
-                    },
-                )
-            }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
+            assertThat(requestsSlot.captured).hasSize(1)
+            assertThat(requestsSlot.captured[0].userId).isEqualTo(50L)
+            assertThat(requestsSlot.captured[0].type).isEqualTo(NotificationType.TEAM_MEMBER_LEFT)
+            assertThat(requestsSlot.captured[0].body).contains("타이거즈")
         }
 
         @Test
@@ -582,12 +542,15 @@ class NotificationEventListenerTest {
             every {
                 teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
             } returns listOf(member)
+            val requestsSlot = slot<List<SendNotificationRequest>>()
+            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
 
             // when
             listener.handleTeamMemberLeft(event)
 
             // then
-            verify(exactly = 0) { notificationService.sendNotification(any()) }
+            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
+            assertThat(requestsSlot.captured).isEmpty()
         }
     }
 

@@ -8,6 +8,7 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.PositionCategory
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
@@ -72,6 +73,12 @@ class GameSubstitutionServiceImpl(
             )
         }
 
+        if (game.gameState.wasDhReleased && request.newPosition == Position.DESIGNATED_HITTER) {
+            throw InvalidGameStateException(
+                "DH가 이미 해제되었으므로 재지정할 수 없습니다.",
+            )
+        }
+
         if (outgoingPlayer.isDesignatedHitter) {
             try {
                 outgoingPlayer.validateDhRelease(incomingPlayer, request.newBattingOrder)
@@ -83,6 +90,7 @@ class GameSubstitutionServiceImpl(
         val dhReleaseRequired = outgoingPlayer.isDhReleaseRequired(incomingPlayer)
         if (dhReleaseRequired) {
             outgoingPlayer.releaseDH()
+            game.gameState.wasDhReleased = true
             gamePlayerRepository.save(outgoingPlayer)
         }
 
