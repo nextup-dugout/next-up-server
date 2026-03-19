@@ -70,4 +70,14 @@ interface GameRepository :
         month: Int,
         teamId: Long?,
     ): List<Int> = findGameDaysByYearAndMonth(year, month, teamId)
+
+    @Query(
+        "SELECT g FROM Game g " +
+            "WHERE g.scorerId IS NOT NULL " +
+            "AND g.lockedAt IS NOT NULL " +
+            "AND g.lockedAt < :threshold",
+    )
+    override fun findLockedGamesBefore(
+        @Param("threshold") threshold: LocalDateTime,
+    ): List<Game>
 }
