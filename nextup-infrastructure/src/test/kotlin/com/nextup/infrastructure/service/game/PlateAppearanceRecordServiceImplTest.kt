@@ -115,7 +115,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.status).isEqualTo(GameStatus.FINISHED)
@@ -156,7 +156,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            service.recordPlateAppearance(1L, request)
+            service.recordPlateAppearance(1L, request, 999L)
 
             // then
             val gameResultEvents =
@@ -194,7 +194,7 @@ class PlateAppearanceRecordServiceImplTest {
             val stateBeforeHome = game.gameState.homeBattingOrder
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then: 끝내기이므로 경기 종료, 타순/카운트 상태가 진행되지 않음
             assertThat(result.game.status).isEqualTo(GameStatus.FINISHED)
@@ -237,7 +237,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then: 정규 이닝 미만이므로 끝내기가 아님, 경기 계속
             assertThat(result.game.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -279,7 +279,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then: 초 이닝이므로 끝내기 아님
             assertThat(result.game.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -314,7 +314,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then: 득점이 없으므로 끝내기 감지 안 함
             assertThat(result.game.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -356,7 +356,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.status).isEqualTo(GameStatus.FINISHED)
@@ -391,7 +391,7 @@ class PlateAppearanceRecordServiceImplTest {
                 )
 
             // when
-            val result = service.recordPlateAppearance(1L, request)
+            val result = service.recordPlateAppearance(1L, request, 999L)
 
             // then: 동점이므로 끝내기 아님
             assertThat(result.game.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -480,6 +480,7 @@ class PlateAppearanceRecordServiceImplTest {
             isTopInning = isTopInning,
             totalInnings = totalInnings,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

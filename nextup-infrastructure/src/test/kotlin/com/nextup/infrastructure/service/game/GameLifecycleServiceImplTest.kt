@@ -420,7 +420,7 @@ class GameLifecycleServiceImplTest {
             every { awayTeam.totalScore } returns 3
 
             // when
-            val result = service.advanceHalfInning(gameId)
+            val result = service.advanceHalfInning(gameId, 999L)
 
             // then
             assertThat(result).isEqualTo(game)
@@ -444,7 +444,7 @@ class GameLifecycleServiceImplTest {
             every { gameRepository.save(game) } returns game
 
             // when
-            val result = service.advanceHalfInning(gameId)
+            val result = service.advanceHalfInning(gameId, 999L)
 
             // then
             assertThat(result).isEqualTo(game)
@@ -468,7 +468,7 @@ class GameLifecycleServiceImplTest {
             every { gameRepository.save(game) } returns game
 
             // when
-            val result = service.advanceHalfInning(gameId)
+            val result = service.advanceHalfInning(gameId, 999L)
 
             // then
             assertThat(result).isEqualTo(game)
@@ -485,7 +485,7 @@ class GameLifecycleServiceImplTest {
             every { gameRepository.findByIdOrNull(gameId) } returns game
 
             // when & then
-            assertThatThrownBy { service.advanceHalfInning(gameId) }
+            assertThatThrownBy { service.advanceHalfInning(gameId, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("진행 중인 경기만 이닝을 진행할 수 있습니다")
         }
@@ -499,7 +499,7 @@ class GameLifecycleServiceImplTest {
             every { gameRepository.findByIdOrNull(gameId) } returns null
 
             // when & then
-            assertThatThrownBy { service.advanceHalfInning(gameId) }
+            assertThatThrownBy { service.advanceHalfInning(gameId, 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
 
@@ -526,7 +526,7 @@ class GameLifecycleServiceImplTest {
             every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
 
             // when
-            service.advanceHalfInning(gameId)
+            service.advanceHalfInning(gameId, 999L)
 
             // then
             verify { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
