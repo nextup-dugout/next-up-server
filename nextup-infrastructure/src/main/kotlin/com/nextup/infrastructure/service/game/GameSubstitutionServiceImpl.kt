@@ -3,13 +3,18 @@ package com.nextup.infrastructure.service.game
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.player.Position
+import com.nextup.core.domain.player.PositionCategory
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.GameSubstitutionService
 import com.nextup.core.service.game.dto.SubstitutionRequest
 import org.slf4j.LoggerFactory
@@ -20,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional
  * 선수 교체 서비스 구현
  *
  * 선수 교체, DH 해제 규칙 검증을 담당합니다.
+ * 투수 교체 시 이전 투수의 이닝 마감 및 교체 선수의 기록 자동 생성을 수행합니다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -27,6 +33,8 @@ class GameSubstitutionServiceImpl(
     private val gameRepository: GameRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
     private val gameEventRepository: GameEventRepositoryPort,
+    private val battingRecordRepository: BattingRecordRepositoryPort,
+    private val pitchingRecordRepository: PitchingRecordRepositoryPort,
 ) : GameSubstitutionService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -84,6 +92,25 @@ class GameSubstitutionServiceImpl(
             gamePlayerRepository.save(outgoingPlayer)
         }
 
+        // M-10: 투수 교체 시 이전 투수의 이닝 마감 처리
+        if (outgoingPlayer.isPitcher) {
+            val pitchingRecord =
+                pitchingRecordRepository.findByGamePlayerId(outgoingPlayer.id)
+            pitchingRecord?.closeInning(
+                currentInning = game.currentInning,
+                currentOuts = game.gameState.outs,
+            )
+            if (pitchingRecord != null) {
+                pitchingRecordRepository.save(pitchingRecord)
+                log.debug(
+                    "투수 교체 - 이닝 마감 처리 완료 (gamePlayerId={}, inning={}, outs={})",
+                    outgoingPlayer.id,
+                    game.currentInning,
+                    game.gameState.outs,
+                )
+            }
+        }
+
         outgoingPlayer.exitGame(game.currentInning)
         gamePlayerRepository.save(outgoingPlayer)
 
@@ -93,6 +120,20 @@ class GameSubstitutionServiceImpl(
             newBattingOrder = request.newBattingOrder,
         )
         gamePlayerRepository.save(incomingPlayer)
+
+        // M-11: 교체 선수 기록 자동 생성
+        createRecordsForSubstitute(incomingPlayer)
+
+        // C2: 투수 교체 시 currentPitcherId 갱신
+        if (request.newPosition.category == PositionCategory.PITCHER) {
+            game.gameState.currentPitcherId = incomingPlayer.id
+            gameRepository.save(game)
+            log.debug(
+                "currentPitcherId 갱신 (gameId={}, newPitcherId={})",
+                game.id,
+                incomingPlayer.id,
+            )
+        }
 
         val halfInning = if (game.isTopInning) "초" else "말"
         val dhReleaseNote = if (dhReleaseRequired) " (DH 규칙 해제)" else ""
@@ -108,6 +149,47 @@ class GameSubstitutionServiceImpl(
             )
 
         return gameEventRepository.save(substitutionEvent)
+    }
+
+    /**
+     * 교체 선수의 BattingRecord 및 PitchingRecord를 자동 생성합니다.
+     *
+     * - 타순이 있는 교체 선수(대타/대주자): BattingRecord 자동 생성
+     * - 투수 포지션 교체 선수(구원투수): PitchingRecord 자동 생성
+     * - 이미 기록이 존재하는 경우에는 생성하지 않습니다.
+     */
+    private fun createRecordsForSubstitute(incomingPlayer: com.nextup.core.domain.game.GamePlayer) {
+        // 타순이 있는 교체 선수는 BattingRecord 생성
+        if (incomingPlayer.battingOrder != null) {
+            val existingBattingRecord =
+                battingRecordRepository.findByGamePlayerId(incomingPlayer.id)
+            if (existingBattingRecord == null) {
+                val battingRecord = BattingRecord.create(gamePlayer = incomingPlayer)
+                battingRecordRepository.save(battingRecord)
+                log.debug(
+                    "교체 선수 BattingRecord 자동 생성 (gamePlayerId={})",
+                    incomingPlayer.id,
+                )
+            }
+        }
+
+        // 투수 포지션 교체 선수는 PitchingRecord 생성
+        if (incomingPlayer.isPitcher) {
+            val existingPitchingRecord =
+                pitchingRecordRepository.findByGamePlayerId(incomingPlayer.id)
+            if (existingPitchingRecord == null) {
+                val pitchingRecord =
+                    PitchingRecord.create(
+                        gamePlayer = incomingPlayer,
+                        isStartingPitcher = false,
+                    )
+                pitchingRecordRepository.save(pitchingRecord)
+                log.debug(
+                    "교체 투수 PitchingRecord 자동 생성 (gamePlayerId={})",
+                    incomingPlayer.id,
+                )
+            }
+        }
     }
 
     private fun findGame(id: Long): Game =

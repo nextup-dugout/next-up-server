@@ -6,12 +6,16 @@ import com.nextup.api.dto.match.MatchRequestResponse
 import com.nextup.api.dto.match.MatchResponseResponse
 import com.nextup.api.dto.match.RespondToMatchRequestApiRequest
 import com.nextup.common.dto.ApiResponse
+import com.nextup.core.domain.match.SkillLevel
 import com.nextup.core.service.match.MatchingService
 import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto
+import com.nextup.core.service.match.dto.MatchRequestFilterDto
 import jakarta.validation.Valid
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDate
 
 /**
  * 매칭 요청 API Controller (공개 API)
@@ -47,11 +51,27 @@ class MatchRequestController(
     }
 
     /**
-     * OPEN 상태의 모든 매칭 요청을 조회합니다.
+     * OPEN 상태의 매칭 요청을 조회합니다.
+     *
+     * @param area 지역 필터 (선호 장소에 포함된 문자열)
+     * @param date 날짜 필터 (선호 날짜)
+     * @param skillLevel 실력 수준 필터
      */
     @GetMapping
-    fun getOpenMatchRequests(): ApiResponse<List<MatchRequestResponse>> {
-        val matchRequests = matchingService.getOpenRequests()
+    fun getOpenMatchRequests(
+        @RequestParam(required = false) area: String?,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        date: LocalDate?,
+        @RequestParam(required = false) skillLevel: SkillLevel?,
+    ): ApiResponse<List<MatchRequestResponse>> {
+        val filter =
+            MatchRequestFilterDto(
+                area = area,
+                date = date,
+                skillLevel = skillLevel,
+            )
+        val matchRequests = matchingService.getOpenRequests(filter)
         return ApiResponse.success(matchRequests.map { MatchRequestResponse.from(it) })
     }
 

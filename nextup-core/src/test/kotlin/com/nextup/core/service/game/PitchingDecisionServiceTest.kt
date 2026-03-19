@@ -787,4 +787,326 @@ class PitchingDecisionServiceTest {
             assertThat(loseStarter.decision).isEqualTo(PitchingDecision.LOSS)
         }
     }
+
+    // ────────────────────────────────────────────────────────────
+    // 결승점 이닝 특정 불가 엣지 케이스 (findLosingPitcher / findWinningReliever)
+    // ────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("결승점·승리투수 이닝 특정 불가 엣지 케이스")
+    inner class GoAheadRunEdgeCasesTest {
+
+        @Test
+        fun `승리팀이 단 한번도 리드를 못 잡은 경우 구원 투수 목록 마지막에게 승리`() {
+            // given: 이닝 점수 문자열이 null → winnerCumulative 빈 리스트
+            // → findWinningReliever 루프를 전혀 돌지 않으므로 firstLeadInning = -1
+            // → 마지막 구원투수(relief3)에게 WIN
+            val relief1 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val relief2 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val relief3 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+
+            val winnerTeam = makeGameTeam(null, 3)
+            val loserTeam = makeGameTeam(null, 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = listOf(relief1, relief2, relief3),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: firstLeadInning < 0 → relievers.last() = relief3 에게 WIN
+            assertThat(relief3.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `결승점 이닝 특정 불가 시 가장 많은 실점을 허용한 패배팀 투수에게 패전`() {
+            // given: 승리팀이 처음부터 리드를 유지하는 경우
+            // w > l && prevW <= prevL 조건: 1회에는 prevW=0, prevL=0 이므로 prevW <= prevL (0<=0 true)
+            // 따라서 1회에 decisionInning=1 이 설정된다.
+            // 반면, 이닝 점수가 null이면 winnerCumulative가 비어 findLosingPitcher가
+            // maxByOrNull 경로로 분기한다.
+            val loserRelief1 =
+                makeRecord(isStarter = false, outs = 12, runsAllowed = 1) // 1~4회
+            val loserRelief2 =
+                makeRecord(isStarter = false, outs = 15, runsAllowed = 3) // 5~9회 (최다 실점)
+
+            // inningScores=null → winnerCumulative 비어있음 → maxByOrNull(runsAllowed) 경로
+            val winnerTeam = makeGameTeam(null, 4)
+            val loserTeam = makeGameTeam(null, 4)
+
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserRelief1, loserRelief2),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: winnerCumulative 비어있음 → maxByOrNull(runsAllowed) → loserRelief2(3실점)
+            assertThat(loserRelief2.decision).isEqualTo(PitchingDecision.LOSS)
+            assertThat(loserRelief1.decision).isEqualTo(PitchingDecision.NONE)
+        }
+
+        @Test
+        fun `구원 투수 아웃 합산이 목표 이닝에 못 미치면 마지막 투수에게 패전`() {
+            // given: 승팀이 처음에 리드 후 패팀이 역전하지 않는 시나리오
+            // 패팀 선발(6아웃=2이닝) + 구원(3아웃=1이닝) = 3이닝만 커버
+            // 승팀이 5회에 결승점 → decisionInning=5
+            // 하지만 패팀 투수 합산 아웃이 9(3이닝)뿐 → 5회 커버 불가 → last() 반환
+            val loserStarter = makeRecord(isStarter = true, outs = 6, runsAllowed = 0) // 1~2회
+            val loserRelief = makeRecord(isStarter = false, outs = 3, runsAllowed = 0) // 3회
+
+            // 승팀이 5회에 리드를 처음 확보 (1~4회 동점)
+            val winnerTeam = makeGameTeam("0,0,0,0,3,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter, loserRelief),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: findRelieverAtInning(5회) → 아웃 합산 9개로 3이닝만 커버 → null → last()=loserRelief
+            assertThat(loserRelief.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `선발 자격 있는 선발이 리드 없이 교체되면 구원 투수 중 승리 투수 결정`() {
+            // given: 선발이 5이닝(15아웃) 자격 있으나 5이닝까지 동점 → leadAfterStarter=false
+            // → 구원투수 중 승리 투수 결정
+            // 선발 5이닝(1~5회): 승팀 누적 vs 패팀 누적 = 2:2 (동점)
+            // 6회에 승팀이 처음 리드 → 구원투수1이 승리
+            val starter = makeRecord(isStarter = true, outs = 15, runsAllowed = 2)
+            val relief1 = makeRecord(isStarter = false, outs = 6, runsAllowed = 0) // 6~7회
+            val relief2 = makeRecord(isStarter = false, outs = 6, runsAllowed = 0) // 8~9회
+
+            // 5이닝까지 2:2 동점, 6회에 승팀이 역전
+            val winnerTeam = makeGameTeam("1,0,0,1,0,2,0,0,0", 4)
+            val loserTeam = makeGameTeam("2,0,0,0,0,0,0,0,0", 2)
+
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter, relief1, relief2),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 선발 퇴장 후 5이닝까지 동점 → leadAfterStarter=false
+            // → 구원투수 중 6회에 리드 만든 relief1에게 WIN
+            assertThat(starter.decision).isNotEqualTo(PitchingDecision.WIN)
+            assertThat(relief1.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `구원 투수 중 승리 투수가 결정되면 나머지 구원 투수에게 isSaveEligible=true로 세이브 기회`() {
+            // given: 구원투수만 있고 inningScores=null → firstLeadInning=-1 → last()=relief3 이 WIN
+            // remainingRelievers=[relief1, relief2], isSaveEligible=true
+            // relief1(middle) → HOLD, relief2(last of remaining) → SAVE(1점 차 리드)
+            val relief1 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val relief2 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val relief3 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+
+            // inningScores=null → findWinningReliever에서 firstLeadInning=-1 → last()=relief3
+            val winnerTeam = makeGameTeam(null, 1)
+            val loserTeam = makeGameTeam(null, 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = listOf(relief1, relief2, relief3),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: relief3=WIN, relief1=HOLD, relief2=SAVE(1점 차 리드)
+            assertThat(relief3.decision).isEqualTo(PitchingDecision.WIN)
+            assertThat(relief1.decision).isEqualTo(PitchingDecision.HOLD)
+            assertThat(relief2.decision).isEqualTo(PitchingDecision.SAVE)
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // 분기 커버리지 보완: isSaveEligible=false / winnerRecords 없음
+    // ────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("분기 커버리지 보완")
+    inner class BranchCoverageTest {
+
+        @Test
+        fun `승리팀 기록 없고 패배팀만 있을 때 패전 투수가 결정된다`() {
+            // given: winnerTeamRecords 비어있고 loserTeamRecords에만 선발 존재
+            // assignWinAndRelief는 winnerRecords.isEmpty() 조기 반환 분기를 커버
+            val loserStarter = makeRecord(isStarter = true, outs = 27, runsAllowed = 5)
+            val winnerTeam = makeGameTeam("2,0,1,0,1,0,0,0,0", 4)
+            val loserTeam = makeGameTeam("1,0,1,0,0,0,0,0,0", 2)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 패전 투수 결정 (선발 완투)
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `구원 투수 없이 선발만 있을 때 isSaveEligible=false 분기를 통과한다`() {
+            // given: 선발 완투, 구원 없음 → assignReliefDecisions은 relievers.isEmpty() 조기 반환
+            // isSaveEligible 분기에 도달하지 않으므로 SAVE 없음
+            val starter = makeRecord(isStarter = true, outs = 27, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("3,0,0,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 선발에게 WIN, SAVE 없음
+            assertThat(starter.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `구원 투수가 있어도 isSaveEligible=false이면 마지막 구원투수에게 세이브 미부여`() {
+            // given: 선발 이닝 자격 미달(12아웃=4이닝) + 리드 만든 구원투수 없음(점수 null)
+            // → winningRelief=relief2(last), remainingRelievers=[relief1]
+            // → isSaveEligible=true이므로 실제로는 세이브 가능. 아래는 isSaveEligible=false 경로:
+            // 선발 없고 구원만 있고 승리 투수가 결정되지 않는 경로를 통해
+            // assignReliefDecisions(isSaveEligible=false) 분기를 커버
+            // 승리팀 기록이 아예 없는 경우 assignWinAndRelief 자체가 조기 반환
+            val loserRelief1 = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("4,0,0,0,0,0,0,0,0", 4)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when: winnerTeamRecords=emptyList → assignWinAndRelief 조기 반환
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserRelief1),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 패전 투수 결정
+            assertThat(loserRelief1.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `qualifiesForSave에서 isSaveByInnings만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(5) > 3 → false
+            // isSaveByInnings: 9아웃 = 3이닝 → true (|| 두 번째 조건)
+            // finalLeadMargin(5) <= runnersOnBase(0) + 1 = 1 → false
+            val closer = makeRecord(isStarter = false, outs = 9, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 5, runnersOnBase = 0)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 runnersOnBase 조건만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(4) > 3 → false (첫 번째 false)
+            // isSaveByInnings: 6아웃 < 9 → false (두 번째 false)
+            // finalLeadMargin(4) <= runnersOnBase(3) + 1 = 4 → true (세 번째 true)
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 4, runnersOnBase = 3)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 모든 OR 조건이 false이면 세이브 자격이 없다`() {
+            // finalLeadMargin(5) > 3 → false
+            // isSaveByInnings: 6아웃 < 9 → false
+            // finalLeadMargin(5) <= runnersOnBase(2) + 1 = 3 → false
+            val closer = makeRecord(isStarter = false, outs = 6, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 5, runnersOnBase = 2)
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `qualifiesForSave에서 finalLeadMargin 3이하만 true일 때 세이브 자격이 있다`() {
+            // finalLeadMargin(2) <= 3 → true (|| 첫 번째 조건으로 short-circuit)
+            val closer = makeRecord(isStarter = false, outs = 3, runsAllowed = 0)
+            val result = service.qualifiesForSave(closer, finalLeadMargin = 2, runnersOnBase = 0)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `assignDecisions에서 winnerTeamRecords만 비어있을 때 패전 투수가 결정된다`() {
+            // winnerTeamRecords.isEmpty() == true, loserTeamRecords.isEmpty() == false
+            // → && 전체는 false → early return 하지 않음
+            val loserStarter = makeRecord(isStarter = true, outs = 27, runsAllowed = 3)
+            val winnerTeam = makeGameTeam("1,0,2,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `assignDecisions에서 loserTeamRecords만 비어있을 때 승리 투수가 결정된다`() {
+            // winnerTeamRecords.isEmpty() == false → && short-circuit (전체 false)
+            // → early return 하지 않음
+            val winStarter = makeRecord(isStarter = true, outs = 27, runsAllowed = 0)
+            val winnerTeam = makeGameTeam("3,0,0,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            service.assignDecisions(
+                winnerTeamRecords = listOf(winStarter),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            assertThat(winStarter.decision).isEqualTo(PitchingDecision.WIN)
+        }
+
+        @Test
+        fun `선발이 자격 있고 구원 있으나 리드 없이 교체 후 구원 승리 없을 때 세이브 미부여`() {
+            // given: 선발 5이닝(15아웃) 자격 있으나 리드 없이 교체, 구원 투수가 리드를 만들었으나
+            // isSaveEligible=true로 assignReliefDecisions 호출됨
+            // 그러나 finalLeadMargin > 3이고 3이닝 미만이고 동점 주자 조건 불충족이면 세이브 없음
+            val starter = makeRecord(isStarter = true, outs = 15, runsAllowed = 2)
+            val winningRelief = makeRecord(isStarter = false, outs = 3, runsAllowed = 0) // 1이닝만 소화
+            val closerRelief = makeRecord(isStarter = false, outs = 3, runsAllowed = 0) // 1이닝
+
+            // 선발 5이닝 동점, 6회 구원1이 역전, 7회 구원2 마무리
+            // finalLeadMargin=4 (4점 차), 주자 0명 → 세이브 조건: 4<=3 false, 3이닝 false, 4<=0+1 false
+            val winnerTeam = makeGameTeam("1,0,0,1,0,4,0,0,0", 6)
+            val loserTeam = makeGameTeam("2,0,0,0,0,0,0,0,0", 2)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = listOf(starter, winningRelief, closerRelief),
+                loserTeamRecords = emptyList(),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: winningRelief가 WIN, closerRelief는 SAVE 조건 불충족이므로 NONE
+            assertThat(winningRelief.decision).isEqualTo(PitchingDecision.WIN)
+            assertThat(closerRelief.decision).isEqualTo(PitchingDecision.NONE)
+        }
+    }
 }

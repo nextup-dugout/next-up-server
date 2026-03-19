@@ -72,3 +72,25 @@ class NoEventToUndoException :
         "NO_EVENT_TO_UNDO",
         "되돌릴 이벤트가 없습니다",
     )
+
+/**
+ * 다른 기록원이 이미 경기를 잠금한 상태에서 기록을 시도할 때 발생하는 예외
+ */
+class GameAlreadyLockedException(
+    gameId: Long,
+    lockedByScorerId: Long,
+) : InvalidStateException(
+        "GAME_ALREADY_LOCKED",
+        "Game $gameId is already locked by scorer $lockedByScorerId",
+    )
+
+/**
+ * 잠금하지 않은 기록원이 경기를 해제하려 할 때 발생하는 예외
+ */
+class GameNotLockedByCurrentScorerException(
+    gameId: Long,
+    scorerId: Long,
+) : InvalidStateException(
+        "GAME_NOT_LOCKED_BY_SCORER",
+        "Game $gameId is not locked by scorer $scorerId",
+    )

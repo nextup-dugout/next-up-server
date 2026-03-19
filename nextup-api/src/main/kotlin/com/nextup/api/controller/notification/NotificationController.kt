@@ -119,6 +119,19 @@ class NotificationController(
     }
 
     /**
+     * 모든 알림을 읽음 처리합니다.
+     *
+     * PATCH /api/v1/notifications/read-all
+     */
+    @PatchMapping("/notifications/read-all")
+    fun markAllAsRead(
+        @AuthenticationPrincipal userId: Long,
+    ): ApiResponse<Unit> {
+        notificationService.markAllAsRead(userId)
+        return ApiResponse.success(Unit)
+    }
+
+    /**
      * 미읽은 알림 개수를 조회합니다. (A-06)
      *
      * GET /api/v1/notifications/unread-count

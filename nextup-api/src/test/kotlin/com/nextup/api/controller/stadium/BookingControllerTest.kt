@@ -125,6 +125,7 @@ class BookingControllerTest {
             // given
             val stadium = createStadium(1L, "잠실 야구장")
             val slot = createSlot(1L, stadium)
+            slot.book()
             val booking = createBooking(1L, slot, 100L, 200L)
             booking.cancel()
             every { stadiumService.cancelBooking(1L) } returns booking

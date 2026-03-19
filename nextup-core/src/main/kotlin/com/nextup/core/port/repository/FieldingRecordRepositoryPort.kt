@@ -12,6 +12,11 @@ interface FieldingRecordRepositoryPort {
 
     fun findAll(): List<FieldingRecord>
 
+    /**
+     * ID로 수비 기록을 조회합니다.
+     */
+    fun findByIdOrNull(id: Long): FieldingRecord?
+
     fun delete(fieldingRecord: FieldingRecord)
 
     fun deleteById(id: Long)

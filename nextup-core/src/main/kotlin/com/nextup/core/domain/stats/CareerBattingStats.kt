@@ -29,6 +29,10 @@ class CareerBattingStats(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 시즌 수
     @Column(name = "seasons_played", nullable = false)
     var seasonsPlayed: Int = 0

@@ -247,6 +247,187 @@ class PlayerStatsService(
         return careerPitchingStatsRepository.save(careerStats)
     }
 
+    // ========== 대회별 통계 조회 메서드 ==========
+
+    /**
+     * 선수의 대회별 타격 통계를 조회합니다.
+     */
+    fun getBattingStatsByCompetition(
+        playerId: Long,
+        competitionId: Long,
+    ): CompetitionBattingStatsDto {
+        val records = battingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+
+        var gamesPlayed = 0
+        var plateAppearances = 0
+        var atBats = 0
+        var hits = 0
+        var doubles = 0
+        var triples = 0
+        var homeRuns = 0
+        var runs = 0
+        var runsBattedIn = 0
+        var walks = 0
+        var strikeouts = 0
+        var stolenBases = 0
+
+        records.forEach { record ->
+            gamesPlayed++
+            plateAppearances += record.plateAppearances
+            atBats += record.atBats
+            hits += record.hits
+            doubles += record.doubles
+            triples += record.triples
+            homeRuns += record.homeRuns
+            runs += record.runs
+            runsBattedIn += record.runsBattedIn
+            walks += record.walks
+            strikeouts += record.strikeouts
+            stolenBases += record.stolenBases
+        }
+
+        val battingAverage =
+            if (atBats > 0) {
+                java.math.BigDecimal(hits).divide(
+                    java.math.BigDecimal(atBats),
+                    3,
+                    java.math.RoundingMode.HALF_UP,
+                )
+            } else {
+                java.math.BigDecimal.ZERO
+            }
+
+        val onBasePercentage =
+            if (atBats + walks > 0) {
+                java.math.BigDecimal(hits + walks).divide(
+                    java.math.BigDecimal(atBats + walks),
+                    3,
+                    java.math.RoundingMode.HALF_UP,
+                )
+            } else {
+                java.math.BigDecimal.ZERO
+            }
+
+        val totalBases = hits + doubles + triples * 2 + homeRuns * 3
+        val sluggingPercentage =
+            if (atBats > 0) {
+                java.math.BigDecimal(totalBases).divide(
+                    java.math.BigDecimal(atBats),
+                    3,
+                    java.math.RoundingMode.HALF_UP,
+                )
+            } else {
+                java.math.BigDecimal.ZERO
+            }
+
+        val ops = onBasePercentage.add(sluggingPercentage)
+
+        return CompetitionBattingStatsDto(
+            playerId = playerId,
+            competitionId = competitionId,
+            gamesPlayed = gamesPlayed,
+            plateAppearances = plateAppearances,
+            atBats = atBats,
+            hits = hits,
+            doubles = doubles,
+            triples = triples,
+            homeRuns = homeRuns,
+            runs = runs,
+            runsBattedIn = runsBattedIn,
+            walks = walks,
+            strikeouts = strikeouts,
+            stolenBases = stolenBases,
+            battingAverage = battingAverage.toPlainString(),
+            onBasePercentage = onBasePercentage.toPlainString(),
+            sluggingPercentage = sluggingPercentage.toPlainString(),
+            ops = ops.toPlainString(),
+        )
+    }
+
+    /**
+     * 선수의 대회별 투수 통계를 조회합니다.
+     */
+    fun getPitchingStatsByCompetition(
+        playerId: Long,
+        competitionId: Long,
+    ): CompetitionPitchingStatsDto {
+        val records = pitchingRecordRepository.findAllByPlayerIdAndCompetitionId(playerId, competitionId)
+
+        var gamesPlayed = 0
+        var gamesStarted = 0
+        var inningsPitchedOuts = 0
+        var wins = 0
+        var losses = 0
+        var saves = 0
+        var holds = 0
+        var earnedRuns = 0
+        var hitsAllowed = 0
+        var walksAllowed = 0
+        var strikeouts = 0
+        var homeRunsAllowed = 0
+
+        records.forEach { record ->
+            gamesPlayed++
+            if (record.gamePlayer.isStarter) gamesStarted++
+            inningsPitchedOuts += record.inningsPitchedOuts
+            wins += if (record.decision == com.nextup.core.domain.game.PitchingDecision.WIN) 1 else 0
+            losses += if (record.decision == com.nextup.core.domain.game.PitchingDecision.LOSS) 1 else 0
+            saves += if (record.decision == com.nextup.core.domain.game.PitchingDecision.SAVE) 1 else 0
+            holds += if (record.decision == com.nextup.core.domain.game.PitchingDecision.HOLD) 1 else 0
+            earnedRuns += record.earnedRuns
+            hitsAllowed += record.hitsAllowed
+            walksAllowed += record.walksAllowed
+            strikeouts += record.strikeouts
+            homeRunsAllowed += record.homeRunsAllowed
+        }
+
+        val completeInnings = inningsPitchedOuts / 3
+        val remainingOuts = inningsPitchedOuts % 3
+        val inningsPitchedDisplay =
+            if (remainingOuts == 0) "$completeInnings" else "$completeInnings.$remainingOuts"
+
+        val era =
+            if (inningsPitchedOuts > 0) {
+                java.math.BigDecimal(earnedRuns * 27).divide(
+                    java.math.BigDecimal(inningsPitchedOuts),
+                    2,
+                    java.math.RoundingMode.HALF_UP,
+                ).toPlainString()
+            } else {
+                null
+            }
+
+        val whip =
+            if (inningsPitchedOuts > 0) {
+                java.math.BigDecimal((hitsAllowed + walksAllowed) * 3).divide(
+                    java.math.BigDecimal(inningsPitchedOuts),
+                    2,
+                    java.math.RoundingMode.HALF_UP,
+                )
+            } else {
+                java.math.BigDecimal.ZERO
+            }
+
+        return CompetitionPitchingStatsDto(
+            playerId = playerId,
+            competitionId = competitionId,
+            gamesPlayed = gamesPlayed,
+            gamesStarted = gamesStarted,
+            inningsPitchedDisplay = inningsPitchedDisplay,
+            wins = wins,
+            losses = losses,
+            saves = saves,
+            holds = holds,
+            earnedRuns = earnedRuns,
+            hitsAllowed = hitsAllowed,
+            walksAllowed = walksAllowed,
+            strikeouts = strikeouts,
+            homeRunsAllowed = homeRunsAllowed,
+            earnedRunAverage = era,
+            whip = whip.toPlainString(),
+        )
+    }
+
     // ========== 리더보드 조회 메서드 ==========
 
     /**

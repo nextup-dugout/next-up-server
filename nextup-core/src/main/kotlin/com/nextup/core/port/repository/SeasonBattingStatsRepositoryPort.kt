@@ -24,6 +24,15 @@ interface SeasonBattingStatsRepositoryPort {
     ): SeasonBattingStats?
 
     /**
+     * 선수 ID, 연도, 팀 ID로 시즌 타격 통계를 조회합니다 (이적 시 팀별 기록 분리).
+     */
+    fun findByPlayerIdAndYearAndTeamId(
+        playerId: Long,
+        year: Int,
+        teamId: Long?,
+    ): SeasonBattingStats?
+
+    /**
      * 선수 ID로 모든 시즌 타격 통계를 조회합니다.
      */
     fun findAllByPlayerId(playerId: Long): List<SeasonBattingStats>

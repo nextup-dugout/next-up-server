@@ -290,6 +290,7 @@ class GameState(
      *
      * 사회인 야구 타이브레이크 규칙에 따라 이닝 시작 시 자동으로
      * 1루와 2루에 주자를 배치합니다.
+     * 배치된 주자의 담당 투수 ID는 현재 투수(currentPitcherId)로 설정됩니다.
      *
      * @param firstRunnerId  1루에 배치할 주자 GamePlayer ID (null 허용)
      * @param secondRunnerId 2루에 배치할 주자 GamePlayer ID (null 허용)
@@ -299,8 +300,11 @@ class GameState(
         secondRunnerId: Long? = null,
     ) {
         runnerOnFirstId = firstRunnerId
+        runnerOnFirstPitcherId = if (firstRunnerId != null) currentPitcherId else null
         runnerOnSecondId = secondRunnerId
+        runnerOnSecondPitcherId = if (secondRunnerId != null) currentPitcherId else null
         runnerOnThirdId = null
+        runnerOnThirdPitcherId = null
     }
 
     /**

@@ -42,6 +42,12 @@ interface CompetitionPlayerJpaRepository : JpaRepository<CompetitionPlayer, Long
         status: CompetitionPlayerStatus,
     ): List<CompetitionPlayer>
 
+    @Query(
+        "SELECT DISTINCT cp.competition.id FROM CompetitionPlayer cp " +
+            "WHERE cp.team.id = :teamId AND cp.status <> 'WITHDRAWN'",
+    )
+    fun findActiveCompetitionIdsByTeamId(teamId: Long): Set<Long>
+
     fun findByPlayerIdAndStatusIn(
         playerId: Long,
         statuses: List<CompetitionPlayerStatus>,

@@ -283,7 +283,13 @@ class PitchingDecisionService {
     /**
      * 패배팀 투수 중 결승점을 허용한 투수를 찾습니다.
      *
-     * 결승점: 최종 패배팀의 허용 누적 점수가 최초로 상대방 최종 점수를 넘어선 이닝의 투수.
+     * 결승점(go-ahead run): 승리팀이 최종적으로 역전하지 못할 리드를 잡은 시점의 득점.
+     * 해당 이닝에서 투구한 패배팀 투수에게 패전을 부여합니다.
+     *
+     * 결승점 판정 로직:
+     * 1. 이닝별 누적 점수를 역순으로 탐색하여, 승리팀이 최종 점수에 도달하기 직전
+     *    마지막으로 리드를 확보한 이닝을 찾습니다.
+     * 2. 승리팀이 동점 또는 뒤진 상태에서 리드를 잡은 마지막 시점이 결승점 이닝입니다.
      */
     private fun findLosingPitcher(
         loserRecords: List<PitchingRecord>,
@@ -294,16 +300,22 @@ class PitchingDecisionService {
 
         val winnerCumulative = cumulativeScores(winnerInningScores)
         val loserCumulative = cumulativeScores(loserInningScores)
-        val finalWinnerScore = winnerCumulative.lastOrNull() ?: return loserRecords.last()
 
-        // 결승점 이닝: 상대 팀 점수가 최초로 패배팀 최종 점수를 초과한 이닝
+        if (winnerCumulative.isEmpty()) {
+            return loserRecords.maxByOrNull { it.runsAllowed } ?: loserRecords.last()
+        }
+
+        // 결승점 이닝: 승리팀이 마지막으로 동점 또는 뒤진 상태에서 리드를 잡은 이닝
         var decisionInning = -1
         for (i in winnerCumulative.indices) {
             val w = winnerCumulative[i]
             val l = loserCumulative.getOrElse(i) { 0 }
-            if (w > l && w == finalWinnerScore) {
+            val prevW = if (i > 0) winnerCumulative[i - 1] else 0
+            val prevL = if (i > 0) loserCumulative.getOrElse(i - 1) { 0 } else 0
+
+            // 이 이닝에서 승리팀이 리드를 (재)확보한 경우
+            if (w > l && prevW <= prevL) {
                 decisionInning = i + 1 // 1-indexed
-                break
             }
         }
 

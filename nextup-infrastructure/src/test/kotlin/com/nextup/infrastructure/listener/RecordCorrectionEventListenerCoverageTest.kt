@@ -10,9 +10,14 @@ import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.ThrowingHand
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
+import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
+import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -26,18 +31,28 @@ import java.time.LocalDateTime
 class RecordCorrectionEventListenerCoverageTest {
     private val seasonBattingStatsRepository = mockk<SeasonBattingStatsRepositoryPort>()
     private val seasonPitchingStatsRepository = mockk<SeasonPitchingStatsRepositoryPort>()
+    private val seasonFieldingStatsRepository = mockk<SeasonFieldingStatsRepositoryPort>()
     private val careerBattingStatsRepository = mockk<CareerBattingStatsRepositoryPort>()
     private val careerPitchingStatsRepository = mockk<CareerPitchingStatsRepositoryPort>()
+    private val careerFieldingStatsRepository = mockk<CareerFieldingStatsRepositoryPort>()
     private val gameRepository = mockk<GameRepositoryPort>()
+    private val gamePlayerRepository = mockk<GamePlayerRepositoryPort>()
+    private val gameTeamRepository = mockk<GameTeamRepositoryPort>()
+    private val gameEventRepository = mockk<GameEventRepositoryPort>(relaxed = true)
     private val cacheManager = mockk<CacheManager>()
 
     private val listener =
         RecordCorrectionEventListener(
             seasonBattingStatsRepository = seasonBattingStatsRepository,
             seasonPitchingStatsRepository = seasonPitchingStatsRepository,
+            seasonFieldingStatsRepository = seasonFieldingStatsRepository,
             careerBattingStatsRepository = careerBattingStatsRepository,
             careerPitchingStatsRepository = careerPitchingStatsRepository,
+            careerFieldingStatsRepository = careerFieldingStatsRepository,
             gameRepository = gameRepository,
+            gamePlayerRepository = gamePlayerRepository,
+            gameTeamRepository = gameTeamRepository,
+            gameEventRepository = gameEventRepository,
             cacheManager = cacheManager,
         )
 
@@ -68,6 +83,7 @@ class RecordCorrectionEventListenerCoverageTest {
         every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
         every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
         every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+        every { gamePlayerRepository.findByGameIdAndPlayerId(any(), any()) } returns null
 
         val event =
             RecordCorrectedEvent(
@@ -103,6 +119,7 @@ class RecordCorrectionEventListenerCoverageTest {
         every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
         every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
         every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
+        every { gamePlayerRepository.findByGameIdAndPlayerId(any(), any()) } returns null
 
         val event =
             RecordCorrectedEvent(

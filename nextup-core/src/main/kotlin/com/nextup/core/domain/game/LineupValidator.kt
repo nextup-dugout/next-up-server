@@ -2,6 +2,8 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
+import com.nextup.common.exception.InvalidLineupBattingOrderCountException
+import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.common.exception.UnregisteredPlayerInLineupException
@@ -20,26 +22,35 @@ object LineupValidator {
      * @param entries 검증할 라인업 엔트리 목록
      * @param attendingPlayerIds 참석(ATTENDING) 상태인 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param registeredPlayerIds 대회에 등록된 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param mercenaryPlayerIds L-3: 용병 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param maxMercenaryCount L-3: 용병 쿼터 제한 (nullable, null이면 무제한)
      * @throws DuplicatePlayerInLineupException 동일 선수가 중복 등록된 경우
      * @throws NoCatcherInLineupException 포수가 없는 경우
      * @throws InvalidDhRuleException DH 규칙 위반 시
      * @throws NonAttendingPlayerInLineupException 참석하지 않는 선수가 라인업에 포함된 경우
      * @throws UnregisteredPlayerInLineupException 리그에 등록되지 않은 선수가 라인업에 포함된 경우
+     * @throws MercenaryQuotaExceededException 용병 쿼터 초과 시
      */
     fun validate(
         entries: List<LineupEntry>,
         attendingPlayerIds: Set<Long>? = null,
         registeredPlayerIds: Set<Long>? = null,
+        mercenaryPlayerIds: Set<Long>? = null,
+        maxMercenaryCount: Int? = null,
     ) {
         val starters = entries.filter { it.isStarter }
         validateNoDuplicatePlayers(entries)
         validateCatcherExists(starters)
         validateDhRule(starters)
+        validateBattingOrderCount(starters)
         if (attendingPlayerIds != null) {
             validateOnlyAttendingPlayers(entries, attendingPlayerIds)
         }
         if (registeredPlayerIds != null) {
             validateLeagueRegisteredPlayers(entries, registeredPlayerIds)
+        }
+        if (mercenaryPlayerIds != null && maxMercenaryCount != null) {
+            validateMercenaryQuota(entries, mercenaryPlayerIds, maxMercenaryCount)
         }
     }
 
@@ -94,6 +105,29 @@ object LineupValidator {
     }
 
     /**
+     * 타순 인원 수 검증 (M-7: DH 해제 후 타순 인원 검증)
+     *
+     * 선발 라인업의 타순에 배치된 선수가 정확히 9명이어야 합니다.
+     * DH가 없는 경우 투수 포함 9명, DH가 있는 경우 투수 제외 DH 포함 9명.
+     * DH 해제 후 타순 인원이 9명이 아닌 경우(8명 등) 예외를 발생시킵니다.
+     *
+     * @param starters 선발 라인업 엔트리 목록
+     * @throws InvalidLineupBattingOrderCountException 타순 인원이 9명이 아닌 경우
+     */
+    private fun validateBattingOrderCount(starters: List<LineupEntry>) {
+        val battersInOrder = starters.filter { it.battingOrder != null }
+        if (battersInOrder.size != REQUIRED_BATTING_ORDER_COUNT) {
+            throw InvalidLineupBattingOrderCountException(
+                expected = REQUIRED_BATTING_ORDER_COUNT,
+                actual = battersInOrder.size,
+            )
+        }
+    }
+
+    /** 타순에 필요한 선수 수 */
+    private const val REQUIRED_BATTING_ORDER_COUNT = 9
+
+    /**
      * 참석(ATTENDING) 선수만 라인업에 포함되었는지 검증
      *
      * AttendanceVote에서 ATTENDING 상태인 선수만 라인업에 등록 가능합니다.
@@ -128,6 +162,29 @@ object LineupValidator {
 
         if (unregisteredPlayerIds.isNotEmpty()) {
             throw UnregisteredPlayerInLineupException(unregisteredPlayerIds)
+        }
+    }
+
+    /**
+     * L-3: 용병 쿼터 검증
+     *
+     * 라인업에 포함된 용병 수가 대회 규칙의 최대 허용 수를 초과하는지 검증합니다.
+     *
+     * @param entries 검증할 라인업 엔트리 목록
+     * @param mercenaryPlayerIds 용병으로 등록된 선수 ID 목록
+     * @param maxMercenaryCount 최대 용병 허용 수
+     * @throws MercenaryQuotaExceededException 용병 쿼터 초과 시
+     */
+    fun validateMercenaryQuota(
+        entries: List<LineupEntry>,
+        mercenaryPlayerIds: Set<Long>,
+        maxMercenaryCount: Int,
+    ) {
+        val lineupPlayerIds = entries.map { it.player.id }.toSet()
+        val mercenaryCountInLineup = lineupPlayerIds.count { it in mercenaryPlayerIds }
+
+        if (mercenaryCountInLineup > maxMercenaryCount) {
+            throw MercenaryQuotaExceededException(mercenaryCountInLineup, maxMercenaryCount)
         }
     }
 }

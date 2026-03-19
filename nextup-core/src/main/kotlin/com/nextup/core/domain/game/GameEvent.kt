@@ -34,7 +34,7 @@ class GameEvent(
     @Column(name = "event_type", nullable = false, length = 30)
     val eventType: GameEventType,
     @Column(nullable = false, length = 500)
-    val description: String,
+    var description: String,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batter_id")
     val batter: GamePlayer? = null,
@@ -47,7 +47,7 @@ class GameEvent(
     val runnersAfterJson: String? = null,
     @Enumerated(EnumType.STRING)
     @Column(name = "plate_appearance_result", length = 30)
-    val plateAppearanceResult: PlateAppearanceResult? = null,
+    var plateAppearanceResult: PlateAppearanceResult? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "runner_player_id")
     val runnerPlayer: GamePlayer? = null,
@@ -81,6 +81,20 @@ class GameEvent(
 ) : BaseTimeEntity() {
     fun markUndone() {
         undone = true
+    }
+
+    /**
+     * 타석 결과와 설명을 정정합니다 (H6: 기록 정정 반영).
+     *
+     * @param newResult 정정된 타석 결과
+     * @param newDescription 정정된 설명
+     */
+    fun correctResult(
+        newResult: PlateAppearanceResult,
+        newDescription: String,
+    ) {
+        this.plateAppearanceResult = newResult
+        this.description = newDescription
     }
 
     /**

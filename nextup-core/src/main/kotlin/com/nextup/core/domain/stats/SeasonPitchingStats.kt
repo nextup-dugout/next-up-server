@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.Player
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -19,14 +20,15 @@ import java.math.RoundingMode
     name = "season_pitching_stats",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uk_season_pitching_stats_player_year",
-            columnNames = ["player_id", "year"],
+            name = "uk_season_pitching_stats_player_year_team",
+            columnNames = ["player_id", "year", "team_id"],
         ),
     ],
     indexes = [
         Index(name = "idx_season_pitching_stats_player", columnList = "player_id"),
         Index(name = "idx_season_pitching_stats_year", columnList = "year"),
         Index(name = "idx_season_pitching_stats_games", columnList = "games_played"),
+        Index(name = "idx_season_pitching_stats_team", columnList = "team_id"),
     ],
 )
 class SeasonPitchingStats(
@@ -35,10 +37,16 @@ class SeasonPitchingStats(
     val player: Player,
     @Column(nullable = false)
     val year: Int,
+    @Column(name = "team_id")
+    val teamId: Long? = null,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     // 출전 경기 수
     @Column(name = "games_played", nullable = false)
     var gamesPlayed: Int = 0
@@ -119,6 +127,11 @@ class SeasonPitchingStats(
 
     @Column(name = "strikes_thrown")
     var strikesThrown: Int? = null
+        protected set
+
+    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
+    @Column(name = "is_finalized", nullable = false)
+    var isFinalized: Boolean = false
         protected set
 
     // Calculated properties (PitchingRecord와 동일한 로직)
@@ -328,6 +341,98 @@ class SeasonPitchingStats(
     }
 
     /**
+     * 경기 중 타석 결과를 즉시 시즌 투수 통계에 반영합니다 (실시간 갱신).
+     *
+     * 이벤트 기반으로 호출되며, 경기 종료 전에도 투수 통계가 반영됩니다.
+     * 대면 타자 수, 피안타, 삼진, 볼넷, 사구, 피홈런을 갱신합니다.
+     */
+    fun applyLiveUpdate(result: PlateAppearanceResult) {
+        battersFaced++
+
+        when (result) {
+            PlateAppearanceResult.SINGLE,
+            PlateAppearanceResult.DOUBLE,
+            PlateAppearanceResult.TRIPLE,
+            -> {
+                hitsAllowed++
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                hitsAllowed++
+                homeRunsAllowed++
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                strikeouts++
+            }
+            PlateAppearanceResult.WALK,
+            PlateAppearanceResult.INTENTIONAL_WALK,
+            -> {
+                walksAllowed++
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                hitBatsmen++
+            }
+            else -> {
+                // 다른 결과는 투수 시즌 통계에 직접적인 영향 없음
+            }
+        }
+    }
+
+    /**
+     * 경기 중 타석 결과를 시즌 투수 통계에서 역산합니다 (Undo 처리).
+     *
+     * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
+     */
+    fun revertLiveUpdate(result: PlateAppearanceResult) {
+        if (battersFaced > 0) battersFaced--
+
+        when (result) {
+            PlateAppearanceResult.SINGLE,
+            PlateAppearanceResult.DOUBLE,
+            PlateAppearanceResult.TRIPLE,
+            -> {
+                if (hitsAllowed > 0) hitsAllowed--
+            }
+            PlateAppearanceResult.HOME_RUN -> {
+                if (hitsAllowed > 0) hitsAllowed--
+                if (homeRunsAllowed > 0) homeRunsAllowed--
+            }
+            PlateAppearanceResult.STRIKEOUT -> {
+                if (strikeouts > 0) strikeouts--
+            }
+            PlateAppearanceResult.WALK,
+            PlateAppearanceResult.INTENTIONAL_WALK,
+            -> {
+                if (walksAllowed > 0) walksAllowed--
+            }
+            PlateAppearanceResult.HIT_BY_PITCH -> {
+                if (hitBatsmen > 0) hitBatsmen--
+            }
+            else -> {
+                // 다른 결과는 투수 시즌 통계에 직접적인 영향 없음
+            }
+        }
+    }
+
+    /**
+     * L-8: 시즌 통계를 확정합니다.
+     *
+     * 확정된 통계는 추가 갱신이 불가합니다.
+     */
+    fun finalize() {
+        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
+        validate()
+        this.isFinalized = true
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
+     */
+    fun unfinalize() {
+        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
+        this.isFinalized = false
+    }
+
+    /**
      * 기록 정정에 따른 필드별 델타를 적용합니다.
      *
      * @param fieldName 정정된 필드명
@@ -377,15 +482,20 @@ class SeasonPitchingStats(
     companion object {
         /**
          * 선수의 시즌 투수 통계를 생성합니다.
+         *
+         * @param player 선수
+         * @param year 연도
+         * @param teamId 팀 ID (이적 시 팀별 기록 분리 지원, null이면 팀 구분 없음)
          */
         fun create(
             player: Player,
             year: Int,
+            teamId: Long? = null,
         ): SeasonPitchingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }
-            return SeasonPitchingStats(player = player, year = year)
+            return SeasonPitchingStats(player = player, year = year, teamId = teamId)
         }
     }
 }
