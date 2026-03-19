@@ -38,15 +38,23 @@ class GameLifecycleServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    override fun startGame(gameId: Long): Game {
+    override fun startGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
         game.start()
         return gameRepository.save(game)
     }
 
     @Transactional
-    override fun advanceHalfInning(gameId: Long): Game {
+    override fun advanceHalfInning(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 이닝을 진행할 수 있습니다. 현재 상태: ${game.status.displayName}")
@@ -60,8 +68,10 @@ class GameLifecycleServiceImpl(
     override fun endGame(
         gameId: Long,
         reason: GameEndReason,
+        scorerId: Long,
     ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 종료할 수 있습니다. 현재 상태: ${game.status.displayName}")
@@ -94,8 +104,10 @@ class GameLifecycleServiceImpl(
         gameId: Long,
         winnerTeamId: Long,
         reason: String,
+        scorerId: Long,
     ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.SCHEDULED && game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException(
@@ -126,8 +138,10 @@ class GameLifecycleServiceImpl(
     override fun cancelGame(
         gameId: Long,
         reason: String?,
+        scorerId: Long,
     ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.SCHEDULED &&
             game.status != GameStatus.POSTPONED &&
@@ -226,15 +240,21 @@ class GameLifecycleServiceImpl(
     override fun suspendGame(
         gameId: Long,
         reason: String?,
+        scorerId: Long,
     ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
         game.suspend(reason)
         return gameRepository.save(game)
     }
 
     @Transactional
-    override fun resumeGame(gameId: Long): Game {
+    override fun resumeGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
         game.resume()
         return gameRepository.save(game)
     }

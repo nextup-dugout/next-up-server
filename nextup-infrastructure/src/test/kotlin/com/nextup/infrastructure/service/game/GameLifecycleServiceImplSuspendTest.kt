@@ -65,7 +65,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.suspendGame(1L, "우천 중단")
+            val result = service.suspendGame(1L, "우천 중단", 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.SUSPENDED)
@@ -80,7 +80,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.suspendGame(1L, null)
+            val result = service.suspendGame(1L, null, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.SUSPENDED)
@@ -93,7 +93,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { service.suspendGame(1L, "중단 사유") }
+            assertThatThrownBy { service.suspendGame(1L, "중단 사유", 999L) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("진행 중인 경기만 중단할 수 있습니다")
         }
@@ -105,7 +105,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { service.suspendGame(1L, "중단 사유") }
+            assertThatThrownBy { service.suspendGame(1L, "중단 사유", 999L) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("진행 중인 경기만 중단할 수 있습니다")
         }
@@ -116,7 +116,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(999L) } returns null
 
             // when & then
-            assertThatThrownBy { service.suspendGame(999L, "중단 사유") }
+            assertThatThrownBy { service.suspendGame(999L, "중단 사유", 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
     }
@@ -132,7 +132,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.resumeGame(1L)
+            val result = service.resumeGame(1L, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -146,7 +146,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { service.resumeGame(1L) }
+            assertThatThrownBy { service.resumeGame(1L, 999L) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("중단된 경기만 재개할 수 있습니다")
         }
@@ -158,7 +158,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { service.resumeGame(1L) }
+            assertThatThrownBy { service.resumeGame(1L, 999L) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("중단된 경기만 재개할 수 있습니다")
         }
@@ -169,7 +169,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(999L) } returns null
 
             // when & then
-            assertThatThrownBy { service.resumeGame(999L) }
+            assertThatThrownBy { service.resumeGame(999L, 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
     }
@@ -185,7 +185,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = service.cancelGame(1L, "경기 취소")
+            val result = service.cancelGame(1L, "경기 취소", 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
@@ -199,7 +199,7 @@ class GameLifecycleServiceImplSuspendTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { service.cancelGame(1L, "사유") }
+            assertThatThrownBy { service.cancelGame(1L, "사유", 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다")
         }
@@ -295,6 +295,7 @@ class GameLifecycleServiceImplSuspendTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

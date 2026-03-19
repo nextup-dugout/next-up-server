@@ -2,6 +2,8 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.GameAlreadyLockedException
 import com.nextup.common.exception.GameNotLockedByCurrentScorerException
+import com.nextup.common.exception.GameNotLockedForRecordingException
+import com.nextup.common.exception.ScorerMismatchException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.team.Team
@@ -134,6 +136,25 @@ class Game private constructor(
         get() = scorerId != null
 
     /**
+     * 기록 API 호출 시 기록원 잠금 검증을 수행합니다.
+     *
+     * 경기가 잠금되지 않은 상태이면 [GameNotLockedForRecordingException]을 발생시키고,
+     * 잠금한 기록원과 요청 기록원이 다르면 [ScorerMismatchException]을 발생시킵니다.
+     *
+     * @param requestScorerId 기록을 요청하는 기록원 ID
+     * @throws GameNotLockedForRecordingException 경기가 잠금되지 않은 경우
+     * @throws ScorerMismatchException 잠금한 기록원과 요청 기록원이 다른 경우
+     */
+    fun validateScorer(requestScorerId: Long) {
+        if (this.scorerId == null) {
+            throw GameNotLockedForRecordingException(id)
+        }
+        if (this.scorerId != requestScorerId) {
+            throw ScorerMismatchException(id, requestScorerId, this.scorerId!!)
+        }
+    }
+
+    /**
      * 다음 이닝으로 진행합니다.
      *
      * 연장전 타이브레이크 활성화 시 초(원정팀 공격) 시작마다 무사 1,2루 상태를 자동 설정합니다.
@@ -227,6 +248,7 @@ class Game private constructor(
         status = GameStatus.FINISHED
         endedAt = LocalDateTime.now()
         determineResults(gameTeams)
+        forceUnlockScorer()
     }
 
     /**
@@ -271,6 +293,7 @@ class Game private constructor(
         if (gameTeams.isNotEmpty()) {
             determineResults(gameTeams)
         }
+        forceUnlockScorer()
     }
 
     /**
@@ -369,6 +392,7 @@ class Game private constructor(
         if (reason != null) {
             note = (note?.let { "$it\n" } ?: "") + "취소 사유: $reason"
         }
+        forceUnlockScorer()
     }
 
     /**
@@ -427,6 +451,7 @@ class Game private constructor(
                 gameTeam.updateResult(GameResult.LOSS)
             }
         }
+        forceUnlockScorer()
     }
 
     /**

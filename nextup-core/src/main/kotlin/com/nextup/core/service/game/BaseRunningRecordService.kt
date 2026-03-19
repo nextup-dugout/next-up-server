@@ -12,5 +12,6 @@ interface BaseRunningRecordService {
     fun recordBaseRunning(
         gameId: Long,
         request: BaseRunningRequest,
+        scorerId: Long,
     ): GameEvent
 }

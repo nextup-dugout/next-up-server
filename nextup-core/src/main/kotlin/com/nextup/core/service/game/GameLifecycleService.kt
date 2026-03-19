@@ -10,24 +10,33 @@ import java.time.LocalDateTime
  * 경기 시작, 이닝 진행, 종료, 몰수, 취소, 연기, 일정 변경을 담당합니다.
  */
 interface GameLifecycleService {
-    fun startGame(gameId: Long): Game
+    fun startGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
 
-    fun advanceHalfInning(gameId: Long): Game
+    fun advanceHalfInning(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
 
     fun endGame(
         gameId: Long,
         reason: GameEndReason,
+        scorerId: Long,
     ): Game
 
     fun forfeitGame(
         gameId: Long,
         winnerTeamId: Long,
         reason: String,
+        scorerId: Long,
     ): Game
 
     fun cancelGame(
         gameId: Long,
         reason: String? = null,
+        scorerId: Long,
     ): Game
 
     fun postponeGame(
@@ -68,7 +77,11 @@ interface GameLifecycleService {
     fun suspendGame(
         gameId: Long,
         reason: String? = null,
+        scorerId: Long,
     ): Game
 
-    fun resumeGame(gameId: Long): Game
+    fun resumeGame(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
 }

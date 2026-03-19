@@ -8,5 +8,8 @@ import com.nextup.core.domain.game.GameEvent
  * 마지막 이벤트를 되돌리는 Undo 기능을 담당합니다.
  */
 interface GameUndoService {
-    fun undoLastEvent(gameId: Long): GameEvent
+    fun undoLastEvent(
+        gameId: Long,
+        scorerId: Long,
+    ): GameEvent
 }

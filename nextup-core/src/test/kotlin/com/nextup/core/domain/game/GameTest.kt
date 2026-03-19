@@ -2,6 +2,8 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.GameAlreadyLockedException
 import com.nextup.common.exception.GameNotLockedByCurrentScorerException
+import com.nextup.common.exception.GameNotLockedForRecordingException
+import com.nextup.common.exception.ScorerMismatchException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
@@ -1797,6 +1799,116 @@ class GameTest {
             // then
             assertThat(game.scorerId).isEqualTo(100L)
             assertThat(game.isLocked).isTrue()
+        }
+
+        @Test
+        fun `잠금한 기록원이 validateScorer를 호출하면 예외가 발생하지 않는다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            game.lockForScorer(100L)
+
+            // when & then - 예외 없이 통과
+            game.validateScorer(100L)
+        }
+
+        @Test
+        fun `잠금되지 않은 경기에서 validateScorer를 호출하면 GameNotLockedForRecordingException이 발생한다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+
+            // when & then
+            assertThatThrownBy { game.validateScorer(100L) }
+                .isInstanceOf(GameNotLockedForRecordingException::class.java)
+                .hasMessageContaining("not locked by any scorer")
+        }
+
+        @Test
+        fun `다른 기록원이 validateScorer를 호출하면 ScorerMismatchException이 발생한다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            game.lockForScorer(100L)
+
+            // when & then
+            assertThatThrownBy { game.validateScorer(200L) }
+                .isInstanceOf(ScorerMismatchException::class.java)
+                .hasMessageContaining("locked by scorer 100")
+                .hasMessageContaining("scorer 200 attempted")
+        }
+
+        @Test
+        fun `경기 종료 시 기록원 잠금이 자동 해제된다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.lockForScorer(100L)
+
+            // when
+            game.finish(game.gameTeams)
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.isLocked).isFalse()
+        }
+
+        @Test
+        fun `경기 취소 시 기록원 잠금이 자동 해제된다`() {
+            // given
+            val game = createGame(status = GameStatus.SCHEDULED)
+            game.lockForScorer(100L)
+
+            // when
+            game.cancel("테스트 취소")
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.isLocked).isFalse()
+        }
+
+        @Test
+        fun `콜드게임 시 기록원 잠금이 자동 해제된다`() {
+            // given
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    location = "잠실야구장",
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 5,
+                    isTopInning = true,
+                )
+            game.lockForScorer(100L)
+
+            // when
+            game.callGame(
+                minimumInning = 5,
+                reason = "우천",
+                gameTeams = game.gameTeams,
+            )
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.isLocked).isFalse()
+        }
+
+        @Test
+        fun `몰수 처리 시 기록원 잠금이 자동 해제된다`() {
+            // given
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.lockForScorer(100L)
+
+            // when
+            game.forfeit(
+                winnerTeamId = 1L,
+                reason = "출석 인원 부족",
+                gameTeams = game.gameTeams,
+            )
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.isLocked).isFalse()
         }
     }
 }

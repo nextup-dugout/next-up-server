@@ -94,3 +94,25 @@ class GameNotLockedByCurrentScorerException(
         "GAME_NOT_LOCKED_BY_SCORER",
         "Game $gameId is not locked by scorer $scorerId",
     )
+
+/**
+ * 경기가 잠금되지 않은 상태에서 기록을 시도할 때 발생하는 예외
+ */
+class GameNotLockedForRecordingException(
+    gameId: Long,
+) : InvalidStateException(
+        "GAME_NOT_LOCKED",
+        "Game $gameId is not locked by any scorer. Lock the game before recording.",
+    )
+
+/**
+ * 잠금한 기록원이 아닌 다른 사용자가 기록을 시도할 때 발생하는 예외
+ */
+class ScorerMismatchException(
+    gameId: Long,
+    requestScorerId: Long,
+    lockedScorerId: Long,
+) : ForbiddenException(
+        "SCORER_MISMATCH",
+        "Game $gameId is locked by scorer $lockedScorerId, but scorer $requestScorerId attempted to record.",
+    )

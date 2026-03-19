@@ -38,8 +38,10 @@ class BaseRunningRecordServiceImpl(
     override fun recordBaseRunning(
         gameId: Long,
         request: BaseRunningRequest,
+        scorerId: Long,
     ): GameEvent {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException(
