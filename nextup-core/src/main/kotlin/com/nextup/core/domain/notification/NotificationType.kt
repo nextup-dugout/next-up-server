@@ -83,4 +83,9 @@ enum class NotificationType {
      * 기록 정정
      */
     RECORD_CORRECTED,
+
+    /**
+     * 대회 완료
+     */
+    COMPETITION_COMPLETED,
 }
