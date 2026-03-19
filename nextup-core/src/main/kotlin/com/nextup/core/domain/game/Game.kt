@@ -198,6 +198,19 @@ class Game private constructor(
 
         val rules = competition.gameRules
 
+        // 초(원정팀 공격) 종료 후 말로 넘어가기 전에 홈팀 리드 확인
+        // 정규 이닝 이상에서 홈팀이 리드하면 말 이닝 불필요 → 경기 종료
+        if (isTopInning && currentInning >= totalInnings && gameTeams.size == 2) {
+            val homeScore =
+                gameTeams.first { it.homeAway == HomeAway.HOME }.totalScore
+            val awayScore =
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.totalScore
+            if (homeScore > awayScore) {
+                finish(gameTeams)
+                return TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM
+            }
+        }
+
         // 말(홈팀 공격) 종료 후 다음 이닝으로 넘어가기 전에 최대 연장 이닝 제한 확인
         if (!isTopInning) {
             val maxExtra = rules.maxExtraInnings
@@ -273,6 +286,26 @@ class Game private constructor(
         endedAt = LocalDateTime.now()
         determineResults(gameTeams)
         forceUnlockScorer()
+    }
+
+    /**
+     * 끝내기(Walk-off) 조건을 확인합니다.
+     *
+     * 야구 규칙상, 정규 이닝 이상의 말(홈팀 공격) 이닝에서
+     * 홈팀이 역전하여 리드하면 경기가 즉시 종료됩니다.
+     *
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
+     * @return 끝내기 조건 충족 여부
+     */
+    fun isWalkOff(gameTeams: List<GameTeam>): Boolean {
+        if (isTopInning) return false
+        if (currentInning < totalInnings) return false
+        if (gameTeams.size != 2) return false
+        val homeScore =
+            gameTeams.first { it.homeAway == HomeAway.HOME }.totalScore
+        val awayScore =
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.totalScore
+        return homeScore > awayScore
     }
 
     /**
