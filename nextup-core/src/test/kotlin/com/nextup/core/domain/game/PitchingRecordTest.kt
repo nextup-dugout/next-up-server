@@ -518,7 +518,7 @@ class PitchingRecordTest {
             repeat(15) { pitchingRecord.recordOut() }
 
             // then
-            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+            assertThat(pitchingRecord.isQualifiedForWin()).isFalse()
         }
 
         @Test
@@ -528,7 +528,7 @@ class PitchingRecordTest {
             repeat(14) { pitchingRecord.recordOut() } // 4.2이닝
 
             // then
-            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+            assertThat(pitchingRecord.isQualifiedForWin()).isFalse()
         }
 
         @Test
@@ -538,7 +538,7 @@ class PitchingRecordTest {
             repeat(15) { pitchingRecord.recordOut() } // 5.0이닝
 
             // then
-            assertThat(pitchingRecord.isQualifiedForWin).isTrue()
+            assertThat(pitchingRecord.isQualifiedForWin()).isTrue()
         }
     }
 
@@ -1526,6 +1526,42 @@ class PitchingRecordTest {
     }
 
     @Nested
+    @DisplayName("커스텀 starterWinQualificationOuts 파라미터 검증")
+    inner class CustomStarterWinQualificationOutsTest {
+        @Test
+        fun `더블헤더 축소 이닝에서 선발 승리 자격이 조정된다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin(12)).isTrue()
+            assertThat(pitchingRecord.isQualifiedForWin(15)).isFalse()
+        }
+
+        @Test
+        fun `커스텀 starterWinQualificationOuts로 validate 시 해당 기준으로 검증된다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+            pitchingRecord.assignWin()
+
+            pitchingRecord.validate(12)
+
+            assertThatThrownBy {
+                pitchingRecord.validate(15)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 이상")
+        }
+
+        @Test
+        fun `correctField에 starterWinQualificationOuts를 전달할 수 있다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+
+            val oldValue = pitchingRecord.correctField("hitsAllowed", "3", 12)
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(3)
+        }
+    }
+
+    @Nested
     @DisplayName("partial branch 커버리지 - strikeoutToWalkRatio 분기")
     inner class StrikeoutToWalkRatioPartialBranchTest {
 
@@ -1899,21 +1935,30 @@ class PitchingRecordTest {
         fun `선발투수이고 15아웃 이상이면 isQualifiedForWin은 true이다 (양쪽 true)`() {
             pitchingRecord.setAsStartingPitcher()
             repeat(15) { pitchingRecord.recordOut() }
-            assertThat(pitchingRecord.isQualifiedForWin).isTrue()
+            assertThat(pitchingRecord.isQualifiedForWin()).isTrue()
         }
 
         @Test
         fun `선발투수이지만 15아웃 미만이면 isQualifiedForWin은 false이다 (첫 번째 true, 두 번째 false)`() {
             pitchingRecord.setAsStartingPitcher()
             repeat(14) { pitchingRecord.recordOut() }
-            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+            assertThat(pitchingRecord.isQualifiedForWin()).isFalse()
         }
 
         @Test
         fun `비선발투수이고 15아웃 이상이면 isQualifiedForWin은 false이다 (첫 번째 false)`() {
             // isStartingPitcher == false → && short-circuit → false
             repeat(15) { pitchingRecord.recordOut() }
-            assertThat(pitchingRecord.isQualifiedForWin).isFalse()
+            assertThat(pitchingRecord.isQualifiedForWin()).isFalse()
+        }
+
+        @Test
+        fun `더블헤더 축소 이닝에서 선발 승리 자격이 조정된다`() {
+            pitchingRecord.setAsStartingPitcher()
+            // 7이닝 더블헤더: starterWinQualificationOuts = 12 (4이닝)
+            repeat(12) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin(12)).isTrue()
+            assertThat(pitchingRecord.isQualifiedForWin(15)).isFalse()
         }
     }
 
