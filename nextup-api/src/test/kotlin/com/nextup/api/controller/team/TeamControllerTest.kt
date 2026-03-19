@@ -3,12 +3,9 @@ package com.nextup.api.controller.team
 import com.nextup.api.dto.team.CreateTeamRequest
 import com.nextup.api.dto.team.UpdateTeamRequest
 import com.nextup.common.exception.InvalidInputException
-import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
-import com.nextup.core.port.repository.LeagueRepositoryPort
-import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.team.TeamMembershipService
 import io.mockk.every
 import io.mockk.justRun
@@ -24,8 +21,6 @@ import org.junit.jupiter.api.assertThrows
 @DisplayName("TeamController")
 class TeamControllerTest {
     private lateinit var teamMembershipService: TeamMembershipService
-    private lateinit var teamRepository: TeamRepositoryPort
-    private lateinit var leagueRepository: LeagueRepositoryPort
     private lateinit var controller: TeamController
 
     private val league =
@@ -48,9 +43,7 @@ class TeamControllerTest {
     @BeforeEach
     fun setUp() {
         teamMembershipService = mockk()
-        teamRepository = mockk()
-        leagueRepository = mockk()
-        controller = TeamController(teamMembershipService, teamRepository, leagueRepository)
+        controller = TeamController(teamMembershipService)
     }
 
     @Nested
@@ -67,11 +60,14 @@ class TeamControllerTest {
                     abbreviation = "TGR",
                     uniformNumber = 1,
                 )
-            every { leagueRepository.findByIdOrNull(1L) } returns league
             every {
                 teamMembershipService.createTeamWithOwner(
                     userId = 100L,
-                    team = any(),
+                    leagueId = 1L,
+                    name = "타이거즈",
+                    city = "서울",
+                    abbreviation = "TGR",
+                    foundedYear = any(),
                     uniformNumber = 1,
                 )
             } returns team
@@ -87,23 +83,6 @@ class TeamControllerTest {
             assertThat(response.data?.city).isEqualTo("서울")
             assertThat(response.data?.leagueName).isEqualTo("1부 리그")
             assertThat(response.data?.memberCount).isEqualTo(1)
-        }
-
-        @Test
-        fun `should throw when league not found`() {
-            // given
-            val request =
-                CreateTeamRequest(
-                    name = "타이거즈",
-                    city = "서울",
-                    leagueId = 999L,
-                )
-            every { leagueRepository.findByIdOrNull(999L) } returns null
-
-            // when & then
-            assertThrows<LeagueNotFoundException> {
-                controller.createTeam(request, 100L)
-            }
         }
 
         @Test
@@ -130,9 +109,14 @@ class TeamControllerTest {
         fun `should update team`() {
             // given
             val request = UpdateTeamRequest(name = "뉴타이거즈")
-            every { teamRepository.findByIdWithLeague(10L) } returns team
-            every { team.updateBasicInfo(name = "뉴타이거즈", city = null, abbreviation = null) } returns Unit
-            every { teamRepository.save(team) } returns team
+            every {
+                teamMembershipService.updateTeam(
+                    teamId = 10L,
+                    name = "뉴타이거즈",
+                    city = null,
+                    abbreviation = null,
+                )
+            } returns team
             every { teamMembershipService.getTeamMemberCount(10L) } returns 5
 
             // when
@@ -147,7 +131,14 @@ class TeamControllerTest {
         fun `should throw when team not found`() {
             // given
             val request = UpdateTeamRequest(name = "뉴타이거즈")
-            every { teamRepository.findByIdWithLeague(10L) } returns null
+            every {
+                teamMembershipService.updateTeam(
+                    teamId = 10L,
+                    name = "뉴타이거즈",
+                    city = null,
+                    abbreviation = null,
+                )
+            } throws TeamNotFoundException(10L)
 
             // when & then
             assertThrows<TeamNotFoundException> {
@@ -162,7 +153,7 @@ class TeamControllerTest {
         @Test
         fun `should return team detail`() {
             // given
-            every { teamRepository.findByIdWithLeague(10L) } returns team
+            every { teamMembershipService.getTeamWithLeague(10L) } returns team
             every { teamMembershipService.getTeamMemberCount(10L) } returns 15
 
             // when
@@ -178,7 +169,7 @@ class TeamControllerTest {
         @Test
         fun `should throw when team not found`() {
             // given
-            every { teamRepository.findByIdWithLeague(999L) } returns null
+            every { teamMembershipService.getTeamWithLeague(999L) } throws TeamNotFoundException(999L)
 
             // when & then
             assertThrows<TeamNotFoundException> {
@@ -202,7 +193,7 @@ class TeamControllerTest {
                     every { logoUrl } returns null
                     every { isActive } returns true
                 }
-            every { teamRepository.findActiveTeamsByFilter(null, null) } returns listOf(team, team2)
+            every { teamMembershipService.getActiveTeamsByFilter(null, null) } returns listOf(team, team2)
             every { teamMembershipService.getTeamMemberCounts(listOf(10L, 20L)) } returns mapOf(10L to 15, 20L to 12)
 
             // when
@@ -216,7 +207,7 @@ class TeamControllerTest {
         @Test
         fun `should filter by name`() {
             // given
-            every { teamRepository.findActiveTeamsByFilter("타이거", null) } returns listOf(team)
+            every { teamMembershipService.getActiveTeamsByFilter("타이거", null) } returns listOf(team)
             every { teamMembershipService.getTeamMemberCounts(listOf(10L)) } returns mapOf(10L to 15)
 
             // when
@@ -230,7 +221,7 @@ class TeamControllerTest {
         @Test
         fun `should filter by city`() {
             // given
-            every { teamRepository.findActiveTeamsByFilter(null, "서울") } returns listOf(team)
+            every { teamMembershipService.getActiveTeamsByFilter(null, "서울") } returns listOf(team)
             every { teamMembershipService.getTeamMemberCounts(listOf(10L)) } returns mapOf(10L to 15)
 
             // when
@@ -253,9 +244,8 @@ class TeamControllerTest {
                     every { isActive } returns true
                 }
             every {
-                teamRepository.findActiveTeamsByFilter(null, null)
+                teamMembershipService.getActiveTeamsByFilter(null, null)
             } returns listOf(team, team2)
-            // team2(20L)의 카운트가 map에 없음 → ?: 0 분기 커버
             every {
                 teamMembershipService.getTeamMemberCounts(listOf(10L, 20L))
             } returns mapOf(10L to 15)
@@ -273,7 +263,7 @@ class TeamControllerTest {
         @Test
         fun `should return empty when no match`() {
             // given
-            every { teamRepository.findActiveTeamsByFilter("없는팀", null) } returns emptyList()
+            every { teamMembershipService.getActiveTeamsByFilter("없는팀", null) } returns emptyList()
             every { teamMembershipService.getTeamMemberCounts(emptyList()) } returns emptyMap()
 
             // when

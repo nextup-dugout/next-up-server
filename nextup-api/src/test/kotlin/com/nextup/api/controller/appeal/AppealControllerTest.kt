@@ -44,6 +44,9 @@ class AppealControllerTest {
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
+                .setCustomArgumentResolvers(
+                    AuthenticationPrincipalResolver(100L),
+                )
                 .build()
 
         every { mockGame.id } returns 1L
@@ -151,7 +154,7 @@ class AppealControllerTest {
 
         // when & then
         mockMvc
-            .perform(get("/api/v1/appeals").param("appealerId", "100"))
+            .perform(get("/api/v1/appeals"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data").isArray)
@@ -164,17 +167,17 @@ class AppealControllerTest {
     @Test
     fun `should get empty list when no appeals found for appealer`() {
         // given
-        every { appealService.getAppealsByAppealer(999L) } returns emptyList()
+        every { appealService.getAppealsByAppealer(100L) } returns emptyList()
 
         // when & then
         mockMvc
-            .perform(get("/api/v1/appeals").param("appealerId", "999"))
+            .perform(get("/api/v1/appeals"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data").isArray)
             .andExpect(jsonPath("$.data").isEmpty)
 
-        verify(exactly = 1) { appealService.getAppealsByAppealer(999L) }
+        verify(exactly = 1) { appealService.getAppealsByAppealer(100L) }
     }
 
     @Test
@@ -259,4 +262,23 @@ class AppealControllerTest {
                 .andExpect(jsonPath("$.data.type").value(type.name))
         }
     }
+}
+
+/**
+ * 테스트용 @AuthenticationPrincipal 리졸버
+ */
+private class AuthenticationPrincipalResolver(
+    private val userId: Long,
+) : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+    override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+        parameter.hasParameterAnnotation(
+            org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+        )
+
+    override fun resolveArgument(
+        parameter: org.springframework.core.MethodParameter,
+        mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+        webRequest: org.springframework.web.context.request.NativeWebRequest,
+        binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+    ): Any = userId
 }

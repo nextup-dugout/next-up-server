@@ -1,10 +1,13 @@
 package com.nextup.core.service.team
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.JoinRequestStatus
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamJoinRequest
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
+import com.nextup.core.domain.team.TeamMemberStatus
 
 /**
  * 팀 멤버십 서비스 인터페이스
@@ -149,20 +152,6 @@ interface TeamMembershipService {
     fun getMemberById(memberId: Long): TeamMember?
 
     /**
-     * 팀을 생성하고 생성자를 OWNER로 등록합니다.
-     *
-     * @param userId 생성자 사용자 ID
-     * @param team 생성할 팀
-     * @param uniformNumber OWNER의 등번호
-     * @return 생성된 Team
-     */
-    fun createTeamWithOwner(
-        userId: Long,
-        team: Team,
-        uniformNumber: Int,
-    ): Team
-
-    /**
      * 팀을 삭제합니다. OWNER만 가능하며 멤버가 1명일 때만 삭제 가능합니다.
      *
      * @param teamId 팀 ID
@@ -191,4 +180,109 @@ interface TeamMembershipService {
      * @return 팀 ID → 활성 멤버 수 맵
      */
     fun getTeamMemberCounts(teamIds: List<Long>): Map<Long, Int>
+
+    /**
+     * 팀 정보를 수정합니다.
+     *
+     * @param teamId 팀 ID
+     * @param name 새 팀 이름 (null이면 변경 없음)
+     * @param city 새 도시 (null이면 변경 없음)
+     * @param abbreviation 새 약자 (null이면 변경 없음)
+     * @return 수정된 Team
+     * @throws TeamNotFoundException 팀을 찾을 수 없는 경우
+     */
+    fun updateTeam(
+        teamId: Long,
+        name: String?,
+        city: String?,
+        abbreviation: String?,
+    ): Team
+
+    /**
+     * League를 포함한 팀 상세 정보를 조회합니다.
+     *
+     * @param teamId 팀 ID
+     * @return Team (League 페치 포함)
+     * @throws TeamNotFoundException 팀을 찾을 수 없는 경우
+     */
+    fun getTeamWithLeague(teamId: Long): Team
+
+    /**
+     * 이름/도시 필터로 활성 팀 목록을 조회합니다.
+     *
+     * @param name 팀 이름 필터 (null이면 전체)
+     * @param city 도시 필터 (null이면 전체)
+     * @return 활성 팀 목록
+     */
+    fun getActiveTeamsByFilter(
+        name: String?,
+        city: String?,
+    ): List<Team>
+
+    /**
+     * 팀을 생성하고 생성자를 OWNER로 등록합니다. (필드 기반 시그니처)
+     *
+     * @param userId 생성자 사용자 ID
+     * @param leagueId 소속 리그 ID
+     * @param name 팀 이름
+     * @param city 도시
+     * @param abbreviation 약자
+     * @param foundedYear 창단 연도
+     * @param uniformNumber OWNER의 등번호
+     * @return 생성된 Team
+     */
+    fun createTeamWithOwner(
+        userId: Long,
+        leagueId: Long,
+        name: String,
+        city: String,
+        abbreviation: String?,
+        foundedYear: Int,
+        uniformNumber: Int,
+    ): Team
+
+    /**
+     * 사용자의 활성 팀 멤버십 목록을 조회합니다. (ProfileController용)
+     *
+     * @param userId 사용자 ID
+     * @return 활성 TeamMember 목록
+     */
+    fun getActiveTeamsByUserId(userId: Long): List<TeamMember>
+
+    /**
+     * 팀 멤버 목록을 페이징으로 조회합니다. (관리자용)
+     *
+     * @param teamId 팀 ID
+     * @param status 상태 필터 (null이면 전체)
+     * @param pageCommand 페이징 요청
+     * @return 페이징된 TeamMember 결과
+     */
+    fun getMembersByTeamIdPaged(
+        teamId: Long,
+        status: TeamMemberStatus?,
+        pageCommand: PageCommand,
+    ): PageResult<TeamMember>
+
+    /**
+     * 멤버 상태를 변경합니다. (관리자용)
+     *
+     * @param memberId 멤버 ID
+     * @param status 새 상태 (ACTIVE 또는 SUSPENDED만 허용)
+     * @param reason 사유 (SUSPENDED 시 필요)
+     * @return 변경된 TeamMember
+     * @throws TeamMemberNotFoundException 멤버를 찾을 수 없는 경우
+     * @throws InvalidInputException 허용되지 않는 상태인 경우
+     */
+    fun updateMemberStatus(
+        memberId: Long,
+        status: TeamMemberStatus,
+        reason: String?,
+    ): TeamMember
+
+    /**
+     * 멤버를 삭제합니다. (관리자용)
+     *
+     * @param memberId 멤버 ID
+     */
+    fun deleteMemberByAdmin(memberId: Long)
 }

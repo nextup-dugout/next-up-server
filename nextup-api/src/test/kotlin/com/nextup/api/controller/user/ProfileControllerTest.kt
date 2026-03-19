@@ -7,9 +7,9 @@ import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.core.domain.user.User
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.game.GameScheduleService
 import com.nextup.core.service.game.dto.GameSummaryDto
+import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.core.service.user.UserService
 import io.mockk.every
 import io.mockk.mockk
@@ -24,19 +24,19 @@ import java.time.LocalDateTime
 @DisplayName("ProfileController 테스트")
 class ProfileControllerTest {
     private lateinit var userService: UserService
-    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
+    private lateinit var teamMembershipService: TeamMembershipService
     private lateinit var gameScheduleService: GameScheduleService
     private lateinit var profileController: ProfileController
 
     @BeforeEach
     fun setUp() {
         userService = mockk()
-        teamMemberRepository = mockk()
+        teamMembershipService = mockk()
         gameScheduleService = mockk()
         profileController =
             ProfileController(
                 userService,
-                teamMemberRepository,
+                teamMembershipService,
                 gameScheduleService,
             )
     }
@@ -160,7 +160,7 @@ class ProfileControllerTest {
                     joinedAt = LocalDateTime.of(2026, 3, 1, 0, 0),
                 )
 
-            every { teamMemberRepository.findAllActiveByUserId(userId) } returns listOf(member1, member2)
+            every { teamMembershipService.getActiveTeamsByUserId(userId) } returns listOf(member1, member2)
 
             // when
             val response = profileController.getMyTeams(userId)
@@ -184,14 +184,14 @@ class ProfileControllerTest {
             assertThat(second.role).isEqualTo(TeamMemberRole.MEMBER)
             assertThat(second.uniformNumber).isEqualTo(3)
 
-            verify { teamMemberRepository.findAllActiveByUserId(userId) }
+            verify { teamMembershipService.getActiveTeamsByUserId(userId) }
         }
 
         @Test
         fun `should return empty list when user has no teams`() {
             // given
             val userId = 1L
-            every { teamMemberRepository.findAllActiveByUserId(userId) } returns emptyList()
+            every { teamMembershipService.getActiveTeamsByUserId(userId) } returns emptyList()
 
             // when
             val response = profileController.getMyTeams(userId)
@@ -199,7 +199,7 @@ class ProfileControllerTest {
             // then
             assertThat(response.success).isTrue()
             assertThat(response.data).isEmpty()
-            verify { teamMemberRepository.findAllActiveByUserId(userId) }
+            verify { teamMembershipService.getActiveTeamsByUserId(userId) }
         }
     }
 
@@ -215,7 +215,7 @@ class ProfileControllerTest {
             val member1 = createMockTeamMember(team = team1)
             val member2 = createMockTeamMember(team = team2)
 
-            every { teamMemberRepository.findAllActiveByUserId(userId) } returns listOf(member1, member2)
+            every { teamMembershipService.getActiveTeamsByUserId(userId) } returns listOf(member1, member2)
 
             val gameSummaries =
                 listOf(
@@ -268,7 +268,7 @@ class ProfileControllerTest {
             assertThat(response.data!![0].gameId).isEqualTo(100L)
             assertThat(response.data!![1].gameId).isEqualTo(200L)
 
-            verify { teamMemberRepository.findAllActiveByUserId(userId) }
+            verify { teamMembershipService.getActiveTeamsByUserId(userId) }
             verify { gameScheduleService.getUpcomingGamesByTeamIds(listOf(10L, 20L), 10) }
         }
 
@@ -276,7 +276,7 @@ class ProfileControllerTest {
         fun `should return empty list when user has no teams`() {
             // given
             val userId = 1L
-            every { teamMemberRepository.findAllActiveByUserId(userId) } returns emptyList()
+            every { teamMembershipService.getActiveTeamsByUserId(userId) } returns emptyList()
             every { gameScheduleService.getUpcomingGamesByTeamIds(emptyList(), 10) } returns emptyList()
 
             // when
@@ -294,7 +294,7 @@ class ProfileControllerTest {
             val team1 = createMockTeam(10L, "팀A")
             val member1 = createMockTeamMember(team = team1)
 
-            every { teamMemberRepository.findAllActiveByUserId(userId) } returns listOf(member1)
+            every { teamMembershipService.getActiveTeamsByUserId(userId) } returns listOf(member1)
             every { gameScheduleService.getUpcomingGamesByTeamIds(listOf(10L), 5) } returns emptyList()
 
             // when

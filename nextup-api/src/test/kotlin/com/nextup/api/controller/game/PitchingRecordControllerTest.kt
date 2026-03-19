@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nextup.api.dto.game.CreatePitchingRecordRequest
 import com.nextup.api.exception.GlobalExceptionHandler
+import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
-import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.PitchingRecordService
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +28,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class PitchingRecordControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var pitchingRecordService: PitchingRecordService
-    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var objectMapper: ObjectMapper
 
     private val gameId = 1L
@@ -38,10 +37,9 @@ class PitchingRecordControllerTest {
     @BeforeEach
     fun setUp() {
         pitchingRecordService = mockk()
-        gamePlayerRepository = mockk()
         objectMapper = jacksonObjectMapper()
 
-        val controller = PitchingRecordController(pitchingRecordService, gamePlayerRepository)
+        val controller = PitchingRecordController(pitchingRecordService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
@@ -135,8 +133,7 @@ class PitchingRecordControllerTest {
                 }
             val record = createMockPitchingRecord(gamePlayer, isStartingPitcher = true)
 
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns gamePlayer
-            every { pitchingRecordService.createRecord(gamePlayerId, true) } returns record
+            every { pitchingRecordService.createRecordByGameAndPlayer(gameId, playerId, true) } returns record
 
             // when & then
             mockMvc
@@ -160,8 +157,7 @@ class PitchingRecordControllerTest {
                 }
             val record = createMockPitchingRecord(gamePlayer, isStartingPitcher = false)
 
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns gamePlayer
-            every { pitchingRecordService.createRecord(gamePlayerId, false) } returns record
+            every { pitchingRecordService.createRecordByGameAndPlayer(gameId, playerId, false) } returns record
 
             // when & then
             mockMvc
@@ -178,7 +174,9 @@ class PitchingRecordControllerTest {
         fun `should return 404 when game player not found`() {
             // given
             val request = CreatePitchingRecordRequest(playerId = playerId)
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns null
+            every {
+                pitchingRecordService.createRecordByGameAndPlayer(gameId, playerId, false)
+            } throws GamePlayerNotFoundByGameAndPlayerException(gameId, playerId)
 
             // when & then
             mockMvc
@@ -195,14 +193,10 @@ class PitchingRecordControllerTest {
         fun `should return 400 when record already exists`() {
             // given
             val request = CreatePitchingRecordRequest(playerId = playerId)
-            val gamePlayer =
-                mockk<GamePlayer> {
-                    every { id } returns gamePlayerId
-                }
 
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns gamePlayer
-            every { pitchingRecordService.createRecord(gamePlayerId, false) } throws
-                RecordAlreadyExistsException(gamePlayerId, "Pitching")
+            every {
+                pitchingRecordService.createRecordByGameAndPlayer(gameId, playerId, false)
+            } throws RecordAlreadyExistsException(gamePlayerId, "Pitching")
 
             // when & then
             mockMvc

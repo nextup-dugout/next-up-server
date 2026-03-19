@@ -8,6 +8,8 @@ import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -35,6 +37,7 @@ class BookingTransferController(
     @PostMapping
     fun requestTransfer(
         @RequestBody @Valid request: CreateBookingTransferApiRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<BookingTransferResponse>> {
         val transfer =
             bookingTransferService.createTransfer(
@@ -46,6 +49,7 @@ class BookingTransferController(
                     request.expiresAt
                         ?: java.time.Instant.now()
                             .plusSeconds(BookingTransferService.DEFAULT_EXPIRY_SECONDS),
+                userId = userId,
             )
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -61,11 +65,13 @@ class BookingTransferController(
     fun acceptTransfer(
         @PathVariable transferId: Long,
         @RequestBody @Valid request: AcceptBookingTransferApiRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
             bookingTransferService.acceptTransfer(
                 transferId = transferId,
                 buyerTeamId = request.buyerTeamId,
+                userId = userId,
             )
         return ApiResponse.success(BookingTransferResponse.from(transfer))
     }
@@ -76,6 +82,7 @@ class BookingTransferController(
      * PATCH /api/v1/booking-transfers/{transferId}/reject
      */
     @PatchMapping("/{transferId}/reject")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun rejectTransfer(
         @PathVariable transferId: Long,
         @RequestParam teamId: Long,
@@ -105,6 +112,7 @@ class BookingTransferController(
      * GET /api/v1/booking-transfers/my?teamId={teamId}
      */
     @GetMapping("/my")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getMyTransfers(
         @RequestParam teamId: Long,
     ): ApiResponse<List<BookingTransferResponse>> {

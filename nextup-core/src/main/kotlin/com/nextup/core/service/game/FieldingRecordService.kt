@@ -1,6 +1,7 @@
 package com.nextup.core.service.game
 
 import com.nextup.common.exception.FieldingRecordNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.FieldingRecord
@@ -20,6 +21,20 @@ class FieldingRecordService(
     private val fieldingRecordRepository: FieldingRecordRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
+    /**
+     * gameId와 playerId로 수비 기록을 생성합니다.
+     */
+    @Transactional
+    fun createRecordByGameAndPlayer(
+        gameId: Long,
+        playerId: Long,
+    ): FieldingRecord {
+        val gamePlayer =
+            gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId)
+                ?: throw GamePlayerNotFoundByGameAndPlayerException(gameId, playerId)
+        return createRecord(gamePlayer.id)
+    }
+
     /**
      * 수비 기록을 생성합니다.
      */

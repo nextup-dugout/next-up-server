@@ -28,6 +28,7 @@ class TeamMembershipServiceImplGetMemberByIdTest {
                 mockk(),
                 mockk(),
                 mockk(),
+                mockk(),
                 eventPublisher,
             )
     }

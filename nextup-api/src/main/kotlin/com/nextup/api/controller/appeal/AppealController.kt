@@ -7,6 +7,7 @@ import com.nextup.core.service.appeal.AppealService
 import com.nextup.core.service.appeal.dto.CreateAppealRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -48,9 +49,9 @@ class AppealController(
      */
     @GetMapping("/appeals")
     fun getMyAppeals(
-        @RequestParam appealerId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<AppealResponse>> {
-        val appeals = appealService.getAppealsByAppealer(appealerId)
+        val appeals = appealService.getAppealsByAppealer(userId)
         return ApiResponse.success(appeals.map { AppealResponse.from(it) })
     }
 

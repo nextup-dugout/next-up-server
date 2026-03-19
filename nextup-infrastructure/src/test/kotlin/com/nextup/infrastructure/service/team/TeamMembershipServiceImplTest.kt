@@ -30,6 +30,7 @@ class TeamMembershipServiceImplTest {
     private lateinit var teamJoinRequestRepository: TeamJoinRequestRepositoryPort
     private lateinit var teamBlacklistRepository: TeamBlacklistRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var leagueRepository: LeagueRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
@@ -47,6 +48,7 @@ class TeamMembershipServiceImplTest {
         teamJoinRequestRepository = mockk()
         teamBlacklistRepository = mockk()
         teamRepository = mockk()
+        leagueRepository = mockk()
         userRepository = mockk()
         playerRepository = mockk()
         eventPublisher = mockk(relaxed = true)
@@ -57,6 +59,7 @@ class TeamMembershipServiceImplTest {
                 teamJoinRequestRepository,
                 teamBlacklistRepository,
                 teamRepository,
+                leagueRepository,
                 userRepository,
                 playerRepository,
                 eventPublisher,
@@ -793,21 +796,23 @@ class TeamMembershipServiceImplTest {
     @Nested
     @DisplayName("createTeamWithOwner")
     inner class CreateTeamWithOwner {
+        private val leagueId = 5L
+
         @Test
         fun `should create team and register owner`() {
             // given
+            val association = Association(name = "서울시야구협회", region = "서울")
+            val league = League(association = association, name = "1부 리그", foundedYear = 2020)
+
+            every { leagueRepository.findByIdOrNull(leagueId) } returns league
             every { userRepository.findByIdOrNull(2L) } returns user
             every { teamMemberRepository.findActiveByUserId(2L) } returns null
             every { teamRepository.findByName("뉴팀") } returns null
             every { teamRepository.save(any()) } answers { firstArg() }
             every { teamMemberRepository.save(any()) } answers { firstArg() }
 
-            val association = Association(name = "서울시야구협회", region = "서울")
-            val league = League(association = association, name = "1부 리그", foundedYear = 2020)
-            val newTeam = Team(league = league, name = "뉴팀", city = "서울", foundedYear = 2026)
-
             // when
-            val result = service.createTeamWithOwner(2L, newTeam, 7)
+            val result = service.createTeamWithOwner(2L, leagueId, "뉴팀", "서울", null, 2026, 7)
 
             // then
             assertThat(result.name).isEqualTo("뉴팀")
@@ -819,22 +824,28 @@ class TeamMembershipServiceImplTest {
         fun `should throw when uniform number is invalid`() {
             // when & then
             assertThatThrownBy {
-                service.createTeamWithOwner(2L, team, 0)
+                service.createTeamWithOwner(2L, leagueId, "타이거즈", "서울", null, 2015, 0)
             }.isInstanceOf(InvalidUniformNumberException::class.java)
 
             assertThatThrownBy {
-                service.createTeamWithOwner(2L, team, 100)
+                service.createTeamWithOwner(2L, leagueId, "타이거즈", "서울", null, 2015, 100)
             }.isInstanceOf(InvalidUniformNumberException::class.java)
         }
 
         @Test
         fun `should throw when user not found`() {
             // given
+            every { leagueRepository.findByIdOrNull(leagueId) } returns
+                League(
+                    association = Association(name = "서울시야구협회", region = "서울"),
+                    name = "1부 리그",
+                    foundedYear = 2020,
+                )
             every { userRepository.findByIdOrNull(999L) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.createTeamWithOwner(999L, team, 7)
+                service.createTeamWithOwner(999L, leagueId, "타이거즈", "서울", null, 2015, 7)
             }.isInstanceOf(UserNotFoundException::class.java)
         }
 
@@ -844,11 +855,17 @@ class TeamMembershipServiceImplTest {
             val userWithoutPlayer = User.createLocalUser("noplayer@example.com", "password", "없음")
             setUserId(userWithoutPlayer, 50L)
 
+            every { leagueRepository.findByIdOrNull(leagueId) } returns
+                League(
+                    association = Association(name = "서울시야구협회", region = "서울"),
+                    name = "1부 리그",
+                    foundedYear = 2020,
+                )
             every { userRepository.findByIdOrNull(50L) } returns userWithoutPlayer
 
             // when & then
             assertThatThrownBy {
-                service.createTeamWithOwner(50L, team, 7)
+                service.createTeamWithOwner(50L, leagueId, "타이거즈", "서울", null, 2015, 7)
             }.isInstanceOf(PlayerNotFoundException::class.java)
         }
 
@@ -856,25 +873,37 @@ class TeamMembershipServiceImplTest {
         fun `should throw when user already in team`() {
             // given
             val existingMember = TeamMember.create(team, user, player, 10)
+            every { leagueRepository.findByIdOrNull(leagueId) } returns
+                League(
+                    association = Association(name = "서울시야구협회", region = "서울"),
+                    name = "1부 리그",
+                    foundedYear = 2020,
+                )
             every { userRepository.findByIdOrNull(2L) } returns user
             every { teamMemberRepository.findActiveByUserId(2L) } returns existingMember
 
             // when & then
             assertThatThrownBy {
-                service.createTeamWithOwner(2L, team, 7)
+                service.createTeamWithOwner(2L, leagueId, "타이거즈", "서울", null, 2015, 7)
             }.isInstanceOf(AlreadyInTeamException::class.java)
         }
 
         @Test
         fun `should throw when team name already exists`() {
             // given
+            every { leagueRepository.findByIdOrNull(leagueId) } returns
+                League(
+                    association = Association(name = "서울시야구협회", region = "서울"),
+                    name = "1부 리그",
+                    foundedYear = 2020,
+                )
             every { userRepository.findByIdOrNull(2L) } returns user
             every { teamMemberRepository.findActiveByUserId(2L) } returns null
             every { teamRepository.findByName("타이거즈") } returns team
 
             // when & then
             assertThatThrownBy {
-                service.createTeamWithOwner(2L, team, 7)
+                service.createTeamWithOwner(2L, leagueId, "타이거즈", "서울", null, 2015, 7)
             }.isInstanceOf(TeamAlreadyExistsException::class.java)
         }
     }

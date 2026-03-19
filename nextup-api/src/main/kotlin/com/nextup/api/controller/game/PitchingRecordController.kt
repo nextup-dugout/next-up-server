@@ -4,8 +4,6 @@ import com.nextup.api.dto.game.CreatePitchingRecordRequest
 import com.nextup.api.dto.game.PitchingRecordResponse
 import com.nextup.api.mapper.game.toResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
-import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.PitchingRecordService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/games/{gameId}/pitching-records")
 class PitchingRecordController(
     private val pitchingRecordService: PitchingRecordService,
-    private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
     @GetMapping
     fun getPitchingRecordsByGame(
@@ -37,11 +34,8 @@ class PitchingRecordController(
         @PathVariable gameId: Long,
         @Valid @RequestBody request: CreatePitchingRecordRequest,
     ): ApiResponse<PitchingRecordResponse> {
-        val gamePlayer =
-            gamePlayerRepository.findByGameIdAndPlayerId(gameId, request.playerId)
-                ?: throw GamePlayerNotFoundByGameAndPlayerException(gameId, request.playerId)
-
-        val record = pitchingRecordService.createRecord(gamePlayer.id, request.isStartingPitcher)
+        val record =
+            pitchingRecordService.createRecordByGameAndPlayer(gameId, request.playerId, request.isStartingPitcher)
         return ApiResponse.success(record.toResponse())
     }
 }

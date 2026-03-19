@@ -9,6 +9,7 @@ import com.nextup.core.domain.stadium.BookingTransfer
 import com.nextup.core.domain.stadium.TransferStatus
 import com.nextup.core.port.repository.BookingTransferRepositoryPort
 import com.nextup.core.port.repository.StadiumBookingRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -24,12 +25,14 @@ import java.time.Instant
 class BookingTransferService(
     private val bookingTransferRepository: BookingTransferRepositoryPort,
     private val bookingRepository: StadiumBookingRepositoryPort,
+    private val teamMemberRepository: TeamMemberRepositoryPort,
 ) {
     /**
      * 예약 양도를 등록합니다.
      *
      * 예약 소유팀만 양도 등록이 가능하며, 예약 상태가 CONFIRMED여야 합니다.
      * 동일 예약에 대해 이미 OPEN 상태의 양도가 존재하면 안 됩니다.
+     * userId가 제공된 경우 해당 사용자가 팀 멤버인지 검증합니다.
      */
     @Transactional
     fun createTransfer(
@@ -38,7 +41,9 @@ class BookingTransferService(
         price: BigDecimal?,
         message: String?,
         expiresAt: Instant = Instant.now().plusSeconds(DEFAULT_EXPIRY_SECONDS),
+        userId: Long,
     ): BookingTransfer {
+        verifyTeamMembership(teamId, userId)
         val booking =
             bookingRepository.findByIdOrNull(bookingId)
                 ?: throw BookingNotFoundException(bookingId)
@@ -77,12 +82,15 @@ class BookingTransferService(
      * 예약 양도를 수락합니다.
      *
      * 양도를 수락하면 예약 소유권이 구매팀으로 이전됩니다.
+     * userId가 제공된 경우 해당 사용자가 구매팀 멤버인지 검증합니다.
      */
     @Transactional
     fun acceptTransfer(
         transferId: Long,
         buyerTeamId: Long,
+        userId: Long,
     ): BookingTransfer {
+        verifyTeamMembership(buyerTeamId, userId)
         val transfer =
             bookingTransferRepository.findByIdOrNull(transferId)
                 ?: throw BookingTransferNotFoundException(transferId)
@@ -140,6 +148,16 @@ class BookingTransferService(
         return (sellerTransfers + buyerTransfers)
             .distinctBy { it.id }
             .sortedByDescending { it.createdAt }
+    }
+
+    private fun verifyTeamMembership(
+        teamId: Long,
+        userId: Long,
+    ) {
+        teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+            ?: throw BookingTransferForbiddenException(
+                "User $userId is not a member of team $teamId",
+            )
     }
 
     companion object {

@@ -10,7 +10,6 @@ import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.domain.team.TeamMemberStatus
 import com.nextup.core.domain.user.User
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.infrastructure.security.userdetails.CustomUserDetails
@@ -39,7 +38,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class TeamMemberAdminControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var teamMembershipService: TeamMembershipService
-    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
     private lateinit var auditService: AuditService
     private lateinit var controller: TeamMemberAdminController
     private lateinit var objectMapper: ObjectMapper
@@ -52,7 +50,6 @@ class TeamMemberAdminControllerTest {
     @BeforeEach
     fun setUp() {
         teamMembershipService = mockk()
-        teamMemberRepository = mockk()
         auditService = mockk(relaxed = true)
 
         val adminUserDetails = mockk<CustomUserDetails>()
@@ -62,7 +59,7 @@ class TeamMemberAdminControllerTest {
         val authentication = UsernamePasswordAuthenticationToken(adminUserDetails, null, emptyList())
         SecurityContextHolder.getContext().authentication = authentication
 
-        controller = TeamMemberAdminController(teamMembershipService, teamMemberRepository, auditService)
+        controller = TeamMemberAdminController(teamMembershipService, auditService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
@@ -101,7 +98,7 @@ class TeamMemberAdminControllerTest {
                     totalElements = 1L,
                     totalPages = 1,
                 )
-            every { teamMemberRepository.findByTeamIdWithUserAndPlayer(1L, any()) } returns pageResult
+            every { teamMembershipService.getMembersByTeamIdPaged(1L, null, any()) } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/teams/1/members"))
                 .andExpect(status().isOk)
@@ -111,7 +108,17 @@ class TeamMemberAdminControllerTest {
 
         @Test
         fun `should return members filtered by status`() {
-            every { teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE) } returns listOf(member)
+            val pageResult =
+                PageResult(
+                    content = listOf(member),
+                    page = 0,
+                    size = 20,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
+            every {
+                teamMembershipService.getMembersByTeamIdPaged(1L, TeamMemberStatus.ACTIVE, any())
+            } returns pageResult
 
             mockMvc.perform(get("/api/backoffice/teams/1/members").param("status", "ACTIVE"))
                 .andExpect(status().isOk)
@@ -125,8 +132,9 @@ class TeamMemberAdminControllerTest {
     inner class UpdateMemberStatus {
         @Test
         fun `should suspend member`() {
-            every { teamMemberRepository.findByIdOrNull(50L) } returns member
-            every { teamMemberRepository.save(any()) } answers { firstArg() }
+            every {
+                teamMembershipService.updateMemberStatus(50L, TeamMemberStatus.SUSPENDED, "회비 미납")
+            } returns member
             val request = UpdateMemberStatusRequest(status = TeamMemberStatus.SUSPENDED, reason = "회비 미납")
 
             mockMvc.perform(
@@ -135,14 +143,15 @@ class TeamMemberAdminControllerTest {
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
 
-            verify { teamMemberRepository.save(any()) }
+            verify { teamMembershipService.updateMemberStatus(50L, TeamMemberStatus.SUSPENDED, "회비 미납") }
         }
 
         @Test
         fun `should activate suspended member`() {
             member.status = TeamMemberStatus.SUSPENDED
-            every { teamMemberRepository.findByIdOrNull(50L) } returns member
-            every { teamMemberRepository.save(any()) } answers { firstArg() }
+            every {
+                teamMembershipService.updateMemberStatus(50L, TeamMemberStatus.ACTIVE, null)
+            } returns member
             val request = UpdateMemberStatusRequest(status = TeamMemberStatus.ACTIVE)
 
             mockMvc.perform(
@@ -151,12 +160,15 @@ class TeamMemberAdminControllerTest {
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
 
-            verify { teamMemberRepository.save(any()) }
+            verify { teamMembershipService.updateMemberStatus(50L, TeamMemberStatus.ACTIVE, null) }
         }
 
         @Test
         fun `should throw for invalid status transition`() {
-            every { teamMemberRepository.findByIdOrNull(50L) } returns member
+            every {
+                teamMembershipService.updateMemberStatus(50L, TeamMemberStatus.LEFT, null)
+            } throws
+                com.nextup.common.exception.InvalidInputException("INVALID_STATUS_TRANSITION", "LEFT 상태로 직접 변경할 수 없습니다")
             val request = UpdateMemberStatusRequest(status = TeamMemberStatus.LEFT)
             val adminDetails = mockk<CustomUserDetails>()
             every { adminDetails.id } returns 1L
@@ -172,19 +184,19 @@ class TeamMemberAdminControllerTest {
     inner class DeleteMember {
         @Test
         fun `should delete member`() {
-            justRun { teamMemberRepository.deleteById(50L) }
+            justRun { teamMembershipService.deleteMemberByAdmin(50L) }
 
             mockMvc.perform(delete("/api/backoffice/teams/1/members/50"))
                 .andExpect(status().isOk).andExpect(jsonPath("$.success").value(true))
 
-            verify { teamMemberRepository.deleteById(50L) }
+            verify { teamMembershipService.deleteMemberByAdmin(50L) }
         }
     }
 
     private fun <T> setId(
         entity: T,
         clazz: Class<*>,
-        id: Long
+        id: Long,
     ) {
         val idField = clazz.getDeclaredField("id")
         idField.isAccessible = true

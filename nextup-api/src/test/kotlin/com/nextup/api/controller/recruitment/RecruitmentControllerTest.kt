@@ -234,7 +234,7 @@ class RecruitmentControllerTest {
         every { updatedRecruitment.createdAt } returns Instant.now()
         every { updatedRecruitment.updatedAt } returns Instant.now()
 
-        every { recruitmentService.updateRecruitment(any(), any()) } returns updatedRecruitment
+        every { recruitmentService.updateRecruitment(any(), any(), any()) } returns updatedRecruitment
 
         // when & then
         mockMvc
@@ -247,13 +247,13 @@ class RecruitmentControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.title").value("새 제목"))
 
-        verify(exactly = 1) { recruitmentService.updateRecruitment(any(), any()) }
+        verify(exactly = 1) { recruitmentService.updateRecruitment(any(), any(), any()) }
     }
 
     @Test
     fun `should delete recruitment`() {
         // given
-        justRun { recruitmentService.deleteRecruitment(1L) }
+        justRun { recruitmentService.deleteRecruitment(1L, 1L) }
 
         // when & then
         mockMvc
@@ -261,13 +261,13 @@ class RecruitmentControllerTest {
             .andExpect(status().isNoContent)
             .andExpect(jsonPath("$.success").value(true))
 
-        verify(exactly = 1) { recruitmentService.deleteRecruitment(1L) }
+        verify(exactly = 1) { recruitmentService.deleteRecruitment(1L, 1L) }
     }
 
     @Test
     fun `should return 404 when deleting non-existent recruitment`() {
         // given
-        every { recruitmentService.deleteRecruitment(999L) } throws RecruitmentNotFoundException(999L)
+        every { recruitmentService.deleteRecruitment(999L, 1L) } throws RecruitmentNotFoundException(999L)
 
         // when & then
         mockMvc

@@ -2,9 +2,9 @@ package com.nextup.scorer.controller.fielding
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.GamePlayer
-import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.FieldingRecordService
 import com.nextup.scorer.dto.fielding.FieldingEventRequest
 import com.nextup.scorer.dto.fielding.FieldingEventType
@@ -28,7 +28,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class FieldingRecordScorerControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var fieldingRecordService: FieldingRecordService
-    private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var objectMapper: ObjectMapper
 
     private val gameId = 1L
@@ -38,13 +37,11 @@ class FieldingRecordScorerControllerTest {
     @BeforeEach
     fun setUp() {
         fieldingRecordService = mockk()
-        gamePlayerRepository = mockk()
         objectMapper = jacksonObjectMapper()
 
         val controller =
             FieldingRecordScorerController(
                 fieldingRecordService = fieldingRecordService,
-                gamePlayerRepository = gamePlayerRepository,
             )
         mockMvc =
             MockMvcBuilders
@@ -73,8 +70,7 @@ class FieldingRecordScorerControllerTest {
             every { mockRecord.totalChances } returns 0
             every { mockRecord.fieldingPercentage } returns null
 
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns mockGamePlayer
-            every { fieldingRecordService.createRecord(gamePlayerId) } returns mockRecord
+            every { fieldingRecordService.createRecordByGameAndPlayer(gameId, playerId) } returns mockRecord
 
             // when & then
             mockMvc
@@ -87,13 +83,15 @@ class FieldingRecordScorerControllerTest {
                 .andExpect(jsonPath("$.data.assists").value(0))
                 .andExpect(jsonPath("$.data.errors").value(0))
 
-            verify(exactly = 1) { fieldingRecordService.createRecord(gamePlayerId) }
+            verify(exactly = 1) { fieldingRecordService.createRecordByGameAndPlayer(gameId, playerId) }
         }
 
         @Test
         fun `GamePlayer를 찾을 수 없으면 404를 반환한다`() {
             // given
-            every { gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId) } returns null
+            every {
+                fieldingRecordService.createRecordByGameAndPlayer(gameId, playerId)
+            } throws GamePlayerNotFoundByGameAndPlayerException(gameId, playerId)
 
             // when & then
             mockMvc

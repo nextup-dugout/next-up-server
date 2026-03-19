@@ -36,7 +36,13 @@ class BookingTransferControllerTest {
     fun setUp() {
         bookingTransferService = mockk()
         val controller = BookingTransferController(bookingTransferService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                    AuthenticationPrincipalResolver(100L),
+                )
+                .build()
         objectMapper =
             jacksonObjectMapper().registerModule(JavaTimeModule())
     }
@@ -85,6 +91,7 @@ class BookingTransferControllerTest {
                     price = BigDecimal("50000"),
                     message = "양도합니다",
                     expiresAt = any(),
+                    userId = any(),
                 )
             } returns transfer
 
@@ -119,6 +126,7 @@ class BookingTransferControllerTest {
                     price = null,
                     message = null,
                     expiresAt = expiresAt,
+                    userId = any(),
                 )
             } returns transfer
 
@@ -179,6 +187,7 @@ class BookingTransferControllerTest {
                 bookingTransferService.acceptTransfer(
                     transferId = 1L,
                     buyerTeamId = 20L,
+                    userId = any(),
                 )
             } returns transfer
 
@@ -221,4 +230,23 @@ class BookingTransferControllerTest {
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
         }
     }
+}
+
+/**
+ * 테스트용 @AuthenticationPrincipal 리졸버
+ */
+private class AuthenticationPrincipalResolver(
+    private val userId: Long,
+) : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+    override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+        parameter.hasParameterAnnotation(
+            org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+        )
+
+    override fun resolveArgument(
+        parameter: org.springframework.core.MethodParameter,
+        mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+        webRequest: org.springframework.web.context.request.NativeWebRequest,
+        binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+    ): Any = userId
 }

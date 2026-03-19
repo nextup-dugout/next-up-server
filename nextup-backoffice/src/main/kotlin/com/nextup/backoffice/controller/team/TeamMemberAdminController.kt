@@ -3,11 +3,8 @@ package com.nextup.backoffice.controller.team
 import com.nextup.backoffice.dto.team.TeamMemberAdminResponse
 import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
 import com.nextup.common.dto.ApiResponse
-import com.nextup.common.exception.InvalidInputException
-import com.nextup.common.exception.TeamMemberNotFoundException
 import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamMemberStatus
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.audit.AuditService
 import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.infrastructure.common.toPageCommand
@@ -29,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/backoffice/teams/{teamId}/members")
 class TeamMemberAdminController(
     private val teamMembershipService: TeamMembershipService,
-    private val teamMemberRepository: TeamMemberRepositoryPort,
     private val auditService: AuditService,
 ) {
     @GetMapping
@@ -39,23 +35,7 @@ class TeamMemberAdminController(
         @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<PageResult<TeamMemberAdminResponse>> {
         val pageCommand = pageable.toPageCommand()
-        val members =
-            if (status != null) {
-                val list = teamMemberRepository.findByTeamIdAndStatus(teamId, status)
-                val start = pageCommand.page * pageCommand.size
-                val end = minOf(start + pageCommand.size, list.size)
-                val totalPages =
-                    if (pageCommand.size == 0) 0 else (list.size + pageCommand.size - 1) / pageCommand.size
-                PageResult(
-                    content = if (start < list.size) list.subList(start, end) else emptyList(),
-                    page = pageCommand.page,
-                    size = pageCommand.size,
-                    totalElements = list.size.toLong(),
-                    totalPages = totalPages,
-                )
-            } else {
-                teamMemberRepository.findByTeamIdWithUserAndPlayer(teamId, pageCommand)
-            }
+        val members = teamMembershipService.getMembersByTeamIdPaged(teamId, status, pageCommand)
         return ApiResponse.success(members.map { TeamMemberAdminResponse.from(it) })
     }
 
@@ -66,19 +46,12 @@ class TeamMemberAdminController(
         @Valid @RequestBody request: UpdateMemberStatusRequest,
         @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<TeamMemberAdminResponse> {
-        val member =
-            teamMemberRepository.findByIdOrNull(memberId) ?: throw TeamMemberNotFoundException(memberId)
-        when (request.status) {
-            TeamMemberStatus.ACTIVE -> {
-                if (member.status == TeamMemberStatus.SUSPENDED) member.status = TeamMemberStatus.ACTIVE
-            }
-            TeamMemberStatus.SUSPENDED -> {
-                member.status = TeamMemberStatus.SUSPENDED
-                member.memo = request.reason
-            }
-            else -> throw InvalidInputException("INVALID_STATUS", "Cannot change to status: ${request.status}")
-        }
-        val updated = teamMemberRepository.save(member)
+        val updated =
+            teamMembershipService.updateMemberStatus(
+                memberId = memberId,
+                status = request.status,
+                reason = request.reason,
+            )
         auditService.log(
             adminUserId = admin.id,
             action = "UPDATE_MEMBER_STATUS",
@@ -95,7 +68,7 @@ class TeamMemberAdminController(
         @PathVariable memberId: Long,
         @AuthenticationPrincipal admin: CustomUserDetails,
     ): ApiResponse<Unit> {
-        teamMemberRepository.deleteById(memberId)
+        teamMembershipService.deleteMemberByAdmin(memberId)
         auditService.log(
             adminUserId = admin.id,
             action = "DELETE_MEMBER",
