@@ -1,6 +1,6 @@
 ---
 name: verify-url-prefix
-description: 모듈별 URL 프리픽스 통일을 검증합니다. Controller 추가/수정 후 사용.
+description: Controller에 @RequestMapping 경로를 작성할 때 반드시 이 스킬을 참조하라. 각 모듈은 정해진 URL 프리픽스를 사용해야 한다(api=/api/v1, backoffice=/admin/v1, scorer=/scorer/v1). @RequestMapping, @GetMapping, @PostMapping 등에 경로를 정의할 때 즉시 트리거하라. 새 Controller 생성 시 항상 확인.
 ---
 
 # URL 프리픽스 통일 검증

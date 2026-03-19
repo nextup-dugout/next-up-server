@@ -1,6 +1,6 @@
 ---
 name: verify-dependency
-description: 멀티모듈 의존성 방향 규칙을 검증합니다. 모듈 간 import/의존성 변경 후 사용.
+description: import문을 작성하거나 모듈 간 코드를 참조할 때 반드시 이 스킬을 참조하라. 의존성 방향은 Outside→Inside만 허용되며, Core가 Infra/API를 알면 절대 안 된다. 다른 모듈의 클래스를 import하려 할 때, build.gradle.kts에 의존성을 추가할 때, 새 모듈에 코드를 작성할 때 즉시 트리거하라. API 계층 모듈(api, backoffice, scorer) 간 상호 의존도 금지.
 ---
 
 # 모듈 의존성 방향 검증

@@ -113,6 +113,8 @@ nextup-scorer     ─┘
 | `verify-api-response` | Controller의 ApiResponse 래핑 사용 검증 |
 | `verify-custom-exception` | BusinessException 계열 커스텀 예외 사용 검증 |
 | `verify-url-prefix` | 모듈별 URL 프리픽스 통일 검증 |
+| `verify-authorization` | mutating 엔드포인트 @PreAuthorize/@AuthenticationPrincipal 적용 검증 |
+| `verify-repository-injection` | Controller에서 Repository/RepositoryPort 직접 주입 금지 검증 |
 
 ### Rules (절대 규칙)
 
@@ -121,6 +123,8 @@ nextup-scorer     ─┘
 | `dependency` | 멀티모듈 의존성 방향 규칙 |
 | `security` | Zero Entity Leak, OWASP 보안 규칙 |
 | `tdd` | Core/Service 계층 TDD 필수, 80% 커버리지 |
+| `authorization` | mutating 엔드포인트 @PreAuthorize 필수, identity는 @AuthenticationPrincipal에서 도출 |
+| `repository-injection` | Controller에서 Repository/RepositoryPort 직접 주입 금지, 반드시 Service 경유 |
 
 ### Commands (슬래시 명령어)
 

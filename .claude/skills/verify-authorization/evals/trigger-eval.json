@@ -1,0 +1,42 @@
+[
+  {
+    "query": "MercenaryRequestController에 용병 요청 수락 API를 추가해줘. PATCH /api/v1/mercenary-requests/{id}/accept 엔드포인트로 만들고, request body에 teamId를 받아서 처리하면 돼",
+    "should_trigger": true
+  },
+  {
+    "query": "nextup-scorer에 새로운 POST 엔드포인트를 만들어야 하는데, 기록원이 경기 잠금을 요청하는 API야. scorerId를 @RequestParam으로 받아서 GameLifecycleService.lockGame에 전달하면 돼",
+    "should_trigger": true
+  },
+  {
+    "query": "BookingController에 예약 취소 기능 추가해줘. DELETE /api/v1/bookings/{id} 로 만들어주면 되고, 예약 id만 받으면 돼",
+    "should_trigger": true
+  },
+  {
+    "query": "AppealController를 만들어야 해. POST로 이의제기를 생성하는데, request body에서 appealerId를 받아서 Appeal 엔티티에 넘겨줘",
+    "should_trigger": true
+  },
+  {
+    "query": "RecruitmentController에 모집 공고 삭제 API 추가해줘. @DeleteMapping으로 만들면 되는데, 팀 모집 공고를 삭제하는 거야",
+    "should_trigger": true
+  },
+  {
+    "query": "팀 대시보드 조회 API를 만들어줘. GET /api/v1/teams/{teamId}/dashboard 엔드포인트로 팀 정보, 최근 경기, 순위를 한번에 보여주는 거야",
+    "should_trigger": false
+  },
+  {
+    "query": "BattingRecord 엔티티에 도루 성공/실패 필드를 추가하고 싶어. stolenBases랑 caughtStealing 필드를 Int로 추가해줘",
+    "should_trigger": false
+  },
+  {
+    "query": "GameScheduleServiceImpl에서 getGames 메서드의 페이징을 DB 레벨로 바꿔줘. 지금 findAll() 후 메모리 페이징하는 걸 Pageable로 전환해야 해",
+    "should_trigger": false
+  },
+  {
+    "query": "application.yml에 HikariCP 커넥션 풀 설정을 추가해줘. maximumPoolSize를 20으로 하고 connectionTimeout은 30초로",
+    "should_trigger": false
+  },
+  {
+    "query": "CompetitionResponse DTO에 팀 수 필드를 추가하고 mapper도 수정해줘",
+    "should_trigger": false
+  }
+]
