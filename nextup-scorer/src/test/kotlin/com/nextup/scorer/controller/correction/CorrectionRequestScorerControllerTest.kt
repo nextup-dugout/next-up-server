@@ -108,7 +108,7 @@ class CorrectionRequestScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/corrections/requests")
+                    post("/api/v1/scorer/corrections/requests")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)),
                 )
@@ -138,7 +138,7 @@ class CorrectionRequestScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    get("/api/scorer/corrections/requests/games/$gameId"),
+                    get("/api/v1/scorer/corrections/requests/games/$gameId"),
                 )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
@@ -161,7 +161,7 @@ class CorrectionRequestScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    get("/api/scorer/corrections/requests/games/$gameId"),
+                    get("/api/v1/scorer/corrections/requests/games/$gameId"),
                 )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))

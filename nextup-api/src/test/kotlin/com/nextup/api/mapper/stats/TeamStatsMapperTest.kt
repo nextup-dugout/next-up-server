@@ -18,6 +18,7 @@ class TeamStatsMapperTest {
             TeamStatsDto(
                 teamId = 1L,
                 teamName = "테스트팀",
+                logoUrl = null,
                 year = 2026,
                 competitionId = 10L,
                 competitionName = "봄리그",

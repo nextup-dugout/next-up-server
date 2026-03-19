@@ -45,6 +45,7 @@ data class TeamsResponse(
 data class TeamScoresheetResponse(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val totalScore: Int,
     val totalHits: Int,
     val totalErrors: Int,

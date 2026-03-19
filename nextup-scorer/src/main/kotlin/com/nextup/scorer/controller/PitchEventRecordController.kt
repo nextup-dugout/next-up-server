@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*
  * 기록원이 투구를 기록하는 API를 제공합니다.
  */
 @RestController
-@RequestMapping("/api/scorer/games/{gameId}/pitch-events")
+@RequestMapping("/api/v1/scorer/games/{gameId}/pitch-events")
 class PitchEventRecordController(
     private val pitchEventService: PitchEventService,
 ) {

@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.RestController
  * WebSocket 단절 시 REST fallback으로 활용됩니다.
  */
 @RestController
-@RequestMapping("/api/scorer/games")
+@RequestMapping("/api/v1/scorer/games")
 class GameScorerController(
     private val gameLifecycleService: GameLifecycleService,
     private val plateAppearanceRecordService: PlateAppearanceRecordService,

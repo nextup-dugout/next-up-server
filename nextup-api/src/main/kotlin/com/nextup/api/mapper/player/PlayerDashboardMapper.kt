@@ -52,6 +52,7 @@ fun PlayerTeamHistory.toHistoryItemResponse(): TeamHistoryItemResponse =
     TeamHistoryItemResponse(
         teamId = this.team.id,
         teamName = this.team.name,
+        teamLogoUrl = this.team.logoUrl,
         position = this.position.displayName,
         uniformNumber = this.uniformNumber,
         startDate = this.startDate,

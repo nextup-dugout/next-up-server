@@ -46,6 +46,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 10L,
                             teamName = "홈팀",
+                            logoUrl = null,
                             inningScores = listOf(1, 0, 2, 0, 0, 0, 3, 0, 0),
                             runs = 6,
                             hits = 10,
@@ -88,6 +89,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 20L,
                             teamName = "원정팀",
+                            logoUrl = null,
                             inningScores = listOf(0, 1, 0, 1, 0, 0, 0, 0, 0),
                             runs = 2,
                             hits = 5,
@@ -161,6 +163,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 10L,
                             teamName = "홈팀",
+                            logoUrl = null,
                             inningScores = emptyList(),
                             runs = 0,
                             hits = 0,
@@ -188,6 +191,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 20L,
                             teamName = "원정팀",
+                            logoUrl = null,
                             inningScores = emptyList(),
                             runs = 0,
                             hits = 0,
@@ -230,6 +234,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 10L,
                             teamName = "홈팀",
+                            logoUrl = null,
                             inningScores = emptyList(),
                             runs = 0,
                             hits = 0,
@@ -256,6 +261,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 20L,
                             teamName = "원정팀",
+                            logoUrl = null,
                             inningScores = emptyList(),
                             runs = 0,
                             hits = 0,
@@ -297,6 +303,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 10L,
                             teamName = "홈팀",
+                            logoUrl = null,
                             inningScores = listOf(2, 0, 1, 0, 0, 3, 0, 1, 0),
                             runs = 7,
                             hits = 12,
@@ -308,6 +315,7 @@ class BoxScoreControllerTest {
                         TeamBoxScoreDto(
                             teamId = 20L,
                             teamName = "원정팀",
+                            logoUrl = null,
                             inningScores = listOf(0, 1, 0, 0, 2, 0, 0, 0, 1),
                             runs = 4,
                             hits = 8,

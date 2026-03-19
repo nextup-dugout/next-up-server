@@ -22,6 +22,7 @@ fun TeamBoxScoreDto.toResponse(): TeamBoxScoreResponse =
     TeamBoxScoreResponse(
         teamId = teamId,
         teamName = teamName,
+        logoUrl = logoUrl,
         inningScores = inningScores,
         runs = runs,
         hits = hits,

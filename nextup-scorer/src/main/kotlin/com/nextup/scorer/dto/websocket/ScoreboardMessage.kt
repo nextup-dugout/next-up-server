@@ -21,6 +21,7 @@ data class ScoreboardMessage(
 data class TeamScoreDto(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val runs: Int,
     val hits: Int,
     val errors: Int

@@ -5,6 +5,7 @@ data class TeamSummaryResponse(
     val name: String,
     val city: String,
     val abbreviation: String?,
+    val logoUrl: String?,
     val memberCount: Int,
 )
 
@@ -13,6 +14,7 @@ data class TeamDetailResponse(
     val name: String,
     val city: String,
     val abbreviation: String?,
+    val logoUrl: String?,
     val leagueName: String?,
     val foundedYear: Int,
     val memberCount: Int,

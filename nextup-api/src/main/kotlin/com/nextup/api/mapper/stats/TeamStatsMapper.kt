@@ -13,6 +13,7 @@ fun TeamStatsDto.toResponse(): TeamStatsResponse =
     TeamStatsResponse(
         teamId = teamId,
         teamName = teamName,
+        logoUrl = logoUrl,
         year = year,
         competitionId = competitionId,
         competitionName = competitionName,

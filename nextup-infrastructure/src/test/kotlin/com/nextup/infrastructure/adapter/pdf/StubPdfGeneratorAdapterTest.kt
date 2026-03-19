@@ -278,6 +278,7 @@ class StubPdfGeneratorAdapterTest {
                         TeamScoresheetInfoDto(
                             teamId = 1L,
                             teamName = "홈팀",
+                            logoUrl = null,
                             totalScore = 3,
                             totalHits = 7,
                             totalErrors = 1,
@@ -287,6 +288,7 @@ class StubPdfGeneratorAdapterTest {
                         TeamScoresheetInfoDto(
                             teamId = 2L,
                             teamName = "원정팀",
+                            logoUrl = null,
                             totalScore = 5,
                             totalHits = 10,
                             totalErrors = 0,

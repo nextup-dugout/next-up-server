@@ -96,6 +96,7 @@ class ScoresheetServiceImpl(
         TeamScoresheetInfoDto(
             teamId = gameTeam.team.id,
             teamName = gameTeam.team.name,
+            logoUrl = gameTeam.team.logoUrl,
             totalScore = gameTeam.totalScore,
             totalHits = gameTeam.totalHits,
             totalErrors = gameTeam.totalErrors,

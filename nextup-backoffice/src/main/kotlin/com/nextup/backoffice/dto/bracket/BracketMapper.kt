@@ -25,6 +25,7 @@ fun Team.toBriefResponse(): TeamBriefResponse =
         id = this.id,
         name = this.name,
         city = this.city,
+        logoUrl = this.logoUrl,
     )
 
 fun List<BracketEntry>.toResponse(): List<BracketEntryResponse> = this.map { it.toResponse() }

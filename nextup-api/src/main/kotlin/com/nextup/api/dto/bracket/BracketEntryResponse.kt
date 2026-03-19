@@ -19,6 +19,7 @@ data class TeamBriefResponse(
     val id: Long,
     val name: String,
     val city: String,
+    val logoUrl: String?,
 )
 
 data class BracketResponse(

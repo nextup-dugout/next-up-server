@@ -89,6 +89,7 @@ class PlayerDashboardControllerTest {
             val team = mockk<Team>()
             every { team.id } returns 10L
             every { team.name } returns "Tigers"
+            every { team.logoUrl } returns null
 
             val currentHistory =
                 PlayerTeamHistory(
