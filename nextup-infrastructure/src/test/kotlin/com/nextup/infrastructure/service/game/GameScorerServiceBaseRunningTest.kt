@@ -83,7 +83,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -115,7 +115,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -150,7 +150,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -183,7 +183,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -215,7 +215,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.eventType).isEqualTo(GameEventType.BASE_RUNNING)
@@ -243,7 +243,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_ERROR)
@@ -270,7 +270,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_PASSED_BALL)
@@ -297,7 +297,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when
-            val result = baseRunningRecordService.recordBaseRunning(1L, request)
+            val result = baseRunningRecordService.recordBaseRunning(1L, request, 999L)
 
             // then
             assertThat(result.baseRunningResult).isEqualTo(BaseRunningResult.ADVANCED_ON_BALK)
@@ -323,7 +323,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(999L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(999L, request, 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
 
@@ -342,7 +342,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("진행 중인 경기만 주루 기록을 입력할 수 있습니다")
         }
@@ -363,7 +363,7 @@ class GameScorerServiceBaseRunningTest {
                 )
 
             // when & then
-            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request) }
+            assertThatThrownBy { baseRunningRecordService.recordBaseRunning(1L, request, 999L) }
                 .isInstanceOf(GamePlayerNotFoundException::class.java)
         }
     }
@@ -451,6 +451,7 @@ class GameScorerServiceBaseRunningTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

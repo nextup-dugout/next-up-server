@@ -92,11 +92,12 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.STOLEN_BASE)
-            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) } returns event
 
             // when & then
             mockMvc.perform(
                 post("/api/v1/scorer/games/$gameId/base-running")
+                    .param("scorerId", "999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -106,7 +107,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.data.fromBase").value("FIRST"))
                 .andExpect(jsonPath("$.data.toBase").value("SECOND"))
 
-            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) }
         }
 
         @Test
@@ -125,11 +126,12 @@ class BaseRunningControllerTest {
                     gameState.outs = 1
                 }
             val event = createBaseRunningEvent(game, Base.FIRST, Base.SECOND, BaseRunningResult.CAUGHT_STEALING)
-            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) } returns event
 
             // when & then
             mockMvc.perform(
                 post("/api/v1/scorer/games/$gameId/base-running")
+                    .param("scorerId", "999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -137,7 +139,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("CAUGHT_STEALING"))
 
-            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) }
         }
 
         @Test
@@ -153,11 +155,12 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.SECOND, BaseRunningResult.PICKED_OFF)
-            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) } returns event
 
             // when & then
             mockMvc.perform(
                 post("/api/v1/scorer/games/$gameId/base-running")
+                    .param("scorerId", "999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -165,7 +168,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("PICKED_OFF"))
 
-            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) }
         }
 
         @Test
@@ -181,11 +184,12 @@ class BaseRunningControllerTest {
                 )
             val game = createGame(gameId, GameStatus.IN_PROGRESS)
             val event = createBaseRunningEvent(game, Base.SECOND, Base.THIRD, BaseRunningResult.ADVANCED_ON_WILD_PITCH)
-            every { baseRunningRecordService.recordBaseRunning(gameId, any()) } returns event
+            every { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) } returns event
 
             // when & then
             mockMvc.perform(
                 post("/api/v1/scorer/games/$gameId/base-running")
+                    .param("scorerId", "999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -193,7 +197,7 @@ class BaseRunningControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.result").value("ADVANCED_ON_WILD_PITCH"))
 
-            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any()) }
+            verify(exactly = 1) { baseRunningRecordService.recordBaseRunning(gameId, any(), any()) }
         }
 
         @Test
@@ -211,6 +215,7 @@ class BaseRunningControllerTest {
             // when & then
             mockMvc.perform(
                 post("/api/v1/scorer/games/$gameId/base-running")
+                    .param("scorerId", "999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )

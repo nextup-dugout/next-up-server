@@ -12,5 +12,6 @@ interface GameSubstitutionService {
     fun substitutePlayer(
         gameId: Long,
         request: SubstitutionRequest,
+        scorerId: Long,
     ): GameEvent
 }
