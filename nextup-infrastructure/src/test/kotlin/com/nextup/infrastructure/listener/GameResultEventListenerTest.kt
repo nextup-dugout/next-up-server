@@ -5,6 +5,7 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.event.CompetitionCompletedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
+import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -33,9 +35,10 @@ class GameResultEventListenerTest {
     private val competitionRepository = mockk<CompetitionRepositoryPort>()
     private val cacheManager = mockk<CacheManager>()
     private val standingsCache = mockk<Cache>()
+    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
 
     private val listener =
-        GameResultEventListener(gameRepository, competitionRepository, cacheManager)
+        GameResultEventListener(gameRepository, competitionRepository, cacheManager, eventPublisher)
 
     private lateinit var competition: Competition
     private lateinit var game: Game
@@ -95,6 +98,13 @@ class GameResultEventListenerTest {
             // then
             assertThat(competition.status).isEqualTo(CompetitionStatus.COMPLETED)
             verify { competitionRepository.save(competition) }
+            verify {
+                eventPublisher.publishEvent(
+                    match<CompetitionCompletedEvent> {
+                        it.competitionId == 1L && it.competitionName == "테스트 대회 1"
+                    },
+                )
+            }
         }
 
         @Test
@@ -119,6 +129,7 @@ class GameResultEventListenerTest {
             // then
             assertThat(competition.status).isEqualTo(CompetitionStatus.IN_PROGRESS)
             verify(exactly = 0) { competitionRepository.save(any()) }
+            verify(exactly = 0) { eventPublisher.publishEvent(any<CompetitionCompletedEvent>()) }
         }
 
         @Test
@@ -144,6 +155,7 @@ class GameResultEventListenerTest {
             // then
             verify(exactly = 0) { gameRepository.countByCompetitionId(any()) }
             verify(exactly = 0) { competitionRepository.save(any()) }
+            verify(exactly = 0) { eventPublisher.publishEvent(any<CompetitionCompletedEvent>()) }
         }
 
         @Test
@@ -168,6 +180,7 @@ class GameResultEventListenerTest {
             // then
             assertThat(competition.status).isEqualTo(CompetitionStatus.IN_PROGRESS)
             verify(exactly = 0) { competitionRepository.save(any()) }
+            verify(exactly = 0) { eventPublisher.publishEvent(any<CompetitionCompletedEvent>()) }
         }
     }
 

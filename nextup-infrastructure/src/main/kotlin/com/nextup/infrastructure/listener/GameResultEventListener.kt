@@ -2,12 +2,14 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.core.domain.competition.CompetitionStatus
+import com.nextup.core.domain.event.CompetitionCompletedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.infrastructure.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -24,6 +26,7 @@ class GameResultEventListener(
     private val gameRepository: GameRepositoryPort,
     private val competitionRepository: CompetitionRepositoryPort,
     private val cacheManager: CacheManager,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(GameResultEventListener::class.java)
 
@@ -67,6 +70,13 @@ class GameResultEventListener(
                     "대회 자동 완료 처리 (competitionId={}, name={})",
                     competitionId,
                     competition.name,
+                )
+                eventPublisher.publishEvent(
+                    CompetitionCompletedEvent(
+                        competitionId = competitionId,
+                        competitionName = competition.name,
+                        leagueId = competition.league.id,
+                    ),
                 )
             }
         }
