@@ -78,9 +78,6 @@ fun Player.toResponse(): PlayerResponse {
         position = this.position
     )
 }
-
-// Usage
-val response = player.toResponse()
 ```
 
 ## JPA Entity Patterns
@@ -88,7 +85,13 @@ val response = player.toResponse()
 ### Rich Domain Model
 ```kotlin
 @Entity
-@Table(name = "games")
+@Table(
+    name = "games",
+    indexes = [
+        Index(name = "idx_game_status", columnList = "status"),
+        Index(name = "idx_game_scheduled_at", columnList = "scheduled_at")
+    ]
+)
 class Game private constructor(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
@@ -98,11 +101,13 @@ class Game private constructor(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var status: GameStatus = GameStatus.SCHEDULED
-) {
+    var status: GameStatus = GameStatus.SCHEDULED,
+
+    @Version
+    var version: Long = 0
+) : BaseTimeEntity() {
     companion object {
         fun create(homeTeamId: Long, awayTeamId: Long): Game {
-            // Business logic here
             return Game(homeTeamId = homeTeamId)
         }
     }
@@ -118,6 +123,42 @@ class Game private constructor(
         status = GameStatus.CANCELLED
     }
 }
+```
+
+### BaseTimeEntity (공통 상속)
+```kotlin
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener::class)
+abstract class BaseTimeEntity {
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    var createdAt: Instant = Instant.now()
+        protected set
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    var updatedAt: Instant = Instant.now()
+        protected set
+}
+```
+
+> **타임스탬프**: `Instant` 타입 사용 (UTC 기준), `LocalDateTime` 사용 금지
+
+### JPA 컬렉션 패턴 (private backing field)
+```kotlin
+@OneToMany(mappedBy = "game", cascade = [CascadeType.ALL])
+private val _gameTeams: MutableList<GameTeam> = mutableListOf()
+val gameTeams: List<GameTeam> get() = _gameTeams.toList()
+
+fun addTeam(team: GameTeam) {
+    _gameTeams.add(team)
+}
+```
+
+### Optimistic Locking
+```kotlin
+@Version
+var version: Long = 0
 ```
 
 ### Value Objects
@@ -163,7 +204,8 @@ interface GameScheduleService {
 @Service
 @Transactional(readOnly = true)
 class GameScheduleServiceImpl(
-    private val gameRepository: GameRepositoryPort
+    private val gameRepository: GameRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher
 ) : GameScheduleService {
     @Transactional  // Write operation
     override fun createGame(homeTeamId: Long, awayTeamId: Long): Game {
@@ -171,10 +213,11 @@ class GameScheduleServiceImpl(
             homeTeamId = homeTeamId,
             awayTeamId = awayTeamId
         )
-        return gameRepository.save(game)
+        val saved = gameRepository.save(game)
+        eventPublisher.publishEvent(GameCreatedEvent(saved.id!!))
+        return saved
     }
 
-    // Read operation (no @Transactional override needed)
     override fun getGame(id: Long): Game {
         return gameRepository.findById(id)
             .orElseThrow { GameNotFoundException(id) }
@@ -189,7 +232,8 @@ class GameScheduleServiceImpl(
 //   └── BusinessException(code: String, message: String)
 //       ├── NotFoundException
 //       ├── InvalidStateException
-//       └── InvalidInputException
+//       ├── InvalidInputException
+//       └── ForbiddenException
 
 // 도메인별 구체 예외 (nextup-common에 정의)
 class GameNotFoundException(id: Long) :
@@ -222,13 +266,16 @@ class GameController(
     fun getGame(@PathVariable id: Long): ApiResponse<GameResponse> {
         return ApiResponse.success(gameService.getGame(id))
     }
-
-    @PutMapping("/{id}/start")
-    fun startGame(@PathVariable id: Long): ApiResponse<GameResponse> {
-        return ApiResponse.success(gameService.startGame(id))
-    }
 }
 ```
+
+### URL 프리픽스 규칙
+
+| 모듈 | 프리픽스 |
+|------|----------|
+| `nextup-api` | `/api/v1/` |
+| `nextup-backoffice` | `/admin/` |
+| `nextup-scorer` | `/scorer/` |
 
 ### ApiResponse Wrapper (MANDATORY)
 ```kotlin
@@ -262,13 +309,6 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(ApiResponse.error(ex.code, ex.message ?: "Not found"))
-    }
-
-    @ExceptionHandler(InvalidStateException::class)
-    fun handleInvalidState(ex: InvalidStateException): ResponseEntity<ApiResponse<Unit>> {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(ex.code, ex.message ?: "Invalid state"))
     }
 
     @ExceptionHandler(BusinessException::class)
@@ -327,13 +367,22 @@ class BracketEntryRepositoryAdapter(
 | 기본 CRUD + 단순 쿼리 메서드 | Direct JPA + Port | `infrastructure/repository/` |
 | 복잡한 조합/변환 로직 | Adapter wrapping | `infrastructure/persistence/{domain}/` |
 
-## DTO 변환 패턴 (3가지 혼용)
+## DTO 변환 패턴
 
 | 패턴 | 위치 | 예시 |
 |------|------|------|
 | Extension Function (Controller 내부) | Controller 파일 | `Team.toDetailResponse()` |
 | Dedicated Mapper class | `api/mapper/` | `BattingRecordMapper`, `StatsMapper` |
 | DTO companion `from()` / `toDomain()` | DTO 클래스 내부 | `PlateAppearanceRequestDto.toDomain()` |
+
+### DTO 명명 규칙
+
+| 타입 | 명명 | 예시 |
+|------|------|------|
+| Request (API) | `*ApiRequest` | `CreateAppealApiRequest` |
+| Request (내부) | `*Request` | `LoginRequest` |
+| Response | `*Response` | `TeamDetailResponse`, `PlayerResponse` |
+| 페이지네이션 | `PagedResponse<T>` | `PagedResponse.from(page)` |
 
 ## JSON & Application 컨벤션
 
@@ -349,48 +398,27 @@ spring:
       hibernate.default_batch_fetch_size: 100
 ```
 
-- **타임스탬프**: `Instant` 타입 사용 (UTC 기준), `LocalDateTime` 사용 금지
-- **JSON**: SNAKE_CASE 직렬화 (Jackson 전역 설정)
-
-## Configuration Patterns
-
-### Properties Binding
-```kotlin
-@ConfigurationProperties(prefix = "app.baseball")
-@ConstructorBinding
-data class BaseballProperties(
-    val maxInnings: Int = 9,
-    val extraInningsEnabled: Boolean = true,
-    val mercyRuleEnabled: Boolean = true,
-    val mercyRunDiff: Int = 10
-)
-```
-
 ## Testing Patterns
 
 ### Unit Test (Entity Business Logic)
 ```kotlin
-@Test
-fun `should cancel game when status is SCHEDULED`() {
-    // given
-    val game = Game.create(homeTeamId = 1L, awayTeamId = 2L)
+@DisplayName("Game 엔티티 테스트")
+class GameTest {
+    @Nested
+    @DisplayName("cancel()")
+    inner class Cancel {
+        @Test
+        @DisplayName("SCHEDULED 상태에서 취소 성공")
+        fun cancelScheduledGame() {
+            // given
+            val game = Game.create(homeTeamId = 1L, awayTeamId = 2L)
 
-    // when
-    game.cancel("비 때문에 취소")
+            // when
+            game.cancel("비 때문에 취소")
 
-    // then
-    assertThat(game.status).isEqualTo(GameStatus.CANCELLED)
-}
-
-@Test
-fun `should throw exception when canceling already started game`() {
-    // given
-    val game = Game.create(homeTeamId = 1L, awayTeamId = 2L)
-    game.start()
-
-    // when & then
-    assertThrows<IllegalStateException> {
-        game.cancel("취소 불가")
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.CANCELLED)
+        }
     }
 }
 ```
@@ -406,17 +434,7 @@ class GameRepositoryTest {
     @Test
     @Transactional
     fun `should find scheduled games by team`() {
-        // given
-        val game1 = Game.create(homeTeamId = 1L, awayTeamId = 2L)
-        val game2 = Game.create(homeTeamId = 1L, awayTeamId = 3L).apply { start() }
-        gameRepository.saveAll(listOf(game1, game2))
-
-        // when
-        val result = gameRepository.findScheduledGames(1L)
-
-        // then
-        assertThat(result).hasSize(1)
-        assertThat(result[0].status).isEqualTo(GameStatus.SCHEDULED)
+        // given-when-then
     }
 }
 ```
@@ -426,62 +444,31 @@ class GameRepositoryTest {
 ### Entity Design
 - [ ] Use `private constructor` + `companion object.create()`
 - [ ] Business logic in Entity, not in Service
-- [ ] Value Objects for complex values
-- [ ] Enum types with `@Enumerated(EnumType.STRING)`
+- [ ] Extend `BaseTimeEntity()` (Instant, UTC)
+- [ ] `@Version` for optimistic locking where needed
+- [ ] Private backing field for JPA collections
+- [ ] `@Table(indexes = [...])` for query optimization
 
 ### Service Layer
 - [ ] Class-level `@Transactional(readOnly = true)`
 - [ ] Method-level `@Transactional` for write operations
 - [ ] Custom exceptions for domain errors
-- [ ] Extension functions for Entity → DTO conversion
+- [ ] `ApplicationEventPublisher` for domain events
 
 ### Controller Layer
 - [ ] Zero Entity Leak (NEVER return Entity)
 - [ ] ApiResponse wrapper for all responses
 - [ ] `@Valid` for request validation
-- [ ] Global exception handler for consistency
+- [ ] Correct URL prefix per module
 
 ### Repository Layer
-- [ ] Extend `JpaRepository` for basic CRUD (Direct JPA+Port)
+- [ ] Direct JPA+Port for basic CRUD
 - [ ] Adapter wrapping for complex queries
 - [ ] No business logic in Repository
-
-## Anti-Patterns to Avoid
-
-```kotlin
-// ❌ AVOID: Anemic Domain Model
-class Game {
-    var status: GameStatus = GameStatus.SCHEDULED
-}
-
-// Service with business logic
-fun startGame(id: Long) {
-    val game = findGame(id)
-    game.status = GameStatus.IN_PROGRESS  // ❌ Logic in Service
-}
-
-// ✅ PREFER: Rich Domain Model
-class Game {
-    fun start() {
-        require(status == GameStatus.SCHEDULED)
-        status = GameStatus.IN_PROGRESS
-    }
-}
-```
-
-```kotlin
-// ❌ AVOID: Entity exposure
-@GetMapping("/{id}")
-fun getGame(@PathVariable id: Long): Game  // ❌ Zero Entity Leak violation
-
-// ✅ PREFER: DTO response
-@GetMapping("/{id}")
-fun getGame(@PathVariable id: Long): ApiResponse<GameResponse>  // ✅ DTO
-```
 
 ## Agent 협업
 
 이 Skill을 활용하는 Agent:
 - **architect**: Entity 설계 및 비즈니스 로직 구현
 - **implementer**: Controller/Service/DTO 구현
-- **reviewer**: 테스트 코드 작성 및 코드 품질 검증 시 컨벤션 준수 확인
+- **reviewer**: 코드 품질 검증 시 컨벤션 준수 확인
