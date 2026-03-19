@@ -877,6 +877,22 @@ class GameScorerControllerTest {
 
             verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
         }
+
+        @Test
+        fun `should suspend game without request body`() {
+            // given
+            val game = createGame(1L, GameStatus.SUSPENDED)
+            every { gameLifecycleService.suspendGame(1L, null) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/1/suspend"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
+
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
+        }
     }
 
     @Nested
