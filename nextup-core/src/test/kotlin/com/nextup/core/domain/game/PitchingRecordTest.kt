@@ -1526,6 +1526,42 @@ class PitchingRecordTest {
     }
 
     @Nested
+    @DisplayName("커스텀 starterWinQualificationOuts 파라미터 검증")
+    inner class CustomStarterWinQualificationOutsTest {
+        @Test
+        fun `더블헤더 축소 이닝에서 선발 승리 자격이 조정된다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+            assertThat(pitchingRecord.isQualifiedForWin(12)).isTrue()
+            assertThat(pitchingRecord.isQualifiedForWin(15)).isFalse()
+        }
+
+        @Test
+        fun `커스텀 starterWinQualificationOuts로 validate 시 해당 기준으로 검증된다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+            pitchingRecord.assignWin()
+
+            pitchingRecord.validate(12)
+
+            assertThatThrownBy {
+                pitchingRecord.validate(15)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 이상")
+        }
+
+        @Test
+        fun `correctField에 starterWinQualificationOuts를 전달할 수 있다`() {
+            pitchingRecord.setAsStartingPitcher()
+            repeat(12) { pitchingRecord.recordOut() }
+
+            val oldValue = pitchingRecord.correctField("hitsAllowed", "3", 12)
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(pitchingRecord.hitsAllowed).isEqualTo(3)
+        }
+    }
+
+    @Nested
     @DisplayName("partial branch 커버리지 - strikeoutToWalkRatio 분기")
     inner class StrikeoutToWalkRatioPartialBranchTest {
 

@@ -11,6 +11,7 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -1481,6 +1482,59 @@ class GameTest {
             // then
             assertThat(game.isDoubleheader).isFalse()
             assertThat(game.doubleheaderDisplay).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("이닝 축소 정정")
+    inner class ReduceTotalInningsTest {
+        @Test
+        fun `이닝을 축소할 수 있다`() {
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            game.reduceTotalInnings(7, emptyList())
+            assertThat(game.totalInnings).isEqualTo(7)
+        }
+
+        @Test
+        fun `이닝 축소 시 투수 기록과 충돌하면 예외가 발생한다`() {
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gamePlayer = mockk<GamePlayer>(relaxed = true)
+            val pitchingRecord = PitchingRecord.create(gamePlayer)
+            repeat(24) { pitchingRecord.recordOut() }
+
+            assertThatThrownBy {
+                game.reduceTotalInnings(7, listOf(pitchingRecord))
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 축소")
+        }
+
+        @Test
+        fun `3이닝 미만으로 축소하면 예외가 발생한다`() {
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            assertThatThrownBy {
+                game.reduceTotalInnings(2, emptyList())
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("3~12")
+        }
+
+        @Test
+        fun `현재 이닝보다 크게 설정하면 예외가 발생한다`() {
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            assertThatThrownBy {
+                game.reduceTotalInnings(10, emptyList())
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝 축소만 가능")
+        }
+
+        @Test
+        fun `투수 기록이 축소 이닝 이내이면 정상 축소된다`() {
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+            val gamePlayer = mockk<GamePlayer>(relaxed = true)
+            val pitchingRecord = PitchingRecord.create(gamePlayer)
+            repeat(18) { pitchingRecord.recordOut() }
+
+            game.reduceTotalInnings(7, listOf(pitchingRecord))
+            assertThat(game.totalInnings).isEqualTo(7)
         }
     }
 
