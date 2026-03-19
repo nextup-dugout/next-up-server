@@ -26,6 +26,11 @@ interface TeamMemberRepositoryPort {
         status: TeamMemberStatus,
     ): List<TeamMember>
 
+    fun findByTeamIdInAndStatus(
+        teamIds: List<Long>,
+        status: TeamMemberStatus,
+    ): List<TeamMember>
+
     fun findByTeamIdAndStatusIn(
         teamId: Long,
         statuses: Set<TeamMemberStatus>,

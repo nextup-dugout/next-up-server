@@ -117,6 +117,37 @@ class TeamMemberRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("findByTeamIdInAndStatus - teamIds 목록과 status로 조회 시 JPA repository에 위임한다")
+    fun `should delegate findByTeamIdInAndStatus to jpa repository`() {
+        // given
+        val members = listOf(mockk<TeamMember>(), mockk<TeamMember>())
+        every {
+            jpaRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+        } returns members
+
+        // when
+        val result = adapter.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+
+        // then
+        assertThat(result).hasSize(2)
+        assertThat(result).isEqualTo(members)
+        verify(exactly = 1) {
+            jpaRepository.findByTeamIdInAndStatus(listOf(1L, 2L), TeamMemberStatus.ACTIVE)
+        }
+    }
+
+    @Test
+    @DisplayName("findByTeamIdInAndStatus - 빈 목록 전달 시 JPA 호출 없이 빈 리스트를 반환한다")
+    fun `should return empty list without jpa call when teamIds is empty for findByTeamIdInAndStatus`() {
+        // when
+        val result = adapter.findByTeamIdInAndStatus(emptyList(), TeamMemberStatus.ACTIVE)
+
+        // then
+        assertThat(result).isEmpty()
+        verify(exactly = 0) { jpaRepository.findByTeamIdInAndStatus(any(), any()) }
+    }
+
+    @Test
     @DisplayName("findByTeamIdAndStatusIn - teamId와 status 목록으로 조회 시 JPA repository에 위임한다")
     fun `should delegate findByTeamIdAndStatusIn to jpa repository`() {
         // given
