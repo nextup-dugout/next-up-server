@@ -12,6 +12,7 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.election.Election
 import com.nextup.core.domain.election.ElectionStatus
 import com.nextup.core.domain.election.ElectionType
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.TeamDisbandedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
 import com.nextup.core.domain.event.TeamMemberLeftEvent
@@ -45,11 +46,13 @@ import com.nextup.core.port.repository.TeamJoinRequestRepositoryPort
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -67,6 +70,7 @@ class TeamMemberEventListenerTest {
     private val electionRepository = mockk<ElectionRepositoryPort>()
     private val teamJoinRequestRepository = mockk<TeamJoinRequestRepositoryPort>()
     private val activityScoreRepository = mockk<ActivityScoreRepositoryPort>()
+    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
 
     private val listener =
         TeamMemberEventListener(
@@ -81,6 +85,7 @@ class TeamMemberEventListenerTest {
             electionRepository = electionRepository,
             teamJoinRequestRepository = teamJoinRequestRepository,
             activityScoreRepository = activityScoreRepository,
+            eventPublisher = eventPublisher,
         )
 
     private lateinit var association: Association
@@ -881,6 +886,65 @@ class TeamMemberEventListenerTest {
             assert(scheduledGame.status == GameStatus.FORFEITED)
             assert(inProgressGame.status == GameStatus.FORFEITED)
             assert(finishedGame.status == GameStatus.FINISHED)
+        }
+
+        @Test
+        @DisplayName("팀 해산 몰수승 처리 후 GameResultConfirmedEvent가 발행된다")
+        fun `should publish GameResultConfirmedEvent after forfeit on team disband`() {
+            // given
+            val event = TeamDisbandedEvent(teamId = 1L)
+
+            val opponentTeam = Team(league = league, name = "라이언즈", city = "부산", foundedYear = 2016)
+            setFieldId(opponentTeam, Team::class.java, 2L)
+
+            val competition =
+                Competition(
+                    league = league,
+                    name = "2026 시즌",
+                    year = 2026,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2026, 3, 1),
+                )
+            setFieldId(competition, Competition::class.java, 100L)
+            competition.start()
+
+            val scheduledGame2 =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = team,
+                    awayTeam = opponentTeam,
+                    scheduledAt = LocalDateTime.now().plusDays(1),
+                    status = GameStatus.SCHEDULED,
+                    id = 1000L,
+                )
+
+            every {
+                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
+            } returns setOf(100L)
+            every {
+                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
+            } returns emptyList()
+            every { competitionRepository.findByIdOrNull(100L) } returns competition
+            every { gameRepository.findByCompetitionId(100L) } returns listOf(scheduledGame2)
+            every { gameRepository.save(any()) } returnsArgument 0
+            every { bracketEntryRepository.findByCompetitionId(100L) } returns emptyList()
+
+            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
+            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
+            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
+            justRun { activityScoreRepository.deleteByTeamId(1L) }
+
+            // when
+            listener.handleTeamDisbanded(event)
+
+            // then
+            val eventSlot = slot<GameResultConfirmedEvent>()
+            verify { eventPublisher.publishEvent(capture(eventSlot)) }
+
+            val capturedEvent = eventSlot.captured
+            assert(capturedEvent.gameId == 1000L)
         }
 
         @Test
