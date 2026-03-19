@@ -56,12 +56,18 @@ data class GameRules(
     /** 투구 수 경고 임박 기준 (제한 대비 몇 구 전에 경고할지, 기본 10구) */
     @Column(name = "pitch_count_warning_threshold")
     val pitchCountWarningThreshold: Int = 10,
+    /** L-4: 더블헤더 경기 이닝 수 (기본값: 7이닝) */
+    @Column(name = "doubleheader_innings")
+    val doubleheaderInnings: Int = 7,
     /** L-3: 용병(머서너리) 쿼터 제한 (null이면 무제한) */
     @Column(name = "max_mercenary_count")
     val maxMercenaryCount: Int? = null,
 ) {
     init {
         require(defaultInnings in 3..12) { "기본 이닝은 3~12 사이여야 합니다." }
+        require(doubleheaderInnings in 3..defaultInnings) {
+            "더블헤더 이닝은 3 이상 기본 이닝($defaultInnings) 이하여야 합니다."
+        }
         require(forfeitScore > 0) { "몰수승 점수는 양수여야 합니다." }
         require(starterWinQualificationOuts > 0) { "선발 승리 자격 아웃 수는 양수여야 합니다." }
         require(qualificationPAMultiplier > 0.0) { "규정 타석 배수는 양수여야 합니다." }

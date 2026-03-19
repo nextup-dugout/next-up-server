@@ -9,6 +9,7 @@ import com.nextup.core.domain.event.RecordCorrectedEvent
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.FieldingRecord
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.RecordCorrection
 import com.nextup.core.port.repository.AuditLogRepositoryPort
@@ -20,6 +21,7 @@ import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.RecordCorrectionRepositoryPort
 import com.nextup.core.service.game.correction.BattingCorrectionRequest
 import com.nextup.core.service.game.correction.FieldingCorrectionRequest
+import com.nextup.core.service.game.correction.GameInningsCorrectionRequest
 import com.nextup.core.service.game.correction.PitchingCorrectionRequest
 import com.nextup.core.service.game.correction.RecordCorrectionDto
 import com.nextup.core.service.game.correction.RecordCorrectionService
@@ -241,6 +243,54 @@ class RecordCorrectionServiceImpl(
         )
 
         return fieldingRecord
+    }
+
+    /**
+     * L-5: 경기 이닝 수를 축소 정정합니다.
+     */
+    @Transactional
+    override fun correctGameTotalInnings(
+        gameId: Long,
+        request: GameInningsCorrectionRequest,
+    ): Game {
+        val game =
+            gameRepository.findByIdOrNull(gameId)
+                ?: throw GameNotFoundException(gameId)
+
+        val oldTotalInnings = game.totalInnings
+
+        // 해당 경기의 모든 투수 기록 조회하여 충돌 검증
+        val pitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
+        game.reduceTotalInnings(request.newTotalInnings, pitchingRecords)
+
+        // 정정 이력 저장
+        val correction =
+            RecordCorrection.create(
+                gameId = gameId,
+                adminUserId = request.adminUserId,
+                correctionType = CorrectionType.PITCHING,
+                targetRecordId = gameId,
+                fieldName = "totalInnings",
+                oldValue = oldTotalInnings.toString(),
+                newValue = request.newTotalInnings.toString(),
+                reason = request.reason,
+            )
+        recordCorrectionRepository.save(correction)
+
+        // AuditLog 저장
+        val auditLog =
+            AuditLog.create(
+                adminUserId = request.adminUserId,
+                action = "CORRECT_GAME_TOTAL_INNINGS",
+                targetEntity = "Game",
+                targetId = gameId,
+                details =
+                    "gameId=$gameId, field=totalInnings, " +
+                        "oldValue=$oldTotalInnings, newValue=${request.newTotalInnings}, reason=${request.reason}",
+            )
+        auditLogRepository.save(auditLog)
+
+        return game
     }
 
     /**

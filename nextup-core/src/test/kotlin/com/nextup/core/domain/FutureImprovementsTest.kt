@@ -247,7 +247,7 @@ class FutureImprovementsTest {
         @Test
         fun `더블헤더 축소 시 최소 3이닝을 보장한다`() {
             // given
-            val competition = createCompetition(GameRules(defaultInnings = 3))
+            val competition = createCompetition(GameRules(defaultInnings = 3, doubleheaderInnings = 3))
             val homeTeam = createTeam(1L)
             val awayTeam = createTeam(2L)
 

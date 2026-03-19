@@ -33,6 +33,15 @@ data class FieldingCorrectionRequest(
 )
 
 /**
+ * L-5: 경기 이닝 축소 정정 요청 DTO (Service 계층용)
+ */
+data class GameInningsCorrectionRequest(
+    val adminUserId: Long,
+    val newTotalInnings: Int,
+    val reason: String,
+)
+
+/**
  * 기록 정정 이력 조회 DTO
  */
 data class RecordCorrectionDto(

@@ -41,7 +41,7 @@ fun PitchingRecord.toResponse(): PitchingRecordResponse =
         strikeoutToWalkRatio = this.strikeoutToWalkRatio.toPlainString(),
         strikePercentage = this.strikePercentage?.toPlainString(), // nullable
         unearnedRuns = this.unearnedRuns,
-        isQualifiedForWin = this.isQualifiedForWin,
+        isQualifiedForWin = this.isQualifiedForWin(),
     )
 
 /**

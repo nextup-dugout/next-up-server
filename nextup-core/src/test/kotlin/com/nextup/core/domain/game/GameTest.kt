@@ -1388,9 +1388,68 @@ class GameTest {
             assertThat(game1.isDoubleheader).isTrue()
             assertThat(game1.gameNumber).isEqualTo(1)
             assertThat(game1.doubleheaderDisplay).isEqualTo("제1경기")
+            assertThat(game1.totalInnings).isEqualTo(7) // GameRules.doubleheaderInnings 기본값
             assertThat(game2.isDoubleheader).isTrue()
             assertThat(game2.gameNumber).isEqualTo(2)
             assertThat(game2.doubleheaderDisplay).isEqualTo("제2경기")
+        }
+
+        @Test
+        fun `더블헤더 경기 생성 시 GameRules의 doubleheaderInnings가 적용된다`() {
+            // given
+            val customCompetition =
+                Competition(
+                    league = league,
+                    name = "더블헤더 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(doubleheaderInnings = 5),
+                )
+
+            // when
+            val game =
+                Game.create(
+                    competition = customCompetition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 10, 0),
+                    gameNumber = 1,
+                    isDoubleheader = true,
+                )
+
+            // then
+            assertThat(game.totalInnings).isEqualTo(5)
+        }
+
+        @Test
+        fun `일반 경기 생성 시 defaultInnings가 적용된다`() {
+            // given
+            val customCompetition =
+                Competition(
+                    league = league,
+                    name = "9이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 9),
+                )
+
+            // when
+            val game =
+                Game.create(
+                    competition = customCompetition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                )
+
+            // then
+            assertThat(game.totalInnings).isEqualTo(9)
         }
 
         @Test

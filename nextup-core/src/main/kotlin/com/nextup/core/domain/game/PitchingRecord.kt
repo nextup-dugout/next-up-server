@@ -224,10 +224,11 @@ class PitchingRecord(
         get() = runsAllowed - earnedRuns
 
     /**
-     * 선발 승리 자격이 있는지 확인 (5이닝 이상)
+     * 선발 승리 자격이 있는지 확인합니다.
+     * @param starterWinQualificationOuts 선발 승리 자격 최소 아웃 수 (기본 15 = 5이닝)
      */
-    val isQualifiedForWin: Boolean
-        get() = isStartingPitcher && inningsPitchedOuts >= 15
+    fun isQualifiedForWin(starterWinQualificationOuts: Int = 15): Boolean =
+        isStartingPitcher && inningsPitchedOuts >= starterWinQualificationOuts
 
     // Business logic
 
@@ -595,8 +596,9 @@ class PitchingRecord(
 
     /**
      * 기록 유효성을 검증합니다.
+     * @param starterWinQualificationOuts 선발 승리 자격 최소 아웃 수 (기본 15 = 5이닝)
      */
-    fun validate() {
+    fun validate(starterWinQualificationOuts: Int = 15) {
         require(inningsPitchedOuts >= 0) { "이닝 아웃 수($inningsPitchedOuts)는 음수일 수 없습니다." }
         require(earnedRuns >= 0) { "자책점($earnedRuns)은 음수일 수 없습니다." }
         require(runsAllowed >= 0) { "실점($runsAllowed)은 음수일 수 없습니다." }
@@ -620,8 +622,8 @@ class PitchingRecord(
             }
         }
         if (isStartingPitcher && decision == PitchingDecision.WIN) {
-            require(isQualifiedForWin) {
-                "선발 승리 자격(5이닝 이상)을 충족하지 못합니다."
+            require(isQualifiedForWin(starterWinQualificationOuts)) {
+                "선발 승리 자격(${starterWinQualificationOuts / 3}이닝 이상)을 충족하지 못합니다."
             }
         }
     }
@@ -656,6 +658,7 @@ class PitchingRecord(
     fun correctField(
         fieldName: String,
         newValue: String,
+        starterWinQualificationOuts: Int = 15,
     ): String {
         val oldValue =
             when (fieldName) {
@@ -774,7 +777,7 @@ class PitchingRecord(
                 else -> throw IllegalArgumentException("유효하지 않은 투수 기록 필드입니다: $fieldName")
             }
 
-        validate()
+        validate(starterWinQualificationOuts)
         return oldValue.toString()
     }
 

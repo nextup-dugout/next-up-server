@@ -2,6 +2,7 @@ package com.nextup.core.service.game.correction
 
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.FieldingRecord
+import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.PitchingRecord
 
 /**
@@ -52,6 +53,20 @@ interface RecordCorrectionService {
         recordId: Long,
         request: FieldingCorrectionRequest,
     ): FieldingRecord
+
+    /**
+     * L-5: 경기 이닝 수를 축소 정정합니다.
+     *
+     * 기존 투수 기록과 충돌하지 않는지 검증한 뒤 이닝을 축소합니다.
+     *
+     * @param gameId 경기 ID
+     * @param request 이닝 축소 정정 요청
+     * @return 정정된 경기
+     */
+    fun correctGameTotalInnings(
+        gameId: Long,
+        request: GameInningsCorrectionRequest,
+    ): Game
 
     /**
      * 경기의 기록 정정 이력을 조회합니다.

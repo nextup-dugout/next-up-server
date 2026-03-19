@@ -33,7 +33,7 @@ class GameRulesTest {
     inner class DefaultInningsValidation {
         @Test
         fun `3이닝도 유효하다`() {
-            val rules = GameRules(defaultInnings = 3)
+            val rules = GameRules(defaultInnings = 3, doubleheaderInnings = 3)
 
             assertThat(rules.defaultInnings).isEqualTo(3)
         }
