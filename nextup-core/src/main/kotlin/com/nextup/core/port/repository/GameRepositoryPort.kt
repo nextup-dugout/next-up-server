@@ -61,4 +61,10 @@ interface GameRepositoryPort {
         month: Int,
         teamId: Long?,
     ): List<Int>
+
+    /**
+     * 기록원이 잠금한 경기 중 lockedAt이 threshold 이전인 경기를 조회합니다.
+     * (잠금 만료 자동 해제용)
+     */
+    fun findLockedGamesBefore(threshold: LocalDateTime): List<Game>
 }

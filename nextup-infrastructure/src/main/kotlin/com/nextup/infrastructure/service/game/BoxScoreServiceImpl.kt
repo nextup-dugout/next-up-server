@@ -40,8 +40,22 @@ class BoxScoreServiceImpl(
 
         return BoxScoreDto(
             gameId = gameId,
-            homeTeam = buildTeamBoxScore(homeTeam.team.id, homeTeam.team.name, homeTeam.team.logoUrl, homeTeam, homePlayers),
-            awayTeam = buildTeamBoxScore(awayTeam.team.id, awayTeam.team.name, awayTeam.team.logoUrl, awayTeam, awayPlayers),
+            homeTeam =
+                buildTeamBoxScore(
+                    homeTeam.team.id,
+                    homeTeam.team.name,
+                    homeTeam.team.logoUrl,
+                    homeTeam,
+                    homePlayers,
+                ),
+            awayTeam =
+                buildTeamBoxScore(
+                    awayTeam.team.id,
+                    awayTeam.team.name,
+                    awayTeam.team.logoUrl,
+                    awayTeam,
+                    awayPlayers,
+                ),
             currentInning = game.currentInningDisplay,
             gameStatus = game.status.displayName,
         )

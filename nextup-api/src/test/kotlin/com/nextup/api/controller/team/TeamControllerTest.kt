@@ -39,6 +39,7 @@ class TeamControllerTest {
             every { name } returns "타이거즈"
             every { city } returns "서울"
             every { abbreviation } returns "TGR"
+            every { logoUrl } returns null
             every { this@mockk.league } returns this@TeamControllerTest.league
             every { foundedYear } returns 2026
             every { isActive } returns true
@@ -198,6 +199,7 @@ class TeamControllerTest {
                     every { name } returns "이글스"
                     every { city } returns "부산"
                     every { abbreviation } returns "EGL"
+                    every { logoUrl } returns null
                     every { isActive } returns true
                 }
             every { teamRepository.findActiveTeamsByFilter(null, null) } returns listOf(team, team2)
@@ -247,6 +249,7 @@ class TeamControllerTest {
                     every { name } returns "이글스"
                     every { city } returns "부산"
                     every { abbreviation } returns "EGL"
+                    every { logoUrl } returns null
                     every { isActive } returns true
                 }
             every {

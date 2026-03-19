@@ -34,6 +34,14 @@ class TeamMemberRepositoryAdapter(
         status: TeamMemberStatus,
     ): List<TeamMember> = jpaRepository.findByTeamIdAndStatus(teamId, status)
 
+    override fun findByTeamIdInAndStatus(
+        teamIds: List<Long>,
+        status: TeamMemberStatus,
+    ): List<TeamMember> {
+        if (teamIds.isEmpty()) return emptyList()
+        return jpaRepository.findByTeamIdInAndStatus(teamIds, status)
+    }
+
     override fun findByTeamIdAndStatusIn(
         teamId: Long,
         statuses: Set<TeamMemberStatus>,
