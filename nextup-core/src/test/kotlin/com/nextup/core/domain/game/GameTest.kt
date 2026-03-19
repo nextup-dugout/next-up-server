@@ -1799,4 +1799,399 @@ class GameTest {
             assertThat(game.isLocked).isTrue()
         }
     }
+
+    @Nested
+    @DisplayName("홈팀 리드 말 이닝 자동 생략")
+    inner class HomeTeamLeadsSkipBottom {
+        @Test
+        fun `정규 이닝 초 종료 후 홈팀 리드 시 말 이닝 생략하고 경기 종료`() {
+            // given: 7회 경기, 7회초 종료 시점, 홈팀 5-3 리드
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 7),
+                )
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 7,
+                    isTopInning = true,
+                    totalInnings = 7,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            val result = game.nextHalfInning(gameTeams = gameTeams)
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM)
+            assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+            assertThat(game.endedAt).isNotNull()
+            assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                .isEqualTo(GameResult.WIN)
+            assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                .isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `정규 이닝 초 종료 후 동점이면 말 이닝 정상 진행`() {
+            // given: 7회초 종료, 동점 3-3
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 7),
+                )
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 7,
+                    isTopInning = true,
+                    totalInnings = 7,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            val result = game.nextHalfInning(gameTeams = gameTeams)
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            assertThat(game.currentInning).isEqualTo(7)
+            assertThat(game.isTopInning).isFalse()
+        }
+
+        @Test
+        fun `정규 이닝 초 종료 후 원정팀 리드면 말 이닝 정상 진행`() {
+            // given: 7회초 종료, 원정팀 리드 3-5
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 7),
+                )
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 7,
+                    isTopInning = true,
+                    totalInnings = 7,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(5)
+
+            // when
+            val result = game.nextHalfInning(gameTeams = gameTeams)
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            assertThat(game.currentInning).isEqualTo(7)
+            assertThat(game.isTopInning).isFalse()
+        }
+
+        @Test
+        fun `정규 이닝 미만 초에서는 홈팀 리드여도 말 이닝 정상 진행`() {
+            // given: 5회초 종료, 홈팀 리드 (7이닝 경기)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 7),
+                )
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 5,
+                    isTopInning = true,
+                    totalInnings = 7,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(10)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(2)
+
+            // when
+            val result = game.nextHalfInning(gameTeams = gameTeams)
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            assertThat(game.currentInning).isEqualTo(5)
+            assertThat(game.isTopInning).isFalse()
+        }
+
+        @Test
+        fun `연장전 초 종료 후 홈팀 리드 시에도 말 이닝 생략하고 경기 종료`() {
+            // given: 10회초 종료, 홈팀 리드 (9이닝 경기의 연장전)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 10,
+                    isTopInning = true,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(6)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(4)
+
+            // when
+            val result = game.nextHalfInning(gameTeams = gameTeams)
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM)
+            assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+        }
+
+        @Test
+        fun `gameTeams가 전달되지 않으면 홈팀 리드여도 말 이닝 정상 진행`() {
+            // given: gameTeams 없이 호출 (기존 호환성)
+            val game =
+                createGame(status = GameStatus.IN_PROGRESS).apply {
+                    currentInning = 9
+                    isTopInning = true
+                }
+
+            // when
+            val result = game.nextHalfInning()
+
+            // then
+            assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            assertThat(game.currentInning).isEqualTo(9)
+            assertThat(game.isTopInning).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("끝내기(Walk-off) 감지")
+    inner class WalkOff {
+        @Test
+        fun `정규 이닝 말에서 홈팀 리드 시 끝내기 조건 충족`() {
+            // given: 7회말, 홈팀 5-4 리드
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val comp =
+                Competition(
+                    league = league,
+                    name = "7이닝 대회",
+                    year = 2025,
+                    season = 1,
+                    type = CompetitionType.LEAGUE,
+                    startDate = LocalDate.of(2025, 3, 1),
+                    status = CompetitionStatus.IN_PROGRESS,
+                    gameRules = GameRules(defaultInnings = 7),
+                )
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 7,
+                    isTopInning = false,
+                    totalInnings = 7,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(4)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `연장전 말에서 홈팀 역전 시 끝내기 조건 충족`() {
+            // given: 10회말, 홈팀 역전 5-4
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 10,
+                    isTopInning = false,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(4)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `초 이닝에서는 끝내기가 아니다`() {
+            // given: 9회초, 홈팀 리드
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 9,
+                    isTopInning = true,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `정규 이닝 미만 말에서는 끝내기가 아니다`() {
+            // given: 5회말, 홈팀 리드 (9이닝 경기)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 5,
+                    isTopInning = false,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `말 이닝이지만 동점이면 끝내기가 아니다`() {
+            // given: 9회말, 동점
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 9,
+                    isTopInning = false,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isFalse()
+        }
+
+        @Test
+        fun `말 이닝이지만 원정팀이 리드하면 끝내기가 아니다`() {
+            // given: 9회말, 원정팀 리드
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = competition,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.IN_PROGRESS,
+                    currentInning = 9,
+                    isTopInning = false,
+                    totalInnings = 9,
+                )
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(2)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(5)
+
+            // when
+            val result = game.isWalkOff(gameTeams)
+
+            // then
+            assertThat(result).isFalse()
+        }
+    }
 }

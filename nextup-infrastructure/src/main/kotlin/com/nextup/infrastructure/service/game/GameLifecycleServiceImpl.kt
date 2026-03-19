@@ -52,7 +52,17 @@ class GameLifecycleServiceImpl(
             throw InvalidGameStateException("진행 중인 경기만 이닝을 진행할 수 있습니다. 현재 상태: ${game.status.displayName}")
         }
 
-        game.nextHalfInning()
+        val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+        val result = game.nextHalfInning(gameTeams = gameTeams)
+
+        // 홈팀 리드로 말 이닝 생략 → 경기 종료 시 투수 판정 및 결과 이벤트 발행
+        if (result == com.nextup.core.domain.game.TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM) {
+            val savedGame = gameRepository.save(game)
+            assignPitchingDecisions(gameId)
+            publishGameResultEvent(gameId)
+            return savedGame
+        }
+
         return gameRepository.save(game)
     }
 

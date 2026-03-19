@@ -4,6 +4,7 @@ import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.core.domain.event.BattingOrderViolationEvent
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PitchCountWarningEvent
 import com.nextup.core.domain.event.PitchCountWarningType
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
@@ -11,12 +12,15 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.GameTeam
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PitchCountStatus
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.PlateAppearanceRecordService
@@ -41,6 +45,7 @@ class PlateAppearanceRecordServiceImpl(
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val gameTeamRepository: GameTeamRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : PlateAppearanceRecordService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -117,11 +122,30 @@ class PlateAppearanceRecordServiceImpl(
             ),
         )
 
+        // 끝내기(Walk-off) 감지: 득점 발생 시 홈팀 역전/리드 확인
+        var walkOff = false
+        if (scoredRunnerIds.isNotEmpty()) {
+            val gameTeams = gameTeamRepository.findAllByGameId(gameId)
+            if (game.isWalkOff(gameTeams)) {
+                log.info(
+                    "끝내기 감지: 경기 ID={}, {}회말 홈팀 역전 → 경기 자동 종료",
+                    gameId,
+                    game.currentInning,
+                )
+                game.finish(gameTeams)
+                walkOff = true
+                publishWalkOffGameResult(gameId, gameTeams)
+            }
+        }
+
         val outCountBefore = game.gameState.outs
         val runnersBeforeJson = buildRunnersJson(game)
 
-        game.advanceBatter()
-        game.resetCount()
+        // 경기가 끝내기로 종료된 경우 타순/카운트 진행 불필요
+        if (!walkOff) {
+            game.advanceBatter()
+            game.resetCount()
+        }
 
         val savedGame = gameRepository.save(game)
 
@@ -142,7 +166,9 @@ class PlateAppearanceRecordServiceImpl(
             )
         gameEventRepository.save(gameEvent)
 
-        detectPitchCountWarning(savedGame, pitcher, warnings)
+        if (!walkOff) {
+            detectPitchCountWarning(savedGame, pitcher, warnings)
+        }
 
         return PlateAppearanceRecordResult(game = savedGame, warnings = warnings)
     }
@@ -261,6 +287,26 @@ class PlateAppearanceRecordServiceImpl(
         } else {
             base
         }
+    }
+
+    /**
+     * 끝내기로 경기 종료 시 결과 확정 이벤트를 발행합니다.
+     */
+    private fun publishWalkOffGameResult(
+        gameId: Long,
+        gameTeams: List<GameTeam>,
+    ) {
+        val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME } ?: return
+        val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY } ?: return
+        eventPublisher.publishEvent(
+            GameResultConfirmedEvent(
+                gameId = gameId,
+                homeTeamId = homeTeam.team.id,
+                awayTeamId = awayTeam.team.id,
+                homeScore = homeTeam.totalScore,
+                awayScore = awayTeam.totalScore,
+            ),
+        )
     }
 
     private fun findGame(id: Long): Game =

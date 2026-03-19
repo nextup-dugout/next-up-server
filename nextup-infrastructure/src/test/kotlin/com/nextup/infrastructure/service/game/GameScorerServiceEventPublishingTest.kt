@@ -21,6 +21,7 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.BoxScoreService
 import com.nextup.core.service.game.dto.PlateAppearanceRequest
@@ -45,6 +46,7 @@ class GameScorerServiceEventPublishingTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
+    private lateinit var gameTeamRepository: GameTeamRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var plateAppearanceRecordService: PlateAppearanceRecordServiceImpl
     private lateinit var gameUndoService: GameUndoServiceImpl
@@ -57,8 +59,10 @@ class GameScorerServiceEventPublishingTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
+        gameTeamRepository = mockk()
         eventPublisher = mockk(relaxed = true)
         every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+        every { gameTeamRepository.findAllByGameId(any()) } returns emptyList()
         every { gameEventRepository.save(any()) } answers { firstArg() }
         plateAppearanceRecordService =
             PlateAppearanceRecordServiceImpl(
@@ -68,6 +72,7 @@ class GameScorerServiceEventPublishingTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                gameTeamRepository,
                 eventPublisher,
             )
         gameUndoService =

@@ -89,6 +89,7 @@ class GameScorerServiceImplTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                gameTeamRepository,
                 eventPublisher,
             )
     }

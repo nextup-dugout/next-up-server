@@ -12,4 +12,7 @@ enum class TiebreakerResult {
 
     /** 최대 연장 이닝 도달로 인한 무승부 처리 */
     DRAW_BY_INNINGS_LIMIT,
+
+    /** 홈팀 리드로 말 이닝 생략 → 경기 종료 */
+    HOME_TEAM_LEADS_SKIP_BOTTOM,
 }

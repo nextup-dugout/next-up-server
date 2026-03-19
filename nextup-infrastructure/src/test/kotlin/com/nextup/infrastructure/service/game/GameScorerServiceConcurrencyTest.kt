@@ -85,6 +85,7 @@ class GameScorerServiceConcurrencyTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
+                gameTeamRepository,
                 eventPublisher,
             )
         gameUndoService =
