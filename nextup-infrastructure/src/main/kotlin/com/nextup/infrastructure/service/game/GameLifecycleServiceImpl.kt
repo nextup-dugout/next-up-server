@@ -129,9 +129,12 @@ class GameLifecycleServiceImpl(
     ): Game {
         val game = findGame(gameId)
 
-        if (game.status != GameStatus.SCHEDULED && game.status != GameStatus.POSTPONED) {
+        if (game.status != GameStatus.SCHEDULED &&
+            game.status != GameStatus.POSTPONED &&
+            game.status != GameStatus.SUSPENDED
+        ) {
             throw InvalidGameStateException(
-                "예정 또는 연기 상태의 경기만 취소할 수 있습니다. 현재 상태: ${game.status.displayName}",
+                "예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다. 현재 상태: ${game.status.displayName}",
             )
         }
 
@@ -217,6 +220,23 @@ class GameLifecycleServiceImpl(
         }
 
         return savedGame
+    }
+
+    @Transactional
+    override fun suspendGame(
+        gameId: Long,
+        reason: String?,
+    ): Game {
+        val game = findGame(gameId)
+        game.suspend(reason)
+        return gameRepository.save(game)
+    }
+
+    @Transactional
+    override fun resumeGame(gameId: Long): Game {
+        val game = findGame(gameId)
+        game.resume()
+        return gameRepository.save(game)
     }
 
     /**

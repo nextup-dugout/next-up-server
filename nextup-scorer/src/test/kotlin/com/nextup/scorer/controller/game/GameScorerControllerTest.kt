@@ -838,6 +838,84 @@ class GameScorerControllerTest {
 
     // ===== 테스트 헬퍼 메서드 =====
 
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/suspend")
+    inner class SuspendGame {
+        @Test
+        fun `should suspend game successfully`() {
+            // given
+            val game = createGame(1L, GameStatus.SUSPENDED)
+            every { gameLifecycleService.suspendGame(1L, "우천") } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/1/suspend")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(mapOf("reason" to "우천"))),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
+
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, "우천") }
+        }
+
+        @Test
+        fun `should suspend game without reason`() {
+            // given
+            val game = createGame(1L, GameStatus.SUSPENDED)
+            every { gameLifecycleService.suspendGame(1L, null) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/1/suspend")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
+
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
+        }
+
+        @Test
+        fun `should suspend game without request body`() {
+            // given
+            val game = createGame(1L, GameStatus.SUSPENDED)
+            every { gameLifecycleService.suspendGame(1L, null) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/1/suspend"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
+
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/resume")
+    inner class ResumeGame {
+        @Test
+        fun `should resume game successfully`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            every { gameLifecycleService.resumeGame(1L) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/scorer/games/1/resume"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+
+            verify(exactly = 1) { gameLifecycleService.resumeGame(1L) }
+        }
+    }
+
     private fun createGamePlayer(
         id: Long,
         gameTeam: GameTeam,
