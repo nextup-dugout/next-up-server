@@ -35,12 +35,14 @@ data class ScheduleResponse(
                         id = schedule.homeTeam.id,
                         name = schedule.homeTeam.name,
                         abbreviation = schedule.homeTeam.abbreviation,
+                        logoUrl = schedule.homeTeam.logoUrl,
                     ),
                 awayTeam =
                     ScheduleTeamResponse(
                         id = schedule.awayTeam.id,
                         name = schedule.awayTeam.name,
                         abbreviation = schedule.awayTeam.abbreviation,
+                        logoUrl = schedule.awayTeam.logoUrl,
                     ),
                 scheduledDate = schedule.scheduledDate,
                 scheduledTime = schedule.scheduledTime,
@@ -58,4 +60,5 @@ data class ScheduleTeamResponse(
     val id: Long,
     val name: String,
     val abbreviation: String?,
+    val logoUrl: String?,
 )

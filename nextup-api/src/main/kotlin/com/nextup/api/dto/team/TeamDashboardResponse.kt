@@ -45,6 +45,7 @@ data class DashboardTeamSummaryResponse(
     val name: String,
     val city: String,
     val abbreviation: String?,
+    val logoUrl: String?,
     val leagueName: String?,
     val foundedYear: Int,
 ) {
@@ -55,6 +56,7 @@ data class DashboardTeamSummaryResponse(
                 name = dto.name,
                 city = dto.city,
                 abbreviation = dto.abbreviation,
+                logoUrl = dto.logoUrl,
                 leagueName = dto.leagueName,
                 foundedYear = dto.foundedYear,
             )

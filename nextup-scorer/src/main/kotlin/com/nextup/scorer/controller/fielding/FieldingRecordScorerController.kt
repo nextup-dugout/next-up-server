@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController
  * 실시간 경기에서 수비 이벤트(자살/보살/실책/병살/포일)를 기록합니다.
  */
 @RestController
-@RequestMapping("/api/scorer/games/{gameId}/fielding")
+@RequestMapping("/api/v1/scorer/games/{gameId}/fielding")
 class FieldingRecordScorerController(
     private val fieldingRecordService: FieldingRecordService,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
@@ -32,7 +32,7 @@ class FieldingRecordScorerController(
     /**
      * 수비 기록을 생성합니다 (경기 시작 시 선수별 초기화).
      *
-     * POST /api/scorer/games/{gameId}/fielding/players/{playerId}
+     * POST /api/v1/scorer/games/{gameId}/fielding/players/{playerId}
      */
     @PostMapping("/players/{playerId}")
     @ResponseStatus(HttpStatus.CREATED)
@@ -50,7 +50,7 @@ class FieldingRecordScorerController(
     /**
      * 수비 이벤트를 기록합니다.
      *
-     * POST /api/scorer/games/{gameId}/fielding/events
+     * POST /api/v1/scorer/games/{gameId}/fielding/events
      */
     @PostMapping("/events")
     @ResponseStatus(HttpStatus.OK)
@@ -73,7 +73,7 @@ class FieldingRecordScorerController(
     /**
      * 경기의 모든 수비 기록을 조회합니다.
      *
-     * GET /api/scorer/games/{gameId}/fielding
+     * GET /api/v1/scorer/games/{gameId}/fielding
      */
     @GetMapping
     fun getFieldingRecordsByGame(

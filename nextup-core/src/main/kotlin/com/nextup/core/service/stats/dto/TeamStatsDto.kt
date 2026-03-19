@@ -5,6 +5,7 @@ import java.math.BigDecimal
 data class TeamStatsDto(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val year: Int?,
     val competitionId: Long?,
     val competitionName: String?,

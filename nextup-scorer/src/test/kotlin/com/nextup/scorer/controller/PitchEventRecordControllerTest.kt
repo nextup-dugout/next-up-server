@@ -78,7 +78,7 @@ class PitchEventRecordControllerTest {
         // when & then
         mockMvc
             .perform(
-                post("/api/scorer/games/{gameId}/pitch-events", gameId)
+                post("/api/v1/scorer/games/{gameId}/pitch-events", gameId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isCreated)
@@ -98,7 +98,7 @@ class PitchEventRecordControllerTest {
         // when & then
         mockMvc
             .perform(
-                post("/api/scorer/games/{gameId}/pitch-events", gameId)
+                post("/api/v1/scorer/games/{gameId}/pitch-events", gameId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidRequest),
             ).andExpect(status().isBadRequest)
@@ -113,7 +113,7 @@ class PitchEventRecordControllerTest {
         // when & then
         mockMvc
             .perform(
-                post("/api/scorer/games/{gameId}/pitch-events", gameId)
+                post("/api/v1/scorer/games/{gameId}/pitch-events", gameId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidRequest),
             ).andExpect(status().isBadRequest)
@@ -128,7 +128,7 @@ class PitchEventRecordControllerTest {
         // when & then
         mockMvc
             .perform(
-                post("/api/scorer/games/{gameId}/pitch-events", gameId)
+                post("/api/v1/scorer/games/{gameId}/pitch-events", gameId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidRequest),
             ).andExpect(status().isBadRequest)

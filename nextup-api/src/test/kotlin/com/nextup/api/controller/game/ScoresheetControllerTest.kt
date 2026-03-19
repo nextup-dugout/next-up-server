@@ -58,6 +58,7 @@ class ScoresheetControllerTest {
                             TeamScoresheetInfoDto(
                                 teamId = 1L,
                                 teamName = "홈팀",
+                                logoUrl = null,
                                 totalScore = 5,
                                 totalHits = 10,
                                 totalErrors = 1,
@@ -67,6 +68,7 @@ class ScoresheetControllerTest {
                             TeamScoresheetInfoDto(
                                 teamId = 2L,
                                 teamName = "원정팀",
+                                logoUrl = null,
                                 totalScore = 3,
                                 totalHits = 8,
                                 totalErrors = 2,
@@ -195,6 +197,7 @@ class ScoresheetControllerTest {
                             TeamScoresheetInfoDto(
                                 teamId = 1L,
                                 teamName = "홈팀",
+                                logoUrl = null,
                                 totalScore = 0,
                                 totalHits = 0,
                                 totalErrors = 0,
@@ -204,6 +207,7 @@ class ScoresheetControllerTest {
                             TeamScoresheetInfoDto(
                                 teamId = 2L,
                                 teamName = "원정팀",
+                                logoUrl = null,
                                 totalScore = 0,
                                 totalHits = 0,
                                 totalErrors = 0,

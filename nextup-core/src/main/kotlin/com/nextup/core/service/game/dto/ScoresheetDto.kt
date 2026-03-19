@@ -47,6 +47,7 @@ data class TeamsScoresheetDto(
 data class TeamScoresheetInfoDto(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val totalScore: Int,
     val totalHits: Int,
     val totalErrors: Int,

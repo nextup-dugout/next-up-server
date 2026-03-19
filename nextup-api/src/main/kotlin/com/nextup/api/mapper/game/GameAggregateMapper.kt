@@ -29,12 +29,14 @@ fun GameDetailDto.toAggregateInfoResponse(): GameAggregateInfoResponse =
             GameTeamSummary(
                 teamId = homeTeamId,
                 teamName = homeTeamName,
+                logoUrl = homeTeamLogoUrl,
                 score = homeScore,
             ),
         awayTeam =
             GameTeamSummary(
                 teamId = awayTeamId,
                 teamName = awayTeamName,
+                logoUrl = awayTeamLogoUrl,
                 score = awayScore,
             ),
         scheduledAt = scheduledAt,

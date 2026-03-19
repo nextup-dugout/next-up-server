@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController
  * 라인업 작성 및 제출은 nextup-api 모듈의 LineupController에서 처리합니다.
  */
 @RestController
-@RequestMapping("/api/scorer/lineups")
+@RequestMapping("/api/v1/scorer/lineups")
 class LineupScorerController(
     private val lineupService: LineupService,
 ) {

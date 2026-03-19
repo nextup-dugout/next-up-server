@@ -30,12 +30,14 @@ data class GameSummaryResponse(
                     GameTeamSummary(
                         teamId = dto.homeTeamId,
                         teamName = dto.homeTeamName,
+                        logoUrl = dto.homeTeamLogoUrl,
                         score = dto.homeScore,
                     ),
                 awayTeam =
                     GameTeamSummary(
                         teamId = dto.awayTeamId,
                         teamName = dto.awayTeamName,
+                        logoUrl = dto.awayTeamLogoUrl,
                         score = dto.awayScore,
                     ),
                 scheduledAt = dto.scheduledAt,
@@ -53,6 +55,7 @@ data class GameSummaryResponse(
 data class GameTeamSummary(
     val teamId: Long,
     val teamName: String,
+    val logoUrl: String?,
     val score: Int,
 )
 
@@ -88,12 +91,14 @@ data class GameDetailResponse(
                     GameTeamSummary(
                         teamId = dto.homeTeamId,
                         teamName = dto.homeTeamName,
+                        logoUrl = dto.homeTeamLogoUrl,
                         score = dto.homeScore,
                     ),
                 awayTeam =
                     GameTeamSummary(
                         teamId = dto.awayTeamId,
                         teamName = dto.awayTeamName,
+                        logoUrl = dto.awayTeamLogoUrl,
                         score = dto.awayScore,
                     ),
                 scheduledAt = dto.scheduledAt,

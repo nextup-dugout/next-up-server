@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
  * 대회 생성·수정·삭제 및 상태 변경은 관리자(backoffice)의 책임입니다.
  */
 @RestController
-@RequestMapping("/api/scorer/competitions")
+@RequestMapping("/api/v1/scorer/competitions")
 class CompetitionScorerController(
     private val competitionService: CompetitionService
 ) {

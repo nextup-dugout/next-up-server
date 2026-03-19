@@ -54,6 +54,7 @@ class TeamStatsServiceImpl(
         return TeamStatsDto(
             teamId = team.id,
             teamName = team.name,
+            logoUrl = team.logoUrl,
             year = year,
             competitionId = competitionId,
             competitionName = null, // TODO: Competition 연결 시 구현

@@ -96,7 +96,7 @@ class BaseRunningControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/base-running")
+                post("/api/v1/scorer/games/$gameId/base-running")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -129,7 +129,7 @@ class BaseRunningControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/base-running")
+                post("/api/v1/scorer/games/$gameId/base-running")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -157,7 +157,7 @@ class BaseRunningControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/base-running")
+                post("/api/v1/scorer/games/$gameId/base-running")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -185,7 +185,7 @@ class BaseRunningControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/base-running")
+                post("/api/v1/scorer/games/$gameId/base-running")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -210,7 +210,7 @@ class BaseRunningControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/base-running")
+                post("/api/v1/scorer/games/$gameId/base-running")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )

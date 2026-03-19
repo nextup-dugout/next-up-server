@@ -50,6 +50,7 @@ data class PlayerProfileResponse(
 data class TeamHistoryItemResponse(
     val teamId: Long,
     val teamName: String,
+    val teamLogoUrl: String?,
     val position: String?,
     val uniformNumber: Int?,
     val startDate: LocalDate,

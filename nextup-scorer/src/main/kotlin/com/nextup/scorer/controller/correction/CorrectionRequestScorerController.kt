@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
  * 기록원이 기록 정정을 요청하는 API를 제공합니다.
  */
 @RestController
-@RequestMapping("/api/scorer/corrections/requests")
+@RequestMapping("/api/v1/scorer/corrections/requests")
 class CorrectionRequestScorerController(
     private val correctionRequestService: CorrectionRequestService,
 ) {

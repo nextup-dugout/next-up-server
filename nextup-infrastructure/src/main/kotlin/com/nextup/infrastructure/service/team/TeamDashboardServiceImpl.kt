@@ -118,6 +118,7 @@ class TeamDashboardServiceImpl(
                     name = team.name,
                     city = team.city,
                     abbreviation = team.abbreviation,
+                    logoUrl = team.logoUrl,
                     leagueName = team.league.name,
                     foundedYear = team.foundedYear,
                 ),

@@ -78,7 +78,7 @@ class FieldingRecordScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(post("/api/scorer/games/$gameId/fielding/players/$playerId"))
+                .perform(post("/api/v1/scorer/games/$gameId/fielding/players/$playerId"))
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -97,7 +97,7 @@ class FieldingRecordScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(post("/api/scorer/games/$gameId/fielding/players/$playerId"))
+                .perform(post("/api/v1/scorer/games/$gameId/fielding/players/$playerId"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.success").value(false))
         }
@@ -130,7 +130,7 @@ class FieldingRecordScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/games/$gameId/fielding/events")
+                    post("/api/v1/scorer/games/$gameId/fielding/events")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 )
@@ -166,7 +166,7 @@ class FieldingRecordScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/games/$gameId/fielding/events")
+                    post("/api/v1/scorer/games/$gameId/fielding/events")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 )
@@ -201,7 +201,7 @@ class FieldingRecordScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/games/$gameId/fielding/events")
+                    post("/api/v1/scorer/games/$gameId/fielding/events")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 )
@@ -237,7 +237,7 @@ class FieldingRecordScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/games/$gameId/fielding/events")
+                    post("/api/v1/scorer/games/$gameId/fielding/events")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 )
@@ -273,7 +273,7 @@ class FieldingRecordScorerControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    post("/api/scorer/games/$gameId/fielding/events")
+                    post("/api/v1/scorer/games/$gameId/fielding/events")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 )
@@ -309,7 +309,7 @@ class FieldingRecordScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/scorer/games/$gameId/fielding"))
+                .perform(get("/api/v1/scorer/games/$gameId/fielding"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
@@ -327,7 +327,7 @@ class FieldingRecordScorerControllerTest {
 
             // when & then
             mockMvc
-                .perform(get("/api/scorer/games/$gameId/fielding"))
+                .perform(get("/api/v1/scorer/games/$gameId/fielding"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)

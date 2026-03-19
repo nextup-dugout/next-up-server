@@ -106,7 +106,7 @@ class GameScorerControllerTest {
             every { gameLifecycleService.startGame(gameId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/start"))
+            mockMvc.perform(post("/api/v1/scorer/games/$gameId/start"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(gameId))
@@ -147,7 +147,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/plate-appearances")
+                post("/api/v1/scorer/games/$gameId/plate-appearances")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -194,7 +194,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/plate-appearances")
+                post("/api/v1/scorer/games/$gameId/plate-appearances")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -232,7 +232,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/plate-appearances")
+                post("/api/v1/scorer/games/$gameId/plate-appearances")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -261,7 +261,7 @@ class GameScorerControllerTest {
             every { gameLifecycleService.advanceHalfInning(gameId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
+            mockMvc.perform(post("/api/v1/scorer/games/$gameId/half-inning"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(gameId))
@@ -285,7 +285,7 @@ class GameScorerControllerTest {
             every { gameLifecycleService.advanceHalfInning(gameId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
+            mockMvc.perform(post("/api/v1/scorer/games/$gameId/half-inning"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.currentInning").value(2))
@@ -313,7 +313,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/end")
+                post("/api/v1/scorer/games/$gameId/end")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -339,7 +339,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/end")
+                post("/api/v1/scorer/games/$gameId/end")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -364,7 +364,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/end")
+                post("/api/v1/scorer/games/$gameId/end")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -389,7 +389,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/end")
+                post("/api/v1/scorer/games/$gameId/end")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -414,7 +414,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/cancel")
+                post("/api/v1/scorer/games/$gameId/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf("reason" to "우천 취소")))
             )
@@ -435,7 +435,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/cancel")
+                post("/api/v1/scorer/games/$gameId/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf<String, String?>()))
             )
@@ -495,7 +495,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/substitutions")
+                post("/api/v1/scorer/games/$gameId/substitutions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -534,7 +534,7 @@ class GameScorerControllerTest {
             every { gameStateQueryService.getGameTeams(gameId) } returns game.gameTeams
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/state"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/state"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -564,7 +564,7 @@ class GameScorerControllerTest {
             every { gameStateQueryService.getGameTeams(gameId) } returns game.gameTeams
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/state"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/state"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
@@ -592,7 +592,7 @@ class GameScorerControllerTest {
             every { gameStateQueryService.getCurrentLineup(gameId) } returns listOf(homePlayer, awayPlayer)
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/lineup"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/lineup"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -614,7 +614,7 @@ class GameScorerControllerTest {
             every { gameStateQueryService.getCurrentLineup(gameId) } returns emptyList()
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/lineup"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/lineup"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.homeLineup").isEmpty)
@@ -661,7 +661,7 @@ class GameScorerControllerTest {
             every { gameTimelineService.getTimeline(gameId, null, null) } returns timeline
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/events"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/events"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -690,7 +690,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                get("/api/scorer/games/$gameId/events")
+                get("/api/v1/scorer/games/$gameId/events")
                     .param("fromInning", "3")
                     .param("toInning", "5"),
             )
@@ -721,7 +721,7 @@ class GameScorerControllerTest {
             every { gameStateQueryService.getGameTeams(gameId) } returns game.gameTeams
 
             // when & then
-            mockMvc.perform(get("/api/scorer/games/$gameId/scoreboard"))
+            mockMvc.perform(get("/api/v1/scorer/games/$gameId/scoreboard"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameId").value(gameId))
@@ -756,7 +756,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/lock")
+                post("/api/v1/scorer/games/$gameId/lock")
                     .param("scorerId", scorerId.toString()),
             )
                 .andExpect(status().isOk)
@@ -781,7 +781,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/unlock")
+                post("/api/v1/scorer/games/$gameId/unlock")
                     .param("scorerId", scorerId.toString()),
             )
                 .andExpect(status().isOk)
@@ -817,7 +817,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/$gameId/forfeit")
+                post("/api/v1/scorer/games/$gameId/forfeit")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -849,7 +849,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/1/suspend")
+                post("/api/v1/scorer/games/1/suspend")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf("reason" to "우천"))),
             )
@@ -868,7 +868,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/1/suspend")
+                post("/api/v1/scorer/games/1/suspend")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"),
             )
@@ -886,7 +886,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/1/suspend"),
+                post("/api/v1/scorer/games/1/suspend"),
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
@@ -906,7 +906,7 @@ class GameScorerControllerTest {
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/1/resume"),
+                post("/api/v1/scorer/games/1/resume"),
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.id").value(1))

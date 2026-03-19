@@ -109,6 +109,7 @@ class OpenPdfScoresheetGeneratorTest {
                         TeamScoresheetInfoDto(
                             teamId = 1L,
                             teamName = "Home Team",
+                            logoUrl = null,
                             totalScore = 5,
                             totalHits = 8,
                             totalErrors = 1,
@@ -118,6 +119,7 @@ class OpenPdfScoresheetGeneratorTest {
                         TeamScoresheetInfoDto(
                             teamId = 2L,
                             teamName = "Away Team",
+                            logoUrl = null,
                             totalScore = 3,
                             totalHits = 6,
                             totalErrors = 2,
