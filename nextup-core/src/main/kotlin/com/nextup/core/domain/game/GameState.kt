@@ -54,32 +54,47 @@ class GameState(
 
     /**
      * 아웃을 기록합니다.
+     *
+     * 로컬 변수를 사용하여 동시성 환경에서의 read-read race condition을 방지합니다.
+     *
      * @return 3아웃으로 이닝이 종료되었는지 여부
      */
     fun recordOut(): Boolean {
-        require(outs < 3) { "이미 3아웃입니다" }
-        outs++
-        return outs == 3
+        val current = outs
+        require(current < 3) { "이미 3아웃입니다" }
+        val next = current + 1
+        outs = next
+        return next == 3
     }
 
     /**
      * 볼 카운트를 추가합니다.
+     *
+     * 로컬 변수를 사용하여 동시성 환경에서의 read-read race condition을 방지합니다.
+     *
      * @return 4볼로 볼넷 여부
      */
     fun addBall(): Boolean {
-        require(balls < 4) { "이미 4볼입니다" }
-        balls++
-        return balls == 4
+        val current = balls
+        require(current < 4) { "이미 4볼입니다" }
+        val next = current + 1
+        balls = next
+        return next == 4
     }
 
     /**
      * 스트라이크 카운트를 추가합니다.
+     *
+     * 로컬 변수를 사용하여 동시성 환경에서의 read-read race condition을 방지합니다.
+     *
      * @return 3스트라이크로 삼진 여부
      */
     fun addStrike(): Boolean {
-        require(strikes < 3) { "이미 3스트라이크입니다" }
-        strikes++
-        return strikes == 3
+        val current = strikes
+        require(current < 3) { "이미 3스트라이크입니다" }
+        val next = current + 1
+        strikes = next
+        return next == 3
     }
 
     /**
@@ -159,13 +174,19 @@ class GameState(
 
     /**
      * 다음 타자로 타순을 진행합니다.
+     *
+     * 로컬 변수를 사용하여 동시성 환경에서의 read-read race condition을 방지합니다.
+     * (필드를 두 번 읽으면 조건 판단과 값 계산 사이에 다른 스레드가 값을 변경할 수 있음)
+     *
      * @param isHomeTeam 홈팀 여부
      */
     fun advanceBatter(isHomeTeam: Boolean) {
         if (isHomeTeam) {
-            homeBattingOrder = if (homeBattingOrder == 9) 1 else homeBattingOrder + 1
+            val current = homeBattingOrder
+            homeBattingOrder = if (current == 9) 1 else current + 1
         } else {
-            awayBattingOrder = if (awayBattingOrder == 9) 1 else awayBattingOrder + 1
+            val current = awayBattingOrder
+            awayBattingOrder = if (current == 9) 1 else current + 1
         }
     }
 
@@ -181,13 +202,18 @@ class GameState(
 
     /**
      * 타순을 한 칸 되돌립니다 (Undo 시 타순 롤백용).
+     *
+     * 로컬 변수를 사용하여 동시성 환경에서의 read-read race condition을 방지합니다.
+     *
      * @param isHomeTeam 홈팀 여부
      */
     fun revertBatter(isHomeTeam: Boolean) {
         if (isHomeTeam) {
-            homeBattingOrder = if (homeBattingOrder == 1) 9 else homeBattingOrder - 1
+            val current = homeBattingOrder
+            homeBattingOrder = if (current == 1) 9 else current - 1
         } else {
-            awayBattingOrder = if (awayBattingOrder == 1) 9 else awayBattingOrder - 1
+            val current = awayBattingOrder
+            awayBattingOrder = if (current == 1) 9 else current - 1
         }
     }
 
