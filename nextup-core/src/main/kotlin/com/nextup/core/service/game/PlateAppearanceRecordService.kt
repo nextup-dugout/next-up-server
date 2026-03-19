@@ -12,5 +12,6 @@ interface PlateAppearanceRecordService {
     fun recordPlateAppearance(
         gameId: Long,
         request: PlateAppearanceRequest,
+        scorerId: Long,
     ): PlateAppearanceRecordResult
 }

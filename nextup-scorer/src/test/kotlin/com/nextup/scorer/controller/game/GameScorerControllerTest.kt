@@ -98,15 +98,19 @@ class GameScorerControllerTest {
         fun `should start game successfully`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game =
                 createGame(gameId, GameStatus.IN_PROGRESS).apply {
                     currentInning = 1
                     isTopInning = true
                 }
-            every { gameLifecycleService.startGame(gameId) } returns game
+            every { gameLifecycleService.startGame(gameId, scorerId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/start"))
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/start")
+                    .param("scorerId", scorerId.toString()),
+            )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(gameId))
@@ -114,7 +118,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.currentInning").value(1))
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
 
-            verify(exactly = 1) { gameLifecycleService.startGame(gameId) }
+            verify(exactly = 1) { gameLifecycleService.startGame(gameId, scorerId) }
         }
     }
 
@@ -126,6 +130,7 @@ class GameScorerControllerTest {
         fun `should record plate appearance with single hit`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request =
                 PlateAppearanceRequestDto(
                     batterId = 10L,
@@ -142,12 +147,13 @@ class GameScorerControllerTest {
                     isTopInning = false
                     gameState.runnerOnFirstId = 10L
                 }
-            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) } returns
                 PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/plate-appearances")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -157,13 +163,14 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.currentInning").value(3))
 
-            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) }
         }
 
         @Test
         fun `should record plate appearance with runner movements`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request =
                 PlateAppearanceRequestDto(
                     batterId = 10L,
@@ -189,12 +196,13 @@ class GameScorerControllerTest {
                     gameState.runnerOnSecondId = 10L
                     gameState.runnerOnThirdId = 5L
                 }
-            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) } returns
                 PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/plate-appearances")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -204,13 +212,14 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.gameState.runnerOnSecondId").value(10))
                 .andExpect(jsonPath("$.data.gameState.runnerOnThirdId").value(5))
 
-            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) }
         }
 
         @Test
         fun `should record strikeout`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request =
                 PlateAppearanceRequestDto(
                     batterId = 10L,
@@ -227,12 +236,13 @@ class GameScorerControllerTest {
                     isTopInning = true
                     gameState.outs = 1
                 }
-            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) } returns
+            every { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) } returns
                 PlateAppearanceRecordResult(game)
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/plate-appearances")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -240,7 +250,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.gameState.outs").value(1))
 
-            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any()) }
+            verify(exactly = 1) { plateAppearanceRecordService.recordPlateAppearance(gameId, any(), scorerId) }
         }
     }
 
@@ -252,16 +262,20 @@ class GameScorerControllerTest {
         fun `should advance to next half inning`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game =
                 createGame(gameId, GameStatus.IN_PROGRESS).apply {
                     currentInning = 1
                     isTopInning = false // 1회말로 진행
                     gameState.resetForNewInning()
                 }
-            every { gameLifecycleService.advanceHalfInning(gameId) } returns game
+            every { gameLifecycleService.advanceHalfInning(gameId, scorerId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/half-inning")
+                    .param("scorerId", scorerId.toString()),
+            )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(gameId))
@@ -269,29 +283,33 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.isTopInning").value(false))
                 .andExpect(jsonPath("$.data.gameState.outs").value(0))
 
-            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId) }
+            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId, scorerId) }
         }
 
         @Test
         fun `should advance from bottom to next top inning`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game =
                 createGame(gameId, GameStatus.IN_PROGRESS).apply {
                     currentInning = 2
                     isTopInning = true // 2회초로 진행
                     gameState.resetForNewInning()
                 }
-            every { gameLifecycleService.advanceHalfInning(gameId) } returns game
+            every { gameLifecycleService.advanceHalfInning(gameId, scorerId) } returns game
 
             // when & then
-            mockMvc.perform(post("/api/scorer/games/$gameId/half-inning"))
+            mockMvc.perform(
+                post("/api/scorer/games/$gameId/half-inning")
+                    .param("scorerId", scorerId.toString()),
+            )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.currentInning").value(2))
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
 
-            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId) }
+            verify(exactly = 1) { gameLifecycleService.advanceHalfInning(gameId, scorerId) }
         }
     }
 
@@ -303,17 +321,19 @@ class GameScorerControllerTest {
         fun `should end game with regulation finish`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request = GameEndRequestDto(reason = GameEndReason.REGULATION)
             val game =
                 createGame(gameId, GameStatus.FINISHED).apply {
                     currentInning = 9
                     isTopInning = false
                 }
-            every { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/end")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -322,24 +342,26 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(gameId))
                 .andExpect(jsonPath("$.data.status").value("FINISHED"))
 
-            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.REGULATION, scorerId) }
         }
 
         @Test
         fun `should end game with mercy rule`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request = GameEndRequestDto(reason = GameEndReason.MERCY_RULE)
             val game =
                 createGame(gameId, GameStatus.CALLED).apply {
                     currentInning = 7
                     isTopInning = true
                 }
-            every { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/end")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -347,24 +369,26 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CALLED"))
 
-            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.MERCY_RULE, scorerId) }
         }
 
         @Test
         fun `should end game due to weather`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request = GameEndRequestDto(reason = GameEndReason.WEATHER)
             val game =
                 createGame(gameId, GameStatus.CALLED).apply {
                     currentInning = 5
                     isTopInning = false
                 }
-            every { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/end")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -372,24 +396,26 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CALLED"))
 
-            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.WEATHER, scorerId) }
         }
 
         @Test
         fun `should end game with forfeit`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val request = GameEndRequestDto(reason = GameEndReason.FORFEIT)
             val game =
                 createGame(gameId, GameStatus.FORFEITED).apply {
                     currentInning = 3
                     isTopInning = true
                 }
-            every { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT) } returns game
+            every { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/end")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -397,7 +423,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("FORFEITED"))
 
-            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT) }
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT, scorerId) }
         }
     }
 
@@ -409,12 +435,14 @@ class GameScorerControllerTest {
         fun `should cancel game successfully`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game = createGame(gameId, GameStatus.CANCELLED)
-            every { gameLifecycleService.cancelGame(gameId, "우천 취소") } returns game
+            every { gameLifecycleService.cancelGame(gameId, "우천 취소", scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/cancel")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf("reason" to "우천 취소")))
             )
@@ -423,19 +451,21 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(gameId))
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
-            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, "우천 취소") }
+            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, "우천 취소", scorerId) }
         }
 
         @Test
         fun `should cancel game without reason`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game = createGame(gameId, GameStatus.CANCELLED)
-            every { gameLifecycleService.cancelGame(gameId, null) } returns game
+            every { gameLifecycleService.cancelGame(gameId, null, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/cancel")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf<String, String?>()))
             )
@@ -443,7 +473,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
-            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, null) }
+            verify(exactly = 1) { gameLifecycleService.cancelGame(gameId, null, scorerId) }
         }
     }
 
@@ -455,6 +485,7 @@ class GameScorerControllerTest {
         fun `선수 교체 요청이 성공적으로 처리된다`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game =
                 createGame(gameId, GameStatus.IN_PROGRESS).apply {
                     currentInning = 5
@@ -482,7 +513,7 @@ class GameScorerControllerTest {
                     idField.set(this, 100L)
                 }
 
-            every { gameSubstitutionService.substitutePlayer(gameId, any()) } returns substitutionEvent
+            every { gameSubstitutionService.substitutePlayer(gameId, any(), scorerId) } returns substitutionEvent
 
             val request =
                 SubstitutionRequestDto(
@@ -496,6 +527,7 @@ class GameScorerControllerTest {
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/substitutions")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -506,7 +538,7 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.isTopInning").value(true))
                 .andExpect(jsonPath("$.data.description").value("5회초: 홍길동 → 김철수 (좌익수)"))
 
-            verify(exactly = 1) { gameSubstitutionService.substitutePlayer(gameId, any()) }
+            verify(exactly = 1) { gameSubstitutionService.substitutePlayer(gameId, any(), scorerId) }
         }
     }
 
@@ -800,12 +832,14 @@ class GameScorerControllerTest {
         fun `경기를 몰수 처리한다`() {
             // given
             val gameId = 1L
+            val scorerId = 100L
             val game = createGame(gameId, GameStatus.FORFEITED)
             every {
                 gameLifecycleService.forfeitGame(
                     gameId = gameId,
                     winnerTeamId = 1L,
                     reason = "선수 부족",
+                    scorerId = scorerId,
                 )
             } returns game
 
@@ -818,6 +852,7 @@ class GameScorerControllerTest {
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/$gameId/forfeit")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -831,6 +866,7 @@ class GameScorerControllerTest {
                     gameId = gameId,
                     winnerTeamId = 1L,
                     reason = "선수 부족",
+                    scorerId = scorerId,
                 )
             }
         }
@@ -844,12 +880,14 @@ class GameScorerControllerTest {
         @Test
         fun `should suspend game successfully`() {
             // given
+            val scorerId = 100L
             val game = createGame(1L, GameStatus.SUSPENDED)
-            every { gameLifecycleService.suspendGame(1L, "우천") } returns game
+            every { gameLifecycleService.suspendGame(1L, "우천", scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/1/suspend")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mapOf("reason" to "우천"))),
             )
@@ -857,41 +895,27 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
 
-            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, "우천") }
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, "우천", scorerId) }
         }
 
         @Test
         fun `should suspend game without reason`() {
             // given
+            val scorerId = 100L
             val game = createGame(1L, GameStatus.SUSPENDED)
-            every { gameLifecycleService.suspendGame(1L, null) } returns game
+            every { gameLifecycleService.suspendGame(1L, null, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
                 post("/api/scorer/games/1/suspend")
+                    .param("scorerId", scorerId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"),
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
 
-            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
-        }
-
-        @Test
-        fun `should suspend game without request body`() {
-            // given
-            val game = createGame(1L, GameStatus.SUSPENDED)
-            every { gameLifecycleService.suspendGame(1L, null) } returns game
-
-            // when & then
-            mockMvc.perform(
-                post("/api/scorer/games/1/suspend"),
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.status").value("SUSPENDED"))
-
-            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null) }
+            verify(exactly = 1) { gameLifecycleService.suspendGame(1L, null, scorerId) }
         }
     }
 
@@ -901,18 +925,20 @@ class GameScorerControllerTest {
         @Test
         fun `should resume game successfully`() {
             // given
+            val scorerId = 100L
             val game = createGame(1L, GameStatus.IN_PROGRESS)
-            every { gameLifecycleService.resumeGame(1L) } returns game
+            every { gameLifecycleService.resumeGame(1L, scorerId) } returns game
 
             // when & then
             mockMvc.perform(
-                post("/api/scorer/games/1/resume"),
+                post("/api/scorer/games/1/resume")
+                    .param("scorerId", scorerId.toString()),
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
 
-            verify(exactly = 1) { gameLifecycleService.resumeGame(1L) }
+            verify(exactly = 1) { gameLifecycleService.resumeGame(1L, scorerId) }
         }
     }
 

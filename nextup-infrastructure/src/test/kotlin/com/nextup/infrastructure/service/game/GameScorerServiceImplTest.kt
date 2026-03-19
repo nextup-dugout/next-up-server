@@ -104,7 +104,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.startGame(1L)
+            val result = gameLifecycleService.startGame(1L, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.IN_PROGRESS)
@@ -119,7 +119,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(999L) } returns null
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.startGame(999L) }
+            assertThatThrownBy { gameLifecycleService.startGame(999L, 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
     }
@@ -139,7 +139,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.advanceHalfInning(1L)
+            val result = gameLifecycleService.advanceHalfInning(1L, 999L)
 
             // then
             assertThat(result.isTopInning).isFalse()
@@ -153,7 +153,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.advanceHalfInning(1L) }
+            assertThatThrownBy { gameLifecycleService.advanceHalfInning(1L, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
         }
     }
@@ -170,7 +170,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            val result = gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.FINISHED)
@@ -186,7 +186,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.endGame(1L, GameEndReason.MERCY_RULE)
+            val result = gameLifecycleService.endGame(1L, GameEndReason.MERCY_RULE, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CALLED)
@@ -202,7 +202,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.endGame(1L, GameEndReason.WEATHER)
+            val result = gameLifecycleService.endGame(1L, GameEndReason.WEATHER, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CALLED)
@@ -215,7 +215,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.endGame(1L, GameEndReason.FORFEIT) }
+            assertThatThrownBy { gameLifecycleService.endGame(1L, GameEndReason.FORFEIT, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("몰수 처리는 전용 API를 사용해주세요")
         }
@@ -229,7 +229,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.endGame(1L, GameEndReason.OTHER)
+            val result = gameLifecycleService.endGame(1L, GameEndReason.OTHER, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CALLED)
@@ -242,7 +242,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.endGame(1L, GameEndReason.REGULATION) }
+            assertThatThrownBy { gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
         }
 
@@ -269,7 +269,7 @@ class GameScorerServiceImplTest {
             every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify(exactly = 1) { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
@@ -302,7 +302,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when & then
-            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request) }
+            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
         }
 
@@ -325,7 +325,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when & then
-            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request) }
+            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L) }
                 .isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
@@ -350,7 +350,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when & then
-            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request) }
+            assertThatThrownBy { plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L) }
                 .isInstanceOf(GamePlayerNotFoundException::class.java)
         }
 
@@ -377,7 +377,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.runnerOnFirstId).isEqualTo(10L)
@@ -407,7 +407,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.runnerOnSecondId).isEqualTo(10L)
@@ -436,7 +436,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.runnerOnThirdId).isEqualTo(10L)
@@ -465,7 +465,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             verify {
@@ -504,7 +504,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.runnerOnFirstId).isEqualTo(10L)
@@ -533,7 +533,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.outs).isEqualTo(1)
@@ -573,7 +573,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             verify {
@@ -625,7 +625,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.outs).isEqualTo(1)
@@ -665,7 +665,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.game.gameState.runnerOnThirdId).isEqualTo(5L)
@@ -699,7 +699,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.warnings).isEmpty()
@@ -732,7 +732,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.warnings).isNotEmpty()
@@ -767,7 +767,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.warnings).isNotEmpty()
@@ -801,7 +801,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.warnings).isNotEmpty()
@@ -835,7 +835,7 @@ class GameScorerServiceImplTest {
                 )
 
             // when
-            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request)
+            val result = plateAppearanceRecordService.recordPlateAppearance(1L, request, 999L)
 
             // then
             assertThat(result.warnings).isEmpty()
@@ -865,8 +865,8 @@ class GameScorerServiceImplTest {
                     gameId = 1L,
                     winnerTeamId = 10L,
                     reason = "상대팀 불참",
+                    scorerId = 999L,
                 )
-
             // then
             assertThat(result.status).isEqualTo(GameStatus.FORFEITED)
             assertThat(result.forfeitReason).isEqualTo("상대팀 불참")
@@ -898,8 +898,8 @@ class GameScorerServiceImplTest {
                     gameId = 1L,
                     winnerTeamId = 20L,
                     reason = "홈팀 규정 위반",
+                    scorerId = 999L,
                 )
-
             // then
             assertThat(result.status).isEqualTo(GameStatus.FORFEITED)
             assertThat(result.forfeitReason).isEqualTo("홈팀 규정 위반")
@@ -918,6 +918,7 @@ class GameScorerServiceImplTest {
                     gameId = 1L,
                     winnerTeamId = 10L,
                     reason = "사유",
+                    scorerId = 999L,
                 )
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("예정 또는 진행 중인 경기만 몰수 처리할 수 있습니다")
@@ -935,6 +936,7 @@ class GameScorerServiceImplTest {
                     gameId = 1L,
                     winnerTeamId = 10L,
                     reason = "사유",
+                    scorerId = 999L,
                 )
             }.isInstanceOf(InvalidGameStateException::class.java)
         }
@@ -950,6 +952,7 @@ class GameScorerServiceImplTest {
                     gameId = 999L,
                     winnerTeamId = 10L,
                     reason = "사유",
+                    scorerId = 999L,
                 )
             }.isInstanceOf(GameNotFoundException::class.java)
         }
@@ -971,6 +974,7 @@ class GameScorerServiceImplTest {
                     gameId = 1L,
                     winnerTeamId = 10L,
                     reason = "사유",
+                    scorerId = 999L,
                 )
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("정확히 2개의 팀이 필요합니다")
@@ -1028,7 +1032,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify { winnerPitcher.assignWin() }
@@ -1050,7 +1054,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
@@ -1076,7 +1080,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
@@ -1105,7 +1109,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then - 무승부이므로 PitchingDecisionService가 투수 결정을 부여하지 않음
             // → save 호출 없음
@@ -1127,7 +1131,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
@@ -1148,7 +1152,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify(exactly = 0) { pitchingRecordRepository.save(any()) }
@@ -1216,7 +1220,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
             verify { homeStarter.assignWin() }
@@ -1272,7 +1276,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.MERCY_RULE)
+            gameLifecycleService.endGame(1L, GameEndReason.MERCY_RULE, 999L)
 
             // then
             verify { winnerPitcher.assignWin() }
@@ -1327,7 +1331,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            gameLifecycleService.endGame(1L, GameEndReason.REGULATION)
+            gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then - winnerTeam==homeTeam → loserTeam==awayTeam
             verify { winnerPitcher.assignWin() }
@@ -1347,7 +1351,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.cancelGame(1L, "우천 취소")
+            val result = gameLifecycleService.cancelGame(1L, "우천 취소", 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
@@ -1363,7 +1367,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.cancelGame(1L, "대회 취소")
+            val result = gameLifecycleService.cancelGame(1L, "대회 취소", 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
@@ -1379,7 +1383,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
-            val result = gameLifecycleService.cancelGame(1L, null)
+            val result = gameLifecycleService.cancelGame(1L, null, 999L)
 
             // then
             assertThat(result.status).isEqualTo(GameStatus.CANCELLED)
@@ -1393,7 +1397,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유") }
+            assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유", 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다")
         }
@@ -1405,7 +1409,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유") }
+            assertThatThrownBy { gameLifecycleService.cancelGame(1L, "사유", 999L) }
                 .isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("예정, 연기, 또는 중단 상태의 경기만 취소할 수 있습니다")
         }
@@ -1416,7 +1420,7 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(999L) } returns null
 
             // when & then
-            assertThatThrownBy { gameLifecycleService.cancelGame(999L, "사유") }
+            assertThatThrownBy { gameLifecycleService.cancelGame(999L, "사유", 999L) }
                 .isInstanceOf(GameNotFoundException::class.java)
         }
 
@@ -1431,7 +1435,7 @@ class GameScorerServiceImplTest {
             every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
 
             // when
-            gameLifecycleService.cancelGame(1L, "우천 취소")
+            gameLifecycleService.cancelGame(1L, "우천 취소", 999L)
 
             // then
             verify(exactly = 1) { eventPublisher.publishEvent(any<GameCancelledEvent>()) }
@@ -1560,6 +1564,7 @@ class GameScorerServiceImplTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
+            scorerId = 999L,
             id = id,
         )
     }

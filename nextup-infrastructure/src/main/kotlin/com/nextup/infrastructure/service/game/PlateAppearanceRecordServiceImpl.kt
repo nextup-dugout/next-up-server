@@ -49,8 +49,10 @@ class PlateAppearanceRecordServiceImpl(
     override fun recordPlateAppearance(
         gameId: Long,
         request: PlateAppearanceRequest,
+        scorerId: Long,
     ): PlateAppearanceRecordResult {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException("진행 중인 경기만 타석 기록을 입력할 수 있습니다. 현재 상태: ${game.status.displayName}")

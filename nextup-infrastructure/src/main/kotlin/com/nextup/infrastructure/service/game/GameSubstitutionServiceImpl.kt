@@ -42,8 +42,10 @@ class GameSubstitutionServiceImpl(
     override fun substitutePlayer(
         gameId: Long,
         request: SubstitutionRequest,
+        scorerId: Long,
     ): GameEvent {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (game.status != GameStatus.IN_PROGRESS) {
             throw InvalidGameStateException(

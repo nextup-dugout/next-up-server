@@ -36,8 +36,12 @@ class GameUndoServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    override fun undoLastEvent(gameId: Long): GameEvent {
+    override fun undoLastEvent(
+        gameId: Long,
+        scorerId: Long,
+    ): GameEvent {
         val game = findGame(gameId)
+        game.validateScorer(scorerId)
 
         if (!game.canUndo()) {
             throw UndoNotAvailableException(
