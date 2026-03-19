@@ -35,6 +35,8 @@ argument-hint: "[선택사항: 특정 스킬 이름 또는 집중할 영역]"
 | `verify-api-response` | Controller의 ApiResponse 래핑 사용 검증 | `**/controller/**/*.kt` |
 | `verify-custom-exception` | BusinessException 계열 커스텀 예외 사용 검증 | `*/src/main/kotlin/**/*.kt` |
 | `verify-url-prefix` | 모듈별 URL 프리픽스 통일 검증 | `**/controller/**/*.kt` |
+| `verify-authorization` | mutating 엔드포인트 @PreAuthorize/@AuthenticationPrincipal 적용 검증 | `**/controller/**/*.kt` |
+| `verify-repository-injection` | Controller에서 Repository/RepositoryPort 직접 주입 금지 검증 | `**/controller/**/*.kt` |
 
 ## 워크플로우
 
