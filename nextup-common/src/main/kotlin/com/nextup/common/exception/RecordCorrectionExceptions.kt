@@ -31,6 +31,16 @@ class PitchingRecordNotFoundByIdException(
     )
 
 /**
+ * 수비 기록 ID로 찾을 수 없을 때 발생하는 예외 (정정 목적)
+ */
+class FieldingRecordNotFoundByIdException(
+    id: Long,
+) : NotFoundException(
+        code = "FIELDING_RECORD_NOT_FOUND",
+        message = "수비 기록을 찾을 수 없습니다: $id",
+    )
+
+/**
  * 유효하지 않은 기록 정정 필드일 때 발생하는 예외
  */
 class InvalidCorrectionFieldException(

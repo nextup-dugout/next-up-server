@@ -6,11 +6,15 @@ import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
+import com.nextup.infrastructure.config.CacheConfig
+import com.nextup.infrastructure.listener.StatsEventListener.Companion.retryOnOptimisticLock
 import org.slf4j.LoggerFactory
+import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -40,6 +44,8 @@ class GameCancelEventListener(
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
     private val fieldingRecordRepository: FieldingRecordRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
+    private val cacheManager: CacheManager,
 ) {
     private val logger = LoggerFactory.getLogger(GameCancelEventListener::class.java)
 
@@ -55,6 +61,14 @@ class GameCancelEventListener(
         val gameId = event.gameId
         logger.info("경기 취소 스탯 롤백 시작 (gameId={})", gameId)
 
+        retryOnOptimisticLock("onGameCancelled(gameId=$gameId)") {
+            rollbackStats(gameId)
+        }
+
+        evictStandingsCache(gameId)
+    }
+
+    private fun rollbackStats(gameId: Long) {
         val battingRecords = battingRecordRepository.findAllByGameId(gameId)
         val pitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
         val fieldingRecords = fieldingRecordRepository.findAllByGameId(gameId)
@@ -223,6 +237,24 @@ class GameCancelEventListener(
             battingRecords.size,
             pitchingRecords.size,
             fieldingRecords.size,
+        )
+    }
+
+    private fun evictStandingsCache(gameId: Long) {
+        val game =
+            gameRepository.findByIdOrNull(gameId)
+                ?: run {
+                    logger.warn("캐시 무효화 중 경기를 찾을 수 없음 (gameId={})", gameId)
+                    return
+                }
+
+        val competitionId = game.competition.id
+        cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+
+        logger.debug(
+            "경기 취소 후 순위 캐시 무효화 완료 (competitionId={}, gameId={})",
+            competitionId,
+            gameId,
         )
     }
 }

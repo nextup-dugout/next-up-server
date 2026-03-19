@@ -229,6 +229,10 @@ class BattingRecord(
                 atBats++
                 strikeouts++
             }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
+                atBats++
+                strikeouts++
+            }
             PlateAppearanceResult.GROUND_OUT,
             PlateAppearanceResult.FLY_OUT,
             PlateAppearanceResult.INFIELD_FLY,
@@ -261,7 +265,10 @@ class BattingRecord(
                 atBats++
                 triplePlays++
             }
-            PlateAppearanceResult.INTERFERENCE -> {
+            PlateAppearanceResult.INTERFERENCE,
+            PlateAppearanceResult.BATTER_INTERFERENCE,
+            PlateAppearanceResult.RUNNER_INTERFERENCE,
+            -> {
                 // 방해는 타수에 포함되지 않음
             }
         }
@@ -343,6 +350,12 @@ class BattingRecord(
                 atBats--
                 strikeouts--
             }
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD -> {
+                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
+                require(strikeouts > 0) { "롤백할 삼진 기록이 없습니다." }
+                atBats--
+                strikeouts--
+            }
             PlateAppearanceResult.GROUND_OUT,
             PlateAppearanceResult.FLY_OUT,
             PlateAppearanceResult.INFIELD_FLY,
@@ -385,7 +398,10 @@ class BattingRecord(
                 atBats--
                 triplePlays--
             }
-            PlateAppearanceResult.INTERFERENCE -> {
+            PlateAppearanceResult.INTERFERENCE,
+            PlateAppearanceResult.BATTER_INTERFERENCE,
+            PlateAppearanceResult.RUNNER_INTERFERENCE,
+            -> {
                 // 방해는 타수에 포함되지 않음
             }
         }

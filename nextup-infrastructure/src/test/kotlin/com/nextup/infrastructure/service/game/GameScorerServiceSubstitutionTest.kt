@@ -16,9 +16,11 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
+import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.dto.SubstitutionRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -37,6 +39,8 @@ class GameScorerServiceSubstitutionTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
     private lateinit var gameEventRepository: GameEventRepositoryPort
+    private lateinit var battingRecordRepository: BattingRecordRepositoryPort
+    private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
     private lateinit var gameSubstitutionService: GameSubstitutionServiceImpl
 
     @BeforeEach
@@ -44,11 +48,22 @@ class GameScorerServiceSubstitutionTest {
         gameRepository = mockk()
         gamePlayerRepository = mockk()
         gameEventRepository = mockk()
+        battingRecordRepository = mockk()
+        pitchingRecordRepository = mockk()
+
+        // M-10/M-11: 기본 stub - 기록 없음으로 설정
+        every { pitchingRecordRepository.findByGamePlayerId(any()) } returns null
+        every { battingRecordRepository.findByGamePlayerId(any()) } returns null
+        every { battingRecordRepository.save(any()) } answers { firstArg() }
+        every { pitchingRecordRepository.save(any()) } answers { firstArg() }
+
         gameSubstitutionService =
             GameSubstitutionServiceImpl(
                 gameRepository,
                 gamePlayerRepository,
                 gameEventRepository,
+                battingRecordRepository,
+                pitchingRecordRepository,
             )
     }
 
@@ -295,6 +310,7 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.findByIdOrNull(10L) } returns dhPlayer
             every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
 
             val savedEvent = mockk<GameEvent>(relaxed = true)
             every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
@@ -366,6 +382,7 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.findByIdOrNull(10L) } returns dhPlayer
             every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
 
             var capturedEvent: GameEvent? = null
             every { gameEventRepository.save(any()) } answers {

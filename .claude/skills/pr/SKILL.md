@@ -1,7 +1,7 @@
 ---
 name: pr
 description: |
-  GitHub PR 생성 워크플로우. 브랜치 푸시, PR 제목/본문 작성, 이슈 자동 연결을 수행한다.
+  GitHub PR 생성 워크플로우. MCP GitHub 도구로 PR 생성, 이슈 자동 연결을 수행한다.
   /review 통과 후 PR 생성을 권장한다.
 user-invocable: true
 argument-hint: "[issue-number] e.g. 42"
@@ -10,7 +10,7 @@ allowed-tools: Bash, Read, Glob, Grep
 
 # /pr - Create Pull Request
 
-GitHub PR을 생성합니다.
+GitHub PR을 생성합니다. PR 생성은 **MCP GitHub 도구**를 사용합니다.
 
 ## Arguments
 
@@ -42,7 +42,10 @@ git log --oneline -5
 git push -u origin [branch-name]
 ```
 
-### 3. PR 생성 (MCP)
+### 3. PR 생성 (MCP GitHub 도구 사용)
+
+> **주의**: `gh` CLI는 미인증 상태이므로 반드시 MCP GitHub 도구를 사용합니다.
+
 ```
 mcp__github__create_pull_request:
   owner: nextup-dugout
@@ -64,6 +67,8 @@ mcp__github__create_pull_request:
 | `feat/#54-box-score` | `feat(#54): 박스스코어 자동 계산 및 Exception 개선` |
 
 ## PR Template
+
+`.github/PULL_REQUEST_TEMPLATE.md`에 정의된 템플릿을 사용합니다:
 
 ```markdown
 ## Summary
@@ -122,4 +127,3 @@ Assistant:
 빌드 실패, 테스트 실패, 보안 취약점이 있을 수 있습니다.
 계속하시겠습니까? (y/n)
 ```
-

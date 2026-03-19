@@ -209,6 +209,22 @@ class GameTeam(
     }
 
     /**
+     * 득점을 정정합니다 (기록 정정용, 음수 델타 허용).
+     * totalScore가 0 미만이 되지 않도록 보호합니다.
+     */
+    fun correctScore(delta: Int) {
+        totalScore = maxOf(0, totalScore + delta)
+    }
+
+    /**
+     * 안타 수를 정정합니다 (기록 정정용, 음수 델타 허용).
+     * totalHits가 0 미만이 되지 않도록 보호합니다.
+     */
+    fun correctHits(delta: Int) {
+        totalHits = maxOf(0, totalHits + delta)
+    }
+
+    /**
      * 경기 결과 표시 문자열을 반환합니다 (예: "5 - 3 승").
      */
     fun getScoreDisplay(opponentScore: Int): String = "$totalScore - $opponentScore ${result.displayName}"

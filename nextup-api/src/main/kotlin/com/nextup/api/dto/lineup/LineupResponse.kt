@@ -120,3 +120,50 @@ data class LineupSubmissionSummaryResponse(
             )
     }
 }
+
+/**
+ * 라인업 확정 상태 상세 응답 DTO
+ *
+ * 확정 여부뿐 아니라 선수 상세 정보(이름, 포지션, 타순)를 포함합니다.
+ */
+data class LineupDetailResponse(
+    val id: Long,
+    val gameId: Long,
+    val teamId: Long,
+    val teamName: String,
+    val status: LineupSubmissionStatus,
+    val statusDisplayName: String,
+    val isConfirmed: Boolean,
+    val starterCount: Int,
+    val substituteCount: Int,
+    val submittedAt: Instant?,
+    val confirmedAt: Instant?,
+    val entries: List<LineupEntryResponse>,
+) {
+    companion object {
+        fun from(
+            submission: LineupSubmission,
+            entries: List<LineupEntry>,
+        ): LineupDetailResponse {
+            val starters = entries.count { it.isStarter }
+            val substitutes = entries.size - starters
+
+            return LineupDetailResponse(
+                id = submission.id,
+                gameId = submission.game.id,
+                teamId = submission.team.id,
+                teamName = submission.team.name,
+                status = submission.status,
+                statusDisplayName = submission.status.displayName,
+                isConfirmed =
+                    submission.status == LineupSubmissionStatus.CONFIRMED ||
+                        submission.status == LineupSubmissionStatus.EXCHANGED,
+                starterCount = starters,
+                substituteCount = substitutes,
+                submittedAt = submission.submittedAt,
+                confirmedAt = submission.confirmedAt,
+                entries = entries.map { LineupEntryResponse.from(it) },
+            )
+        }
+    }
+}

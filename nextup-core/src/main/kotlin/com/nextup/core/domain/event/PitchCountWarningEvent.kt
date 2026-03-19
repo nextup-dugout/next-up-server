@@ -24,6 +24,20 @@ data class PitchCountWarningEvent(
     /** 남은 투구 수 (제한 초과 시 음수) */
     val remainingPitches: Int
         get() = pitchCountLimit - pitchesThrown
+
+    /** 투구 수 제한 도달로 교체가 권고되는지 여부 */
+    val isSubstitutionRecommended: Boolean
+        get() = warningType == PitchCountWarningType.LIMIT_REACHED
+
+    /** 기록원에게 전달할 교체 권고 메시지 */
+    val substitutionMessage: String?
+        get() =
+            if (isSubstitutionRecommended) {
+                "투수(GamePlayer ID: $gamePlayerId)가 투구 수 제한(${pitchCountLimit}구)에 " +
+                    "도달했습니다(현재 ${pitchesThrown}구). 투수 교체를 권고합니다."
+            } else {
+                null
+            }
 }
 
 /**

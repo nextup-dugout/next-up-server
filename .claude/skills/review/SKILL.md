@@ -25,22 +25,31 @@ allowed-tools: Bash, Read, Glob, Grep
 
 ## Review Process
 
+> **주의**: Gradle 빌드는 동시 실행 금지. 항상 `--no-daemon --max-workers=2` 플래그 사용.
+
 ### 1. Build Verification
 ```bash
-./gradlew clean build
+./gradlew clean build --no-daemon --max-workers=2
 ```
 
 ### 2. Code Quality
 ```bash
+# ktlint 검사
 ./gradlew ktlintCheck
-# detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태
+
+# 위반 시 자동 수정 후 재검사
+./gradlew ktlintFormat
 ```
+
+> detekt는 Kotlin 2.1.x 미지원으로 비활성화 상태 (`enabled = false`). CI에서 참고용으로만 실행.
 
 ### 3. Coverage Check
 ```bash
-./gradlew jacocoTestReport
+./gradlew jacocoTestReport --no-daemon --max-workers=2
 # Jacoco: 80%+ (로컬), Codecov: 85%+ (PR 머지)
 ```
+
+커버리지 제외 대상: `config/**`, `dto/**`, `exception/**`, `mapper/**`, `HealthController`, `domain/event/**`
 
 ### 4. Security Scan
 - Zero Entity Leak 검증
@@ -63,8 +72,8 @@ allowed-tools: Bash, Read, Glob, Grep
 | 보안 취약점 (CRITICAL/HIGH) | CRITICAL |
 | Zero Entity Leak 위반 | CRITICAL |
 | 커버리지 미달 (Jacoco 80% 또는 Codecov 85%) | HIGH |
-| detekt bugs 발견 (현재 비활성화) | SKIP |
 | ktlint 에러 | MEDIUM |
+| detekt bugs 발견 | SKIP (비활성화) |
 
 ## Review Report Template
 
@@ -80,7 +89,6 @@ allowed-tools: Bash, Read, Glob, Grep
 
 ### 코드 품질
 - [x] ktlint: 0 errors
-- [x] detekt bugs: 0 issues
 
 ### 보안
 - [x] Zero Entity Leak: PASS
@@ -91,4 +99,3 @@ allowed-tools: Bash, Read, Glob, Grep
 - [x] CustomException: PASS
 - [x] 의존성 방향: PASS
 ```
-

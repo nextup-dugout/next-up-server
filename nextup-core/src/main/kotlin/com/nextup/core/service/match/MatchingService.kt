@@ -16,6 +16,7 @@ import com.nextup.core.port.repository.MatchResponseRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto
+import com.nextup.core.service.match.dto.MatchRequestFilterDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -61,6 +62,22 @@ class MatchingService(
      * OPEN 상태의 모든 매칭 요청을 조회합니다.
      */
     fun getOpenRequests(): List<MatchRequest> = matchRequestRepository.findAllOpen()
+
+    /**
+     * OPEN 상태의 매칭 요청을 필터링하여 조회합니다.
+     *
+     * @param filter 필터 조건 (지역, 날짜, 실력 수준)
+     */
+    fun getOpenRequests(filter: MatchRequestFilterDto): List<MatchRequest> {
+        if (!filter.hasAnyFilter()) {
+            return getOpenRequests()
+        }
+        return matchRequestRepository.findAllOpenWithFilter(
+            area = filter.area,
+            date = filter.date,
+            skillLevel = filter.skillLevel,
+        )
+    }
 
     /**
      * 매칭 요청에 응답합니다.

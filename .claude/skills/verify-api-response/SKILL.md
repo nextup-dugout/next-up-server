@@ -89,6 +89,6 @@ ResponseEntity<(?!HealthResponse)
 ## Exceptions
 
 1. **HealthController** — 헬스체크 엔드포인트는 `ResponseEntity<HealthResponse>`를 직접 반환해도 허용 (인프라 모니터링용)
-2. **WebSocket 핸들러** — WebSocket 메시지 핸들러는 HTTP 응답이 아니므로 ApiResponse 불필요
+2. **WebSocket 핸들러** — WebSocket 메시지 핸들러는 HTTP 응답이 아니므로 ApiResponse 불필요 (scorer 모듈 포함)
 3. **파일 다운로드 엔드포인트** — 바이너리 응답(파일 다운로드)은 `ResponseEntity<ByteArray>` 등을 사용할 수 있음
 4. **SSE (Server-Sent Events)** — `SseEmitter` 반환은 스트리밍이므로 ApiResponse 불필요

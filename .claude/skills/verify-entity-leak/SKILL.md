@@ -39,7 +39,7 @@ Core 도메인 Entity 이름을 수집합니다.
 grep -rn "^class [A-Z]" nextup-core/src/main/kotlin/com/nextup/core/domain/ --include="*.kt" | sed 's/.*class \([A-Z][a-zA-Z]*\).*/\1/' | sort -u
 ```
 
-주요 Entity: `Team`, `Player`, `League`, `Game`, `Competition`, `User`, `Stadium`, `Certificate`, `Election`, `Candidate`, `AttendancePoll`, `AttendanceVote`, `TeamMember`, `TeamJoinRequest`, `TeamBlacklist`, `TeamRecruitment`, `BookingTransfer`, `StadiumBooking`, `StadiumSlot`, `Discipline`, `Appeal`, `Notification`, `RefreshToken`, `OAuthAccount`, `CompetitionPlayer`, `LeagueSchedule`, `MatchRequest`, `MatchResponse`, `OrganizationAdmin`, `ActivityScore`, `DeviceToken`, `NotificationPreference`, `ElectionVote`
+주요 Entity: `AbsenceReason`, `ActivityScore`, `Appeal`, `Association`, `Attendance`, `AttendancePoll`, `AttendanceVote`, `AuditLog`, `BookingTransfer`, `BracketEntry`, `Candidate`, `CareerBattingStats`, `CareerFieldingStats`, `CareerPitchingStats`, `Certificate`, `Competition`, `CompetitionPlayer`, `CorrectionRequest`, `DeviceToken`, `Discipline`, `Election`, `ElectionVote`, `FieldingRecord`, `Game`, `GameEvent`, `GameParticipation`, `GamePlayer`, `GameResult`, `GameRules`, `GameTeam`, `League`, `LeagueSchedule`, `LineupEntry`, `LineupSubmission`, `MatchRequest`, `MatchResponse`, `MercenaryApplication`, `MercenaryParticipation`, `MercenaryRequest`, `Notification`, `NotificationPreference`, `OAuthAccount`, `OrganizationAdmin`, `Player`, `PlayerCareer`, `PlayerTeam`, `PlayerTeamHistory`, `RecordCorrection`, `RecruitmentApplication`, `RefreshToken`, `SeasonAward`, `SeasonBattingStats`, `SeasonFieldingStats`, `SeasonPitchingStats`, `SpecialGameRecord`, `Stadium`, `StadiumBooking`, `StadiumSlot`, `Team`, `TeamBlacklist`, `TeamJoinRequest`, `TeamMember`, `TeamRecruitment`, `TeamSchedule`, `User`
 
 ### Step 2: Controller 반환 타입 검사
 
@@ -49,7 +49,7 @@ grep -rn "^class [A-Z]" nextup-core/src/main/kotlin/com/nextup/core/domain/ --in
 
 **패턴:**
 ```
-fun [a-zA-Z]+\(.*\).*: .*(Team|Player|League|Game|Competition|User|Stadium|Certificate|Election|Candidate|AttendancePoll|AttendanceVote|TeamMember|TeamJoinRequest|TeamBlacklist|TeamRecruitment|BookingTransfer|StadiumBooking|StadiumSlot|Discipline|Appeal|Notification|RefreshToken|OAuthAccount|CompetitionPlayer|LeagueSchedule|MatchRequest|MatchResponse|OrganizationAdmin|ActivityScore|DeviceToken|NotificationPreference|ElectionVote)[^a-zA-Z]
+fun [a-zA-Z]+\(.*\).*: .*(AbsenceReason|ActivityScore|Appeal|Association|Attendance|AttendancePoll|AttendanceVote|AuditLog|BookingTransfer|BracketEntry|Candidate|CareerBattingStats|CareerFieldingStats|CareerPitchingStats|Certificate|Competition|CompetitionPlayer|CorrectionRequest|DeviceToken|Discipline|Election|ElectionVote|FieldingRecord|Game|GameEvent|GameParticipation|GamePlayer|GameResult|GameRules|GameTeam|League|LeagueSchedule|LineupEntry|LineupSubmission|MatchRequest|MatchResponse|MercenaryApplication|MercenaryParticipation|MercenaryRequest|Notification|NotificationPreference|OAuthAccount|OrganizationAdmin|Player|PlayerCareer|PlayerTeam|PlayerTeamHistory|RecordCorrection|RecruitmentApplication|RefreshToken|SeasonAward|SeasonBattingStats|SeasonFieldingStats|SeasonPitchingStats|SpecialGameRecord|Stadium|StadiumBooking|StadiumSlot|Team|TeamBlacklist|TeamJoinRequest|TeamMember|TeamRecruitment|TeamSchedule|User)[^a-zA-Z]
 ```
 
 **대상:** `**/controller/**/*.kt`

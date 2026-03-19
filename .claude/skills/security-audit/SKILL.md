@@ -45,7 +45,6 @@ fun getPlayer(@PathVariable id: Long) = playerService.findById(id)
 @GetMapping("/players/{id}")
 @PreAuthorize("hasRole('USER')")
 fun getPlayer(@PathVariable id: Long, @AuthenticationPrincipal user: User) {
-    // 소유권 검증
     playerService.findByIdAndUserId(id, user.id)
 }
 ```
@@ -57,15 +56,6 @@ fun getPlayer(@PathVariable id: Long, @AuthenticationPrincipal user: User) {
 - [ ] HTTPS 강제 설정
 - [ ] 민감 데이터 로깅 금지
 - [ ] API 키/토큰 환경변수 사용
-
-**취약 코드:**
-```kotlin
-// ❌ CRITICAL: 평문 비밀번호
-user.password = rawPassword
-
-// ✅ APPROVED: 해시 저장
-user.password = passwordEncoder.encode(rawPassword)
-```
 
 ### A03: Injection
 
@@ -92,17 +82,6 @@ fun findByName(@Param("name") name: String): Player
 - [ ] 민감 데이터 응답에서 제외
 - [ ] 비즈니스 로직 검증 (음수 값, 범위 초과 등)
 
-**취약 코드:**
-```kotlin
-// ❌ HIGH: Entity 직접 노출 (비밀번호 포함 가능)
-@GetMapping("/users/{id}")
-fun getUser(@PathVariable id: Long): User
-
-// ✅ APPROVED: DTO 변환
-@GetMapping("/users/{id}")
-fun getUser(@PathVariable id: Long): UserResponse
-```
-
 ### A05: Security Misconfiguration
 
 **검사 항목:**
@@ -111,32 +90,12 @@ fun getUser(@PathVariable id: Long): UserResponse
 - [ ] 불필요한 HTTP 메서드 차단
 - [ ] 에러 메시지 상세 정보 숨김
 
-**취약 코드:**
-```yaml
-# ❌ HIGH: 디버그 활성화
-spring:
-  devtools:
-    restart:
-      enabled: true  # 프로덕션에서 금지
-
-# ✅ APPROVED: 프로덕션 설정
-spring:
-  devtools:
-    restart:
-      enabled: false
-```
-
 ### A06: Vulnerable Components
 
 **검사 항목:**
 - [ ] 의존성 보안 취약점 스캔
 - [ ] 최신 버전 유지 (3개월 이내)
 - [ ] 알려진 CVE 패치
-
-**검사 명령:**
-```bash
-./gradlew dependencyCheckAnalyze
-```
 
 ### A07: Authentication Failures
 
@@ -163,32 +122,12 @@ private lateinit var secret: String
 - [ ] 직렬화 데이터 검증
 - [ ] 파일 업로드 검증
 
-**취약 코드:**
-```kotlin
-// ❌ MEDIUM: 입력 검증 없음
-@PostMapping("/players")
-fun create(@RequestBody request: CreatePlayerRequest)
-
-// ✅ APPROVED: 입력 검증
-@PostMapping("/players")
-fun create(@RequestBody @Valid request: CreatePlayerRequest)
-```
-
 ### A09: Logging Failures
 
 **검사 항목:**
 - [ ] 인증 실패 로깅
 - [ ] 민감 데이터 로깅 금지 (비밀번호, 토큰)
 - [ ] 로그 인젝션 방지
-
-**취약 코드:**
-```kotlin
-// ❌ CRITICAL: 비밀번호 로깅
-logger.info("Login attempt: user=$username, password=$password")
-
-// ✅ APPROVED: 민감 정보 제외
-logger.info("Login attempt: user=$username")
-```
 
 ### A10: SSRF (Server-Side Request Forgery)
 
@@ -199,40 +138,60 @@ logger.info("Login attempt: user=$username")
 
 ## 프로젝트 보안 컴포넌트 (검증 대상)
 
+### JWT 인증
+
 | 컴포넌트 | 위치 | 검증 포인트 |
 |----------|------|-------------|
 | `JwtTokenProvider` | `infrastructure/security/jwt/` | 시크릿 환경변수, 토큰 만료시간 |
 | `JwtAuthenticationFilter` | `infrastructure/security/jwt/` | 필터 체인 순서 |
-| `RateLimitFilter` | `infrastructure/security/filter/` | Bucket4j + Caffeine 설정 |
-| `CustomOAuth2UserService` | `infrastructure/security/oauth2/` | Kakao, Google, Naver 프로바이더 |
-| `CustomAccessDeniedHandler` | `infrastructure/security/handler/` | 에러 응답 형식 |
-| `AuthenticationService` | `infrastructure/security/` | 인증 로직 |
+| `JwtProperties` | `infrastructure/security/jwt/` | 설정값 검증 |
+
+### OAuth2 소셜 로그인
+
+| 컴포넌트 | 위치 | 검증 포인트 |
+|----------|------|-------------|
+| `CustomOAuth2UserService` | `infrastructure/security/oauth2/` | 사용자 정보 검증 |
+| `OAuth2UserPrincipal` | `infrastructure/security/oauth2/` | Principal 래핑 |
+| `OAuth2UserInfo` | `infrastructure/security/oauth2/` | Google, Kakao, Naver 프로바이더 |
+| `OAuth2UserInfoFactory` | `infrastructure/security/oauth2/` | 팩토리 패턴 |
+| `OAuth2AuthenticationSuccessHandler` | `infrastructure/security/handler/` | 성공 후 토큰 발급 |
+| `OAuth2AuthenticationFailureHandler` | `infrastructure/security/handler/` | 실패 처리 |
+| `AuthCodeStore` | `infrastructure/security/oauth2/` | 인가 코드 저장 |
+
+### 접근 제어 및 필터
+
+| 컴포넌트 | 위치 | 검증 포인트 |
+|----------|------|-------------|
+| `CustomUserDetails` | `infrastructure/security/` | UserDetails 래핑 |
+| `CustomUserDetailsService` | `infrastructure/security/` | DB 조회 |
+| `CustomAuthenticationEntryPoint` | `infrastructure/security/handler/` | 401 응답 형식 |
+| `CustomAccessDeniedHandler` | `infrastructure/security/handler/` | 403 응답 형식 |
+| `AuthenticationService` | `infrastructure/security/` | 인증 로직 통합 |
+| `RateLimitFilter` | `infrastructure/security/filter/` | Bucket4j + Caffeine |
+
+### 커스텀 보안 표현식
+
+| 컴포넌트 | 위치 | 검증 포인트 |
+|----------|------|-------------|
+| `LineupSecurityExpression` | `infrastructure/security/` | 라인업 접근 권한 |
+| `TeamSecurityExpression` | `infrastructure/security/` | 팀 관련 권한 |
 
 ### Security Filter Chain
 ```
 Request → RateLimitFilter → JwtAuthenticationFilter → UsernamePasswordAuthenticationFilter → ...
 ```
 
-## 보안 검사 명령어
-
-### 시크릿 스캔 (git-secrets)
-```bash
-git secrets --scan
-```
-
-> **Note**: OWASP Dependency Check 플러그인은 현재 미설정. 향후 추가 권장.
-
 ## 보안 이슈 발견 시 대응
 
 ### CRITICAL/HIGH 발견
-1. **즉시 수정** - PR 진행 중단
-2. **reviewer에게 보고** - VETO 발동
-3. **수정 후 재검사** - 보안 확인 후 진행
+1. **즉시 수정** — PR 진행 중단
+2. **reviewer에게 보고** — VETO 발동
+3. **수정 후 재검사** — 보안 확인 후 진행
 
 ### MEDIUM/LOW 발견
-1. **이슈 생성** - 추후 수정 예정
-2. **주석 추가** - 인지 표시
-3. **다음 스프린트** - 개선 계획
+1. **이슈 생성** — 추후 수정 예정
+2. **주석 추가** — 인지 표시
+3. **다음 스프린트** — 개선 계획
 
 ## 보안 리포트 템플릿
 
@@ -254,13 +213,6 @@ git secrets --scan
    - 파일: PlayerController.kt:45
    - 내용: 인증 없이 플레이어 정보 접근
    - 수정: @PreAuthorize 추가 필요
-
-### MEDIUM (2건)
-...
-
-## 권고 사항
-- [ ] 즉시: HIGH 이슈 수정
-- [ ] 권장: MEDIUM 이슈 다음 스프린트 처리
 
 ## 결론
 **REJECT** - HIGH 이슈 해결 후 재검토

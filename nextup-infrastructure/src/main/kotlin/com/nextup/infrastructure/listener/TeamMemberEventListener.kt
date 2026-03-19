@@ -2,22 +2,30 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
+import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.election.ElectionStatus
+import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.TeamDisbandedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
 import com.nextup.core.domain.event.TeamMemberLeftEvent
+import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.domain.team.JoinRequestStatus
 import com.nextup.core.port.attendance.ActivityScoreRepositoryPort
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
+import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
+import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
 import com.nextup.core.port.repository.StadiumBookingRepositoryPort
 import com.nextup.core.port.repository.TeamJoinRequestRepositoryPort
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -35,11 +43,15 @@ class TeamMemberEventListener(
     private val lineupSubmissionRepository: LineupSubmissionRepositoryPort,
     private val lineupEntryRepository: LineupEntryRepositoryPort,
     private val competitionPlayerRepository: CompetitionPlayerRepositoryPort,
+    private val competitionRepository: CompetitionRepositoryPort,
+    private val gameRepository: GameRepositoryPort,
+    private val bracketEntryRepository: BracketEntryRepositoryPort,
     private val stadiumBookingRepository: StadiumBookingRepositoryPort,
     private val attendancePollRepository: AttendancePollRepositoryPort,
     private val electionRepository: ElectionRepositoryPort,
     private val teamJoinRequestRepository: TeamJoinRequestRepositoryPort,
     private val activityScoreRepository: ActivityScoreRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(TeamMemberEventListener::class.java)
 
@@ -76,7 +88,7 @@ class TeamMemberEventListener(
     /**
      * 팀 해산 이벤트를 처리합니다.
      *
-     * - 진행중 CompetitionPlayer → WITHDRAWN 처리
+     * - 진행중 대회에서 팀 탈퇴: CompetitionPlayer WITHDRAWN + 경기 몰수승 + 대진표 부전승 처리
      * - CONFIRMED 상태의 StadiumBooking → CANCELLED
      * - OPEN 상태의 AttendancePoll → CLOSED
      * - PENDING/IN_PROGRESS 상태의 Election → CANCELLED
@@ -87,7 +99,7 @@ class TeamMemberEventListener(
     fun handleTeamDisbanded(event: TeamDisbandedEvent) {
         logger.info("팀 해산 연쇄 처리 - teamId={}", event.teamId)
 
-        withdrawCompetitionPlayers(event.teamId)
+        withdrawFromCompetitions(event.teamId)
         cancelStadiumBookings(event.teamId)
         closeAttendancePolls(event.teamId)
         cancelElections(event.teamId)
@@ -146,15 +158,120 @@ class TeamMemberEventListener(
     }
 
     /**
-     * 팀의 활성 CompetitionPlayer를 WITHDRAWN으로 처리합니다.
+     * 팀이 참가 중인 대회에서 탈퇴 처리합니다.
+     *
+     * 1. CompetitionPlayer를 WITHDRAWN으로 처리
+     * 2. 진행 중 대회의 잔여 경기(SCHEDULED/IN_PROGRESS/POSTPONED)에 몰수승 처리
+     * 3. 진행 중 대회의 대진표(BracketEntry) 부전승 처리
      */
-    private fun withdrawCompetitionPlayers(teamId: Long) {
+    private fun withdrawFromCompetitions(teamId: Long) {
+        // 팀이 참가 중인 대회 ID 목록 조회 (WITHDRAWN 제외)
+        val activeCompetitionIds =
+            competitionPlayerRepository.findActiveCompetitionIdsByTeamId(teamId)
+
+        if (activeCompetitionIds.isEmpty()) {
+            logger.info("팀이 참가 중인 대회 없음 - teamId={}", teamId)
+            return
+        }
+
+        // CompetitionPlayer WITHDRAWN 처리
         val activePlayers =
             competitionPlayerRepository.findByTeamIdAndStatus(teamId, CompetitionPlayerStatus.ACTIVE)
         activePlayers.forEach { cp ->
             cp.withdraw()
             competitionPlayerRepository.save(cp)
             logger.info("CompetitionPlayer WITHDRAWN 처리 - competitionPlayerId={}", cp.id)
+        }
+
+        // 각 대회에 대해 몰수승/부전승 처리
+        activeCompetitionIds.forEach { competitionId ->
+            val competition = competitionRepository.findByIdOrNull(competitionId)
+            if (competition != null && competition.status == CompetitionStatus.IN_PROGRESS) {
+                forfeitGamesForTeam(competitionId, teamId)
+                processBracketEntriesForTeam(competitionId, teamId)
+            }
+        }
+    }
+
+    /**
+     * 대회에서 해당 팀의 잔여 경기를 몰수승 처리합니다.
+     */
+    private fun forfeitGamesForTeam(
+        competitionId: Long,
+        teamId: Long,
+    ) {
+        val games = gameRepository.findByCompetitionId(competitionId)
+        games.forEach { game ->
+            if (game.status == GameStatus.SCHEDULED ||
+                game.status == GameStatus.IN_PROGRESS ||
+                game.status == GameStatus.POSTPONED
+            ) {
+                val gameTeams = game.gameTeams
+                val isTeamInGame = gameTeams.any { it.team.id == teamId }
+                if (isTeamInGame) {
+                    val opponentTeam = gameTeams.first { it.team.id != teamId }
+                    game.forfeit(
+                        winnerTeamId = opponentTeam.team.id,
+                        reason = "팀 해산으로 인한 몰수패",
+                        gameTeams = gameTeams,
+                    )
+                    gameRepository.save(game)
+
+                    val homeTeam = gameTeams.find { it.homeAway == HomeAway.HOME }
+                    val awayTeam = gameTeams.find { it.homeAway == HomeAway.AWAY }
+                    if (homeTeam != null && awayTeam != null) {
+                        eventPublisher.publishEvent(
+                            GameResultConfirmedEvent(
+                                gameId = game.id,
+                                homeTeamId = homeTeam.team.id,
+                                awayTeamId = awayTeam.team.id,
+                                homeScore = homeTeam.totalScore,
+                                awayScore = awayTeam.totalScore,
+                            ),
+                        )
+                    }
+
+                    logger.info(
+                        "경기 몰수승 처리 - gameId={}, competitionId={}, winnerTeamId={}",
+                        game.id,
+                        competitionId,
+                        opponentTeam.team.id,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * 대회에서 해당 팀의 대진표 엔트리를 부전승 처리합니다.
+     */
+    private fun processBracketEntriesForTeam(
+        competitionId: Long,
+        teamId: Long,
+    ) {
+        val bracketEntries = bracketEntryRepository.findByCompetitionId(competitionId)
+        bracketEntries.forEach { entry ->
+            if (!entry.isCompleted()) {
+                val isTeam1 = entry.team1?.id == teamId
+                val isTeam2 = entry.team2?.id == teamId
+                if (isTeam1 && entry.team2 != null) {
+                    entry.recordWinner(entry.team2!!)
+                    bracketEntryRepository.save(entry)
+                    logger.info(
+                        "대진표 부전승 처리 - bracketEntryId={}, winnerTeamId={}",
+                        entry.id,
+                        entry.team2!!.id,
+                    )
+                } else if (isTeam2 && entry.team1 != null) {
+                    entry.recordWinner(entry.team1!!)
+                    bracketEntryRepository.save(entry)
+                    logger.info(
+                        "대진표 부전승 처리 - bracketEntryId={}, winnerTeamId={}",
+                        entry.id,
+                        entry.team1!!.id,
+                    )
+                }
+            }
         }
     }
 

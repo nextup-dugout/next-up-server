@@ -38,6 +38,17 @@ class InvalidDhRuleException(
     )
 
 /**
+ * 타순 인원 수가 올바르지 않을 때 발생하는 예외 (DH 해제 후 타순 인원 검증)
+ */
+class InvalidLineupBattingOrderCountException(
+    expected: Int,
+    actual: Int,
+) : LineupValidationException(
+        "INVALID_LINEUP_BATTING_ORDER_COUNT",
+        "타순에 배치된 선수가 ${expected}명이어야 합니다. 현재: ${actual}명",
+    )
+
+/**
  * 참석하지 않는 선수가 라인업에 포함되었을 때 발생하는 예외
  */
 class NonAttendingPlayerInLineupException(
@@ -76,6 +87,17 @@ class LineupExchangeNotAuthorizedException(
 ) : ForbiddenException(
         "LINEUP_EXCHANGE_NOT_AUTHORIZED",
         "해당 라인업의 교환을 승인/거부할 권한이 없습니다. 제출 ID: $submissionId",
+    )
+
+/**
+ * L-3: 용병 쿼터 초과 시 발생하는 예외
+ */
+class MercenaryQuotaExceededException(
+    mercenaryCount: Int,
+    maxAllowed: Int,
+) : LineupValidationException(
+        "MERCENARY_QUOTA_EXCEEDED",
+        "용병 쿼터를 초과했습니다. 현재 용병 수: $mercenaryCount, 최대 허용: $maxAllowed",
     )
 
 /**

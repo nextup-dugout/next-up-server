@@ -19,6 +19,22 @@ interface SeasonFieldingStatsRepository :
     ): SeasonFieldingStats?
 
     /**
+     * 선수 ID, 연도, 팀 ID로 시즌 수비 통계를 조회합니다 (이적 시 팀별 기록 분리).
+     */
+    @Query(
+        """
+        SELECT s FROM SeasonFieldingStats s
+        WHERE s.player.id = :playerId AND s.year = :year
+        AND (s.teamId = :teamId OR (s.teamId IS NULL AND :teamId IS NULL))
+    """,
+    )
+    override fun findByPlayerIdAndYearAndTeamId(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+        @Param("teamId") teamId: Long?,
+    ): SeasonFieldingStats?
+
+    /**
      * 선수 ID로 모든 시즌 수비 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonFieldingStats s WHERE s.player.id = :playerId ORDER BY s.year DESC")

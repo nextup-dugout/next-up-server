@@ -11,6 +11,11 @@ interface FieldingRecordRepository :
     JpaRepository<FieldingRecord, Long>,
     FieldingRecordRepositoryPort {
     /**
+     * ID로 수비 기록을 조회합니다.
+     */
+    override fun findByIdOrNull(id: Long): FieldingRecord? = findById(id).orElse(null)
+
+    /**
      * GamePlayer로 수비 기록을 조회합니다.
      */
     override fun findByGamePlayer(gamePlayer: GamePlayer): FieldingRecord?

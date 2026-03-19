@@ -4,6 +4,7 @@ import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.PitchingDecision
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.BattingHand
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -49,6 +50,18 @@ class SeasonPitchingStatsTest {
             assertThrows<StatsValidationException> {
                 SeasonPitchingStats.create(testPlayer, -1)
             }
+        }
+
+        @Test
+        fun `should create season pitching stats with teamId`() {
+            // when
+            val stats = SeasonPitchingStats.create(testPlayer, 2024, teamId = 7L)
+
+            // then
+            assertThat(stats.player).isEqualTo(testPlayer)
+            assertThat(stats.year).isEqualTo(2024)
+            assertThat(stats.teamId).isEqualTo(7L)
+            assertThat(stats.gamesPlayed).isZero
         }
     }
 
@@ -441,6 +454,681 @@ class SeasonPitchingStatsTest {
         }
     }
 
+    @Nested
+    @DisplayName("경기 기록 롤백 (revertGameRecord)")
+    inner class RevertGameRecord {
+        @Test
+        fun `경기 기록을 롤백하면 누적 통계가 차감된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 2,
+                        runsAllowed = 3,
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        strikeouts = 7,
+                        battersFaced = 25,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+            stats.addGameRecord(record)
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isZero
+            assertThat(stats.gamesStarted).isZero
+            assertThat(stats.inningsPitchedOuts).isZero
+            assertThat(stats.earnedRuns).isZero
+            assertThat(stats.runsAllowed).isZero
+            assertThat(stats.hitsAllowed).isZero
+            assertThat(stats.walksAllowed).isZero
+            assertThat(stats.strikeouts).isZero
+            assertThat(stats.battersFaced).isZero
+            assertThat(stats.wins).isZero
+        }
+
+        @Test
+        fun `릴리프 투수 기록 롤백 시 gamesStarted는 변경되지 않는다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 6,
+                        decision = PitchingDecision.SAVE,
+                    )
+                }
+            stats.addGameRecord(record)
+            assertThat(stats.gamesStarted).isZero
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesStarted).isZero
+            assertThat(stats.saves).isZero
+        }
+
+        @Test
+        fun `롤백 시 값이 0 미만으로 내려가지 않는다`() {
+            // given: 이미 0인 상태에서 롤백
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 5,
+                        runsAllowed = 5,
+                        hitsAllowed = 10,
+                        walksAllowed = 3,
+                        strikeouts = 8,
+                        battersFaced = 30,
+                        homeRunsAllowed = 2,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+
+            // when: 아무것도 누적하지 않고 바로 롤백
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isZero
+            assertThat(stats.inningsPitchedOuts).isZero
+            assertThat(stats.earnedRuns).isZero
+            assertThat(stats.wins).isZero
+        }
+
+        @Test
+        fun `투구 수 롤백이 정상 처리된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        pitchesThrown = 95,
+                        strikesThrown = 63,
+                    )
+                }
+            stats.addGameRecord(record)
+
+            // when
+            stats.revertGameRecord(record)
+
+            // then
+            assertThat(stats.pitchesThrown).isEqualTo(0)
+            assertThat(stats.strikesThrown).isEqualTo(0)
+        }
+
+        @Test
+        fun `각 판정별 롤백이 정상 처리된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+
+            val decisions =
+                listOf(
+                    PitchingDecision.WIN,
+                    PitchingDecision.LOSS,
+                    PitchingDecision.SAVE,
+                    PitchingDecision.HOLD,
+                    PitchingDecision.BLOWN_SAVE,
+                )
+
+            decisions.forEach { decision ->
+                val record =
+                    PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                        setStats(decision = decision)
+                    }
+                stats.addGameRecord(record)
+            }
+
+            assertThat(stats.wins).isEqualTo(1)
+            assertThat(stats.losses).isEqualTo(1)
+            assertThat(stats.saves).isEqualTo(1)
+            assertThat(stats.holds).isEqualTo(1)
+            assertThat(stats.blownSaves).isEqualTo(1)
+
+            // when: 각 판정별로 롤백
+            decisions.forEach { decision ->
+                val record =
+                    PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                        setStats(decision = decision)
+                    }
+                stats.revertGameRecord(record)
+            }
+
+            // then
+            assertThat(stats.wins).isZero
+            assertThat(stats.losses).isZero
+            assertThat(stats.saves).isZero
+            assertThat(stats.holds).isZero
+            assertThat(stats.blownSaves).isZero
+        }
+    }
+
+    @Nested
+    @DisplayName("실시간 타석 결과 반영 (applyLiveUpdate)")
+    inner class ApplyLiveUpdate {
+        @Test
+        fun `안타 결과를 반영하면 피안타가 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `2루타 결과를 반영하면 피안타가 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.DOUBLE)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `3루타 결과를 반영하면 피안타가 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.TRIPLE)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `홈런 결과를 반영하면 피안타와 피홈런이 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitsAllowed).isEqualTo(1)
+            assertThat(stats.homeRunsAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `삼진 결과를 반영하면 탈삼진이 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.strikeouts).isEqualTo(1)
+        }
+
+        @Test
+        fun `볼넷 결과를 반영하면 볼넷허용이 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.walksAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `고의사구 결과를 반영하면 볼넷허용이 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.walksAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `사구 결과를 반영하면 사구가 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitBatsmen).isEqualTo(1)
+        }
+
+        @Test
+        fun `땅볼 등 기타 결과는 대면타자만 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.GROUND_OUT)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.hitsAllowed).isZero
+            assertThat(stats.strikeouts).isZero
+        }
+    }
+
+    @Nested
+    @DisplayName("실시간 타석 결과 역산 (revertLiveUpdate)")
+    inner class RevertLiveUpdate {
+        @Test
+        fun `안타 역산 시 피안타가 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.SINGLE)
+
+            // then
+            assertThat(stats.battersFaced).isZero
+            assertThat(stats.hitsAllowed).isZero
+        }
+
+        @Test
+        fun `홈런 역산 시 피안타와 피홈런이 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.HOME_RUN)
+
+            // then
+            assertThat(stats.battersFaced).isZero
+            assertThat(stats.hitsAllowed).isZero
+            assertThat(stats.homeRunsAllowed).isZero
+        }
+
+        @Test
+        fun `삼진 역산 시 삼진이 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            // then
+            assertThat(stats.strikeouts).isZero
+        }
+
+        @Test
+        fun `볼넷 역산 시 볼넷허용이 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.WALK)
+
+            // then
+            assertThat(stats.walksAllowed).isZero
+        }
+
+        @Test
+        fun `고의사구 역산 시 볼넷허용이 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.INTENTIONAL_WALK)
+
+            // then
+            assertThat(stats.walksAllowed).isZero
+        }
+
+        @Test
+        fun `사구 역산 시 사구가 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // then
+            assertThat(stats.hitBatsmen).isZero
+        }
+
+        @Test
+        fun `역산 시 값이 0 미만으로 내려가지 않는다`() {
+            // given: 아무것도 적용하지 않고 바로 역산
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.SINGLE)
+            stats.revertLiveUpdate(PlateAppearanceResult.HOME_RUN)
+            stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            stats.revertLiveUpdate(PlateAppearanceResult.WALK)
+            stats.revertLiveUpdate(PlateAppearanceResult.HIT_BY_PITCH)
+
+            // then
+            assertThat(stats.battersFaced).isZero
+            assertThat(stats.hitsAllowed).isZero
+            assertThat(stats.homeRunsAllowed).isZero
+            assertThat(stats.strikeouts).isZero
+            assertThat(stats.walksAllowed).isZero
+            assertThat(stats.hitBatsmen).isZero
+        }
+    }
+
+    @Nested
+    @DisplayName("시즌 통계 확정/해제 (finalize/unfinalize)")
+    inner class FinalizeUnfinalize {
+        @Test
+        fun `통계를 확정하면 isFinalized가 true가 된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.finalize()
+
+            // then
+            assertThat(stats.isFinalized).isTrue()
+        }
+
+        @Test
+        fun `이미 확정된 통계를 다시 확정하면 예외가 발생한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.finalize()
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                stats.finalize()
+            }
+        }
+
+        @Test
+        fun `확정된 통계를 해제하면 isFinalized가 false가 된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.finalize()
+
+            // when
+            stats.unfinalize()
+
+            // then
+            assertThat(stats.isFinalized).isFalse()
+        }
+
+        @Test
+        fun `확정되지 않은 통계를 해제하면 예외가 발생한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                stats.unfinalize()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("필드별 정정 (applyFieldCorrection)")
+    inner class ApplyFieldCorrection {
+        @Test
+        fun `이닝 아웃 수를 정정할 수 있다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, inningsPitchedOuts = 18)
+
+            // when
+            stats.applyFieldCorrection("inningsPitchedOuts", 3)
+
+            // then
+            assertThat(stats.inningsPitchedOuts).isEqualTo(21)
+        }
+
+        @Test
+        fun `자책점을 정정할 수 있다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, earnedRuns = 5, runsAllowed = 10)
+
+            // when
+            stats.applyFieldCorrection("earnedRuns", -2)
+
+            // then
+            assertThat(stats.earnedRuns).isEqualTo(3)
+        }
+
+        @Test
+        fun `정정 시 값이 0 미만으로 내려가지 않는다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, strikeouts = 2)
+
+            // when
+            stats.applyFieldCorrection("strikeouts", -5)
+
+            // then
+            assertThat(stats.strikeouts).isZero
+        }
+
+        @Test
+        fun `유효하지 않은 필드명이면 예외가 발생한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when & then
+            assertThrows<IllegalArgumentException> {
+                stats.applyFieldCorrection("invalidField", 1)
+            }
+        }
+
+        @Test
+        fun `모든 필드를 정정할 수 있다`() {
+            // given: validate()를 통과하도록 충분한 값을 미리 설정
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(
+                stats,
+                gamesPlayed = 10,
+                gamesStarted = 5,
+                inningsPitchedOuts = 60,
+                earnedRuns = 5,
+                runsAllowed = 10,
+                hitsAllowed = 10,
+                walksAllowed = 5,
+                strikeouts = 20,
+                pitchesThrown = 200,
+                strikesThrown = 100,
+            )
+            val clazz = SeasonPitchingStats::class.java
+            setField(clazz, stats, "homeRunsAllowed", 3)
+            setField(clazz, stats, "hitBatsmen", 2)
+            setField(clazz, stats, "wildPitches", 1)
+            setField(clazz, stats, "balks", 1)
+            setField(clazz, stats, "battersFaced", 50)
+
+            // when & then: 각 필드 정정이 예외 없이 동작
+            // runsAllowed를 먼저 늘려서 earnedRuns 정정이 validate를 통과하도록 함
+            stats.applyFieldCorrection("runsAllowed", 1)
+            stats.applyFieldCorrection("earnedRuns", 1)
+            stats.applyFieldCorrection("inningsPitchedOuts", 1)
+            stats.applyFieldCorrection("hitsAllowed", 1)
+            stats.applyFieldCorrection("walksAllowed", 1)
+            stats.applyFieldCorrection("strikeouts", 1)
+            stats.applyFieldCorrection("homeRunsAllowed", 1)
+            stats.applyFieldCorrection("hitBatsmen", 1)
+            stats.applyFieldCorrection("wildPitches", 1)
+            stats.applyFieldCorrection("balks", 1)
+            stats.applyFieldCorrection("battersFaced", 1)
+            // pitchesThrown을 먼저 늘려서 strikesThrown 정정이 validate를 통과하도록 함
+            stats.applyFieldCorrection("pitchesThrown", 1)
+            stats.applyFieldCorrection("strikesThrown", 1)
+        }
+
+        @Test
+        fun `투구 수 정정이 nullable 필드에서 정상 동작한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            assertThat(stats.pitchesThrown).isNull()
+
+            // when
+            stats.applyFieldCorrection("pitchesThrown", 50)
+
+            // then
+            assertThat(stats.pitchesThrown).isEqualTo(50)
+        }
+
+        @Test
+        fun `정정 후 유효성 검증이 실행된다`() {
+            // given: earnedRuns > runsAllowed 상태가 되도록 정정하면 예외 발생
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, earnedRuns = 5, runsAllowed = 5)
+
+            // when & then
+            assertThrows<StatsValidationException> {
+                stats.applyFieldCorrection("earnedRuns", 1) // earnedRuns = 6 > runsAllowed = 5
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("추가 계산 속성 검증")
+    inner class AdditionalCalculatedProperties {
+        @Test
+        fun `WHIP는 이닝이 0일 때 0을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            val whip = stats.whip
+
+            // then
+            assertThat(whip).isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `K per 9는 이닝이 0일 때 0을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            val k9 = stats.strikeoutsPer9
+
+            // then
+            assertThat(k9).isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `BB per 9는 이닝이 0일 때 0을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            val bb9 = stats.walksPer9
+
+            // then
+            assertThat(bb9).isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `K-BB 비율은 삼진과 볼넷 모두 0일 때 0을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            val kbb = stats.strikeoutToWalkRatio
+
+            // then
+            assertThat(kbb).isEqualByComparingTo(BigDecimal("0.00"))
+        }
+
+        @Test
+        fun `비자책 실점이 올바르게 계산된다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, runsAllowed = 10, earnedRuns = 7)
+
+            // when & then
+            assertThat(stats.unearnedRuns).isEqualTo(3)
+        }
+
+        @Test
+        fun `승률은 승패 모두 0일 때 0을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            val winPct = stats.winningPercentage
+
+            // then
+            assertThat(winPct).isEqualByComparingTo(BigDecimal("0.000"))
+        }
+
+        @Test
+        fun `스트라이크 비율은 투구 수가 0일 때 null을 반환한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, pitchesThrown = 0, strikesThrown = 0)
+
+            // when
+            val strikePct = stats.strikePercentage
+
+            // then
+            assertThat(strikePct).isNull()
+        }
+
+        @Test
+        fun `이닝 표시 문자열이 올바르다 - 정수 이닝`() {
+            // given: 27 outs = 9.0 이닝
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, inningsPitchedOuts = 27)
+
+            // when & then
+            assertThat(stats.inningsPitchedDisplay).isEqualTo("9.0")
+            assertThat(stats.completeInnings).isEqualTo(9)
+            assertThat(stats.remainingOuts).isZero
+        }
+
+        @Test
+        fun `이닝 표시 문자열이 올바르다 - 소수 이닝`() {
+            // given: 19 outs = 6.1 이닝
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            setStatsDirectly(stats, inningsPitchedOuts = 19)
+
+            // when & then
+            assertThat(stats.inningsPitchedDisplay).isEqualTo("6.1")
+            assertThat(stats.completeInnings).isEqualTo(6)
+            assertThat(stats.remainingOuts).isEqualTo(1)
+        }
+    }
+
     // Helper methods
 
     private fun PitchingRecord.setStats(
@@ -451,6 +1139,7 @@ class SeasonPitchingStatsTest {
         walksAllowed: Int = 0,
         strikeouts: Int = 0,
         battersFaced: Int = 0,
+        homeRunsAllowed: Int = 0,
         decision: PitchingDecision = PitchingDecision.NONE,
         pitchesThrown: Int? = null,
         strikesThrown: Int? = null,
@@ -462,6 +1151,7 @@ class SeasonPitchingStatsTest {
         setField("walksAllowed", walksAllowed)
         setField("strikeouts", strikeouts)
         setField("battersFaced", battersFaced)
+        setField("homeRunsAllowed", homeRunsAllowed)
         setField("decision", decision)
         setField("pitchesThrown", pitchesThrown)
         setField("strikesThrown", strikesThrown)

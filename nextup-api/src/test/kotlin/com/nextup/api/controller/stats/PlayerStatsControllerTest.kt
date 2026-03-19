@@ -11,6 +11,8 @@ import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
+import com.nextup.core.service.stats.CompetitionBattingStatsDto
+import com.nextup.core.service.stats.CompetitionPitchingStatsDto
 import com.nextup.core.service.stats.PlayerStatsService
 import io.mockk.every
 import io.mockk.mockk
@@ -307,6 +309,148 @@ class PlayerStatsControllerTest {
                 .andExpect(jsonPath("$.data.gamesPlayed").value(20))
                 .andExpect(jsonPath("$.data.wins").value(10))
                 .andExpect(jsonPath("$.data.losses").value(5))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/players/{playerId}/stats/batting/competition")
+    inner class GetBattingStatsByCompetition {
+        @Test
+        fun `should return competition batting stats successfully`() {
+            // given
+            val competitionId = 100L
+            val dto =
+                CompetitionBattingStatsDto(
+                    playerId = playerId,
+                    competitionId = competitionId,
+                    gamesPlayed = 5,
+                    plateAppearances = 22,
+                    atBats = 20,
+                    hits = 7,
+                    doubles = 2,
+                    triples = 0,
+                    homeRuns = 1,
+                    runs = 3,
+                    runsBattedIn = 5,
+                    walks = 2,
+                    strikeouts = 4,
+                    stolenBases = 1,
+                    battingAverage = "0.350",
+                    onBasePercentage = "0.409",
+                    sluggingPercentage = "0.550",
+                    ops = "0.959",
+                )
+
+            every {
+                playerStatsService.getBattingStatsByCompetition(playerId, competitionId)
+            } returns dto
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/players/$playerId/stats/batting/competition")
+                        .param("competitionId", competitionId.toString()),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.playerId").value(playerId))
+                .andExpect(jsonPath("$.data.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.data.gamesPlayed").value(5))
+                .andExpect(jsonPath("$.data.hits").value(7))
+                .andExpect(jsonPath("$.data.homeRuns").value(1))
+                .andExpect(jsonPath("$.data.battingAverage").value("0.350"))
+                .andExpect(jsonPath("$.data.ops").value("0.959"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/players/{playerId}/stats/pitching/competition")
+    inner class GetPitchingStatsByCompetition {
+        @Test
+        fun `should return competition pitching stats successfully`() {
+            // given
+            val competitionId = 100L
+            val dto =
+                CompetitionPitchingStatsDto(
+                    playerId = playerId,
+                    competitionId = competitionId,
+                    gamesPlayed = 3,
+                    gamesStarted = 2,
+                    inningsPitchedDisplay = "15.2",
+                    wins = 2,
+                    losses = 1,
+                    saves = 0,
+                    holds = 0,
+                    earnedRuns = 5,
+                    hitsAllowed = 12,
+                    walksAllowed = 4,
+                    strikeouts = 15,
+                    homeRunsAllowed = 2,
+                    earnedRunAverage = "2.87",
+                    whip = "1.02",
+                )
+
+            every {
+                playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+            } returns dto
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/players/$playerId/stats/pitching/competition")
+                        .param("competitionId", competitionId.toString()),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.playerId").value(playerId))
+                .andExpect(jsonPath("$.data.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.data.gamesPlayed").value(3))
+                .andExpect(jsonPath("$.data.gamesStarted").value(2))
+                .andExpect(jsonPath("$.data.wins").value(2))
+                .andExpect(jsonPath("$.data.losses").value(1))
+                .andExpect(jsonPath("$.data.strikeouts").value(15))
+                .andExpect(jsonPath("$.data.earnedRunAverage").value("2.87"))
+                .andExpect(jsonPath("$.data.whip").value("1.02"))
+        }
+
+        @Test
+        fun `should return pitching stats with null ERA`() {
+            // given
+            val competitionId = 100L
+            val dto =
+                CompetitionPitchingStatsDto(
+                    playerId = playerId,
+                    competitionId = competitionId,
+                    gamesPlayed = 0,
+                    gamesStarted = 0,
+                    inningsPitchedDisplay = "0",
+                    wins = 0,
+                    losses = 0,
+                    saves = 0,
+                    holds = 0,
+                    earnedRuns = 0,
+                    hitsAllowed = 0,
+                    walksAllowed = 0,
+                    strikeouts = 0,
+                    homeRunsAllowed = 0,
+                    earnedRunAverage = null,
+                    whip = "0",
+                )
+
+            every {
+                playerStatsService.getPitchingStatsByCompetition(playerId, competitionId)
+            } returns dto
+
+            // when & then
+            mockMvc
+                .perform(
+                    get("/api/v1/players/$playerId/stats/pitching/competition")
+                        .param("competitionId", competitionId.toString()),
+                )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.gamesPlayed").value(0))
+                .andExpect(jsonPath("$.data.earnedRunAverage").doesNotExist())
         }
     }
 

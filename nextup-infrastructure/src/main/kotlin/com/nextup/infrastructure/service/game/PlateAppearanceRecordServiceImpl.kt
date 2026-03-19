@@ -112,6 +112,7 @@ class PlateAppearanceRecordServiceImpl(
             PlateAppearanceRecordedEvent(
                 gameId = gameId,
                 playerId = batter.player.id,
+                pitcherId = pitcher.player.id,
                 result = request.result,
             ),
         )

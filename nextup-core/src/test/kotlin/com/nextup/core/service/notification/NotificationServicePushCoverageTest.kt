@@ -65,6 +65,7 @@ class NotificationServicePushCoverageTest {
                 ),
             )
 
+        every { preferenceRepository.findByUserIdAndType(1L, NotificationType.GAME_START) } returns null
         every { notificationRepository.save(any()) } answers { firstArg() }
         every { deviceTokenRepository.findByUserId(1L) } returns tokens
         every { pushNotificationPort.sendBatch(any(), any(), any(), any()) } returns 2
@@ -73,7 +74,8 @@ class NotificationServicePushCoverageTest {
         val result = notificationService.sendNotification(request)
 
         // then
-        assertThat(result.isSent()).isTrue()
+        assertThat(result).isNotNull
+        assertThat(result!!.isSent()).isTrue()
         verify(exactly = 1) {
             pushNotificationPort.sendBatch(
                 tokens = listOf("token-1", "token-2"),
@@ -105,6 +107,7 @@ class NotificationServicePushCoverageTest {
                 ),
             )
 
+        every { preferenceRepository.findByUserIdAndType(1L, NotificationType.TEAM_NOTICE) } returns null
         every { notificationRepository.save(any()) } answers { firstArg() }
         every { deviceTokenRepository.findByUserId(1L) } returns tokens
         every { pushNotificationPort.sendBatch(any(), any(), any(), any()) } returns 1
@@ -113,7 +116,8 @@ class NotificationServicePushCoverageTest {
         val result = notificationService.sendNotification(request)
 
         // then
-        assertThat(result.isSent()).isTrue()
+        assertThat(result).isNotNull
+        assertThat(result!!.isSent()).isTrue()
         verify(exactly = 1) {
             pushNotificationPort.sendBatch(
                 tokens = listOf("token-1"),
@@ -145,6 +149,7 @@ class NotificationServicePushCoverageTest {
                 ),
             )
 
+        every { preferenceRepository.findByUserIdAndType(1L, NotificationType.GAME_START) } returns null
         every { notificationRepository.save(any()) } answers { firstArg() }
         every { deviceTokenRepository.findByUserId(1L) } returns tokens
         every {
@@ -155,7 +160,8 @@ class NotificationServicePushCoverageTest {
         val result = notificationService.sendNotification(request)
 
         // then - 알림은 정상적으로 저장되어야 한다
-        assertThat(result.isSent()).isTrue()
+        assertThat(result).isNotNull
+        assertThat(result!!.isSent()).isTrue()
         verify(exactly = 1) { notificationRepository.save(any()) }
     }
 }
