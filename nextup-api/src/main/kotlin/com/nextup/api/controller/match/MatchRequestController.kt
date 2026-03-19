@@ -14,6 +14,8 @@ import com.nextup.core.service.match.dto.MatchRequestFilterDto
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
@@ -32,7 +34,9 @@ class MatchRequestController(
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.teamId, authentication.principal)")
     fun createMatchRequest(
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: CreateMatchRequestApiRequest,
     ): ApiResponse<MatchRequestResponse> {
         val matchRequest =
@@ -93,8 +97,10 @@ class MatchRequestController(
      */
     @PostMapping("/{id}/respond")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@teamSecurity.isMember(#request.respondTeamId, authentication.principal)")
     fun respondToMatchRequest(
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: RespondToMatchRequestApiRequest,
     ): ApiResponse<MatchResponseResponse> {
         val matchResponse =
@@ -113,9 +119,11 @@ class MatchRequestController(
      * 매칭 응답을 수락합니다.
      */
     @PutMapping("/{id}/accept/{responseId}")
+    @PreAuthorize("isAuthenticated()")
     fun acceptMatchResponse(
         @PathVariable id: Long,
         @PathVariable responseId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MatchRequestResponse> {
         val matchRequest = matchingService.acceptResponse(id, responseId)
         return ApiResponse.success(MatchRequestResponse.from(matchRequest))
@@ -125,8 +133,10 @@ class MatchRequestController(
      * 매칭 요청을 취소합니다.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     fun cancelMatchRequest(
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MatchRequestResponse> {
         val matchRequest = matchingService.cancelRequest(id)
         return ApiResponse.success(MatchRequestResponse.from(matchRequest))

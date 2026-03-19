@@ -8,6 +8,8 @@ import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -33,7 +35,9 @@ class BookingTransferController(
      * POST /api/v1/booking-transfers
      */
     @PostMapping
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.sellerTeamId, authentication.principal)")
     fun requestTransfer(
+        @AuthenticationPrincipal userId: Long,
         @RequestBody @Valid request: CreateBookingTransferApiRequest,
     ): ResponseEntity<ApiResponse<BookingTransferResponse>> {
         val transfer =
@@ -58,8 +62,10 @@ class BookingTransferController(
      * PATCH /api/v1/booking-transfers/{transferId}/accept
      */
     @PatchMapping("/{transferId}/accept")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.buyerTeamId, authentication.principal)")
     fun acceptTransfer(
         @PathVariable transferId: Long,
+        @AuthenticationPrincipal userId: Long,
         @RequestBody @Valid request: AcceptBookingTransferApiRequest,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
@@ -76,9 +82,11 @@ class BookingTransferController(
      * PATCH /api/v1/booking-transfers/{transferId}/reject
      */
     @PatchMapping("/{transferId}/reject")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun rejectTransfer(
         @PathVariable transferId: Long,
         @RequestParam teamId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
             bookingTransferService.cancelTransfer(

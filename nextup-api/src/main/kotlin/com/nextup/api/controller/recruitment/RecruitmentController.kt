@@ -9,6 +9,8 @@ import com.nextup.core.service.recruitment.dto.CreateRecruitmentRequest
 import com.nextup.core.service.recruitment.dto.UpdateRecruitmentRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -46,8 +48,10 @@ class RecruitmentController(
      */
     @PostMapping("/teams/{teamId}/recruitments")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun createRecruitment(
         @PathVariable teamId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: CreateRecruitmentApiRequest,
     ): ApiResponse<RecruitmentResponse> {
         val recruitment =
@@ -71,9 +75,11 @@ class RecruitmentController(
      * 팀의 모집 공고를 수정합니다.
      */
     @PutMapping("/teams/{teamId}/recruitments/{id}")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun updateRecruitment(
         @PathVariable teamId: Long,
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: UpdateRecruitmentApiRequest,
     ): ApiResponse<RecruitmentResponse> {
         val recruitment =
@@ -96,9 +102,11 @@ class RecruitmentController(
      */
     @DeleteMapping("/teams/{teamId}/recruitments/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun deleteRecruitment(
         @PathVariable teamId: Long,
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<Unit> {
         recruitmentService.deleteRecruitment(id)
         return ApiResponse.success(Unit)

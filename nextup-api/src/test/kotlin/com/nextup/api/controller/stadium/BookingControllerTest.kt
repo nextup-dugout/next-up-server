@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -31,8 +34,16 @@ class BookingControllerTest {
     @BeforeEach
     fun setUp() {
         stadiumService = mockk()
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(1L, null, emptyList())
+
         controller = BookingController(stadiumService)
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(GlobalExceptionHandler()).build()
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(GlobalExceptionHandler())
+                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+                .build()
     }
 
     @Nested

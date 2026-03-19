@@ -11,6 +11,8 @@ import com.nextup.core.service.mercenary.dto.ApplyMercenaryDto
 import com.nextup.core.service.mercenary.dto.CreateMercenaryRequestDto
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -28,7 +30,9 @@ class MercenaryRequestController(
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.teamId, authentication.principal)")
     fun createRequest(
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: CreateMercenaryRequestApiRequest,
     ): ApiResponse<MercenaryRequestResponse> {
         val mercenaryRequest =
@@ -60,8 +64,10 @@ class MercenaryRequestController(
      */
     @PostMapping("/{id}/apply")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
     fun apply(
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: ApplyMercenaryApiRequest,
     ): ApiResponse<MercenaryApplicationResponse> {
         val application =
@@ -81,9 +87,11 @@ class MercenaryRequestController(
      * 용병 지원을 수락합니다.
      */
     @PatchMapping("/{id}/applications/{appId}/accept")
+    @PreAuthorize("isAuthenticated()")
     fun acceptApplication(
         @PathVariable id: Long,
         @PathVariable appId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MercenaryApplicationResponse> {
         val application = mercenaryService.acceptApplication(id, appId)
         return ApiResponse.success(MercenaryApplicationResponse.from(application))
@@ -93,9 +101,11 @@ class MercenaryRequestController(
      * 용병 지원을 거절합니다.
      */
     @PatchMapping("/{id}/applications/{appId}/reject")
+    @PreAuthorize("isAuthenticated()")
     fun rejectApplication(
         @PathVariable id: Long,
         @PathVariable appId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MercenaryApplicationResponse> {
         val application = mercenaryService.rejectApplication(id, appId)
         return ApiResponse.success(MercenaryApplicationResponse.from(application))

@@ -1,19 +1,30 @@
 package com.nextup.infrastructure.security.expression
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 팀 권한 검증을 위한 커스텀 보안 표현식
  *
  * @PreAuthorize("@teamSecurity.isOwner(#teamId, authentication.principal)") 형태로 사용합니다.
  * authentication.principal은 JwtAuthenticationFilter에서 Long(userId)로 설정됩니다.
+ *
+ * Caffeine 캐시를 사용하여 팀 멤버 역할 조회를 TTL 5분으로 캐싱합니다.
  */
 @Component("teamSecurity")
 class TeamSecurityExpression(
     private val teamMemberRepository: TeamMemberRepositoryPort,
 ) {
+    private val memberRoleCache: Cache<String, TeamMemberRole> =
+        Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build()
+
     /**
      * 요청자가 해당 팀의 OWNER인지 확인합니다.
      *
@@ -26,8 +37,8 @@ class TeamSecurityExpression(
         principal: Any?,
     ): Boolean {
         val userId = extractUserId(principal) ?: return false
-        val member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId) ?: return false
-        return member.role == TeamMemberRole.OWNER
+        val role = getMemberRole(teamId, userId) ?: return false
+        return role == TeamMemberRole.OWNER
     }
 
     /**
@@ -42,8 +53,8 @@ class TeamSecurityExpression(
         principal: Any?,
     ): Boolean {
         val userId = extractUserId(principal) ?: return false
-        val member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId) ?: return false
-        return member.role == TeamMemberRole.OWNER || member.role == TeamMemberRole.MANAGER
+        val role = getMemberRole(teamId, userId) ?: return false
+        return role == TeamMemberRole.OWNER || role == TeamMemberRole.MANAGER
     }
 
     /**
@@ -58,7 +69,31 @@ class TeamSecurityExpression(
         principal: Any?,
     ): Boolean {
         val userId = extractUserId(principal) ?: return false
-        return teamMemberRepository.findByTeamIdAndUserId(teamId, userId) != null
+        return getMemberRole(teamId, userId) != null
+    }
+
+    /**
+     * 역할 변경 시 캐시를 무효화합니다.
+     *
+     * @param teamId 팀 ID
+     * @param userId 사용자 ID
+     */
+    fun evict(
+        teamId: Long,
+        userId: Long,
+    ) {
+        memberRoleCache.invalidate("$teamId:$userId")
+    }
+
+    private fun getMemberRole(
+        teamId: Long,
+        userId: Long,
+    ): TeamMemberRole? {
+        val key = "$teamId:$userId"
+        memberRoleCache.getIfPresent(key)?.let { return it }
+        val member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId) ?: return null
+        memberRoleCache.put(key, member.role)
+        return member.role
     }
 
     private fun extractUserId(principal: Any?): Long? =
