@@ -25,6 +25,21 @@ interface GameEventRepository :
     @Query(
         """
         SELECT ge FROM GameEvent ge
+        WHERE ge.game.id = :gameId
+          AND ge.batter.id = :batterGamePlayerId
+          AND ge.eventType = 'PLATE_APPEARANCE'
+          AND ge.undone = false
+        ORDER BY ge.eventTimestamp
+        """,
+    )
+    override fun findPlateAppearancesByGameIdAndBatterGamePlayerId(
+        gameId: Long,
+        batterGamePlayerId: Long,
+    ): List<GameEvent>
+
+    @Query(
+        """
+        SELECT ge FROM GameEvent ge
         JOIN FETCH ge.game g
         WHERE ge.pitcher.player.id = :pitcherId
           AND ge.batter.player.id = :batterId

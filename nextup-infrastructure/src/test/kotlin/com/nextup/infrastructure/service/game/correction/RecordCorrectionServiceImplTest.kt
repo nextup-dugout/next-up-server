@@ -14,6 +14,7 @@ import com.nextup.core.domain.game.RecordCorrection
 import com.nextup.core.port.repository.AuditLogRepositoryPort
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.port.repository.RecordCorrectionRepositoryPort
@@ -39,6 +40,7 @@ class RecordCorrectionServiceImplTest {
     private lateinit var recordCorrectionRepository: RecordCorrectionRepositoryPort
     private lateinit var auditLogRepository: AuditLogRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
+    private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var service: RecordCorrectionServiceImpl
 
@@ -54,6 +56,7 @@ class RecordCorrectionServiceImplTest {
         recordCorrectionRepository = mockk()
         auditLogRepository = mockk()
         gameRepository = mockk()
+        gameEventRepository = mockk(relaxed = true)
         eventPublisher = mockk(relaxed = true)
 
         service =
@@ -64,6 +67,7 @@ class RecordCorrectionServiceImplTest {
                 recordCorrectionRepository = recordCorrectionRepository,
                 auditLogRepository = auditLogRepository,
                 gameRepository = gameRepository,
+                gameEventRepository = gameEventRepository,
                 eventPublisher = eventPublisher,
             )
     }

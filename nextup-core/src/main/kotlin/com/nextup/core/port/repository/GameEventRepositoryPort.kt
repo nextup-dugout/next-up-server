@@ -22,6 +22,15 @@ interface GameEventRepositoryPort {
     fun findLastActiveEvent(gameId: Long): GameEvent?
 
     /**
+     * 특정 경기에서 타석 결과 이벤트를 조회합니다 (H6: 기록 정정 반영).
+     * GameEvent.batter.id (GamePlayer ID) 기준으로 조회합니다.
+     */
+    fun findPlateAppearancesByGameIdAndBatterGamePlayerId(
+        gameId: Long,
+        batterGamePlayerId: Long,
+    ): List<GameEvent>
+
+    /**
      * 특정 투수-타자 매치업의 타석 결과를 조회합니다.
      */
     fun findPlateAppearancesByPitcherAndBatter(

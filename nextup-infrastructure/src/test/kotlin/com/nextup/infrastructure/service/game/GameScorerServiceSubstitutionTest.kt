@@ -310,6 +310,7 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.findByIdOrNull(10L) } returns dhPlayer
             every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
 
             val savedEvent = mockk<GameEvent>(relaxed = true)
             every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
@@ -381,6 +382,7 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.findByIdOrNull(10L) } returns dhPlayer
             every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
 
             var capturedEvent: GameEvent? = null
             every { gameEventRepository.save(any()) } answers {

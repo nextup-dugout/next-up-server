@@ -12,6 +12,7 @@ import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.port.repository.CareerBattingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.CareerPitchingStatsRepositoryPort
+import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
@@ -37,6 +38,7 @@ class RecordCorrectionEventListenerCoverageTest {
     private val gameRepository = mockk<GameRepositoryPort>()
     private val gamePlayerRepository = mockk<GamePlayerRepositoryPort>()
     private val gameTeamRepository = mockk<GameTeamRepositoryPort>()
+    private val gameEventRepository = mockk<GameEventRepositoryPort>(relaxed = true)
     private val cacheManager = mockk<CacheManager>()
 
     private val listener =
@@ -50,6 +52,7 @@ class RecordCorrectionEventListenerCoverageTest {
             gameRepository = gameRepository,
             gamePlayerRepository = gamePlayerRepository,
             gameTeamRepository = gameTeamRepository,
+            gameEventRepository = gameEventRepository,
             cacheManager = cacheManager,
         )
 

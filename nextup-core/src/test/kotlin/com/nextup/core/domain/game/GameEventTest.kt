@@ -311,6 +311,92 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("correctResult (H6)")
+    inner class CorrectResult {
+        @Test
+        fun `타석 결과를 정정할 수 있다`() {
+            // given
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    description = "헛스윙 삼진",
+                    outCountBefore = 0,
+                    outCountAfter = 1,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                )
+
+            // when
+            event.correctResult(
+                newResult = PlateAppearanceResult.SINGLE,
+                newDescription = "[정정] 헛스윙 삼진 → 우전 안타",
+            )
+
+            // then
+            assertThat(event.plateAppearanceResult).isEqualTo(PlateAppearanceResult.SINGLE)
+            assertThat(event.description).isEqualTo("[정정] 헛스윙 삼진 → 우전 안타")
+        }
+
+        @Test
+        fun `정정 후 결과와 설명이 독립적으로 변경된다`() {
+            // given
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.GROUND_OUT,
+                    description = "땅볼 아웃",
+                    outCountBefore = 1,
+                    outCountAfter = 2,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                )
+            val originalResult = event.plateAppearanceResult
+
+            // when
+            event.correctResult(
+                newResult = PlateAppearanceResult.DOUBLE,
+                newDescription = "[정정] 땅볼 아웃 → 우중간 2루타",
+            )
+
+            // then
+            assertThat(event.plateAppearanceResult).isNotEqualTo(originalResult)
+            assertThat(event.plateAppearanceResult).isEqualTo(PlateAppearanceResult.DOUBLE)
+            assertThat(event.description).isEqualTo("[정정] 땅볼 아웃 → 우중간 2루타")
+        }
+
+        @Test
+        fun `정정 후 undone 상태는 변경되지 않는다`() {
+            // given
+            val event =
+                GameEvent.createPlateAppearance(
+                    game = game,
+                    batter = batter,
+                    pitcher = pitcher,
+                    result = PlateAppearanceResult.WALK,
+                    description = "볼넷",
+                    outCountBefore = 0,
+                    outCountAfter = 0,
+                    runnersBeforeJson = null,
+                    runnersAfterJson = null,
+                )
+
+            // when
+            event.correctResult(
+                newResult = PlateAppearanceResult.HIT_BY_PITCH,
+                newDescription = "[정정] 볼넷 → 사구",
+            )
+
+            // then
+            assertThat(event.undone).isFalse()
+        }
+    }
+
+    @Nested
     @DisplayName("createGameStatus")
     inner class CreateGameStatus {
         @Test

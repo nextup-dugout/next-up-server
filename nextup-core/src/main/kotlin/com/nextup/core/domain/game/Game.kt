@@ -172,8 +172,8 @@ class Game private constructor(
         }
         gameState.resetForNewInning()
 
-        // 연장전 타이브레이크: 초(원정팀 공격) 시작 시에만 적용
-        if (rules.tiebreakerEnabled && isTopInning && currentInning > totalInnings) {
+        // 연장전 타이브레이크: 초/말 이닝 시작 시 모두 적용
+        if (rules.tiebreakerEnabled && currentInning > totalInnings) {
             gameState.setupTiebreaker(
                 firstRunnerId = tiebreakerFirstRunnerId,
                 secondRunnerId = tiebreakerSecondRunnerId,
