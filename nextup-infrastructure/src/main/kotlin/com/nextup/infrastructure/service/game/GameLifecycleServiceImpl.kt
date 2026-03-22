@@ -389,7 +389,9 @@ class GameLifecycleServiceImpl(
         gameId: Long,
         scorerId: Long,
     ): Game {
-        val game = findGame(gameId)
+        val game =
+            gameRepository.findByIdForUpdate(gameId)
+                ?: throw GameNotFoundException(gameId)
         game.lockForScorer(scorerId)
         return gameRepository.save(game)
     }
