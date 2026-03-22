@@ -33,6 +33,14 @@ interface SeasonPitchingStatsRepositoryPort {
     ): SeasonPitchingStats?
 
     /**
+     * 선수 ID와 연도로 모든 팀별 시즌 투수 통계를 조회합니다 (이적 시 팀별 기록).
+     */
+    fun findAllByPlayerIdAndYear(
+        playerId: Long,
+        year: Int,
+    ): List<SeasonPitchingStats>
+
+    /**
      * 선수 ID로 모든 시즌 투수 통계를 조회합니다.
      */
     fun findAllByPlayerId(playerId: Long): List<SeasonPitchingStats>

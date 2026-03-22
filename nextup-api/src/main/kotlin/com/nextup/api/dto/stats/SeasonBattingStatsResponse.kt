@@ -13,6 +13,7 @@ data class SeasonBattingStatsResponse(
     val id: Long,
     val playerId: Long,
     val year: Int,
+    val teamId: Long?,
     val createdAt: Instant,
     val updatedAt: Instant,
     // 출전 정보
