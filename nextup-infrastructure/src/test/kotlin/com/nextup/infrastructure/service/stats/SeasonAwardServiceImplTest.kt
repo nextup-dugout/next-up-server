@@ -1,11 +1,16 @@
 package com.nextup.infrastructure.service.stats
 
+import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.GameRules
+import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.stats.SeasonAward
 import com.nextup.core.domain.stats.SeasonAwardTitle
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonAwardRepositoryPort
@@ -651,6 +656,300 @@ class SeasonAwardServiceImplTest {
             assertThatThrownBy {
                 service.calculateAndAwardTitlesByCompetition(999L)
             }.isInstanceOf(com.nextup.common.exception.CompetitionNotFoundException::class.java)
+        }
+
+        @Test
+        fun `대회 기반 타이틀 계산 — 경기가 있을 때 모든 타이틀이 부여된다`() {
+            // given
+            val gameRules = GameRules(qualificationPAMultiplier = 3.1, qualificationIPMultiplier = 1.0)
+            val competition = mockk<Competition>()
+            every { competition.year } returns 2026
+            every { competition.gameRules } returns gameRules
+
+            every { competitionRepository.findByIdOrNull(1L) } returns competition
+
+            // 2개 팀, 각 팀 5경기씩 출전
+            val team1 = mockk<Team>()
+            every { team1.id } returns 100L
+            val team2 = mockk<Team>()
+            every { team2.id } returns 200L
+
+            val games = (1..5).map { _ ->
+                val game = mockk<Game>()
+                val gt1 = mockk<GameTeam>()
+                every { gt1.team } returns team1
+                val gt2 = mockk<GameTeam>()
+                every { gt2.team } returns team2
+                every { game.gameTeams } returns listOf(gt1, gt2)
+                game
+            }
+            every { gameRepository.findByCompetitionId(1L) } returns games
+
+            // 팀당 5경기 → 규정타석 = round(5 * 3.1) = 16, 규정이닝아웃 = round(5 * 1.0 * 3) = 15
+            justRun { seasonAwardRepository.deleteAllByCompetitionId(1L) }
+
+            val battingStats1 =
+                createBattingStats(player1, 2026, atBats = 100, hits = 35, pa = 110)
+            val battingStats2 =
+                createBattingStats(player2, 2026, homeRuns = 10, rbi = 30, stolenBases = 15, hits = 40)
+            val pitchingStats1 =
+                createPitchingStats(player2, 2026, wins = 8, ipOuts = 54, earnedRuns = 6, saves = 5, strikeouts = 50)
+
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, 16, 1)
+            } returns listOf(battingStats1)
+            every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByStolenBases(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByHits(2026, 1) } returns listOf(battingStats2)
+
+            every { seasonPitchingStatsRepository.findTopByWins(2026, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopByEra(2026, 15, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopBySaves(2026, 1) } returns listOf(pitchingStats1)
+
+            val savedSlot = slot<List<SeasonAward>>()
+            every { seasonAwardRepository.saveAll(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when
+            val result = service.calculateAndAwardTitlesByCompetition(1L)
+
+            // then
+            assertThat(result).hasSize(9) // 5 batting + 4 pitching
+            assertThat(result).allSatisfy { award ->
+                assertThat(award.competitionId).isEqualTo(1L)
+            }
+            verify(exactly = 1) { seasonAwardRepository.deleteAllByCompetitionId(1L) }
+            verify(exactly = 1) { seasonAwardRepository.saveAll(any()) }
+        }
+
+        @Test
+        fun `대회 기반 타이틀 계산 — 경기가 없으면 규정타석과 규정이닝이 0이다`() {
+            // given
+            val gameRules = GameRules(qualificationPAMultiplier = 3.1, qualificationIPMultiplier = 1.0)
+            val competition = mockk<Competition>()
+            every { competition.year } returns 2026
+            every { competition.gameRules } returns gameRules
+
+            every { competitionRepository.findByIdOrNull(2L) } returns competition
+            every { gameRepository.findByCompetitionId(2L) } returns emptyList()
+
+            justRun { seasonAwardRepository.deleteAllByCompetitionId(2L) }
+
+            // gamesPerTeam=0 → minPA=0, minIPOuts=0
+            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, 0, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByStolenBases(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByHits(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByWins(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByEra(2026, 0, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopBySaves(2026, 1) } returns emptyList()
+
+            every { seasonAwardRepository.saveAll(any()) } returns emptyList()
+
+            // when
+            val result = service.calculateAndAwardTitlesByCompetition(2L)
+
+            // then
+            assertThat(result).isEmpty()
+            verify(exactly = 1) { seasonAwardRepository.deleteAllByCompetitionId(2L) }
+        }
+
+        @Test
+        fun `대회 기반 타이틀 계산 — 팀별 경기 수 평균이 올바르게 계산된다`() {
+            // given: 3팀, 팀A 4경기, 팀B 4경기, 팀C 2경기 → 평균 round(3.33)=3
+            val gameRules = GameRules(qualificationPAMultiplier = 3.1, qualificationIPMultiplier = 1.0)
+            val competition = mockk<Competition>()
+            every { competition.year } returns 2026
+            every { competition.gameRules } returns gameRules
+
+            every { competitionRepository.findByIdOrNull(3L) } returns competition
+
+            val teamA = mockk<Team>()
+            every { teamA.id } returns 100L
+            val teamB = mockk<Team>()
+            every { teamB.id } returns 200L
+            val teamC = mockk<Team>()
+            every { teamC.id } returns 300L
+
+            // 4 games: A vs B (2 games), A vs C (1 game), B vs C (1 game)
+            // teamA: 3 games, teamB: 3 games, teamC: 2 games → avg = round(2.67) = 3
+            // 하지만 round to int 방식 차이 고려. 직접 계산: (3+3+2)/3 = 2.667 → roundToInt=3
+            fun makeGame(t1: Team, t2: Team): Game {
+                val game = mockk<Game>()
+                val gt1 = mockk<GameTeam>()
+                every { gt1.team } returns t1
+                val gt2 = mockk<GameTeam>()
+                every { gt2.team } returns t2
+                every { game.gameTeams } returns listOf(gt1, gt2)
+                return game
+            }
+
+            val games =
+                listOf(
+                    makeGame(teamA, teamB),
+                    makeGame(teamA, teamB),
+                    makeGame(teamA, teamC),
+                    makeGame(teamB, teamC),
+                )
+            every { gameRepository.findByCompetitionId(3L) } returns games
+
+            // 팀당 경기수 3 → 규정타석 = round(3 * 3.1) = 9, 규정이닝아웃 = round(3 * 1.0 * 3) = 9
+            justRun { seasonAwardRepository.deleteAllByCompetitionId(3L) }
+
+            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, 9, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByStolenBases(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByHits(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByWins(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByEra(2026, 9, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopBySaves(2026, 1) } returns emptyList()
+
+            every { seasonAwardRepository.saveAll(any()) } returns emptyList()
+
+            // when
+            val result = service.calculateAndAwardTitlesByCompetition(3L)
+
+            // then
+            assertThat(result).isEmpty()
+            verify(exactly = 1) { seasonAwardRepository.deleteAllByCompetitionId(3L) }
+        }
+
+        @Test
+        fun `대회 기반 타이틀에 competitionId가 올바르게 설정된다`() {
+            // given
+            val gameRules = GameRules(qualificationPAMultiplier = 3.1, qualificationIPMultiplier = 1.0)
+            val competition = mockk<Competition>()
+            every { competition.year } returns 2026
+            every { competition.gameRules } returns gameRules
+
+            every { competitionRepository.findByIdOrNull(5L) } returns competition
+
+            val team1 = mockk<Team>()
+            every { team1.id } returns 100L
+            val team2 = mockk<Team>()
+            every { team2.id } returns 200L
+
+            // 2 games
+            val games = (1..2).map {
+                val game = mockk<Game>()
+                val gt1 = mockk<GameTeam>()
+                every { gt1.team } returns team1
+                val gt2 = mockk<GameTeam>()
+                every { gt2.team } returns team2
+                every { game.gameTeams } returns listOf(gt1, gt2)
+                game
+            }
+            every { gameRepository.findByCompetitionId(5L) } returns games
+
+            // 팀당 2경기 → 규정타석 = round(2 * 3.1) = 6, 규정이닝아웃 = round(2 * 1.0 * 3) = 6
+            justRun { seasonAwardRepository.deleteAllByCompetitionId(5L) }
+
+            val battingStats =
+                createBattingStats(player1, 2026, atBats = 100, hits = 35, pa = 110)
+
+            every { seasonBattingStatsRepository.findTopByBattingAverage(2026, 6, 1) } returns listOf(battingStats)
+            every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByStolenBases(2026, 1) } returns emptyList()
+            every { seasonBattingStatsRepository.findTopByHits(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByWins(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByEra(2026, 6, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 1) } returns emptyList()
+            every { seasonPitchingStatsRepository.findTopBySaves(2026, 1) } returns emptyList()
+
+            val savedSlot = slot<List<SeasonAward>>()
+            every { seasonAwardRepository.saveAll(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when
+            val result = service.calculateAndAwardTitlesByCompetition(5L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].title).isEqualTo(SeasonAwardTitle.BATTING_CHAMPION)
+            assertThat(result[0].competitionId).isEqualTo(5L)
+            assertThat(result[0].year).isEqualTo(2026)
+            assertThat(result[0].player).isEqualTo(player1)
+        }
+
+        @Test
+        fun `대회 기반 타이틀 계산 — 타격과 투수 모든 부문 리더 존재 시 9개 타이틀이 부여된다`() {
+            // given
+            val gameRules = GameRules(qualificationPAMultiplier = 3.1, qualificationIPMultiplier = 1.0)
+            val competition = mockk<Competition>()
+            every { competition.year } returns 2026
+            every { competition.gameRules } returns gameRules
+
+            every { competitionRepository.findByIdOrNull(10L) } returns competition
+
+            val team1 = mockk<Team>()
+            every { team1.id } returns 100L
+            val team2 = mockk<Team>()
+            every { team2.id } returns 200L
+
+            // 10 games per team
+            val games = (1..10).map {
+                val game = mockk<Game>()
+                val gt1 = mockk<GameTeam>()
+                every { gt1.team } returns team1
+                val gt2 = mockk<GameTeam>()
+                every { gt2.team } returns team2
+                every { game.gameTeams } returns listOf(gt1, gt2)
+                game
+            }
+            every { gameRepository.findByCompetitionId(10L) } returns games
+
+            // 팀당 10경기 → 규정타석 = round(10 * 3.1) = 31, 규정이닝아웃 = round(10 * 1.0 * 3) = 30
+            justRun { seasonAwardRepository.deleteAllByCompetitionId(10L) }
+
+            val battingStats1 =
+                createBattingStats(player1, 2026, atBats = 100, hits = 35, pa = 110)
+            val battingStats2 =
+                createBattingStats(player2, 2026, homeRuns = 10, rbi = 30, stolenBases = 15, hits = 40)
+            val pitchingStats1 =
+                createPitchingStats(player2, 2026, wins = 8, ipOuts = 54, earnedRuns = 6, saves = 5, strikeouts = 50)
+
+            every {
+                seasonBattingStatsRepository.findTopByBattingAverage(2026, 31, 1)
+            } returns listOf(battingStats1)
+            every { seasonBattingStatsRepository.findTopByHomeRuns(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByRunsBattedIn(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByStolenBases(2026, 1) } returns listOf(battingStats2)
+            every { seasonBattingStatsRepository.findTopByHits(2026, 1) } returns listOf(battingStats2)
+
+            every { seasonPitchingStatsRepository.findTopByWins(2026, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopByEra(2026, 30, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopByStrikeouts(2026, 1) } returns listOf(pitchingStats1)
+            every { seasonPitchingStatsRepository.findTopBySaves(2026, 1) } returns listOf(pitchingStats1)
+
+            val savedSlot = slot<List<SeasonAward>>()
+            every { seasonAwardRepository.saveAll(capture(savedSlot)) } answers { savedSlot.captured }
+
+            // when
+            val result = service.calculateAndAwardTitlesByCompetition(10L)
+
+            // then
+            assertThat(result).hasSize(9)
+            val titles = result.map { it.title }
+            assertThat(titles).containsExactlyInAnyOrder(
+                SeasonAwardTitle.BATTING_CHAMPION,
+                SeasonAwardTitle.HOME_RUN_KING,
+                SeasonAwardTitle.RBI_KING,
+                SeasonAwardTitle.STOLEN_BASE_KING,
+                SeasonAwardTitle.HITS_LEADER,
+                SeasonAwardTitle.WINS_LEADER,
+                SeasonAwardTitle.ERA_TITLE,
+                SeasonAwardTitle.STRIKEOUT_KING,
+                SeasonAwardTitle.SAVES_LEADER,
+            )
+            // 모든 타이틀에 competitionId가 설정됨
+            assertThat(result).allSatisfy { award ->
+                assertThat(award.competitionId).isEqualTo(10L)
+            }
         }
     }
 
