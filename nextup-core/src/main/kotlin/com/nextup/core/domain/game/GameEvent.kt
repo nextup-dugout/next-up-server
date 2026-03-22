@@ -238,6 +238,33 @@ class GameEvent(
             )
 
         /**
+         * 포지션 변경 이벤트를 생성합니다.
+         *
+         * @param game 경기
+         * @param player 포지션이 변경된 선수
+         * @param fromPosition 변경 전 포지션
+         * @param toPosition 변경 후 포지션
+         * @param description 포지션 변경 설명
+         */
+        fun createPositionChange(
+            game: Game,
+            player: GamePlayer,
+            fromPosition: com.nextup.core.domain.player.Position,
+            toPosition: com.nextup.core.domain.player.Position,
+            description: String,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = game.gameState.outs,
+                outCountAfter = game.gameState.outs,
+                eventType = GameEventType.POSITION_CHANGE,
+                description = description,
+                batter = player,
+            )
+
+        /**
          * 퇴장 이벤트를 생성합니다.
          *
          * @param game 경기
