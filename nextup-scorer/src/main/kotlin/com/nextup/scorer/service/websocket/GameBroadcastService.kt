@@ -3,6 +3,7 @@ package com.nextup.scorer.service.websocket
 import com.nextup.scorer.dto.websocket.GameEventMessage
 import com.nextup.scorer.dto.websocket.GameStateMessage
 import com.nextup.scorer.dto.websocket.ScoreboardMessage
+import com.nextup.scorer.dto.websocket.WarningMessage
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 
@@ -61,6 +62,24 @@ class GameBroadcastService(
         messagingTemplate.convertAndSend(
             "/topic/games/$gameId/state",
             state
+        )
+    }
+
+    /**
+     * 경기 경고를 브로드캐스트합니다.
+     *
+     * 시간 제한, 투구수 제한 등 경고 알림을 기록원에게 전송합니다.
+     *
+     * @param gameId 경기 ID
+     * @param warning 경고 메시지
+     */
+    fun broadcastWarning(
+        gameId: Long,
+        warning: WarningMessage,
+    ) {
+        messagingTemplate.convertAndSend(
+            "/topic/games/$gameId/warnings",
+            warning,
         )
     }
 }

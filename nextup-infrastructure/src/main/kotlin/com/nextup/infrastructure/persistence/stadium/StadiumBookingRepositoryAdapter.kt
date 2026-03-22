@@ -27,4 +27,9 @@ class StadiumBookingRepositoryAdapter(
         slotId: Long,
         status: BookingStatus,
     ): Boolean = jpaRepository.existsBySlotIdAndStatus(slotId, status)
+
+    override fun findByStadiumIdAndStatus(
+        stadiumId: Long,
+        status: BookingStatus,
+    ): List<StadiumBooking> = jpaRepository.findByStadiumIdAndStatus(stadiumId, status)
 }

@@ -107,17 +107,32 @@ class LineupSubmission private constructor(
      * - 참석자만 라인업 등록 검증 (attendingPlayerIds 제공 시)
      *
      * @param attendingPlayerIds 참석(ATTENDING) 상태인 선수 ID 목록 (nullable, null이면 참석 검증 생략)
+     * @param registeredPlayerIds 대회에 등록된 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param mercenaryPlayerIds L-3: 용병 선수 ID 목록 (nullable, null이면 검증 생략)
+     * @param maxMercenaryCount L-3: 용병 쿼터 제한 (nullable, null이면 무제한)
      * @throws com.nextup.common.exception.DuplicatePlayerInLineupException 동일 선수 중복 시
      * @throws com.nextup.common.exception.NoCatcherInLineupException 포수 미지정 시
      * @throws com.nextup.common.exception.InvalidDhRuleException DH 규칙 위반 시
      * @throws com.nextup.common.exception.NonAttendingPlayerInLineupException 참석하지 않는 선수 포함 시
+     * @throws com.nextup.common.exception.MercenaryQuotaExceededException 용병 쿼터 초과 시
      */
-    fun submit(attendingPlayerIds: Set<Long>? = null) {
+    fun submit(
+        attendingPlayerIds: Set<Long>? = null,
+        registeredPlayerIds: Set<Long>? = null,
+        mercenaryPlayerIds: Set<Long>? = null,
+        maxMercenaryCount: Int? = null,
+    ) {
         require(status.canSubmit()) {
             "제출 가능한 상태가 아닙니다. 현재 상태: ${status.displayName}"
         }
         // 라인업 비즈니스 규칙 검증
-        LineupValidator.validate(_entries, attendingPlayerIds)
+        LineupValidator.validate(
+            _entries,
+            attendingPlayerIds,
+            registeredPlayerIds,
+            mercenaryPlayerIds,
+            maxMercenaryCount,
+        )
         this.status = LineupSubmissionStatus.SUBMITTED
         this.submittedAt = Instant.now()
         // 재제출 시 이전 반려 정보 초기화
