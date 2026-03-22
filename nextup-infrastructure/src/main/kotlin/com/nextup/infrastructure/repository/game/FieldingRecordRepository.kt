@@ -2,6 +2,7 @@ package com.nextup.infrastructure.repository.game
 
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -76,4 +77,23 @@ interface FieldingRecordRepository :
         @Param("playerId") playerId: Long,
         @Param("year") year: Int,
     ): List<FieldingRecord>
+
+    /**
+     * GamePlayer와 포지션으로 수비 기록을 조회합니다.
+     */
+    @Query(
+        """
+        SELECT fr FROM FieldingRecord fr
+        WHERE fr.gamePlayer = :gamePlayer AND fr.position = :position
+    """,
+    )
+    override fun findByGamePlayerAndPosition(
+        @Param("gamePlayer") gamePlayer: GamePlayer,
+        @Param("position") position: Position,
+    ): FieldingRecord?
+
+    /**
+     * GamePlayer의 모든 수비 기록을 조회합니다.
+     */
+    override fun findAllByGamePlayer(gamePlayer: GamePlayer): List<FieldingRecord>
 }
