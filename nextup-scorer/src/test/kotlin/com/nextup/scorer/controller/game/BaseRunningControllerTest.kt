@@ -61,6 +61,7 @@ class BaseRunningControllerTest {
         gameSubstitutionService = mockk()
         gameStateQueryService = mockk()
         gameTimelineService = mockk()
+        val gamePositionChangeService = mockk<com.nextup.core.service.game.GamePositionChangeService>()
         controller =
             GameScorerController(
                 gameLifecycleService,
@@ -70,6 +71,7 @@ class BaseRunningControllerTest {
                 gameSubstitutionService,
                 gameStateQueryService,
                 gameTimelineService,
+                gamePositionChangeService,
             )
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())

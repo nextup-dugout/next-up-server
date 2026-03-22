@@ -3,6 +3,7 @@ package com.nextup.scorer.controller.game
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.BaseRunningRecordService
 import com.nextup.core.service.game.GameLifecycleService
+import com.nextup.core.service.game.GamePositionChangeService
 import com.nextup.core.service.game.GameStateQueryService
 import com.nextup.core.service.game.GameSubstitutionService
 import com.nextup.core.service.game.GameTimelineService
@@ -18,6 +19,10 @@ import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
+import com.nextup.scorer.dto.game.PositionChangeRequestDto
+import com.nextup.scorer.dto.game.PositionChangeResponse
+import com.nextup.scorer.dto.game.PositionSwapRequestDto
+import com.nextup.scorer.dto.game.PositionSwapResponse
 import com.nextup.scorer.dto.game.ScoreboardResponse
 import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import com.nextup.scorer.dto.game.SubstitutionResponse
@@ -28,15 +33,19 @@ import com.nextup.scorer.dto.game.toCurrentGameStateResponse
 import com.nextup.scorer.dto.game.toCurrentLineupResponse
 import com.nextup.scorer.dto.game.toDomain
 import com.nextup.scorer.dto.game.toEventTimelineResponse
+import com.nextup.scorer.dto.game.toPositionChangeResponse
+import com.nextup.scorer.dto.game.toPositionSwapResponse
 import com.nextup.scorer.dto.game.toResponse
 import com.nextup.scorer.dto.game.toScoreboardResponse
 import com.nextup.scorer.dto.game.toSubstitutionResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -61,6 +70,7 @@ class GameScorerController(
     private val gameSubstitutionService: GameSubstitutionService,
     private val gameStateQueryService: GameStateQueryService,
     private val gameTimelineService: GameTimelineService,
+    private val gamePositionChangeService: GamePositionChangeService,
 ) {
     // ===== GET 조회 엔드포인트 (H-16, M-25) =====
 
@@ -366,5 +376,52 @@ class GameScorerController(
         val event =
             gameSubstitutionService.substitutePlayer(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(event.toSubstitutionResponse())
+    }
+
+    /**
+     * 선수의 수비 포지션을 변경합니다.
+     *
+     * 경기를 잠금한 기록원만 변경할 수 있습니다.
+     * 다음을 검증합니다:
+     * - 진행 중인 경기만 포지션 변경 가능
+     * - 현재 출전 중인 선수만 변경 가능
+     * - 동일 포지션 변경 방지
+     * - DH 해제 후 DH 포지션 재지정 방지
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{gameId}/position-changes")
+    @ResponseStatus(HttpStatus.OK)
+    fun changePosition(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+        @RequestBody @Valid request: PositionChangeRequestDto,
+    ): ApiResponse<PositionChangeResponse> {
+        val event =
+            gamePositionChangeService.changePosition(gameId, request.toDomain(), scorerId)
+        return ApiResponse.success(event.toPositionChangeResponse())
+    }
+
+    /**
+     * 두 선수의 수비 포지션을 교환합니다.
+     *
+     * 경기를 잠금한 기록원만 교환할 수 있습니다.
+     * 다음을 검증합니다:
+     * - 진행 중인 경기만 포지션 교환 가능
+     * - 두 선수 모두 현재 출전 중이어야 함
+     * - 같은 선수 간 교환 방지
+     * - 동일 포지션 교환 방지
+     * - DH 해제 후 DH 포지션 관련 교환 방지
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{gameId}/position-swaps")
+    @ResponseStatus(HttpStatus.OK)
+    fun swapPositions(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+        @RequestBody @Valid request: PositionSwapRequestDto,
+    ): ApiResponse<PositionSwapResponse> {
+        val events =
+            gamePositionChangeService.swapPositions(gameId, request.toDomain(), scorerId)
+        return ApiResponse.success(events.toPositionSwapResponse())
     }
 }

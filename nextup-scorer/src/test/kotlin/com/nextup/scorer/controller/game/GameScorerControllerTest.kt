@@ -79,6 +79,7 @@ class GameScorerControllerTest {
         gameSubstitutionService = mockk()
         gameStateQueryService = mockk()
         gameTimelineService = mockk()
+        val gamePositionChangeService = mockk<com.nextup.core.service.game.GamePositionChangeService>()
         controller =
             GameScorerController(
                 gameLifecycleService,
@@ -88,6 +89,7 @@ class GameScorerControllerTest {
                 gameSubstitutionService,
                 gameStateQueryService,
                 gameTimelineService,
+                gamePositionChangeService,
             )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(100L, null, emptyList())

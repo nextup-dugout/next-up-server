@@ -281,6 +281,63 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("createPositionChange")
+    inner class CreatePositionChange {
+        @Test
+        fun `포지션 변경 이벤트를 생성한다`() {
+            // given
+            val player = mockk<GamePlayer>(relaxed = true)
+            val fromPosition = com.nextup.core.domain.player.Position.LEFT_FIELD
+            val toPosition = com.nextup.core.domain.player.Position.CENTER_FIELD
+
+            // when
+            val event =
+                GameEvent.createPositionChange(
+                    game = game,
+                    player = player,
+                    fromPosition = fromPosition,
+                    toPosition = toPosition,
+                    description = "1회초: 홍길동 좌익수 → 중견수",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.POSITION_CHANGE)
+            assertThat(event.description).isEqualTo("1회초: 홍길동 좌익수 → 중견수")
+            assertThat(event.inning).isEqualTo(game.currentInning)
+            assertThat(event.isTopInning).isEqualTo(game.isTopInning)
+            assertThat(event.outCountBefore).isEqualTo(game.gameState.outs)
+            assertThat(event.outCountAfter).isEqualTo(game.gameState.outs)
+            assertThat(event.batter).isEqualTo(player)
+            assertThat(event.pitcher).isNull()
+            assertThat(event.plateAppearanceResult).isNull()
+            assertThat(event.runsScored).isEqualTo(0)
+        }
+
+        @Test
+        fun `투수 포지션 변경 이벤트를 생성한다`() {
+            // given
+            val player = mockk<GamePlayer>(relaxed = true)
+            val fromPosition = com.nextup.core.domain.player.Position.STARTING_PITCHER
+            val toPosition = com.nextup.core.domain.player.Position.RELIEF_PITCHER
+
+            // when
+            val event =
+                GameEvent.createPositionChange(
+                    game = game,
+                    player = player,
+                    fromPosition = fromPosition,
+                    toPosition = toPosition,
+                    description = "1회초: 김투수 선발투수 → 중간계투",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.POSITION_CHANGE)
+            assertThat(event.batter).isEqualTo(player)
+            assertThat(event.pitcher).isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("createEjection")
     inner class CreateEjection {
         @Test

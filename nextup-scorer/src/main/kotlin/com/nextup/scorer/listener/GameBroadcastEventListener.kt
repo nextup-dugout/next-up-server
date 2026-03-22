@@ -5,6 +5,7 @@ import com.nextup.core.domain.event.GameStartedEvent
 import com.nextup.core.domain.event.HalfInningAdvancedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlayerSubstitutedEvent
+import com.nextup.core.domain.event.PositionChangedEvent
 import com.nextup.core.domain.event.RecordCorrectedEvent
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.port.repository.GameEventRepositoryPort
@@ -245,6 +246,46 @@ class GameBroadcastEventListener(
             log.debug("선수 교체 브로드캐스트 완료 (gameId={}, gameEventId={})", event.gameId, event.gameEventId)
         } catch (ex: Exception) {
             log.error("PlayerSubstitutedEvent 브로드캐스트 실패 (gameId={}): {}", event.gameId, ex.message, ex)
+        }
+    }
+
+    /**
+     * 포지션 변경 이벤트를 처리합니다.
+     *
+     * broadcastEvent(POSITION_CHANGE) + broadcastState
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun onPositionChanged(event: PositionChangedEvent) {
+        try {
+            val game =
+                gameRepository.findByIdOrNull(event.gameId)
+                    ?: run {
+                        log.warn("PositionChangedEvent: 경기를 찾을 수 없음 (gameId={})", event.gameId)
+                        return
+                    }
+            val gameTeams = gameTeamRepository.findAllByGameId(event.gameId)
+            val gameEvent = gameEventRepository.findByIdOrNull(event.gameEventId)
+
+            val positionChangeEvent =
+                GameEventMessage(
+                    eventId = event.gameEventId,
+                    eventType = "POSITION_CHANGE",
+                    inning = game.currentInning,
+                    isTopInning = game.isTopInning,
+                    description = gameEvent?.description ?: "포지션 변경",
+                    batter = null,
+                    pitcher = null,
+                    result = null,
+                    runsScored = 0,
+                    timestamp = Instant.now(),
+                )
+            gameBroadcastService.broadcastEvent(event.gameId, positionChangeEvent)
+            gameBroadcastService.broadcastState(event.gameId, buildGameStateMessage(event.gameId, game, gameTeams))
+
+            log.debug("포지션 변경 브로드캐스트 완료 (gameId={}, gameEventId={})", event.gameId, event.gameEventId)
+        } catch (ex: Exception) {
+            log.error("PositionChangedEvent 브로드캐스트 실패 (gameId={}): {}", event.gameId, ex.message, ex)
         }
     }
 
