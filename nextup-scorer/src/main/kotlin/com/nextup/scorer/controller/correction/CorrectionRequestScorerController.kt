@@ -6,6 +6,7 @@ import com.nextup.scorer.dto.correction.CorrectionRequestResponse
 import com.nextup.scorer.dto.correction.CreateCorrectionRequestDto
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -28,6 +29,7 @@ class CorrectionRequestScorerController(
     /**
      * 기록 정정 요청을 생성합니다.
      */
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createCorrectionRequest(

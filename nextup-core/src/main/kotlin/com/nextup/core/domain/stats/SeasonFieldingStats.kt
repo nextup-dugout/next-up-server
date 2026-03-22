@@ -1,5 +1,6 @@
 package com.nextup.core.domain.stats
 
+import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.FieldingRecord
@@ -82,6 +83,11 @@ class SeasonFieldingStats(
     var passedBalls: Int = 0
         protected set
 
+    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
+    @Column(name = "is_finalized", nullable = false)
+    var isFinalized: Boolean = false
+        protected set
+
     // Calculated properties
 
     /**
@@ -108,6 +114,7 @@ class SeasonFieldingStats(
      * 경기 수비 기록을 누적합니다.
      */
     fun addGameRecord(record: FieldingRecord) {
+        requireNotFinalized()
         gamesPlayed++
         putOuts += record.putOuts
         assists += record.assists
@@ -120,6 +127,7 @@ class SeasonFieldingStats(
      * 경기 수비 기록을 롤백합니다 (경기 취소 시).
      */
     fun revertGameRecord(record: FieldingRecord) {
+        requireNotFinalized()
         gamesPlayed--
         putOuts -= record.putOuts
         assists -= record.assists
@@ -139,6 +147,7 @@ class SeasonFieldingStats(
         fieldName: String,
         delta: Int,
     ) {
+        requireNotFinalized()
         when (fieldName) {
             "putOuts" -> putOuts = maxOf(0, putOuts + delta)
             "assists" -> assists = maxOf(0, assists + delta)
@@ -171,6 +180,34 @@ class SeasonFieldingStats(
         }
         if (passedBalls < 0) {
             throw StatsValidationException("포일($passedBalls)은 음수일 수 없습니다.")
+        }
+    }
+
+    /**
+     * L-8: 시즌 통계를 확정합니다.
+     *
+     * 확정된 통계는 추가 갱신이 불가합니다.
+     */
+    fun finalize() {
+        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
+        validate()
+        this.isFinalized = true
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
+     */
+    fun unfinalize() {
+        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
+        this.isFinalized = false
+    }
+
+    /**
+     * 확정된 통계의 수정을 방지하는 가드 메서드.
+     */
+    private fun requireNotFinalized() {
+        if (isFinalized) {
+            throw FrozenStatsException()
         }
     }
 

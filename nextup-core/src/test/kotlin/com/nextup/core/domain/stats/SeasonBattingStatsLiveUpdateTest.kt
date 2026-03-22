@@ -141,6 +141,16 @@ class SeasonBattingStatsLiveUpdateTest {
         }
 
         @Test
+        fun `낫아웃 삼진 기록 시 타석, 타수, 삼진 증가 (안타 아님)`() {
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            assertThat(stats.plateAppearances).isEqualTo(1)
+            assertThat(stats.atBats).isEqualTo(1)
+            assertThat(stats.hits).isZero
+            assertThat(stats.strikeouts).isEqualTo(1)
+        }
+
+        @Test
         fun `여러 타석 결과 누적 시 통계가 올바르게 집계됨`() {
             // 4타수 2안타 (단타, 홈런), 1볼넷, 1삼진
             stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
@@ -215,6 +225,16 @@ class SeasonBattingStatsLiveUpdateTest {
         fun `삼진 역산 시 타석, 타수, 삼진 감소`() {
             stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
             stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            assertThat(stats.plateAppearances).isZero
+            assertThat(stats.atBats).isZero
+            assertThat(stats.strikeouts).isZero
+        }
+
+        @Test
+        fun `낫아웃 삼진 역산 시 타석, 타수, 삼진 감소`() {
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+            stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
 
             assertThat(stats.plateAppearances).isZero
             assertThat(stats.atBats).isZero
