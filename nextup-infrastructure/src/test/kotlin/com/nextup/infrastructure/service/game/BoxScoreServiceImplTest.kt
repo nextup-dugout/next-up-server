@@ -118,10 +118,8 @@ class BoxScoreServiceImplTest {
             val awayPitchingRecord = PitchingRecord.create(awayGamePlayer, isStartingPitcher = true)
 
             every { gamePlayerRepository.findAllByGameId(1L) } returns listOf(homeGamePlayer, awayGamePlayer)
-            every { battingRecordRepository.findByGamePlayer(homeGamePlayer) } returns homeBattingRecord
-            every { battingRecordRepository.findByGamePlayer(awayGamePlayer) } returns null
-            every { pitchingRecordRepository.findByGamePlayer(homeGamePlayer) } returns null
-            every { pitchingRecordRepository.findByGamePlayer(awayGamePlayer) } returns awayPitchingRecord
+            every { battingRecordRepository.findAllByGameId(1L) } returns listOf(homeBattingRecord)
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns listOf(awayPitchingRecord)
 
             // when
             val result = boxScoreService.getBoxScore(1L)
@@ -167,8 +165,8 @@ class BoxScoreServiceImplTest {
                 )
 
             every { gamePlayerRepository.findAllByGameId(1L) } returns listOf(homeGamePlayer, awayGamePlayer)
-            every { battingRecordRepository.findByGamePlayer(any()) } returns null
-            every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+            every { battingRecordRepository.findAllByGameId(1L) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns emptyList()
 
             // when
             val result = boxScoreService.getBoxScore(1L)
@@ -191,8 +189,8 @@ class BoxScoreServiceImplTest {
             val awayGp = GamePlayer(awayGameTeam, awayPlayer, Position.STARTING_PITCHER)
 
             every { gamePlayerRepository.findAllByGameId(1L) } returns listOf(gp1, gp2, gp3, awayGp)
-            every { battingRecordRepository.findByGamePlayer(any()) } returns null
-            every { pitchingRecordRepository.findByGamePlayer(any()) } returns null
+            every { battingRecordRepository.findAllByGameId(1L) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(1L) } returns emptyList()
 
             // when
             val result = boxScoreService.getBoxScore(1L)

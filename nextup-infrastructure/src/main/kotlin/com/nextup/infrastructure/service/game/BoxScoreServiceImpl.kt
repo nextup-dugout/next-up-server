@@ -4,7 +4,9 @@ import com.nextup.common.exception.BattingRecordNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.PitchingRecordNotFoundException
+import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.GamePlayer
+import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -31,6 +33,14 @@ class BoxScoreServiceImpl(
             throw InvalidStateException("NO_PLAYERS_IN_GAME", "경기 ID $gameId 에 출전 선수가 없습니다.")
         }
 
+        // 배치 조회로 N+1 방지 — gameId 기준 한 번에 로드
+        val battingRecordMap =
+            battingRecordRepository.findAllByGameId(gameId)
+                .associateBy { it.gamePlayer.id }
+        val pitchingRecordMap =
+            pitchingRecordRepository.findAllByGameId(gameId)
+                .associateBy { it.gamePlayer.id }
+
         val game = gamePlayers.first().gameTeam.game
         val homeTeam = gamePlayers.first { it.gameTeam.isHome }.gameTeam
         val awayTeam = gamePlayers.first { it.gameTeam.isAway }.gameTeam
@@ -47,6 +57,8 @@ class BoxScoreServiceImpl(
                     homeTeam.team.logoUrl,
                     homeTeam,
                     homePlayers,
+                    battingRecordMap,
+                    pitchingRecordMap,
                 ),
             awayTeam =
                 buildTeamBoxScore(
@@ -55,6 +67,8 @@ class BoxScoreServiceImpl(
                     awayTeam.team.logoUrl,
                     awayTeam,
                     awayPlayers,
+                    battingRecordMap,
+                    pitchingRecordMap,
                 ),
             currentInning = game.currentInningDisplay,
             gameStatus = game.status.displayName,
@@ -124,19 +138,21 @@ class BoxScoreServiceImpl(
         logoUrl: String?,
         gameTeam: com.nextup.core.domain.game.GameTeam,
         players: List<GamePlayer>,
+        battingRecordMap: Map<Long, BattingRecord>,
+        pitchingRecordMap: Map<Long, PitchingRecord>,
     ): TeamBoxScoreDto {
         val inningScores = parseInningScores(gameTeam.inningScores)
 
         val batters =
             players
                 .filter { it.battingOrder != null || it.isStarter }
-                .map { buildBatterLine(it) }
+                .map { buildBatterLine(it, battingRecordMap) }
                 .sortedBy { it.battingOrder ?: 999 }
 
         val pitchers =
             players
                 .filter { it.isPitcher }
-                .map { buildPitcherLine(it) }
+                .map { buildPitcherLine(it, pitchingRecordMap) }
 
         return TeamBoxScoreDto(
             teamId = teamId,
@@ -151,8 +167,11 @@ class BoxScoreServiceImpl(
         )
     }
 
-    private fun buildBatterLine(gamePlayer: GamePlayer): BatterLineDto {
-        val battingRecord = battingRecordRepository.findByGamePlayer(gamePlayer)
+    private fun buildBatterLine(
+        gamePlayer: GamePlayer,
+        battingRecordMap: Map<Long, BattingRecord>,
+    ): BatterLineDto {
+        val battingRecord = battingRecordMap[gamePlayer.id]
 
         return BatterLineDto(
             playerId = gamePlayer.player.id,
@@ -170,8 +189,11 @@ class BoxScoreServiceImpl(
         )
     }
 
-    private fun buildPitcherLine(gamePlayer: GamePlayer): PitcherLineDto {
-        val pitchingRecord = pitchingRecordRepository.findByGamePlayer(gamePlayer)
+    private fun buildPitcherLine(
+        gamePlayer: GamePlayer,
+        pitchingRecordMap: Map<Long, PitchingRecord>,
+    ): PitcherLineDto {
+        val pitchingRecord = pitchingRecordMap[gamePlayer.id]
 
         return PitcherLineDto(
             playerId = gamePlayer.player.id,

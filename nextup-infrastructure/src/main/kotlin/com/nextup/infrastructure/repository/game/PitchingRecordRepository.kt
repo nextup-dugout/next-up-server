@@ -310,4 +310,20 @@ interface PitchingRecordRepository :
         @Param("playerId") playerId: Long,
         @Param("competitionId") competitionId: Long,
     ): List<PitchingRecord>
+
+    /**
+     * 여러 경기 ID로 투수 기록을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     * 빈 리스트 전달 시 빈 결과를 반환합니다.
+     */
+    @Query(
+        """
+        SELECT pr FROM PitchingRecord pr
+        JOIN FETCH pr.gamePlayer gp
+        JOIN FETCH gp.gameTeam gt
+        WHERE gt.game.id IN :gameIds
+    """,
+    )
+    override fun findAllByGameIds(
+        @Param("gameIds") gameIds: List<Long>,
+    ): List<PitchingRecord>
 }

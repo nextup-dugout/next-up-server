@@ -68,9 +68,7 @@ class SearchServiceImpl(
 
         val competitions =
             competitionRepository
-                .findAll()
-                .filter { it.name.contains(keyword, ignoreCase = true) }
-                .take(limit)
+                .findByNameContaining(keyword, limit)
                 .map { competition ->
                     CompetitionSearchDto(
                         competitionId = competition.id,

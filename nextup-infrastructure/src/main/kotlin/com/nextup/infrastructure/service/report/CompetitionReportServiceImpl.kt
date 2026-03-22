@@ -82,19 +82,19 @@ class CompetitionReportServiceImpl(
                 0.0
             }
 
-        // 5. 타격/투구 통계 조회
+        // 5. 타격/투구 통계 조회 — 배치 쿼리로 N+1 방지
         val battingRecords =
             if (completedGameIds.isEmpty()) {
                 emptyList()
             } else {
-                completedGameIds.flatMap { battingRecordRepository.findAllByGameId(it) }
+                battingRecordRepository.findAllByGameIds(completedGameIds)
             }
 
         val pitchingRecords =
             if (completedGameIds.isEmpty()) {
                 emptyList()
             } else {
-                completedGameIds.flatMap { pitchingRecordRepository.findAllByGameId(it) }
+                pitchingRecordRepository.findAllByGameIds(completedGameIds)
             }
 
         val totalHomeRuns = battingRecords.sumOf { it.homeRuns }

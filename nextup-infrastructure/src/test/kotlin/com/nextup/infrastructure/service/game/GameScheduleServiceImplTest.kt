@@ -1,6 +1,8 @@
 package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
@@ -20,7 +22,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 @DisplayName("GameScheduleServiceImpl 테스트")
 class GameScheduleServiceImplTest {
@@ -45,8 +46,24 @@ class GameScheduleServiceImplTest {
             val competitionId = 1L
             val games = listOf(createGame(1L), createGame(2L))
             val gameTeams = listOf(createGameTeam(1L), createGameTeam(2L))
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 0,
+                    size = 10,
+                    totalElements = 2L,
+                    totalPages = 1,
+                )
 
-            every { gameRepository.findByCompetitionId(competitionId) } returns games
+            every {
+                gameRepository.findGames(
+                    date = null,
+                    teamId = null,
+                    competitionId = competitionId,
+                    status = null,
+                    pageCommand = PageCommand(page = 0, size = 10),
+                )
+            } returns pageResult
             every { gameTeamRepository.findAllByGameIds(any()) } returns gameTeams
 
             // when
@@ -56,12 +73,12 @@ class GameScheduleServiceImplTest {
                     teamId = null,
                     competitionId = competitionId,
                     page = 0,
-                    size = 10
+                    size = 10,
                 )
 
             // then
-            assertThat(result).hasSize(2)
-            verify { gameRepository.findByCompetitionId(competitionId) }
+            assertThat(result.content).hasSize(2)
+            assertThat(result.totalElements).isEqualTo(2L)
         }
 
         @Test
@@ -69,20 +86,33 @@ class GameScheduleServiceImplTest {
         fun getGamesWithDate() {
             // given
             val date = LocalDate.of(2026, 2, 9)
-            val start = date.atStartOfDay()
-            val end = date.atTime(LocalTime.MAX)
             val games = listOf(createGame(1L))
             val gameTeams = listOf(createGameTeam(1L))
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 0,
+                    size = 10,
+                    totalElements = 1L,
+                    totalPages = 1,
+                )
 
-            every { gameRepository.findByScheduledAtBetween(start, end) } returns games
+            every {
+                gameRepository.findGames(
+                    date = date,
+                    teamId = null,
+                    competitionId = null,
+                    status = null,
+                    pageCommand = PageCommand(page = 0, size = 10),
+                )
+            } returns pageResult
             every { gameTeamRepository.findAllByGameIds(any()) } returns gameTeams
 
             // when
             val result = service.getGames(date = date, teamId = null, competitionId = null, page = 0, size = 10)
 
             // then
-            assertThat(result).hasSize(1)
-            verify { gameRepository.findByScheduledAtBetween(start, end) }
+            assertThat(result.content).hasSize(1)
         }
 
         @Test
@@ -91,16 +121,31 @@ class GameScheduleServiceImplTest {
             // given
             val games = listOf(createGame(1L), createGame(2L), createGame(3L))
             val gameTeams = listOf(createGameTeam(1L), createGameTeam(2L), createGameTeam(3L))
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 0,
+                    size = 10,
+                    totalElements = 3L,
+                    totalPages = 1,
+                )
 
-            every { gameRepository.findAll() } returns games
+            every {
+                gameRepository.findGames(
+                    date = null,
+                    teamId = null,
+                    competitionId = null,
+                    status = null,
+                    pageCommand = PageCommand(page = 0, size = 10),
+                )
+            } returns pageResult
             every { gameTeamRepository.findAllByGameIds(any()) } returns gameTeams
 
             // when
             val result = service.getGames(date = null, teamId = null, competitionId = null, page = 0, size = 10)
 
             // then
-            assertThat(result).hasSize(3)
-            verify { gameRepository.findAll() }
+            assertThat(result.content).hasSize(3)
         }
 
         @Test
@@ -108,55 +153,106 @@ class GameScheduleServiceImplTest {
         fun getGamesWithTeamIdFilter() {
             // given
             val teamId = 10L
-            val games = listOf(createGame(1L), createGame(2L), createGame(3L))
+            val games = listOf(createGame(1L), createGame(3L))
             val teamGames =
                 listOf(
                     createGameTeam(1L, teamId = teamId),
                     createGameTeam(3L, teamId = teamId),
                 )
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 0,
+                    size = 10,
+                    totalElements = 2L,
+                    totalPages = 1,
+                )
 
-            every { gameRepository.findAll() } returns games
-            every { gameTeamRepository.findAllByTeamId(teamId) } returns teamGames
-            every { gameTeamRepository.findAllByGameIds(listOf(1L, 3L)) } returns teamGames
+            every {
+                gameRepository.findGames(
+                    date = null,
+                    teamId = teamId,
+                    competitionId = null,
+                    status = null,
+                    pageCommand = PageCommand(page = 0, size = 10),
+                )
+            } returns pageResult
+            every { gameTeamRepository.findAllByGameIds(any()) } returns teamGames
 
             // when
             val result = service.getGames(date = null, teamId = teamId, competitionId = null, page = 0, size = 10)
 
             // then
-            assertThat(result).hasSize(2)
-            assertThat(result.map { it.gameId }).containsExactlyInAnyOrder(1L, 3L)
-            verify { gameTeamRepository.findAllByTeamId(teamId) }
+            assertThat(result.content).hasSize(2)
+            assertThat(result.content.map { it.gameId }).containsExactlyInAnyOrder(1L, 3L)
         }
 
         @Test
         @DisplayName("페이징이 적용된다")
         fun getGamesWithPaging() {
             // given
-            val games = (1L..10L).map { createGame(it) }
-            val gameTeams = (1L..10L).map { createGameTeam(it) }
+            val games = (4L..6L).map { createGame(it) }
+            val gameTeams = (4L..6L).map { createGameTeam(it) }
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 1,
+                    size = 3,
+                    totalElements = 10L,
+                    totalPages = 4,
+                )
 
-            every { gameRepository.findAll() } returns games
+            every {
+                gameRepository.findGames(
+                    date = null,
+                    teamId = null,
+                    competitionId = null,
+                    status = null,
+                    pageCommand = PageCommand(page = 1, size = 3),
+                )
+            } returns pageResult
             every { gameTeamRepository.findAllByGameIds(any()) } returns gameTeams
 
             // when
             val result = service.getGames(date = null, teamId = null, competitionId = null, page = 1, size = 3)
 
             // then
-            assertThat(result).hasSize(3)
-            assertThat(result.map { it.gameId }).containsExactly(4L, 5L, 6L)
+            assertThat(result.content).hasSize(3)
+            assertThat(result.content.map { it.gameId }).containsExactly(4L, 5L, 6L)
+            assertThat(result.totalElements).isEqualTo(10L)
         }
 
         @Test
         @DisplayName("빈 리스트를 반환한다")
         fun getGamesReturnsEmptyList() {
             // given
-            every { gameRepository.findAll() } returns emptyList()
+            val emptyPageResult =
+                PageResult(
+                    content = emptyList<Game>(),
+                    page = 0,
+                    size = 10,
+                    totalElements = 0L,
+                    totalPages = 0,
+                )
+
+            every {
+                gameRepository.findGames(
+                    date = null,
+                    teamId = null,
+                    competitionId = null,
+                    status = null,
+                    pageCommand = PageCommand(page = 0, size = 10),
+                )
+            } returns emptyPageResult
+
+            every { gameTeamRepository.findAllByGameIds(emptyList()) } returns emptyList()
 
             // when
             val result = service.getGames(date = null, teamId = null, competitionId = null, page = 0, size = 10)
 
             // then
-            assertThat(result).isEmpty()
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalElements).isEqualTo(0L)
         }
     }
 
@@ -301,8 +397,8 @@ class GameScheduleServiceImplTest {
             val gameTeam1 = createGameTeam(10L, teamId = 1L)
             val gameTeam2 = createGameTeam(20L, teamId = 2L)
 
-            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gameTeam1)
-            every { gameTeamRepository.findAllByTeamId(2L) } returns listOf(gameTeam2)
+            // findAllByTeamIdIn 배치 조회 사용
+            every { gameTeamRepository.findAllByTeamIdIn(teamIds) } returns listOf(gameTeam1, gameTeam2)
             every { gameRepository.findAllByIds(listOf(10L, 20L)) } returns listOf(game1, game2)
             every { gameTeamRepository.findAllByGameIds(listOf(10L, 20L)) } returns listOf(gameTeam1, gameTeam2)
 
@@ -313,6 +409,7 @@ class GameScheduleServiceImplTest {
             assertThat(result).hasSize(2)
             assertThat(result[0].gameId).isEqualTo(10L)
             assertThat(result[1].gameId).isEqualTo(20L)
+            verify { gameTeamRepository.findAllByTeamIdIn(teamIds) }
         }
 
         @Test
@@ -337,8 +434,7 @@ class GameScheduleServiceImplTest {
             val gameTeam1 = createGameTeam(10L, teamId = 1L, homeAway = HomeAway.HOME)
             val gameTeam2 = createGameTeam(10L, teamId = 2L, homeAway = HomeAway.AWAY)
 
-            every { gameTeamRepository.findAllByTeamId(1L) } returns listOf(gameTeam1)
-            every { gameTeamRepository.findAllByTeamId(2L) } returns listOf(gameTeam2)
+            every { gameTeamRepository.findAllByTeamIdIn(teamIds) } returns listOf(gameTeam1, gameTeam2)
             every { gameRepository.findAllByIds(listOf(10L)) } returns listOf(game)
             every { gameTeamRepository.findAllByGameIds(listOf(10L)) } returns listOf(gameTeam1, gameTeam2)
 
@@ -362,7 +458,7 @@ class GameScheduleServiceImplTest {
                 }
             val gameTeams = (1L..5L).map { createGameTeam(it, teamId = 1L) }
 
-            every { gameTeamRepository.findAllByTeamId(1L) } returns gameTeams
+            every { gameTeamRepository.findAllByTeamIdIn(teamIds) } returns gameTeams
             every { gameRepository.findAllByIds(any()) } returns games
             every { gameTeamRepository.findAllByGameIds(listOf(1L, 2L)) } returns gameTeams.take(2)
 

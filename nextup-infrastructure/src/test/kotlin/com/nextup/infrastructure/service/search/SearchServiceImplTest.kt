@@ -67,7 +67,7 @@ class SearchServiceImplTest {
             every {
                 teamRepository.findActiveTeamsByFilter(name = "홍", city = null)
             } returns listOf(team)
-            every { competitionRepository.findAll() } returns listOf(competition)
+            every { competitionRepository.findByNameContaining("홍", 5) } returns listOf(competition)
 
             // when
             val result = service.search("홍", 5)
@@ -102,7 +102,7 @@ class SearchServiceImplTest {
             every {
                 teamRepository.findActiveTeamsByFilter(name = "xyz", city = null)
             } returns emptyList()
-            every { competitionRepository.findAll() } returns emptyList()
+            every { competitionRepository.findByNameContaining("xyz", 5) } returns emptyList()
 
             val result = service.search("xyz", 5)
 
@@ -128,7 +128,7 @@ class SearchServiceImplTest {
             every {
                 teamRepository.findActiveTeamsByFilter(name = "선수", city = null)
             } returns emptyList()
-            every { competitionRepository.findAll() } returns emptyList()
+            every { competitionRepository.findByNameContaining("선수", 3) } returns emptyList()
 
             val result = service.search("선수", 3)
 
@@ -156,8 +156,8 @@ class SearchServiceImplTest {
                 teamRepository.findActiveTeamsByFilter(name = "봄", city = null)
             } returns emptyList()
             every {
-                competitionRepository.findAll()
-            } returns listOf(matchCompetition, nonMatchCompetition)
+                competitionRepository.findByNameContaining("봄", 5)
+            } returns listOf(matchCompetition)
 
             val result = service.search("봄", 5)
 
@@ -181,7 +181,7 @@ class SearchServiceImplTest {
             every {
                 teamRepository.findActiveTeamsByFilter(name = "spring", city = null)
             } returns emptyList()
-            every { competitionRepository.findAll() } returns listOf(competition)
+            every { competitionRepository.findByNameContaining("spring", 5) } returns listOf(competition)
 
             val result = service.search("spring", 5)
 
@@ -202,7 +202,7 @@ class SearchServiceImplTest {
             every {
                 teamRepository.findActiveTeamsByFilter(name = "테스트", city = null)
             } returns emptyList()
-            every { competitionRepository.findAll() } returns emptyList()
+            every { competitionRepository.findByNameContaining("테스트", 5) } returns emptyList()
 
             val result = service.search("테스트", 5)
 
