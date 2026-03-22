@@ -315,6 +315,10 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
             every { gameRepository.save(any()) } answers { firstArg() }
 
+            // DH 해제 후 타순 인원 검증을 위한 mock: 투수(타순4) 포함 9명 반환
+            val teamPlayers = createNinePlayerTeam(dhPlayer.gameTeam, includeReliefPitcherWithOrder = 4)
+            every { gamePlayerRepository.findCurrentlyPlayingByGameId(1L) } returns teamPlayers
+
             val savedEvent = mockk<GameEvent>(relaxed = true)
             every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
             every { gameEventRepository.save(any()) } returns savedEvent
@@ -386,6 +390,10 @@ class GameScorerServiceSubstitutionTest {
             every { gamePlayerRepository.findByIdOrNull(20L) } returns reliefPitcher
             every { gamePlayerRepository.save(any()) } answers { firstArg() }
             every { gameRepository.save(any()) } answers { firstArg() }
+
+            // DH 해제 후 타순 인원 검증을 위한 mock: 투수(타순4) 포함 9명 반환
+            val teamPlayers = createNinePlayerTeam(dhPlayer.gameTeam, includeReliefPitcherWithOrder = 4)
+            every { gamePlayerRepository.findCurrentlyPlayingByGameId(1L) } returns teamPlayers
 
             var capturedEvent: GameEvent? = null
             every { gameEventRepository.save(any()) } answers {
@@ -552,5 +560,45 @@ class GameScorerServiceSubstitutionTest {
             f.set(this, id)
             setAsDesignatedHitter(pitcherOrder = 9)
         }
+    }
+
+    /**
+     * DH 해제 후 타순 인원 검증용 9인 팀 목록 생성.
+     * 투수 포함 9명이 타순에 배치된 상태를 시뮬레이션합니다.
+     */
+    private fun createNinePlayerTeam(
+        gameTeam: com.nextup.core.domain.game.GameTeam,
+        includeReliefPitcherWithOrder: Int,
+    ): List<GamePlayer> {
+        val positions =
+            listOf(
+                Position.CATCHER,
+                Position.FIRST_BASE,
+                Position.SECOND_BASE,
+                Position.THIRD_BASE,
+                Position.SHORTSTOP,
+                Position.LEFT_FIELD,
+                Position.CENTER_FIELD,
+                Position.RIGHT_FIELD,
+            )
+        val fieldPlayers =
+            positions.mapIndexed { index, pos ->
+                val order = if (index + 1 >= includeReliefPitcherWithOrder) index + 2 else index + 1
+                val p = mockk<com.nextup.core.domain.player.Player>(relaxed = true)
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = p,
+                    position = pos,
+                    battingOrder = order,
+                )
+            }
+        val pitcher =
+            GamePlayer.createStarter(
+                gameTeam = gameTeam,
+                player = mockk<com.nextup.core.domain.player.Player>(relaxed = true),
+                position = Position.RELIEF_PITCHER,
+                battingOrder = includeReliefPitcherWithOrder,
+            )
+        return fieldPlayers + pitcher
     }
 }

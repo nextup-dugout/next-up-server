@@ -8,6 +8,7 @@ import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.LineupValidator
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.PositionCategory
@@ -92,9 +93,27 @@ class GameSubstitutionServiceImpl(
 
         val dhReleaseRequired = outgoingPlayer.isDhReleaseRequired(incomingPlayer)
         if (dhReleaseRequired) {
+            val dhBattingOrder = outgoingPlayer.battingOrder
             outgoingPlayer.releaseDH()
             game.gameState.wasDhReleased = true
             gamePlayerRepository.save(outgoingPlayer)
+
+            // DH 해제 시 현재 투수에게 DH의 타순을 할당
+            val currentPitcherId = game.gameState.currentPitcherId
+            if (currentPitcherId != null && dhBattingOrder != null) {
+                val currentPitcher = gamePlayerRepository.findByIdOrNull(currentPitcherId)
+                if (currentPitcher != null &&
+                    currentPitcher.isCurrentlyPlaying &&
+                    currentPitcher.battingOrder == null) {
+                    currentPitcher.changeBattingOrder(dhBattingOrder)
+                    gamePlayerRepository.save(currentPitcher)
+                    log.debug(
+                        "DH 해제 - 투수에게 DH 타순 할당 (pitcherId={}, battingOrder={})",
+                        currentPitcherId,
+                        dhBattingOrder,
+                    )
+                }
+            }
         }
 
         // M-10: 투수 교체 시 이전 투수의 이닝 마감 처리
@@ -128,6 +147,20 @@ class GameSubstitutionServiceImpl(
 
         // M-11: 교체 선수 기록 자동 생성
         createRecordsForSubstitute(incomingPlayer)
+
+        // M-7: DH 해제 후 타순 인원 검증
+        if (dhReleaseRequired) {
+            val teamPlayers =
+                gamePlayerRepository.findCurrentlyPlayingByGameId(gameId)
+                    .filter { it.gameTeam.id == outgoingPlayer.gameTeam.id }
+            LineupValidator.validatePostDhReleaseBattingOrder(teamPlayers)
+            log.debug(
+                "DH 해제 후 타순 인원 검증 통과 (gameId={}, teamId={}, battersInOrder={})",
+                gameId,
+                outgoingPlayer.gameTeam.id,
+                teamPlayers.count { it.battingOrder != null },
+            )
+        }
 
         // C2: 투수 교체 시 currentPitcherId 갱신
         if (request.newPosition.category == PositionCategory.PITCHER) {
