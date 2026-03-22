@@ -43,6 +43,8 @@ class SeasonBattingStatsRevertGameRecordTest {
         stolenBases: Int = 0,
         caughtStealing: Int = 0,
         groundedIntoDoublePlays: Int = 0,
+        batterInterferences: Int = 0,
+        runnerInterferences: Int = 0,
     ): BattingRecord {
         val gamePlayer = mockk<GamePlayer>()
         val record = mockk<BattingRecord>()
@@ -64,6 +66,8 @@ class SeasonBattingStatsRevertGameRecordTest {
         every { record.stolenBases } returns stolenBases
         every { record.caughtStealing } returns caughtStealing
         every { record.groundedIntoDoublePlays } returns groundedIntoDoublePlays
+        every { record.batterInterferences } returns batterInterferences
+        every { record.runnerInterferences } returns runnerInterferences
         return record
     }
 

@@ -122,6 +122,16 @@ class SeasonBattingStats(
     var groundedIntoDoublePlays: Int = 0
         protected set
 
+    /** L-2: 타격방해 횟수 */
+    @Column(name = "batter_interferences", nullable = false)
+    var batterInterferences: Int = 0
+        protected set
+
+    /** L-2: 주루방해 횟수 */
+    @Column(name = "runner_interferences", nullable = false)
+    var runnerInterferences: Int = 0
+        protected set
+
     /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
     @Column(name = "is_finalized", nullable = false)
     var isFinalized: Boolean = false
@@ -240,6 +250,8 @@ class SeasonBattingStats(
         stolenBases += record.stolenBases
         caughtStealing += record.caughtStealing
         groundedIntoDoublePlays += record.groundedIntoDoublePlays
+        batterInterferences += record.batterInterferences
+        runnerInterferences += record.runnerInterferences
     }
 
     /**
@@ -274,6 +286,8 @@ class SeasonBattingStats(
             -> strikeouts++
             PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
             PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
+            PlateAppearanceResult.BATTER_INTERFERENCE -> batterInterferences++
+            PlateAppearanceResult.RUNNER_INTERFERENCE -> runnerInterferences++
             else -> Unit
         }
     }
@@ -310,6 +324,8 @@ class SeasonBattingStats(
             -> if (strikeouts > 0) strikeouts--
             PlateAppearanceResult.SACRIFICE_BUNT -> if (sacrificeBunts > 0) sacrificeBunts--
             PlateAppearanceResult.SACRIFICE_FLY -> if (sacrificeFlies > 0) sacrificeFlies--
+            PlateAppearanceResult.BATTER_INTERFERENCE -> if (batterInterferences > 0) batterInterferences--
+            PlateAppearanceResult.RUNNER_INTERFERENCE -> if (runnerInterferences > 0) runnerInterferences--
             else -> Unit
         }
     }
@@ -341,6 +357,8 @@ class SeasonBattingStats(
         stolenBases = maxOf(0, stolenBases - record.stolenBases)
         caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
         groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays - record.groundedIntoDoublePlays)
+        batterInterferences = maxOf(0, batterInterferences - record.batterInterferences)
+        runnerInterferences = maxOf(0, runnerInterferences - record.runnerInterferences)
     }
 
     /**
@@ -372,6 +390,8 @@ class SeasonBattingStats(
             "stolenBases" -> stolenBases = maxOf(0, stolenBases + delta)
             "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
             "groundedIntoDoublePlays" -> groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays + delta)
+            "batterInterferences" -> batterInterferences = maxOf(0, batterInterferences + delta)
+            "runnerInterferences" -> runnerInterferences = maxOf(0, runnerInterferences + delta)
             else -> throw IllegalArgumentException("유효하지 않은 시즌 타격 통계 필드입니다: $fieldName")
         }
         validate()

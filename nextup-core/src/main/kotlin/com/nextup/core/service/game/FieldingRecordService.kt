@@ -5,6 +5,7 @@ import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.FieldingRecord
+import com.nextup.core.domain.player.Position
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import org.springframework.stereotype.Service
@@ -114,4 +115,37 @@ class FieldingRecordService(
      * 선수 ID로 모든 수비 기록을 조회합니다.
      */
     fun getAllByPlayerId(playerId: Long): List<FieldingRecord> = fieldingRecordRepository.findAllByPlayerId(playerId)
+
+    /**
+     * L-1: 포지션별 수비 기록을 조회하거나 새로 생성합니다.
+     *
+     * 수비 위치 변경 시 해당 포지션의 FieldingRecord가 없으면 새로 생성하고,
+     * 이미 존재하면 기존 기록을 반환합니다.
+     *
+     * @param gamePlayerId 경기 출전 선수 ID
+     * @param position 수비 포지션
+     * @return 해당 포지션의 수비 기록
+     */
+    @Transactional
+    fun getOrCreateByPosition(
+        gamePlayerId: Long,
+        position: Position,
+    ): FieldingRecord {
+        val gamePlayer =
+            gamePlayerRepository.findByIdOrNull(gamePlayerId)
+                ?: throw GamePlayerNotFoundException(gamePlayerId)
+
+        return fieldingRecordRepository.findByGamePlayerAndPosition(gamePlayer, position)
+            ?: fieldingRecordRepository.save(FieldingRecord.create(gamePlayer, position))
+    }
+
+    /**
+     * L-1: GamePlayer의 모든 포지션별 수비 기록을 조회합니다.
+     */
+    fun getAllByGamePlayer(gamePlayerId: Long): List<FieldingRecord> {
+        val gamePlayer =
+            gamePlayerRepository.findByIdOrNull(gamePlayerId)
+                ?: throw GamePlayerNotFoundException(gamePlayerId)
+        return fieldingRecordRepository.findAllByGamePlayer(gamePlayer)
+    }
 }
