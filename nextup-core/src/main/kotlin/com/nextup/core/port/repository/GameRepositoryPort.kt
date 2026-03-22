@@ -66,6 +66,13 @@ interface GameRepositoryPort {
     ): List<Int>
 
     /**
+     * 비관적 락(SELECT ... FOR UPDATE)으로 Game을 조회합니다.
+     * 동시 잠금 경쟁을 DB 레벨에서 직렬화하여 OptimisticLockingFailureException 대신
+     * 대기 후 순차 처리합니다.
+     */
+    fun findByIdForUpdate(id: Long): Game?
+
+    /**
      * 기록원이 잠금한 경기 중 lockedAt이 threshold 이전인 경기를 조회합니다.
      * (잠금 만료 자동 해제용)
      */

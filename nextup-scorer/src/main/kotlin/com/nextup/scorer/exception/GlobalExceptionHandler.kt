@@ -2,6 +2,7 @@ package com.nextup.scorer.exception
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.BusinessException
+import com.nextup.common.exception.ConflictException
 import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
@@ -35,6 +36,7 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         val status =
             when (ex) {
                 is NotFoundException -> HttpStatus.NOT_FOUND
+                is ConflictException -> HttpStatus.CONFLICT
                 is ForbiddenException -> HttpStatus.FORBIDDEN
                 is InvalidStateException -> HttpStatus.BAD_REQUEST
                 is InvalidInputException -> HttpStatus.BAD_REQUEST
