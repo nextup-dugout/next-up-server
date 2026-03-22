@@ -6,6 +6,8 @@ import com.nextup.core.domain.stats.SeasonAward
 import com.nextup.core.domain.stats.SeasonAwardTitle
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.domain.stats.SeasonPitchingStats
+import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.SeasonAwardRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
@@ -27,6 +29,8 @@ class SeasonAwardServiceImplTest {
     private lateinit var seasonAwardRepository: SeasonAwardRepositoryPort
     private lateinit var seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort
     private lateinit var seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort
+    private lateinit var competitionRepository: CompetitionRepositoryPort
+    private lateinit var gameRepository: GameRepositoryPort
     private lateinit var service: SeasonAwardServiceImpl
 
     private lateinit var player1: Player
@@ -37,12 +41,16 @@ class SeasonAwardServiceImplTest {
         seasonAwardRepository = mockk()
         seasonBattingStatsRepository = mockk()
         seasonPitchingStatsRepository = mockk()
+        competitionRepository = mockk()
+        gameRepository = mockk()
 
         service =
             SeasonAwardServiceImpl(
                 seasonAwardRepository,
                 seasonBattingStatsRepository,
                 seasonPitchingStatsRepository,
+                competitionRepository,
+                gameRepository,
             )
 
         player1 = Player(name = "홍길동", primaryPosition = Position.SHORTSTOP)
@@ -589,6 +597,60 @@ class SeasonAwardServiceImplTest {
 
             // then
             assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("getAwardsByCompetitionId")
+    inner class GetAwardsByCompetitionId {
+        @Test
+        fun `대회별 타이틀 목록을 반환한다`() {
+            // given
+            val award =
+                SeasonAward.create(
+                    player = player1,
+                    year = 2026,
+                    title = SeasonAwardTitle.BATTING_CHAMPION,
+                    statValue = BigDecimal("0.350"),
+                    competitionId = 1L,
+                )
+
+            every { seasonAwardRepository.findAllByCompetitionId(1L) } returns listOf(award)
+
+            // when
+            val result = service.getAwardsByCompetitionId(1L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].competitionId).isEqualTo(1L)
+            verify(exactly = 1) { seasonAwardRepository.findAllByCompetitionId(1L) }
+        }
+
+        @Test
+        fun `해당 대회에 타이틀이 없으면 빈 목록을 반환한다`() {
+            // given
+            every { seasonAwardRepository.findAllByCompetitionId(999L) } returns emptyList()
+
+            // when
+            val result = service.getAwardsByCompetitionId(999L)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("calculateAndAwardTitlesByCompetition")
+    inner class CalculateAndAwardTitlesByCompetition {
+        @Test
+        fun `존재하지 않는 대회이면 예외가 발생한다`() {
+            // given
+            every { competitionRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.calculateAndAwardTitlesByCompetition(999L)
+            }.isInstanceOf(com.nextup.common.exception.CompetitionNotFoundException::class.java)
         }
     }
 
