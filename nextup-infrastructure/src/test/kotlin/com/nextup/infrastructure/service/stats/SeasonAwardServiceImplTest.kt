@@ -674,15 +674,16 @@ class SeasonAwardServiceImplTest {
             val team2 = mockk<Team>()
             every { team2.id } returns 200L
 
-            val games = (1..5).map { _ ->
-                val game = mockk<Game>()
-                val gt1 = mockk<GameTeam>()
-                every { gt1.team } returns team1
-                val gt2 = mockk<GameTeam>()
-                every { gt2.team } returns team2
-                every { game.gameTeams } returns listOf(gt1, gt2)
-                game
-            }
+            val games =
+                (1..5).map { _ ->
+                    val game = mockk<Game>()
+                    val gt1 = mockk<GameTeam>()
+                    every { gt1.team } returns team1
+                    val gt2 = mockk<GameTeam>()
+                    every { gt2.team } returns team2
+                    every { game.gameTeams } returns listOf(gt1, gt2)
+                    game
+                }
             every { gameRepository.findByCompetitionId(1L) } returns games
 
             // 팀당 5경기 → 규정타석 = round(5 * 3.1) = 16, 규정이닝아웃 = round(5 * 1.0 * 3) = 15
@@ -777,7 +778,10 @@ class SeasonAwardServiceImplTest {
             // 4 games: A vs B (2 games), A vs C (1 game), B vs C (1 game)
             // teamA: 3 games, teamB: 3 games, teamC: 2 games → avg = round(2.67) = 3
             // 하지만 round to int 방식 차이 고려. 직접 계산: (3+3+2)/3 = 2.667 → roundToInt=3
-            fun makeGame(t1: Team, t2: Team): Game {
+            fun makeGame(
+                t1: Team,
+                t2: Team
+            ): Game {
                 val game = mockk<Game>()
                 val gt1 = mockk<GameTeam>()
                 every { gt1.team } returns t1
@@ -835,15 +839,16 @@ class SeasonAwardServiceImplTest {
             every { team2.id } returns 200L
 
             // 2 games
-            val games = (1..2).map {
-                val game = mockk<Game>()
-                val gt1 = mockk<GameTeam>()
-                every { gt1.team } returns team1
-                val gt2 = mockk<GameTeam>()
-                every { gt2.team } returns team2
-                every { game.gameTeams } returns listOf(gt1, gt2)
-                game
-            }
+            val games =
+                (1..2).map {
+                    val game = mockk<Game>()
+                    val gt1 = mockk<GameTeam>()
+                    every { gt1.team } returns team1
+                    val gt2 = mockk<GameTeam>()
+                    every { gt2.team } returns team2
+                    every { game.gameTeams } returns listOf(gt1, gt2)
+                    game
+                }
             every { gameRepository.findByCompetitionId(5L) } returns games
 
             // 팀당 2경기 → 규정타석 = round(2 * 3.1) = 6, 규정이닝아웃 = round(2 * 1.0 * 3) = 6
@@ -892,15 +897,16 @@ class SeasonAwardServiceImplTest {
             every { team2.id } returns 200L
 
             // 10 games per team
-            val games = (1..10).map {
-                val game = mockk<Game>()
-                val gt1 = mockk<GameTeam>()
-                every { gt1.team } returns team1
-                val gt2 = mockk<GameTeam>()
-                every { gt2.team } returns team2
-                every { game.gameTeams } returns listOf(gt1, gt2)
-                game
-            }
+            val games =
+                (1..10).map {
+                    val game = mockk<Game>()
+                    val gt1 = mockk<GameTeam>()
+                    every { gt1.team } returns team1
+                    val gt2 = mockk<GameTeam>()
+                    every { gt2.team } returns team2
+                    every { game.gameTeams } returns listOf(gt1, gt2)
+                    game
+                }
             every { gameRepository.findByCompetitionId(10L) } returns games
 
             // 팀당 10경기 → 규정타석 = round(10 * 3.1) = 31, 규정이닝아웃 = round(10 * 1.0 * 3) = 30
