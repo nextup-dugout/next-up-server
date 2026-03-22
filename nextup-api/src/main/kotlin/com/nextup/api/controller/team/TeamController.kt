@@ -6,11 +6,7 @@ import com.nextup.api.dto.team.TeamSummaryResponse
 import com.nextup.api.dto.team.UpdateTeamRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.InvalidInputException
-import com.nextup.common.exception.LeagueNotFoundException
-import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.team.Team
-import com.nextup.core.port.repository.LeagueRepositoryPort
-import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.team.TeamMembershipService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -37,8 +33,6 @@ import java.time.LocalDate
 @RequestMapping("/api/v1/teams")
 class TeamController(
     private val teamMembershipService: TeamMembershipService,
-    private val teamRepository: TeamRepositoryPort,
-    private val leagueRepository: LeagueRepositoryPort,
 ) {
     /**
      * 팀을 생성합니다. 생성자가 OWNER로 자동 등록됩니다.
@@ -54,23 +48,15 @@ class TeamController(
         val leagueId =
             request.leagueId
                 ?: throw InvalidInputException("INVALID_INPUT", "리그 ID는 필수입니다")
-        val league =
-            leagueRepository.findByIdOrNull(leagueId)
-                ?: throw LeagueNotFoundException(leagueId)
-
-        val team =
-            Team(
-                league = league,
-                name = request.name,
-                city = request.city,
-                abbreviation = request.abbreviation,
-                foundedYear = LocalDate.now().year,
-            )
 
         val savedTeam =
             teamMembershipService.createTeamWithOwner(
                 userId = userId,
-                team = team,
+                leagueId = leagueId,
+                name = request.name,
+                city = request.city,
+                abbreviation = request.abbreviation,
+                foundedYear = LocalDate.now().year,
                 uniformNumber = request.uniformNumber,
             )
 
@@ -91,17 +77,13 @@ class TeamController(
         @RequestBody @Valid request: UpdateTeamRequest,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<TeamDetailResponse> {
-        val team =
-            teamRepository.findByIdWithLeague(teamId)
-                ?: throw TeamNotFoundException(teamId)
-
-        team.updateBasicInfo(
-            name = request.name,
-            city = request.city,
-            abbreviation = request.abbreviation,
-        )
-
-        val savedTeam = teamRepository.save(team)
+        val savedTeam =
+            teamMembershipService.updateTeam(
+                teamId = teamId,
+                name = request.name,
+                city = request.city,
+                abbreviation = request.abbreviation,
+            )
         val memberCount = teamMembershipService.getTeamMemberCount(teamId)
 
         return ApiResponse.success(savedTeam.toDetailResponse(memberCount))
@@ -116,9 +98,7 @@ class TeamController(
     fun getTeam(
         @PathVariable teamId: Long,
     ): ApiResponse<TeamDetailResponse> {
-        val team =
-            teamRepository.findByIdWithLeague(teamId)
-                ?: throw TeamNotFoundException(teamId)
+        val team = teamMembershipService.getTeamWithLeague(teamId)
         val memberCount = teamMembershipService.getTeamMemberCount(teamId)
 
         return ApiResponse.success(team.toDetailResponse(memberCount))
@@ -134,7 +114,7 @@ class TeamController(
         @RequestParam(required = false) name: String?,
         @RequestParam(required = false) city: String?,
     ): ApiResponse<List<TeamSummaryResponse>> {
-        val teams = teamRepository.findActiveTeamsByFilter(name, city)
+        val teams = teamMembershipService.getActiveTeamsByFilter(name, city)
 
         val teamIds = teams.map { it.id }
         val memberCounts = teamMembershipService.getTeamMemberCounts(teamIds)

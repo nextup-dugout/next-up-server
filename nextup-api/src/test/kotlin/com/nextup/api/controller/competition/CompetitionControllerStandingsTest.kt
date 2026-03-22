@@ -7,7 +7,6 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
-import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import com.nextup.core.service.standings.dto.StandingsDto
@@ -32,15 +31,13 @@ class CompetitionControllerStandingsTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var competitionService: CompetitionService
     private lateinit var standingsService: StandingsService
-    private lateinit var competitionPlayerRepository: CompetitionPlayerRepositoryPort
 
     @BeforeEach
     fun setUp() {
         competitionService = mockk()
         standingsService = mockk()
-        competitionPlayerRepository = mockk()
 
-        val controller = CompetitionController(competitionService, standingsService, competitionPlayerRepository)
+        val controller = CompetitionController(competitionService, standingsService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)

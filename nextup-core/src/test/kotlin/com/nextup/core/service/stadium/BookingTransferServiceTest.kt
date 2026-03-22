@@ -9,8 +9,10 @@ import com.nextup.core.domain.stadium.BookingTransfer
 import com.nextup.core.domain.stadium.StadiumBooking
 import com.nextup.core.domain.stadium.StadiumSlot
 import com.nextup.core.domain.stadium.TransferStatus
+import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.port.repository.BookingTransferRepositoryPort
 import com.nextup.core.port.repository.StadiumBookingRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -27,13 +29,15 @@ import java.time.Instant
 class BookingTransferServiceTest {
     private lateinit var bookingTransferRepository: BookingTransferRepositoryPort
     private lateinit var bookingRepository: StadiumBookingRepositoryPort
+    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
     private lateinit var service: BookingTransferService
 
     @BeforeEach
     fun setUp() {
         bookingTransferRepository = mockk()
         bookingRepository = mockk()
-        service = BookingTransferService(bookingTransferRepository, bookingRepository)
+        teamMemberRepository = mockk()
+        service = BookingTransferService(bookingTransferRepository, bookingRepository, teamMemberRepository)
     }
 
     private fun createMockBooking(
@@ -73,7 +77,9 @@ class BookingTransferServiceTest {
             // given
             val booking = createMockBooking(id = 1L, teamId = 10L)
             val transfer = createMockTransfer()
+            val mockMember = mockk<TeamMember>(relaxed = true)
 
+            every { teamMemberRepository.findByTeamIdAndUserId(10L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(1L) } returns booking
             every { bookingTransferRepository.existsOpenTransferForBooking(1L) } returns false
             every { bookingTransferRepository.save(any()) } returns transfer
@@ -85,6 +91,7 @@ class BookingTransferServiceTest {
                     teamId = 10L,
                     price = BigDecimal("50000"),
                     message = "양도합니다",
+                    userId = 100L,
                 )
 
             // then
@@ -93,8 +100,27 @@ class BookingTransferServiceTest {
         }
 
         @Test
+        fun `should throw exception when user is not a team member`() {
+            // given
+            every { teamMemberRepository.findByTeamIdAndUserId(10L, 999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.createTransfer(
+                    bookingId = 1L,
+                    teamId = 10L,
+                    price = null,
+                    message = null,
+                    userId = 999L,
+                )
+            }.isInstanceOf(BookingTransferForbiddenException::class.java)
+        }
+
+        @Test
         fun `should throw exception when booking not found`() {
             // given
+            val mockMember = mockk<TeamMember>(relaxed = true)
+            every { teamMemberRepository.findByTeamIdAndUserId(10L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(99L) } returns null
 
             // when & then
@@ -104,6 +130,7 @@ class BookingTransferServiceTest {
                     teamId = 10L,
                     price = null,
                     message = null,
+                    userId = 100L,
                 )
             }.isInstanceOf(BookingNotFoundException::class.java)
         }
@@ -112,6 +139,8 @@ class BookingTransferServiceTest {
         fun `should throw exception when team does not own the booking`() {
             // given
             val booking = createMockBooking(teamId = 10L)
+            val mockMember = mockk<TeamMember>(relaxed = true)
+            every { teamMemberRepository.findByTeamIdAndUserId(99L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(1L) } returns booking
 
             // when & then
@@ -121,6 +150,7 @@ class BookingTransferServiceTest {
                     teamId = 99L,
                     price = null,
                     message = null,
+                    userId = 100L,
                 )
             }.isInstanceOf(BookingTransferForbiddenException::class.java)
         }
@@ -129,6 +159,8 @@ class BookingTransferServiceTest {
         fun `should throw exception when open transfer already exists`() {
             // given
             val booking = createMockBooking(teamId = 10L)
+            val mockMember = mockk<TeamMember>(relaxed = true)
+            every { teamMemberRepository.findByTeamIdAndUserId(10L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(1L) } returns booking
             every { bookingTransferRepository.existsOpenTransferForBooking(1L) } returns true
 
@@ -139,6 +171,7 @@ class BookingTransferServiceTest {
                     teamId = 10L,
                     price = null,
                     message = null,
+                    userId = 100L,
                 )
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
                 .hasMessageContaining("open transfer already exists")
@@ -153,14 +186,16 @@ class BookingTransferServiceTest {
             // given
             val transfer = createMockTransfer(sellerTeamId = 10L)
             val booking = createMockBooking(teamId = 10L)
+            val mockMember = mockk<TeamMember>(relaxed = true)
 
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
             every { bookingRepository.findByIdOrNull(transfer.bookingId) } returns booking
             every { bookingTransferRepository.save(any()) } returns transfer
             every { bookingRepository.save(any()) } returns booking
 
             // when
-            val result = service.acceptTransfer(transferId = 1L, buyerTeamId = 20L)
+            val result = service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 200L)
 
             // then
             assertThat(result.status).isEqualTo(TransferStatus.ACCEPTED)
@@ -170,13 +205,26 @@ class BookingTransferServiceTest {
         }
 
         @Test
+        fun `should throw exception when user is not a buyer team member`() {
+            // given
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 999L)
+            }.isInstanceOf(BookingTransferForbiddenException::class.java)
+        }
+
+        @Test
         fun `should throw exception when transfer not found`() {
             // given
+            val mockMember = mockk<TeamMember>(relaxed = true)
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(99L) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.acceptTransfer(transferId = 99L, buyerTeamId = 20L)
+                service.acceptTransfer(transferId = 99L, buyerTeamId = 20L, userId = 200L)
             }.isInstanceOf(BookingTransferNotFoundException::class.java)
         }
 
@@ -184,12 +232,14 @@ class BookingTransferServiceTest {
         fun `should throw exception when booking not found during accept`() {
             // given
             val transfer = createMockTransfer()
+            val mockMember = mockk<TeamMember>(relaxed = true)
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
             every { bookingRepository.findByIdOrNull(transfer.bookingId) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.acceptTransfer(transferId = 1L, buyerTeamId = 20L)
+                service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 200L)
             }.isInstanceOf(BookingNotFoundException::class.java)
         }
     }

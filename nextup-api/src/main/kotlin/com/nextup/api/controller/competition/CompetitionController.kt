@@ -4,9 +4,7 @@ import com.nextup.api.dto.competition.CompetitionResponse
 import com.nextup.api.dto.competition.CompetitionTeamResponse
 import com.nextup.api.dto.standings.StandingsResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
-import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController
 class CompetitionController(
     private val competitionService: CompetitionService,
     private val standingsService: StandingsService,
-    private val competitionPlayerRepository: CompetitionPlayerRepositoryPort,
 ) {
     /**
      * 대회 목록을 조회합니다.
@@ -97,23 +94,11 @@ class CompetitionController(
     fun getCompetitionTeams(
         @PathVariable id: Long,
     ): ApiResponse<List<CompetitionTeamResponse>> {
-        // 대회 존재 확인
-        competitionService.getById(id)
-
-        val activePlayers =
-            competitionPlayerRepository.findByCompetitionIdAndStatus(
-                id,
-                CompetitionPlayerStatus.ACTIVE,
-            )
-
+        val teamPlayerCounts = competitionService.getCompetitionTeams(id)
         val teamResponses =
-            activePlayers
-                .groupBy { it.team }
-                .map { (team, players) ->
-                    CompetitionTeamResponse.from(team, players.size)
-                }
+            teamPlayerCounts
+                .map { (team, playerCount) -> CompetitionTeamResponse.from(team, playerCount) }
                 .sortedBy { it.name }
-
         return ApiResponse.success(teamResponses)
     }
 }

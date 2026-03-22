@@ -50,6 +50,7 @@ class BookingTransferController(
                     request.expiresAt
                         ?: java.time.Instant.now()
                             .plusSeconds(BookingTransferService.DEFAULT_EXPIRY_SECONDS),
+                userId = userId,
             )
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -72,6 +73,7 @@ class BookingTransferController(
             bookingTransferService.acceptTransfer(
                 transferId = transferId,
                 buyerTeamId = request.buyerTeamId,
+                userId = userId,
             )
         return ApiResponse.success(BookingTransferResponse.from(transfer))
     }
@@ -86,7 +88,6 @@ class BookingTransferController(
     fun rejectTransfer(
         @PathVariable transferId: Long,
         @RequestParam teamId: Long,
-        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
             bookingTransferService.cancelTransfer(
@@ -113,6 +114,7 @@ class BookingTransferController(
      * GET /api/v1/booking-transfers/my?teamId={teamId}
      */
     @GetMapping("/my")
+    @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun getMyTransfers(
         @RequestParam teamId: Long,
     ): ApiResponse<List<BookingTransferResponse>> {

@@ -1,5 +1,6 @@
 package com.nextup.core.service.recruitment
 
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.RecruitmentNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
@@ -53,9 +54,11 @@ class TeamRecruitmentService(
     @Transactional
     fun updateRecruitment(
         id: Long,
+        teamId: Long,
         request: UpdateRecruitmentRequest,
     ): TeamRecruitment {
         val recruitment = getById(id)
+        verifyTeamOwnership(recruitment, teamId)
 
         try {
             recruitment.update(
@@ -119,8 +122,24 @@ class TeamRecruitmentService(
      * 모집 공고를 삭제합니다.
      */
     @Transactional
-    fun deleteRecruitment(id: Long) {
+    fun deleteRecruitment(
+        id: Long,
+        teamId: Long
+    ) {
         val recruitment = getById(id)
+        verifyTeamOwnership(recruitment, teamId)
         recruitmentRepository.delete(recruitment)
+    }
+
+    private fun verifyTeamOwnership(
+        recruitment: TeamRecruitment,
+        teamId: Long,
+    ) {
+        if (recruitment.team.id != teamId) {
+            throw ForbiddenException(
+                "RECRUITMENT_NOT_OWNED",
+                "해당 팀의 모집 공고가 아닙니다",
+            )
+        }
     }
 }

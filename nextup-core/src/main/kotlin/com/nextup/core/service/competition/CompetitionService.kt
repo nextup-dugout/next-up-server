@@ -5,9 +5,11 @@ import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
@@ -187,6 +189,25 @@ class CompetitionService(
             throw InvalidCompetitionStateException(e.message ?: "Cannot postpone competition")
         }
         return competition
+    }
+
+    /**
+     * 대회 참가 팀 목록을 조회합니다.
+     *
+     * 활성 상태(ACTIVE)의 대회 등록 선수를 기준으로
+     * 팀별 등록 선수 수를 반환합니다.
+     *
+     * @param competitionId 대회 ID
+     * @return 팀 → 등록 선수 수 매핑
+     */
+    fun getCompetitionTeams(competitionId: Long): Map<Team, Int> {
+        getById(competitionId)
+        val activePlayers =
+            competitionPlayerRepository.findByCompetitionIdAndStatus(
+                competitionId,
+                CompetitionPlayerStatus.ACTIVE,
+            )
+        return activePlayers.groupBy { it.team }.mapValues { it.value.size }
     }
 
     /**

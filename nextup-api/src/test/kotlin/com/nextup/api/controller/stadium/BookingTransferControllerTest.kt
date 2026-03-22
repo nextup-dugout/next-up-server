@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
@@ -37,6 +36,8 @@ class BookingTransferControllerTest {
     private lateinit var bookingTransferService: BookingTransferService
     private lateinit var objectMapper: ObjectMapper
 
+    private val authenticatedUserId = 100L
+
     @BeforeEach
     fun setUp() {
         bookingTransferService = mockk()
@@ -48,7 +49,9 @@ class BookingTransferControllerTest {
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
-                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+                .setCustomArgumentResolvers(
+                    AuthenticationPrincipalResolver(authenticatedUserId),
+                )
                 .build()
         objectMapper =
             jacksonObjectMapper().registerModule(JavaTimeModule())
@@ -99,6 +102,7 @@ class BookingTransferControllerTest {
                     price = BigDecimal("50000"),
                     message = "양도합니다",
                     expiresAt = any(),
+                    userId = any(),
                 )
             } returns transfer
 
@@ -134,6 +138,7 @@ class BookingTransferControllerTest {
                     price = null,
                     message = null,
                     expiresAt = expiresAt,
+                    userId = any(),
                 )
             } returns transfer
 
@@ -165,6 +170,7 @@ class BookingTransferControllerTest {
                 bookingTransferService.acceptTransfer(
                     transferId = 1L,
                     buyerTeamId = 20L,
+                    userId = any(),
                 )
             } returns transfer
 
@@ -188,6 +194,7 @@ class BookingTransferControllerTest {
                 bookingTransferService.acceptTransfer(
                     transferId = 999L,
                     buyerTeamId = 20L,
+                    userId = any(),
                 )
             } throws BookingTransferNotFoundException(999L)
 
@@ -331,4 +338,23 @@ class BookingTransferControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(0))
         }
     }
+}
+
+/**
+ * 테스트용 @AuthenticationPrincipal 리졸버
+ */
+private class AuthenticationPrincipalResolver(
+    private val userId: Long,
+) : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+    override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+        parameter.hasParameterAnnotation(
+            org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+        )
+
+    override fun resolveArgument(
+        parameter: org.springframework.core.MethodParameter,
+        mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+        webRequest: org.springframework.web.context.request.NativeWebRequest,
+        binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+    ): Any = userId
 }

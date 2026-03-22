@@ -2,14 +2,11 @@ package com.nextup.api.controller.competition
 
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
-import com.nextup.core.domain.competition.CompetitionPlayer
-import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
-import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.standings.StandingsService
 import io.mockk.every
@@ -30,15 +27,13 @@ class CompetitionControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var competitionService: CompetitionService
     private lateinit var standingsService: StandingsService
-    private lateinit var competitionPlayerRepository: CompetitionPlayerRepositoryPort
     private lateinit var controller: CompetitionController
 
     @BeforeEach
     fun setUp() {
         competitionService = mockk()
         standingsService = mockk()
-        competitionPlayerRepository = mockk()
-        controller = CompetitionController(competitionService, standingsService, competitionPlayerRepository)
+        controller = CompetitionController(competitionService, standingsService)
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
     }
 
@@ -166,24 +161,10 @@ class CompetitionControllerTest {
             val competitionId = 1L
             val association = createAssociation(1L, "서울시야구협회")
             val league = createLeague(1L, "1부 리그", association)
-            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
             val team1 = createTeam(1L, league, "타이거즈", "서울")
             val team2 = createTeam(2L, league, "베어스", "인천")
-            val player1 = createPlayer(1L, "선수1")
-            val player2 = createPlayer(2L, "선수2")
-            val player3 = createPlayer(3L, "선수3")
 
-            val cp1 = CompetitionPlayer.register(competition, team1, player1)
-            val cp2 = CompetitionPlayer.register(competition, team1, player2)
-            val cp3 = CompetitionPlayer.register(competition, team2, player3)
-
-            every { competitionService.getById(competitionId) } returns competition
-            every {
-                competitionPlayerRepository.findByCompetitionIdAndStatus(
-                    competitionId,
-                    CompetitionPlayerStatus.ACTIVE,
-                )
-            } returns listOf(cp1, cp2, cp3)
+            every { competitionService.getCompetitionTeams(competitionId) } returns mapOf(team1 to 2, team2 to 1)
 
             // when & then
             mockMvc
@@ -198,17 +179,8 @@ class CompetitionControllerTest {
         fun `should return empty list when no teams registered`() {
             // given
             val competitionId = 1L
-            val association = createAssociation(1L, "서울시야구협회")
-            val league = createLeague(1L, "1부 리그", association)
-            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
 
-            every { competitionService.getById(competitionId) } returns competition
-            every {
-                competitionPlayerRepository.findByCompetitionIdAndStatus(
-                    competitionId,
-                    CompetitionPlayerStatus.ACTIVE,
-                )
-            } returns emptyList()
+            every { competitionService.getCompetitionTeams(competitionId) } returns emptyMap()
 
             // when & then
             mockMvc

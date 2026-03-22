@@ -3,8 +3,8 @@ package com.nextup.api.controller.user
 import com.nextup.api.dto.game.GameSummaryResponse
 import com.nextup.api.dto.user.*
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.game.GameScheduleService
+import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/me")
 class ProfileController(
     private val userService: UserService,
-    private val teamMemberRepository: TeamMemberRepositoryPort,
+    private val teamMembershipService: TeamMembershipService,
     private val gameScheduleService: GameScheduleService,
 ) {
     /**
@@ -40,7 +40,7 @@ class ProfileController(
     fun getMyTeams(
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<MyTeamResponse>> {
-        val activeMembers = teamMemberRepository.findAllActiveByUserId(userId)
+        val activeMembers = teamMembershipService.getActiveTeamsByUserId(userId)
         return ApiResponse.success(activeMembers.map { MyTeamResponse.from(it) })
     }
 
@@ -52,7 +52,7 @@ class ProfileController(
         @AuthenticationPrincipal userId: Long,
         @RequestParam(defaultValue = "10") limit: Int,
     ): ApiResponse<List<GameSummaryResponse>> {
-        val activeMembers = teamMemberRepository.findAllActiveByUserId(userId)
+        val activeMembers = teamMembershipService.getActiveTeamsByUserId(userId)
         val teamIds = activeMembers.map { it.team.id }
         val games = gameScheduleService.getUpcomingGamesByTeamIds(teamIds, limit)
         return ApiResponse.success(games.map { GameSummaryResponse.from(it) })

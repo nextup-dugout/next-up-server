@@ -1,6 +1,8 @@
 package com.nextup.infrastructure.service.team
 
 import com.nextup.common.exception.*
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -22,6 +24,7 @@ class TeamMembershipServiceImpl(
     private val teamJoinRequestRepository: TeamJoinRequestRepositoryPort,
     private val teamBlacklistRepository: TeamBlacklistRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val leagueRepository: LeagueRepositoryPort,
     private val userRepository: UserRepositoryPort,
     private val playerRepository: PlayerRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
@@ -307,53 +310,6 @@ class TeamMembershipServiceImpl(
     }
 
     @Transactional
-    override fun createTeamWithOwner(
-        userId: Long,
-        team: Team,
-        uniformNumber: Int,
-    ): Team {
-        // 등번호 유효성 검증
-        if (uniformNumber !in 1..99) {
-            throw InvalidUniformNumberException(uniformNumber)
-        }
-
-        val user =
-            userRepository.findByIdOrNull(userId)
-                ?: throw UserNotFoundException(userId)
-        val player =
-            user.player
-                ?: throw PlayerNotFoundException(userId)
-
-        // 이미 다른 팀에 소속된 경우 검증
-        val activeMember = teamMemberRepository.findActiveByUserId(userId)
-        if (activeMember != null) {
-            throw AlreadyInTeamException(userId, activeMember.team.id, activeMember.team.name)
-        }
-
-        // 팀 이름 중복 검증
-        val existingTeam = teamRepository.findByName(team.name)
-        if (existingTeam != null) {
-            throw TeamAlreadyExistsException(team.name)
-        }
-
-        // 팀 저장
-        val savedTeam = teamRepository.save(team)
-
-        // OWNER로 멤버 생성
-        val ownerMember =
-            TeamMember.create(
-                team = savedTeam,
-                user = user,
-                player = player,
-                uniformNumber = uniformNumber,
-                role = TeamMemberRole.OWNER,
-            )
-        teamMemberRepository.save(ownerMember)
-
-        return savedTeam
-    }
-
-    @Transactional
     override fun deleteTeam(
         teamId: Long,
         userId: Long,
@@ -393,5 +349,142 @@ class TeamMembershipServiceImpl(
         if (teamIds.isEmpty()) return emptyMap()
         return teamMemberRepository.countByTeamIdsAndStatus(teamIds, TeamMemberStatus.ACTIVE)
             .mapValues { it.value.toInt() }
+    }
+
+    @Transactional
+    override fun updateTeam(
+        teamId: Long,
+        name: String?,
+        city: String?,
+        abbreviation: String?,
+    ): Team {
+        val team =
+            teamRepository.findByIdWithLeague(teamId)
+                ?: throw TeamNotFoundException(teamId)
+        team.updateBasicInfo(name = name, city = city, abbreviation = abbreviation)
+        return teamRepository.save(team)
+    }
+
+    override fun getTeamWithLeague(teamId: Long): Team =
+        teamRepository.findByIdWithLeague(teamId)
+            ?: throw TeamNotFoundException(teamId)
+
+    override fun getActiveTeamsByFilter(
+        name: String?,
+        city: String?,
+    ): List<Team> = teamRepository.findActiveTeamsByFilter(name, city)
+
+    @Transactional
+    override fun createTeamWithOwner(
+        userId: Long,
+        leagueId: Long,
+        name: String,
+        city: String,
+        abbreviation: String?,
+        foundedYear: Int,
+        uniformNumber: Int,
+    ): Team {
+        if (uniformNumber !in 1..99) {
+            throw InvalidUniformNumberException(uniformNumber)
+        }
+
+        val league =
+            leagueRepository.findByIdOrNull(leagueId)
+                ?: throw LeagueNotFoundException(leagueId)
+
+        val user =
+            userRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
+        val player =
+            user.player
+                ?: throw PlayerNotFoundException(userId)
+
+        val activeMember = teamMemberRepository.findActiveByUserId(userId)
+        if (activeMember != null) {
+            throw AlreadyInTeamException(userId, activeMember.team.id, activeMember.team.name)
+        }
+
+        val existingTeam = teamRepository.findByName(name)
+        if (existingTeam != null) {
+            throw TeamAlreadyExistsException(name)
+        }
+
+        val team =
+            Team(
+                league = league,
+                name = name,
+                city = city,
+                abbreviation = abbreviation,
+                foundedYear = foundedYear,
+            )
+        val savedTeam = teamRepository.save(team)
+
+        val ownerMember =
+            TeamMember.create(
+                team = savedTeam,
+                user = user,
+                player = player,
+                uniformNumber = uniformNumber,
+                role = TeamMemberRole.OWNER,
+            )
+        teamMemberRepository.save(ownerMember)
+
+        return savedTeam
+    }
+
+    override fun getActiveTeamsByUserId(userId: Long): List<TeamMember> =
+        teamMemberRepository.findAllActiveByUserId(userId)
+
+    override fun getMembersByTeamIdPaged(
+        teamId: Long,
+        status: TeamMemberStatus?,
+        pageCommand: PageCommand,
+    ): PageResult<TeamMember> =
+        if (status != null) {
+            val list = teamMemberRepository.findByTeamIdAndStatus(teamId, status)
+            val start = pageCommand.page * pageCommand.size
+            val end = minOf(start + pageCommand.size, list.size)
+            val totalPages =
+                if (pageCommand.size == 0) 0 else (list.size + pageCommand.size - 1) / pageCommand.size
+            PageResult(
+                content = if (start < list.size) list.subList(start, end) else emptyList(),
+                page = pageCommand.page,
+                size = pageCommand.size,
+                totalElements = list.size.toLong(),
+                totalPages = totalPages,
+            )
+        } else {
+            teamMemberRepository.findByTeamIdWithUserAndPlayer(teamId, pageCommand)
+        }
+
+    @Transactional
+    override fun updateMemberStatus(
+        memberId: Long,
+        status: TeamMemberStatus,
+        reason: String?,
+    ): TeamMember {
+        val member =
+            teamMemberRepository.findByIdOrNull(memberId)
+                ?: throw TeamMemberNotFoundException(memberId)
+        when (status) {
+            TeamMemberStatus.ACTIVE -> {
+                if (member.status == TeamMemberStatus.SUSPENDED) member.status = TeamMemberStatus.ACTIVE
+            }
+            TeamMemberStatus.SUSPENDED -> {
+                member.status = TeamMemberStatus.SUSPENDED
+                member.memo = reason
+            }
+            else ->
+                throw InvalidInputException(
+                    "INVALID_STATUS",
+                    "Cannot change to status: $status",
+                )
+        }
+        return teamMemberRepository.save(member)
+    }
+
+    @Transactional
+    override fun deleteMemberByAdmin(memberId: Long) {
+        teamMemberRepository.deleteById(memberId)
     }
 }

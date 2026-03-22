@@ -52,9 +52,9 @@ class AppealController(
      */
     @GetMapping("/appeals")
     fun getMyAppeals(
-        @RequestParam appealerId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<AppealResponse>> {
-        val appeals = appealService.getAppealsByAppealer(appealerId)
+        val appeals = appealService.getAppealsByAppealer(userId)
         return ApiResponse.success(appeals.map { AppealResponse.from(it) })
     }
 

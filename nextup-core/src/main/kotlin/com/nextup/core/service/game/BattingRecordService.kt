@@ -1,6 +1,7 @@
 package com.nextup.core.service.game
 
 import com.nextup.common.exception.BattingRecordNotFoundException
+import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
 import com.nextup.core.domain.game.BattingRecord
@@ -21,6 +22,20 @@ class BattingRecordService(
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
+    /**
+     * gameId와 playerId로 타격 기록을 생성합니다.
+     */
+    @Transactional
+    fun createRecordByGameAndPlayer(
+        gameId: Long,
+        playerId: Long,
+    ): BattingRecord {
+        val gamePlayer =
+            gamePlayerRepository.findByGameIdAndPlayerId(gameId, playerId)
+                ?: throw GamePlayerNotFoundByGameAndPlayerException(gameId, playerId)
+        return createRecord(gamePlayer.id)
+    }
+
     /**
      * 타격 기록을 생성합니다.
      */

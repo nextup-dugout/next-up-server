@@ -85,6 +85,7 @@ class RecruitmentController(
         val recruitment =
             recruitmentService.updateRecruitment(
                 id = id,
+                teamId = teamId,
                 request =
                     UpdateRecruitmentRequest(
                         title = request.title,
@@ -108,7 +109,7 @@ class RecruitmentController(
         @PathVariable id: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<Unit> {
-        recruitmentService.deleteRecruitment(id)
+        recruitmentService.deleteRecruitment(id, teamId)
         return ApiResponse.success(Unit)
     }
 }

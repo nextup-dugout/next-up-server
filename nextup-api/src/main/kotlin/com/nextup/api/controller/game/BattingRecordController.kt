@@ -4,8 +4,6 @@ import com.nextup.api.dto.game.BattingRecordResponse
 import com.nextup.api.dto.game.CreateBattingRecordRequest
 import com.nextup.api.mapper.game.toResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
-import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.service.game.BattingRecordService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/games/{gameId}/batting-records")
 class BattingRecordController(
     private val battingRecordService: BattingRecordService,
-    private val gamePlayerRepository: GamePlayerRepositoryPort,
 ) {
     @GetMapping
     fun getBattingRecordsByGame(
@@ -37,11 +34,7 @@ class BattingRecordController(
         @PathVariable gameId: Long,
         @Valid @RequestBody request: CreateBattingRecordRequest,
     ): ApiResponse<BattingRecordResponse> {
-        val gamePlayer =
-            gamePlayerRepository.findByGameIdAndPlayerId(gameId, request.playerId)
-                ?: throw GamePlayerNotFoundByGameAndPlayerException(gameId, request.playerId)
-
-        val record = battingRecordService.createRecord(gamePlayer.id)
+        val record = battingRecordService.createRecordByGameAndPlayer(gameId, request.playerId)
         return ApiResponse.success(record.toResponse())
     }
 }

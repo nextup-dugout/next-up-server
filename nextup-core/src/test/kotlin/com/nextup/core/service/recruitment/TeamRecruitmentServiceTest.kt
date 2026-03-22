@@ -1,5 +1,6 @@
 package com.nextup.core.service.recruitment
 
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.RecruitmentNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
@@ -159,7 +160,7 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.findByIdOrNull(1L) } returns recruitment
 
         // when
-        val result = service.updateRecruitment(1L, updateRequest)
+        val result = service.updateRecruitment(1L, 1L, updateRequest)
 
         // then
         assertThat(result.title).isEqualTo("투수 및 포수 모집")
@@ -195,11 +196,43 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.findByIdOrNull(1L) } returns recruitment
 
         // when
-        val result = service.updateRecruitment(1L, updateRequest)
+        val result = service.updateRecruitment(1L, 1L, updateRequest)
 
         // then
         assertThat(result.title).isEqualTo("투수 긴급 모집")
         assertThat(result.description).isEqualTo("주말 리그 투수를 모집합니다") // 변경되지 않음
+
+        verify(exactly = 1) { recruitmentRepository.findByIdOrNull(1L) }
+    }
+
+    @Test
+    fun `다른 팀의 모집 공고를 수정하면 예외가 발생한다`() {
+        // given
+        val recruitment =
+            TeamRecruitment.create(
+                team = team,
+                title = "투수 모집",
+                description = "주말 리그 투수를 모집합니다",
+                positionsNeeded = "투수",
+                ageRange = null,
+                skillLevel = null,
+                location = null,
+                deadline = LocalDate.now().plusDays(30),
+            )
+
+        val updateRequest =
+            UpdateRecruitmentRequest(
+                title = "투수 긴급 모집",
+                description = null,
+                positionsNeeded = null,
+                deadline = null,
+            )
+
+        every { recruitmentRepository.findByIdOrNull(1L) } returns recruitment
+
+        // when & then
+        assertThatThrownBy { service.updateRecruitment(1L, 999L, updateRequest) }
+            .isInstanceOf(ForbiddenException::class.java)
 
         verify(exactly = 1) { recruitmentRepository.findByIdOrNull(1L) }
     }
@@ -231,7 +264,7 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.findByIdOrNull(1L) } returns recruitment
 
         // when & then
-        assertThatThrownBy { service.updateRecruitment(1L, updateRequest) }
+        assertThatThrownBy { service.updateRecruitment(1L, 1L, updateRequest) }
             .isInstanceOf(InvalidStateException::class.java)
 
         verify(exactly = 1) { recruitmentRepository.findByIdOrNull(1L) }
@@ -251,7 +284,7 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.findByIdOrNull(999L) } returns null
 
         // when & then
-        assertThatThrownBy { service.updateRecruitment(999L, updateRequest) }
+        assertThatThrownBy { service.updateRecruitment(999L, 1L, updateRequest) }
             .isInstanceOf(RecruitmentNotFoundException::class.java)
 
         verify(exactly = 1) { recruitmentRepository.findByIdOrNull(999L) }
@@ -555,11 +588,36 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.delete(recruitment) } returns Unit
 
         // when
-        service.deleteRecruitment(1L)
+        service.deleteRecruitment(1L, 1L)
 
         // then
         verify(exactly = 1) { recruitmentRepository.findByIdOrNull(1L) }
         verify(exactly = 1) { recruitmentRepository.delete(recruitment) }
+    }
+
+    @Test
+    fun `다른 팀의 모집 공고를 삭제하면 예외가 발생한다`() {
+        // given
+        val recruitment =
+            TeamRecruitment.create(
+                team = team,
+                title = "투수 모집",
+                description = "주말 리그 투수를 모집합니다",
+                positionsNeeded = "투수",
+                ageRange = null,
+                skillLevel = null,
+                location = null,
+                deadline = LocalDate.now().plusDays(30),
+            )
+
+        every { recruitmentRepository.findByIdOrNull(1L) } returns recruitment
+
+        // when & then
+        assertThatThrownBy { service.deleteRecruitment(1L, 999L) }
+            .isInstanceOf(ForbiddenException::class.java)
+
+        verify(exactly = 1) { recruitmentRepository.findByIdOrNull(1L) }
+        verify(exactly = 0) { recruitmentRepository.delete(any()) }
     }
 
     @Test
@@ -568,7 +626,7 @@ class TeamRecruitmentServiceTest {
         every { recruitmentRepository.findByIdOrNull(999L) } returns null
 
         // when & then
-        assertThatThrownBy { service.deleteRecruitment(999L) }
+        assertThatThrownBy { service.deleteRecruitment(999L, 1L) }
             .isInstanceOf(RecruitmentNotFoundException::class.java)
 
         verify(exactly = 1) { recruitmentRepository.findByIdOrNull(999L) }
