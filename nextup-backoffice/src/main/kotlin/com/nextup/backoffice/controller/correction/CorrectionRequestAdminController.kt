@@ -6,6 +6,7 @@ import com.nextup.backoffice.dto.correction.RejectCorrectionRequestDto
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.correction.CorrectionRequestService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/backoffice/corrections")
+@PreAuthorize("hasRole('ADMIN')")
 class CorrectionRequestAdminController(
     private val correctionRequestService: CorrectionRequestService,
 ) {
