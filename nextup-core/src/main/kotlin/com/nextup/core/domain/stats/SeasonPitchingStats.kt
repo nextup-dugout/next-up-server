@@ -262,8 +262,34 @@ class SeasonPitchingStats(
 
     /**
      * 경기 투수 기록을 누적합니다.
+     *
+     * 실시간 갱신(applyLiveUpdate)이 적용되지 않은 경우에 사용합니다.
+     * 경기 취소 후 전체 재집계, 또는 실시간 갱신 없이 경기가 종료된 경우에 해당합니다.
      */
     fun addGameRecord(record: PitchingRecord) {
+        addGameSummaryFields(record)
+        addLiveTrackingFields(record)
+    }
+
+    /**
+     * 경기 종료 시 경기 요약 필드만 누적합니다.
+     *
+     * 경기 중 applyLiveUpdate로 실시간 갱신된 필드(피안타, 삼진, 볼넷, 사구, 피홈런, 대면타자)는
+     * 이미 반영되어 있으므로 제외하고, 경기 종료 시에만 확정되는 필드만 추가합니다:
+     * - 출전 경기 수, 선발 경기 수
+     * - 이닝, 실점, 자책점
+     * - 와일드피치, 보크
+     * - 투구 수, 스트라이크 수
+     * - 승/패/세이브/홀드/블론세이브
+     */
+    fun addGameRecordForEndOfGame(record: PitchingRecord) {
+        addGameSummaryFields(record)
+    }
+
+    /**
+     * 경기 요약 필드를 누적합니다 (경기 종료 시에만 확정되는 필드).
+     */
+    private fun addGameSummaryFields(record: PitchingRecord) {
         gamesPlayed++
         if (record.isStartingPitcher) {
             gamesStarted++
@@ -271,14 +297,8 @@ class SeasonPitchingStats(
         inningsPitchedOuts += record.inningsPitchedOuts
         earnedRuns += record.earnedRuns
         runsAllowed += record.runsAllowed
-        hitsAllowed += record.hitsAllowed
-        walksAllowed += record.walksAllowed
-        strikeouts += record.strikeouts
-        homeRunsAllowed += record.homeRunsAllowed
-        hitBatsmen += record.hitBatsmen
         wildPitches += record.wildPitches
         balks += record.balks
-        battersFaced += record.battersFaced
 
         // 투구 수 누적 (nullable이므로 null 체크)
         if (record.pitchesThrown != null) {
@@ -297,6 +317,18 @@ class SeasonPitchingStats(
             com.nextup.core.domain.game.PitchingDecision.BLOWN_SAVE -> blownSaves++
             else -> { /* NONE */ }
         }
+    }
+
+    /**
+     * 실시간 추적 필드를 누적합니다 (applyLiveUpdate로 이미 갱신되는 필드).
+     */
+    private fun addLiveTrackingFields(record: PitchingRecord) {
+        hitsAllowed += record.hitsAllowed
+        walksAllowed += record.walksAllowed
+        strikeouts += record.strikeouts
+        homeRunsAllowed += record.homeRunsAllowed
+        hitBatsmen += record.hitBatsmen
+        battersFaced += record.battersFaced
     }
 
     /**

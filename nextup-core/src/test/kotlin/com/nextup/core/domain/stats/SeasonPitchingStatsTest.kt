@@ -455,6 +455,126 @@ class SeasonPitchingStatsTest {
     }
 
     @Nested
+    @DisplayName("경기 종료 시 기록 추가 (addGameRecordForEndOfGame)")
+    inner class AddGameRecordForEndOfGame {
+        @Test
+        fun `실시간 갱신 필드를 제외하고 경기 요약 필드만 추가한다`() {
+            // given: 경기 중 applyLiveUpdate로 피안타 2, 삼진 3, 볼넷 1이 이미 반영된 상태
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            stats.applyLiveUpdate(PlateAppearanceResult.DOUBLE)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            stats.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 1,
+                        runsAllowed = 2,
+                        hitsAllowed = 2,
+                        walksAllowed = 1,
+                        strikeouts = 3,
+                        battersFaced = 6,
+                        homeRunsAllowed = 0,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+
+            // when
+            stats.addGameRecordForEndOfGame(record)
+
+            // then: 실시간 갱신 필드는 applyLiveUpdate 값 그대로 (중복 추가 안 됨)
+            assertThat(stats.hitsAllowed).isEqualTo(2)
+            assertThat(stats.strikeouts).isEqualTo(3)
+            assertThat(stats.walksAllowed).isEqualTo(1)
+            assertThat(stats.homeRunsAllowed).isEqualTo(0)
+            assertThat(stats.hitBatsmen).isEqualTo(0)
+            assertThat(stats.battersFaced).isEqualTo(6)
+
+            // then: 경기 요약 필드는 정상 추가됨
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.gamesStarted).isEqualTo(1)
+            assertThat(stats.inningsPitchedOuts).isEqualTo(18)
+            assertThat(stats.earnedRuns).isEqualTo(1)
+            assertThat(stats.runsAllowed).isEqualTo(2)
+            assertThat(stats.wins).isEqualTo(1)
+        }
+
+        @Test
+        fun `addGameRecord는 실시간 갱신 필드도 포함하여 전체 기록을 추가한다`() {
+            // given: 실시간 갱신 없이 바로 경기 종료 (신규 생성 케이스)
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = true).apply {
+                    setStats(
+                        inningsPitchedOuts = 18,
+                        earnedRuns = 1,
+                        runsAllowed = 2,
+                        hitsAllowed = 5,
+                        walksAllowed = 2,
+                        strikeouts = 7,
+                        battersFaced = 25,
+                        homeRunsAllowed = 1,
+                        decision = PitchingDecision.WIN,
+                    )
+                }
+
+            // when
+            stats.addGameRecord(record)
+
+            // then: 모든 필드가 추가됨
+            assertThat(stats.hitsAllowed).isEqualTo(5)
+            assertThat(stats.strikeouts).isEqualTo(7)
+            assertThat(stats.walksAllowed).isEqualTo(2)
+            assertThat(stats.homeRunsAllowed).isEqualTo(1)
+            assertThat(stats.battersFaced).isEqualTo(25)
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.inningsPitchedOuts).isEqualTo(18)
+            assertThat(stats.earnedRuns).isEqualTo(1)
+            assertThat(stats.runsAllowed).isEqualTo(2)
+            assertThat(stats.wins).isEqualTo(1)
+        }
+
+        @Test
+        fun `addGameRecordForEndOfGame는 구원 투수 기록도 정상 처리한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            val gamePlayer = mockk<GamePlayer>()
+            val record =
+                PitchingRecord.create(gamePlayer, isStartingPitcher = false).apply {
+                    setStats(
+                        inningsPitchedOuts = 3,
+                        earnedRuns = 0,
+                        runsAllowed = 0,
+                        hitsAllowed = 0,
+                        walksAllowed = 0,
+                        strikeouts = 1,
+                        battersFaced = 1,
+                        decision = PitchingDecision.SAVE,
+                    )
+                }
+
+            // when
+            stats.addGameRecordForEndOfGame(record)
+
+            // then
+            assertThat(stats.gamesPlayed).isEqualTo(1)
+            assertThat(stats.gamesStarted).isEqualTo(0)
+            assertThat(stats.saves).isEqualTo(1)
+            assertThat(stats.inningsPitchedOuts).isEqualTo(3)
+            assertThat(stats.strikeouts).isEqualTo(1) // applyLiveUpdate 값만, 중복 아님
+            assertThat(stats.battersFaced).isEqualTo(1) // applyLiveUpdate 값만
+        }
+    }
+
+    @Nested
     @DisplayName("경기 기록 롤백 (revertGameRecord)")
     inner class RevertGameRecord {
         @Test
