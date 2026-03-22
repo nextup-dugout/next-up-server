@@ -209,4 +209,33 @@ object LineupValidator {
             throw MercenaryQuotaExceededException(mercenaryCountInLineup, maxMercenaryCount)
         }
     }
+
+    /**
+     * L-3: 교체 시 용병 쿼터 검증
+     *
+     * 경기 중 교체 선수가 용병인 경우, 현재 경기에 등록된 용병 수와
+     * 교체로 추가되는 용병 수를 합산하여 대회 규칙의 최대 허용 수를 초과하는지 검증합니다.
+     *
+     * @param currentMercenaryCount 현재 경기에 등록된 용병 수 (GamePlayer 기준)
+     * @param isIncomingPlayerMercenary 교체 들어오는 선수가 용병인지 여부
+     * @param isOutgoingPlayerMercenary 교체 나가는 선수가 용병인지 여부
+     * @param maxMercenaryCount 최대 용병 허용 수
+     * @throws MercenaryQuotaExceededException 용병 쿼터 초과 시
+     */
+    fun validateMercenaryQuotaForSubstitution(
+        currentMercenaryCount: Int,
+        isIncomingPlayerMercenary: Boolean,
+        isOutgoingPlayerMercenary: Boolean,
+        maxMercenaryCount: Int,
+    ) {
+        // 교체 후 용병 수 계산: 기존 용병 수 - 나가는 용병 + 들어오는 용병
+        val afterCount =
+            currentMercenaryCount -
+                (if (isOutgoingPlayerMercenary) 1 else 0) +
+                (if (isIncomingPlayerMercenary) 1 else 0)
+
+        if (afterCount > maxMercenaryCount) {
+            throw MercenaryQuotaExceededException(afterCount, maxMercenaryCount)
+        }
+    }
 }
