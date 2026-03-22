@@ -3,6 +3,8 @@ package com.nextup.core.service.game
 import com.nextup.common.exception.FieldingRecordNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
+import com.nextup.core.domain.event.FieldingEventType
+import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.player.Position
@@ -18,10 +20,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 
 class FieldingRecordServiceTest {
     private lateinit var fieldingRecordRepository: FieldingRecordRepositoryPort
     private lateinit var gamePlayerRepository: GamePlayerRepositoryPort
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var fieldingRecordService: FieldingRecordService
 
     private lateinit var mockGamePlayer: GamePlayer
@@ -31,14 +35,20 @@ class FieldingRecordServiceTest {
     fun setUp() {
         fieldingRecordRepository = mockk()
         gamePlayerRepository = mockk()
+        eventPublisher = mockk(relaxed = true)
         fieldingRecordService =
             FieldingRecordService(
                 fieldingRecordRepository = fieldingRecordRepository,
                 gamePlayerRepository = gamePlayerRepository,
+                eventPublisher = eventPublisher,
             )
 
         mockGamePlayer = mockk(relaxed = true)
         mockFieldingRecord = mockk(relaxed = true)
+
+        // L-6: 이벤트 발행을 위한 GamePlayer → GameTeam → Game 체인 설정
+        every { mockFieldingRecord.gamePlayer.gameTeam.game.id } returns 10L
+        every { mockFieldingRecord.gamePlayer.player.id } returns 1L
     }
 
     @Test
@@ -219,6 +229,86 @@ class FieldingRecordServiceTest {
 
         // then
         assertThat(result).isEmpty()
+    }
+
+    // L-6: 수비 기록 변경 시 FieldingRecordUpdatedEvent 발행 검증
+
+    @Test
+    fun `recordPutOut should publish FieldingRecordUpdatedEvent with PUT_OUT type`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        val eventSlot = slot<FieldingRecordUpdatedEvent>()
+
+        // when
+        fieldingRecordService.recordPutOut(gamePlayerId)
+
+        // then
+        verify { eventPublisher.publishEvent(capture(eventSlot)) }
+        assertThat(eventSlot.captured.type).isEqualTo(FieldingEventType.PUT_OUT)
+        assertThat(eventSlot.captured.gameId).isEqualTo(10L)
+        assertThat(eventSlot.captured.playerId).isEqualTo(1L)
+        assertThat(eventSlot.captured.isRevert).isFalse()
+    }
+
+    @Test
+    fun `recordAssist should publish FieldingRecordUpdatedEvent with ASSIST type`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        val eventSlot = slot<FieldingRecordUpdatedEvent>()
+
+        // when
+        fieldingRecordService.recordAssist(gamePlayerId)
+
+        // then
+        verify { eventPublisher.publishEvent(capture(eventSlot)) }
+        assertThat(eventSlot.captured.type).isEqualTo(FieldingEventType.ASSIST)
+    }
+
+    @Test
+    fun `recordError should publish FieldingRecordUpdatedEvent with ERROR type`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        val eventSlot = slot<FieldingRecordUpdatedEvent>()
+
+        // when
+        fieldingRecordService.recordError(gamePlayerId)
+
+        // then
+        verify { eventPublisher.publishEvent(capture(eventSlot)) }
+        assertThat(eventSlot.captured.type).isEqualTo(FieldingEventType.ERROR)
+    }
+
+    @Test
+    fun `recordDoublePlay should publish FieldingRecordUpdatedEvent with DOUBLE_PLAY type`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        val eventSlot = slot<FieldingRecordUpdatedEvent>()
+
+        // when
+        fieldingRecordService.recordDoublePlay(gamePlayerId)
+
+        // then
+        verify { eventPublisher.publishEvent(capture(eventSlot)) }
+        assertThat(eventSlot.captured.type).isEqualTo(FieldingEventType.DOUBLE_PLAY)
+    }
+
+    @Test
+    fun `recordPassedBall should publish FieldingRecordUpdatedEvent with PASSED_BALL type`() {
+        // given
+        val gamePlayerId = 1L
+        every { fieldingRecordRepository.findByGamePlayerId(gamePlayerId) } returns mockFieldingRecord
+        val eventSlot = slot<FieldingRecordUpdatedEvent>()
+
+        // when
+        fieldingRecordService.recordPassedBall(gamePlayerId)
+
+        // then
+        verify { eventPublisher.publishEvent(capture(eventSlot)) }
+        assertThat(eventSlot.captured.type).isEqualTo(FieldingEventType.PASSED_BALL)
     }
 
     @Nested

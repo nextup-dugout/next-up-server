@@ -43,6 +43,15 @@ interface FieldingRecordRepositoryPort {
     fun findAllByPlayerId(playerId: Long): List<FieldingRecord>
 
     /**
+     * 선수의 특정 연도 수비 기록을 조회합니다.
+     * L-7: 경기 종료 시 시즌 통계 교차 검증에 사용됩니다.
+     */
+    fun findAllByPlayerIdAndYear(
+        playerId: Long,
+        year: Int,
+    ): List<FieldingRecord>
+
+    /**
      * GamePlayer와 포지션으로 수비 기록을 조회합니다.
      * 포지션별 수비 기록 분리를 위해 사용됩니다.
      */

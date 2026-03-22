@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.event.FieldingEventType
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.player.Player
 import jakarta.persistence.Column
@@ -175,6 +176,77 @@ class SeasonFieldingStats(
         caughtStealing -= record.caughtStealing
         stolenBasesAllowed -= record.stolenBasesAllowed
         validate()
+    }
+
+    /**
+     * L-6: 경기 중 수비 기록을 실시간으로 시즌 통계에 반영합니다.
+     *
+     * FieldingRecordUpdatedEvent를 수신하여 호출되며,
+     * 경기 종료 전에도 수비 통계가 실시간으로 조회 가능합니다.
+     *
+     * @param type 수비 기록 유형
+     */
+    fun applyLiveFieldingUpdate(type: FieldingEventType) {
+        requireNotFinalized()
+        when (type) {
+            FieldingEventType.PUT_OUT -> putOuts++
+            FieldingEventType.ASSIST -> assists++
+            FieldingEventType.ERROR -> errors++
+            FieldingEventType.DOUBLE_PLAY -> doublePlays++
+            FieldingEventType.TRIPLE_PLAY -> triplePlays++
+            FieldingEventType.PASSED_BALL -> passedBalls++
+            FieldingEventType.CAUGHT_STEALING -> caughtStealing++
+            FieldingEventType.STOLEN_BASE_ALLOWED -> stolenBasesAllowed++
+        }
+    }
+
+    /**
+     * L-6: 경기 중 수비 기록을 시즌 통계에서 역산합니다 (Undo 처리).
+     *
+     * applyLiveFieldingUpdate의 역연산입니다.
+     *
+     * @param type 수비 기록 유형
+     */
+    fun revertLiveFieldingUpdate(type: FieldingEventType) {
+        requireNotFinalized()
+        when (type) {
+            FieldingEventType.PUT_OUT -> putOuts = maxOf(0, putOuts - 1)
+            FieldingEventType.ASSIST -> assists = maxOf(0, assists - 1)
+            FieldingEventType.ERROR -> errors = maxOf(0, errors - 1)
+            FieldingEventType.DOUBLE_PLAY -> doublePlays = maxOf(0, doublePlays - 1)
+            FieldingEventType.TRIPLE_PLAY -> triplePlays = maxOf(0, triplePlays - 1)
+            FieldingEventType.PASSED_BALL -> passedBalls = maxOf(0, passedBalls - 1)
+            FieldingEventType.CAUGHT_STEALING -> caughtStealing = maxOf(0, caughtStealing - 1)
+            FieldingEventType.STOLEN_BASE_ALLOWED -> stolenBasesAllowed = maxOf(0, stolenBasesAllowed - 1)
+        }
+    }
+
+    /**
+     * L-7: 경기 종료 시 BoxScore와 교차 검증하여 정합성을 확인합니다.
+     *
+     * 실시간 갱신된 시즌 통계가 경기별 FieldingRecord 합산과 일치하는지 검증합니다.
+     *
+     * @param totalPutOuts 경기별 FieldingRecord에서 합산한 총 자살 수
+     * @param totalAssists 경기별 FieldingRecord에서 합산한 총 보살 수
+     * @param totalErrors 경기별 FieldingRecord에서 합산한 총 실책 수
+     * @return 불일치 항목 목록 (비어있으면 정합성 OK)
+     */
+    fun verifyConsistency(
+        totalPutOuts: Int,
+        totalAssists: Int,
+        totalErrors: Int,
+    ): List<String> {
+        val mismatches = mutableListOf<String>()
+        if (putOuts != totalPutOuts) {
+            mismatches.add("자살: 시즌통계=$putOuts, FieldingRecord합산=$totalPutOuts")
+        }
+        if (assists != totalAssists) {
+            mismatches.add("보살: 시즌통계=$assists, FieldingRecord합산=$totalAssists")
+        }
+        if (errors != totalErrors) {
+            mismatches.add("실책: 시즌통계=$errors, FieldingRecord합산=$totalErrors")
+        }
+        return mismatches
     }
 
     /**
