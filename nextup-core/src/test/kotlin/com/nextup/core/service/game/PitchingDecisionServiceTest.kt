@@ -682,7 +682,7 @@ class PitchingDecisionServiceTest {
     inner class BlownSaveTest {
 
         @Test
-        fun `패배팀 구원 투수가 리드 상황 등판 후 역전 허용 시 블론세이브`() {
+        fun `패배팀 구원 투수가 리드 상황 등판 후 역전 허용 시 블론세이브 후 패전으로 전환`() {
             // given: 패배팀이 3회까지 리드했다가 4회에 역전 허용
             // 패팀: 2,0,0,0,0,0,0,0,0 (2점 리드 후 역전 당함)
             // 승팀: 0,0,0,3,0,0,0,0,0 (4회에 역전)
@@ -701,8 +701,9 @@ class PitchingDecisionServiceTest {
                 gameRules = gameRules,
             )
 
-            // then: 역전 허용 시점(4회)의 투수인 loserRelief에게 블론세이브
-            assertThat(loserRelief.decision).isEqualTo(PitchingDecision.BLOWN_SAVE)
+            // then: 역전 허용 시점(4회)의 투수인 loserRelief에게 블론세이브 + 패전
+            // 야구 규칙: BS와 L은 동시 기록 가능하며, 최종 결정은 LOSS
+            assertThat(loserRelief.decision).isEqualTo(PitchingDecision.LOSS)
         }
     }
 
@@ -1107,6 +1108,142 @@ class PitchingDecisionServiceTest {
             // then: winningRelief가 WIN, closerRelief는 SAVE 조건 불충족이므로 NONE
             assertThat(winningRelief.decision).isEqualTo(PitchingDecision.WIN)
             assertThat(closerRelief.decision).isEqualTo(PitchingDecision.NONE)
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // 시소 게임 (리드 교차) 결승점 판정 — M-2
+    // ────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("시소 게임 결승점 판정")
+    inner class SeesawGameGoAheadRunTest {
+
+        @Test
+        fun `시소 게임에서 최종 역전 이닝의 투수에게 패전 부여`() {
+            // given: 리드가 두 번 바뀌는 시소 게임
+            // 승팀(원정): 2,0,0,0,0,3,0,0,0 = 5
+            // 패팀(홈):   0,0,3,0,0,0,0,0,0 = 3
+            // 누적: 승 2,2,2,2,2,5,5,5,5 / 패 0,0,3,3,3,3,3,3,3
+            // 1회: 2>0 && 0<=0 → decisionInning=1
+            // 3회: 2<3 → skip
+            // 6회: 5>3 && 2<=3 → decisionInning=6 (최종 역전)
+            val loserStarter =
+                makeRecord(isStarter = true, outs = 15, runsAllowed = 2) // 1~5회
+            val loserRelief =
+                makeRecord(isStarter = false, outs = 12, runsAllowed = 3) // 6~9회 (결승점 허용)
+
+            val winnerTeam = makeGameTeam("2,0,0,0,0,3,0,0,0", 5)
+            val loserTeam = makeGameTeam("0,0,3,0,0,0,0,0,0", 3)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter, loserRelief),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 6회 결승점 → 6~9회 담당 loserRelief에게 패전
+            assertThat(loserRelief.decision).isEqualTo(PitchingDecision.LOSS)
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.NONE)
+        }
+
+        @Test
+        fun `세 번 리드가 바뀌는 시소 게임에서 최종 역전 투수에게 패전`() {
+            // given: 리드 교차 3회
+            // 승팀: 1,0,0,2,0,0,0,0,2 = 5
+            // 패팀: 0,0,2,0,0,1,0,0,0 = 3
+            // 누적: 승 1,1,1,3,3,3,3,3,5 / 패 0,0,2,2,2,3,3,3,3
+            // 1회: 1>0 && 0<=0 → decisionInning=1
+            // 3회: 1<2 → skip
+            // 4회: 3>2 && 1<=2 → decisionInning=4
+            // 6회: 3<=3 → skip (동점)
+            // 9회: 5>3 && 3<=3 → decisionInning=9
+            val loserStarter =
+                makeRecord(isStarter = true, outs = 9, runsAllowed = 1) // 1~3회
+            val loserRelief1 =
+                makeRecord(isStarter = false, outs = 9, runsAllowed = 2) // 4~6회
+            val loserRelief2 =
+                makeRecord(isStarter = false, outs = 9, runsAllowed = 2) // 7~9회 (최종 결승점)
+
+            val winnerTeam = makeGameTeam("1,0,0,2,0,0,0,0,2", 5)
+            val loserTeam = makeGameTeam("0,0,2,0,0,1,0,0,0", 3)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter, loserRelief1, loserRelief2),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 9회 결승점 → 7~9회 담당 loserRelief2에게 패전
+            assertThat(loserRelief2.decision).isEqualTo(PitchingDecision.LOSS)
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.NONE)
+            assertThat(loserRelief1.decision).isEqualTo(PitchingDecision.NONE)
+        }
+
+        @Test
+        fun `승리팀이 처음부터 리드를 한 번도 놓치지 않은 경우 1회 투수에게 패전`() {
+            // given: 승팀이 1회에 리드 잡고 끝까지 유지
+            // 승팀: 3,0,0,0,0,0,0,0,0 = 3
+            // 패팀: 0,0,0,1,0,0,0,0,0 = 1
+            // 누적: 승 3,3,3,3,3,3,3,3,3 / 패 0,0,0,1,1,1,1,1,1
+            // 1회: 3>0 && 0<=0 → decisionInning=1
+            // 이후 prevW > prevL 이므로 갱신 없음
+            val loserStarter =
+                makeRecord(isStarter = true, outs = 27, runsAllowed = 3) // 완투
+
+            val winnerTeam = makeGameTeam("3,0,0,0,0,0,0,0,0", 3)
+            val loserTeam = makeGameTeam("0,0,0,1,0,0,0,0,0", 1)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 1회 결승점 → 완투한 선발에게 패전
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `동점에서 역전한 뒤 추가 득점이 있어도 결승점 이닝은 최초 역전 이닝`() {
+            // given: 동점에서 4회에 역전, 7회에 추가 득점
+            // 승팀: 0,0,0,2,0,0,3,0,0 = 5
+            // 패팀: 0,0,0,0,0,0,0,0,0 = 0
+            // 누적: 승 0,0,0,2,2,2,5,5,5 / 패 0,0,0,0,0,0,0,0,0
+            // 4회: 2>0 && 0<=0 → decisionInning=4
+            // 7회: 5>0 && 2>0 → prevW > prevL → 갱신 없음
+            val loserStarter =
+                makeRecord(isStarter = true, outs = 9, runsAllowed = 0) // 1~3회
+            val loserRelief1 =
+                makeRecord(isStarter = false, outs = 9, runsAllowed = 2) // 4~6회 (결승점)
+            val loserRelief2 =
+                makeRecord(isStarter = false, outs = 9, runsAllowed = 3) // 7~9회 (추가 실점)
+
+            val winnerTeam = makeGameTeam("0,0,0,2,0,0,3,0,0", 5)
+            val loserTeam = makeGameTeam("0,0,0,0,0,0,0,0,0", 0)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter, loserRelief1, loserRelief2),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: 4회 결승점 → 4~6회 담당 loserRelief1에게 패전
+            assertThat(loserRelief1.decision).isEqualTo(PitchingDecision.LOSS)
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.NONE)
+            assertThat(loserRelief2.decision).isEqualTo(PitchingDecision.NONE)
         }
     }
 }

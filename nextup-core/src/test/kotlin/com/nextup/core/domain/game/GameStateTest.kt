@@ -1082,4 +1082,88 @@ class GameStateTest {
         assertThat(gameState.wasDhReleased).isTrue()
         assertThat(gameState.outs).isEqualTo(0)
     }
+
+    // ── Tiebreaker Responsible Pitcher Tests ──────────────────────────────────
+
+    @Test
+    fun `setupTiebreaker should use currentPitcherId when responsiblePitcherId is null`() {
+        // given
+        val gameState = GameState(currentPitcherId = 50L)
+
+        // when
+        gameState.setupTiebreaker(firstRunnerId = 10L, secondRunnerId = 20L)
+
+        // then
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(50L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(50L)
+    }
+
+    @Test
+    fun `setupTiebreaker should use explicit responsiblePitcherId when provided`() {
+        // given
+        val gameState = GameState(currentPitcherId = 50L)
+
+        // when
+        gameState.setupTiebreaker(
+            firstRunnerId = 10L,
+            secondRunnerId = 20L,
+            responsiblePitcherId = 77L,
+        )
+
+        // then - responsiblePitcherId(77) overrides currentPitcherId(50)
+        assertThat(gameState.runnerOnFirstPitcherId).isEqualTo(77L)
+        assertThat(gameState.runnerOnSecondPitcherId).isEqualTo(77L)
+    }
+
+    @Test
+    fun `setupTiebreaker should set null pitcher ids when runners are null`() {
+        // given
+        val gameState = GameState(currentPitcherId = 50L)
+
+        // when
+        gameState.setupTiebreaker(
+            firstRunnerId = null,
+            secondRunnerId = null,
+            responsiblePitcherId = 77L,
+        )
+
+        // then - no runners, so no pitcher ids
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+    }
+
+    @Test
+    fun `setupTiebreaker should clear third base runner and pitcher id`() {
+        // given
+        val gameState = GameState(currentPitcherId = 50L)
+        gameState.setRunner(Base.THIRD, 99L)
+        assertThat(gameState.runnerOnThirdId).isEqualTo(99L)
+        assertThat(gameState.runnerOnThirdPitcherId).isEqualTo(50L)
+
+        // when
+        gameState.setupTiebreaker(
+            firstRunnerId = 10L,
+            secondRunnerId = 20L,
+            responsiblePitcherId = 77L,
+        )
+
+        // then
+        assertThat(gameState.runnerOnThirdId).isNull()
+        assertThat(gameState.runnerOnThirdPitcherId).isNull()
+    }
+
+    @Test
+    fun `setupTiebreaker with null currentPitcherId and no responsiblePitcherId results in null pitcher ids`() {
+        // given - currentPitcherId is null (edge case)
+        val gameState = GameState(currentPitcherId = null)
+
+        // when
+        gameState.setupTiebreaker(firstRunnerId = 10L, secondRunnerId = 20L)
+
+        // then - pitcherId falls back to currentPitcherId which is null
+        assertThat(gameState.runnerOnFirstId).isEqualTo(10L)
+        assertThat(gameState.runnerOnFirstPitcherId).isNull()
+        assertThat(gameState.runnerOnSecondId).isEqualTo(20L)
+        assertThat(gameState.runnerOnSecondPitcherId).isNull()
+    }
 }

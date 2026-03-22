@@ -223,10 +223,10 @@ class PitchingDecisionService {
         // 블론세이브를 먼저 처리: 리드를 잃은 시점의 투수에게 BS 부여 (LOSS보다 우선)
         assignBlownSaves(loserRecords, winnerInningScores, loserInningScores)
 
-        // 패전 투수 결정: BS가 이미 부여된 투수는 LOSS에서 제외
+        // 패전 투수 결정: BS가 부여된 투수도 LOSS를 받을 수 있음 (야구 규칙: BS+L 동시 기록)
         val losingPitcher = findLosingPitcher(loserRecords, winnerInningScores, loserInningScores)
         losingPitcher?.let {
-            if (it.decision == PitchingDecision.NONE) {
+            if (it.decision == PitchingDecision.NONE || it.decision == PitchingDecision.BLOWN_SAVE) {
                 it.assignLoss()
             }
         }

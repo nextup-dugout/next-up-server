@@ -235,6 +235,7 @@ class Game private constructor(
             gameState.setupTiebreaker(
                 firstRunnerId = tiebreakerFirstRunnerId,
                 secondRunnerId = tiebreakerSecondRunnerId,
+                responsiblePitcherId = gameState.currentPitcherId,
             )
             return TiebreakerResult.TIEBREAKER_APPLIED
         }

@@ -316,19 +316,26 @@ class GameState(
      *
      * 사회인 야구 타이브레이크 규칙에 따라 이닝 시작 시 자동으로
      * 1루와 2루에 주자를 배치합니다.
-     * 배치된 주자의 담당 투수 ID는 현재 투수(currentPitcherId)로 설정됩니다.
+     *
+     * 타이브레이크 주자가 득점하면 해당 실점/자책점은 [responsiblePitcherId]에게
+     * 귀속됩니다. 호출 시 반드시 현재 등판 중인 투수의 ID를 전달해야
+     * 자책점 추적이 정확하게 이루어집니다.
      *
      * @param firstRunnerId  1루에 배치할 주자 GamePlayer ID (null 허용)
      * @param secondRunnerId 2루에 배치할 주자 GamePlayer ID (null 허용)
+     * @param responsiblePitcherId 타이브레이크 주자의 책임투수 ID.
+     *        null이면 [currentPitcherId]를 사용합니다.
      */
     fun setupTiebreaker(
         firstRunnerId: Long? = null,
         secondRunnerId: Long? = null,
+        responsiblePitcherId: Long? = null,
     ) {
+        val pitcherId = responsiblePitcherId ?: currentPitcherId
         runnerOnFirstId = firstRunnerId
-        runnerOnFirstPitcherId = if (firstRunnerId != null) currentPitcherId else null
+        runnerOnFirstPitcherId = if (firstRunnerId != null) pitcherId else null
         runnerOnSecondId = secondRunnerId
-        runnerOnSecondPitcherId = if (secondRunnerId != null) currentPitcherId else null
+        runnerOnSecondPitcherId = if (secondRunnerId != null) pitcherId else null
         runnerOnThirdId = null
         runnerOnThirdPitcherId = null
     }
