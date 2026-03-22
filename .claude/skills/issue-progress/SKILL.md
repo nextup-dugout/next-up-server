@@ -240,33 +240,60 @@ Agent:
 
 ---
 
-## Phase 5: 검증 (reviewer 에이전트)
+## Phase 5: 검증 (pre-pr-gate + reviewer)
 
-reviewer 에이전트를 Agent 도구로 호출한다:
+검증은 두 단계로 나뉜다: **기계적 검증**(pre-pr-gate)과 **아키텍처 검증**(reviewer).
+기계적 검증이 먼저 통과해야 reviewer를 호출한다.
+
+### 5-1. pre-pr-gate 실행 (필수, 생략 불가)
+
+`pre-pr-gate` 스킬을 **반드시** 실행한다. 이 단계는 어떤 이유로든 건너뛸 수 없다.
+"메모리 부족", "시간 부족", "코드 리뷰로 대체" 등의 사유로 생략하면 안 된다.
+
+**작업 디렉토리**: `../next-up-worktree-[이슈번호]`
+
+실행 순서 (pre-pr-gate SKILL.md 참조):
+1. `./gradlew ktlintFormat --no-daemon` → `./gradlew ktlintCheck --no-daemon`
+2. `./gradlew clean build --no-daemon --max-workers=2`
+3. 변경 파일 기반 verify 스킬 자동 선택 + 실행
+4. Jacoco 커버리지 80%+ 확인
+
+**Gate 실패 시**: 실패 원인을 수정하고 Gate를 다시 실행한다. Phase 4(implementer)로 돌아가서 코드를 수정한 뒤, 다시 Phase 5-1부터 시작한다. 이 루프는 최대 3회까지 허용한다.
+
+**빌드가 정말 안 될 때**: Gradle 데몬 크래시 등으로 빌드가 반복 실패하면:
+1. `pkill -9 -f "GradleDaemon"` 실행
+2. `--max-workers=1`로 재시도
+3. 모듈별 분할 빌드 시도
+4. 그래도 안 되면 사용자에게 보고하고 **파이프라인 중단** — PR을 만들지 않는다
+
+### 5-2. reviewer 에이전트 호출
+
+pre-pr-gate가 모든 Gate를 PASS한 후에만 reviewer를 호출한다:
 
 ```
 Agent:
-  description: "이슈 #N 코드 검증"
+  description: "이슈 #N 아키텍처 검증"
   subagent_type: "reviewer"
   prompt: |
     이슈 #N: [이슈 제목]
     관련 스킬: [식별된 스킬 목록]
     워크트리 경로: ../next-up-worktree-[이슈번호]
     이전 Phase 결과: [planner 계획, architect 설계, implementer 구현 내용 요약]
+    pre-pr-gate 결과: [Gate 1~4 통과 확인 리포트]
 
-    빌드/테스트/검증을 수행하라.
+    아키텍처/도메인 규칙 검증을 수행하라.
+    빌드/테스트/ktlint/커버리지는 pre-pr-gate에서 이미 통과함.
     .claude/agents/reviewer.md를 따르라.
 ```
 
-- **작업 디렉토리**: `../next-up-worktree-[이슈번호]`
-1. `./gradlew clean build --no-daemon` 실행 (**워크트리 경로에서**)
-2. `verify-implementation` 실행 (7개 verify 스킬 통합 검증)
-3. **Phase 0에서 식별된 스킬에 대해 중점 검증** — 식별된 스킬의 규칙 위반이 없는지 특별히 확인
-4. VETO 조건 확인 (CLAUDE.md 참조)
+reviewer는 빌드/테스트를 다시 돌릴 필요 없이, 아키텍처 규칙과 도메인 로직에 집중한다:
+- CLAUDE.md VETO 조건 확인
+- 도메인 규칙 (야구 규칙 등) 검증
+- 설계 의도와 구현의 일치 확인
 
 **reviewer에게 이전 Phase 컨텍스트 전달**: reviewer가 planner/architect/implementer의 의도를 이해할 수 있도록, 이전 Phase의 계획/설계/구현 요약을 프롬프트에 포함한다.
 
-**reviewer REJECT 시**: 사유를 분석하고 implementer에게 수정을 요청한 뒤 다시 reviewer를 호출한다. 최대 3회 반복 후에도 REJECT이면 사용자에게 보고하고 **파이프라인 중단 처리**를 수행한다.
+**reviewer REJECT 시**: 사유를 분석하고 implementer에게 수정을 요청한 뒤, **Phase 5-1(pre-pr-gate)부터** 다시 시작한다. 최대 3회 반복 후에도 REJECT이면 사용자에게 보고하고 **파이프라인 중단 처리**를 수행한다.
 
 ---
 
