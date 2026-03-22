@@ -443,13 +443,19 @@ class GameLifecycleServiceImplTest {
             every { gameTeamRepository.findAllByGameId(gameId) } returns gameTeams
             every { gameRepository.save(game) } returns game
 
+            val capturedEvents = mutableListOf<Any>()
+            every { eventPublisher.publishEvent(any()) } answers {
+                capturedEvents.add(firstArg())
+                Unit
+            }
+
             // when
             val result = service.advanceHalfInning(gameId, 999L)
 
             // then
             assertThat(result).isEqualTo(game)
             verify(exactly = 1) { gameRepository.save(game) }
-            verify(exactly = 0) { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
+            assertThat(capturedEvents.filterIsInstance<GameResultConfirmedEvent>()).isEmpty()
         }
 
         @Test
@@ -467,12 +473,18 @@ class GameLifecycleServiceImplTest {
             every { gameTeamRepository.findAllByGameId(gameId) } returns gameTeams
             every { gameRepository.save(game) } returns game
 
+            val capturedEvents = mutableListOf<Any>()
+            every { eventPublisher.publishEvent(any()) } answers {
+                capturedEvents.add(firstArg())
+                Unit
+            }
+
             // when
             val result = service.advanceHalfInning(gameId, 999L)
 
             // then
             assertThat(result).isEqualTo(game)
-            verify(exactly = 0) { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
+            assertThat(capturedEvents.filterIsInstance<GameResultConfirmedEvent>()).isEmpty()
         }
 
         @Test

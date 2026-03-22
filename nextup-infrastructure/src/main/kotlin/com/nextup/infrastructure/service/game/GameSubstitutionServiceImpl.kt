@@ -3,6 +3,7 @@ package com.nextup.infrastructure.service.game
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.core.domain.event.PlayerSubstitutedEvent
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
@@ -18,6 +19,7 @@ import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.GameSubstitutionService
 import com.nextup.core.service.game.dto.SubstitutionRequest
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -35,6 +37,7 @@ class GameSubstitutionServiceImpl(
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : GameSubstitutionService {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -150,7 +153,14 @@ class GameSubstitutionServiceImpl(
                 description = description,
             )
 
-        return gameEventRepository.save(substitutionEvent)
+        val savedEvent = gameEventRepository.save(substitutionEvent)
+        eventPublisher.publishEvent(
+            PlayerSubstitutedEvent(
+                gameId = gameId,
+                gameEventId = savedEvent.id,
+            ),
+        )
+        return savedEvent
     }
 
     /**

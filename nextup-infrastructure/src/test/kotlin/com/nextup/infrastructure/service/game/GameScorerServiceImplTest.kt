@@ -34,7 +34,6 @@ import com.nextup.core.service.game.dto.PlateAppearanceRequest
 import com.nextup.core.service.game.dto.RunnerMovement
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -266,19 +265,26 @@ class GameScorerServiceImplTest {
             every { gameRepository.save(any()) } answers { firstArg() }
             every { pitchingRecordRepository.findAllByTeamIdAndGameId(any(), any()) } returns emptyList()
 
-            val eventSlot = slot<GameResultConfirmedEvent>()
-            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
-
             // when
             gameLifecycleService.endGame(1L, GameEndReason.REGULATION, 999L)
 
             // then
-            verify(exactly = 1) { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
-            assertThat(eventSlot.captured.gameId).isEqualTo(1L)
-            assertThat(eventSlot.captured.homeTeamId).isEqualTo(10L)
-            assertThat(eventSlot.captured.awayTeamId).isEqualTo(20L)
-            assertThat(eventSlot.captured.homeScore).isEqualTo(5)
-            assertThat(eventSlot.captured.awayScore).isEqualTo(3)
+            verify {
+                eventPublisher.publishEvent(
+                    match<Any> { it is GameResultConfirmedEvent && it.gameId == 1L },
+                )
+            }
+            verify {
+                eventPublisher.publishEvent(
+                    match<Any> {
+                        it is GameResultConfirmedEvent &&
+                            it.homeTeamId == 10L &&
+                            it.awayTeamId == 20L &&
+                            it.homeScore == 5 &&
+                            it.awayScore == 3
+                    },
+                )
+            }
         }
     }
 
@@ -1432,15 +1438,15 @@ class GameScorerServiceImplTest {
             every { gameRepository.findByIdOrNull(1L) } returns game
             every { gameRepository.save(any()) } answers { firstArg() }
 
-            val eventSlot = slot<GameCancelledEvent>()
-            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
-
             // when
             gameLifecycleService.cancelGame(1L, "우천 취소", 999L)
 
             // then
-            verify(exactly = 1) { eventPublisher.publishEvent(any<GameCancelledEvent>()) }
-            assertThat(eventSlot.captured.gameId).isEqualTo(1L)
+            verify {
+                eventPublisher.publishEvent(
+                    match<Any> { it is GameCancelledEvent && it.gameId == 1L },
+                )
+            }
         }
     }
 
