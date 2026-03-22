@@ -7,6 +7,7 @@ import com.nextup.scorer.dto.lineup.LineupSubmissionResponse
 import com.nextup.scorer.dto.lineup.RejectLineupRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController
  * 기록원이 경기 전 제출된 라인업을 확인하고 승인/반려하는 API를 제공합니다.
  * 라인업 작성 및 제출은 nextup-api 모듈의 LineupController에서 처리합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/scorer/lineups")
 class LineupScorerController(

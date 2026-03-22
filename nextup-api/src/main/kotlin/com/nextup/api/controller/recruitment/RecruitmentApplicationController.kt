@@ -7,6 +7,7 @@ import com.nextup.core.service.recruitment.RecruitmentApplicationService
 import com.nextup.core.service.recruitment.dto.ApplyRecruitmentRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 모집 공고 지원 관련 엔드포인트를 제공합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1")
 class RecruitmentApplicationController(

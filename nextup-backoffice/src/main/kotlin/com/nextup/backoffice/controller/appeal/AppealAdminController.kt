@@ -7,6 +7,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.appeal.AppealStatus
 import com.nextup.core.service.appeal.AppealService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 전체 권한: 조회, 승인, 반려
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/appeals")
 class AppealAdminController(

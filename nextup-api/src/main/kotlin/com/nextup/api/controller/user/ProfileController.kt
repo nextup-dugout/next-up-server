@@ -7,6 +7,7 @@ import com.nextup.core.service.game.GameScheduleService
 import com.nextup.core.service.team.TeamMembershipService
 import com.nextup.core.service.user.UserService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 로그인한 사용자가 본인 정보를 조회/수정하는 API를 제공합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/me")
 class ProfileController(
@@ -92,6 +94,7 @@ class ProfileController(
  *
  * 다른 사용자의 공개 프로필을 조회하는 API를 제공합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/users")
 class PublicProfileController(

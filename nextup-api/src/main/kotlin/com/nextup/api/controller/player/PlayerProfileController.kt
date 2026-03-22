@@ -6,6 +6,7 @@ import com.nextup.api.dto.player.toMyProfileResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.player.PlayerService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
  * GET  /api/v1/players/me  - 내 선수 프로필 조회
  * PUT  /api/v1/players/me  - 내 선수 프로필 수정
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/players/me")
 class PlayerProfileController(

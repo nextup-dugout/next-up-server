@@ -4,6 +4,7 @@ import com.nextup.api.dto.attendance.NudgeRequest
 import com.nextup.api.dto.attendance.NudgeResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.NudgeService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 경기 출석 투표 독려(재촉) 기능을 제공합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/games/{gameId}/attendance")
 class NudgeController(

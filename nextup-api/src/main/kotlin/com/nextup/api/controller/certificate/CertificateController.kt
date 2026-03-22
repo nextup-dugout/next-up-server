@@ -8,6 +8,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.certificate.CertificateService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*
  * 선수의 기록 증명서 발급, 조회, 검증 기능을 제공합니다.
  * 모든 응답은 ApiResponse로 래핑됩니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1")
 class CertificateController(

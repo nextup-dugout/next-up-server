@@ -34,6 +34,8 @@ class CacheConfigTest {
                 CacheConfig.TEAM_STATS_CACHE,
                 CacheConfig.COMPETITION_INFO_CACHE,
                 CacheConfig.LEAGUE_INFO_CACHE,
+                CacheConfig.TEAM_INFO_CACHE,
+                CacheConfig.COMPLETED_BOX_SCORE_CACHE,
             )
         }
 
@@ -65,6 +67,18 @@ class CacheConfigTest {
         @DisplayName("leagueInfo 캐시가 존재해야 한다")
         fun shouldHaveLeagueInfoCache() {
             assertThat(cacheManager.getCache(CacheConfig.LEAGUE_INFO_CACHE)).isNotNull
+        }
+
+        @Test
+        @DisplayName("teamInfo 캐시가 존재해야 한다")
+        fun shouldHaveTeamInfoCache() {
+            assertThat(cacheManager.getCache(CacheConfig.TEAM_INFO_CACHE)).isNotNull
+        }
+
+        @Test
+        @DisplayName("completedBoxScore 캐시가 존재해야 한다")
+        fun shouldHaveCompletedBoxScoreCache() {
+            assertThat(cacheManager.getCache(CacheConfig.COMPLETED_BOX_SCORE_CACHE)).isNotNull
         }
 
         @Test

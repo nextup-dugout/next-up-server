@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit
  * | teamStats       | 10분  | 500      | 팀 통계                        |
  * | competitionInfo | 30분  | 200      | 대회 기본 정보 (목록/상세)        |
  * | leagueInfo      | 30분  | 100      | 리그 기본 정보 (목록/상세)        |
+ * | teamInfo        | 30분  | 300      | 팀 기본 정보 (팀+리그)            |
+ * | completedBoxScore | 무한 | 500(LRU) | 완료 경기 박스스코어 (불변 데이터) |
  */
 @Configuration
 @EnableCaching
@@ -32,6 +34,8 @@ class CacheConfig {
         const val TEAM_STATS_CACHE = "teamStats"
         const val COMPETITION_INFO_CACHE = "competitionInfo"
         const val LEAGUE_INFO_CACHE = "leagueInfo"
+        const val TEAM_INFO_CACHE = "teamInfo"
+        const val COMPLETED_BOX_SCORE_CACHE = "completedBoxScore"
     }
 
     @Bean
@@ -43,6 +47,8 @@ class CacheConfig {
                 buildCache(TEAM_STATS_CACHE, 10, TimeUnit.MINUTES, 500),
                 buildCache(COMPETITION_INFO_CACHE, 30, TimeUnit.MINUTES, 200),
                 buildCache(LEAGUE_INFO_CACHE, 30, TimeUnit.MINUTES, 100),
+                buildCache(TEAM_INFO_CACHE, 30, TimeUnit.MINUTES, 300),
+                buildLruCache(COMPLETED_BOX_SCORE_CACHE, 500),
             )
         val manager = SimpleCacheManager()
         manager.setCaches(caches)
@@ -59,6 +65,23 @@ class CacheConfig {
             name,
             Caffeine.newBuilder()
                 .expireAfterWrite(ttl, unit)
+                .maximumSize(maxSize)
+                .build(),
+        )
+
+    /**
+     * TTL 없는 LRU 캐시를 생성합니다.
+     *
+     * 완료된 경기 박스스코어 등 불변 데이터에 적합합니다.
+     * 캐시 크기 제한(maximumSize)만으로 메모리를 관리합니다.
+     */
+    private fun buildLruCache(
+        name: String,
+        maxSize: Long,
+    ): CaffeineCache =
+        CaffeineCache(
+            name,
+            Caffeine.newBuilder()
                 .maximumSize(maxSize)
                 .build(),
         )

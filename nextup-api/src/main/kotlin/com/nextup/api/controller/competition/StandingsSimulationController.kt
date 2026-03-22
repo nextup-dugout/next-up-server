@@ -10,6 +10,7 @@ import com.nextup.core.service.standings.dto.SimulatedGameResult
 import com.nextup.core.service.standings.dto.SimulationRequest
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController
  * 순위 시뮬레이션 Controller (일반 사용자 - 조회 전용)
  */
 @Validated
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/competitions/{competitionId}/standings")
 class StandingsSimulationController(

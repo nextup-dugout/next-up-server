@@ -6,12 +6,14 @@ import com.nextup.api.mapper.attendance.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.GameParticipationService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
  * 출석 투표 API 컨트롤러
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/games/{gameId}/attendance")
 class AttendanceController(

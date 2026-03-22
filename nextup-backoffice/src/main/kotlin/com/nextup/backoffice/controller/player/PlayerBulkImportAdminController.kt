@@ -6,6 +6,7 @@ import com.nextup.common.exception.InvalidInputException
 import com.nextup.core.service.player.PlayerBulkImportService
 import com.nextup.core.service.player.PlayerImportRow
 import org.springframework.http.MediaType
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -24,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile
  * 홍길동,SHORTSTOP,1990-01-15,180,75,RIGHT,RIGHT
  * 김철수,STARTING_PITCHER,,,,LEFT,
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/import")
 class PlayerBulkImportAdminController(

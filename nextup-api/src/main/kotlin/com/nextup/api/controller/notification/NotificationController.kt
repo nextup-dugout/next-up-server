@@ -16,6 +16,7 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*
  * 사용자의 알림 조회, 디바이스 관리, 알림 설정 관리
  * 모든 엔드포인트에서 JWT 인증된 사용자 ID를 사용합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1")
 class NotificationController(

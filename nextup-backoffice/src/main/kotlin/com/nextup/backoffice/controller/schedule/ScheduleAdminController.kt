@@ -12,6 +12,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.schedule.LeagueScheduleService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController
  *
  * 전체 권한: 생성, 조회, 수정, 삭제
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/competitions/{competitionId}/schedule")
 class ScheduleAdminController(

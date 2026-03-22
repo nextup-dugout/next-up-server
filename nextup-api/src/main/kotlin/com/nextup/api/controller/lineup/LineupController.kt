@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
  * - 라인업 생성, 수정, 제출은 이 컨트롤러에서 처리
  * - 제출 후 확인/반려는 nextup-scorer 모듈에서 처리
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/lineups")
 class LineupController(

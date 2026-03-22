@@ -7,6 +7,7 @@ import com.nextup.core.domain.user.OAuthProvider
 import com.nextup.infrastructure.service.oauth.OAuthLinkService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.util.UriComponentsBuilder
@@ -14,6 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder
 /**
  * OAuth 계정 연동 관련 API Controller
  */
+@PreAuthorize("permitAll()")
 @RestController
 @RequestMapping("/api/v1/me/oauth-accounts")
 class OAuthController(

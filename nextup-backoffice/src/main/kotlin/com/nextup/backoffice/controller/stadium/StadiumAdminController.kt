@@ -8,11 +8,13 @@ import com.nextup.backoffice.dto.stadium.UpdateStadiumRequest
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumAdminService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
  * 구장 관리 API Controller (백오피스용)
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/stadiums")
 class StadiumAdminController(

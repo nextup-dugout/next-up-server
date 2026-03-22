@@ -10,8 +10,10 @@ import com.nextup.core.domain.competition.TournamentType
 import com.nextup.core.service.bracket.BracketGeneratorService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/competitions/{competitionId}/bracket")
 class BracketManagementController(
