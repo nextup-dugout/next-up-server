@@ -23,6 +23,11 @@ spring:
         default_batch_fetch_size: 100
     open-in-view: false
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
   jackson:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
