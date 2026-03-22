@@ -1,6 +1,7 @@
 package com.nextup.core.service.game.correction
 
 import com.nextup.common.exception.CorrectionRequestNotFoundException
+import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.domain.game.CorrectionRequest
 import com.nextup.core.domain.game.CorrectionRequestStatus
 import com.nextup.core.domain.game.CorrectionType
@@ -52,6 +53,17 @@ class CorrectionRequestServiceTest {
             fieldName = "strikeOuts",
             newValue = "5",
             reason = "기록 오류",
+        )
+
+    private fun createFieldingRequest(): CorrectionRequest =
+        CorrectionRequest.create(
+            gameId = 1L,
+            requesterUserId = 1L,
+            correctionType = CorrectionType.FIELDING,
+            targetRecordId = 3L,
+            fieldName = "errors",
+            newValue = "1",
+            reason = "수비 기록 오류",
         )
 
     @Nested
@@ -159,6 +171,61 @@ class CorrectionRequestServiceTest {
                 )
             }
         }
+
+        @Test
+        fun `FIELDING 타입 정정 요청을 승인하고 수비 기록을 정정한다`() {
+            // given
+            val requestId = 3L
+            val reviewerUserId = 10L
+            val request = createFieldingRequest()
+            every { correctionRequestRepository.findByIdOrNull(requestId) } returns request
+            every {
+                recordCorrectionService.correctFieldingRecord(any(), any(), any())
+            } returns mockk(relaxed = true)
+
+            // when
+            val result =
+                service.approve(
+                    requestId = requestId,
+                    reviewerUserId = reviewerUserId,
+                    comment = "승인합니다",
+                )
+
+            // then
+            assertThat(result.status).isEqualTo(CorrectionRequestStatus.APPROVED)
+            assertThat(result.reviewerUserId).isEqualTo(reviewerUserId)
+            verify(exactly = 1) {
+                recordCorrectionService.correctFieldingRecord(
+                    gameId = 1L,
+                    recordId = 3L,
+                    request =
+                        FieldingCorrectionRequest(
+                            adminUserId = reviewerUserId,
+                            fieldName = "errors",
+                            newValue = "1",
+                            reason = "수비 기록 오류",
+                        ),
+                )
+            }
+        }
+
+        @Test
+        fun `이미 승인된 요청을 승인하면 InvalidStateException이 발생한다`() {
+            // given
+            val requestId = 1L
+            val request = createBattingRequest()
+            request.approve(reviewerUserId = 99L)
+            every { correctionRequestRepository.findByIdOrNull(requestId) } returns request
+
+            // when & then
+            assertThrows<InvalidStateException> {
+                service.approve(
+                    requestId = requestId,
+                    reviewerUserId = 10L,
+                    comment = "재승인 시도",
+                )
+            }
+        }
     }
 
     @Nested
@@ -184,6 +251,24 @@ class CorrectionRequestServiceTest {
             assertThat(result.status).isEqualTo(CorrectionRequestStatus.REJECTED)
             assertThat(result.reviewerUserId).isEqualTo(reviewerUserId)
             assertThat(result.reviewComment).isEqualTo("근거가 부족합니다")
+        }
+
+        @Test
+        fun `이미 승인된 요청을 반려하면 InvalidStateException이 발생한다`() {
+            // given
+            val requestId = 1L
+            val request = createBattingRequest()
+            request.approve(reviewerUserId = 99L)
+            every { correctionRequestRepository.findByIdOrNull(requestId) } returns request
+
+            // when & then
+            assertThrows<InvalidStateException> {
+                service.reject(
+                    requestId = requestId,
+                    reviewerUserId = 10L,
+                    comment = "반려 시도",
+                )
+            }
         }
     }
 
