@@ -266,7 +266,9 @@ class SeasonBattingStats(
             PlateAppearanceResult.WALK -> walks++
             PlateAppearanceResult.INTENTIONAL_WALK -> intentionalWalks++
             PlateAppearanceResult.HIT_BY_PITCH -> hitByPitch++
-            PlateAppearanceResult.STRIKEOUT -> strikeouts++
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> strikeouts++
             PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
             PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
             else -> Unit
@@ -299,7 +301,9 @@ class SeasonBattingStats(
             PlateAppearanceResult.WALK -> if (walks > 0) walks--
             PlateAppearanceResult.INTENTIONAL_WALK -> if (intentionalWalks > 0) intentionalWalks--
             PlateAppearanceResult.HIT_BY_PITCH -> if (hitByPitch > 0) hitByPitch--
-            PlateAppearanceResult.STRIKEOUT -> if (strikeouts > 0) strikeouts--
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> if (strikeouts > 0) strikeouts--
             PlateAppearanceResult.SACRIFICE_BUNT -> if (sacrificeBunts > 0) sacrificeBunts--
             PlateAppearanceResult.SACRIFICE_FLY -> if (sacrificeFlies > 0) sacrificeFlies--
             else -> Unit

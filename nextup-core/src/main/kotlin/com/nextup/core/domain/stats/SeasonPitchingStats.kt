@@ -360,7 +360,9 @@ class SeasonPitchingStats(
                 hitsAllowed++
                 homeRunsAllowed++
             }
-            PlateAppearanceResult.STRIKEOUT -> {
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> {
                 strikeouts++
             }
             PlateAppearanceResult.WALK,
@@ -396,7 +398,9 @@ class SeasonPitchingStats(
                 if (hitsAllowed > 0) hitsAllowed--
                 if (homeRunsAllowed > 0) homeRunsAllowed--
             }
-            PlateAppearanceResult.STRIKEOUT -> {
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> {
                 if (strikeouts > 0) strikeouts--
             }
             PlateAppearanceResult.WALK,
