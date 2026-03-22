@@ -19,16 +19,20 @@ import org.springframework.stereotype.Component
  * CONNECT 시 JWT 토큰을 검증하여 인증을 수행합니다.
  * SEND/SUBSCRIBE 시 기존 인증 정보의 토큰 만료 여부를 재검증합니다.
  * JWT 만료 시 STOMP ERROR를 발생시켜 연결을 해제합니다.
+ *
+ * 토큰 갱신: 클라이언트가 SEND/SUBSCRIBE 시 'Authorization' 네이티브 헤더에
+ * 새 토큰을 포함하면 세션 토큰을 갱신합니다.
  */
 @Component
 class WebSocketAuthInterceptor(
     private val jwtTokenProvider: JwtTokenProvider,
+    private val sessionRegistry: WebSocketSessionRegistry,
 ) : ChannelInterceptor {
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         private const val BEARER_PREFIX = "Bearer "
-        private const val TOKEN_HEADER = "token"
+        internal const val TOKEN_HEADER = "token"
         private val COMMANDS_REQUIRING_AUTH =
             setOf(StompCommand.SEND, StompCommand.SUBSCRIBE)
     }
@@ -72,9 +76,40 @@ class WebSocketAuthInterceptor(
 
         // 세션 속성에 토큰 저장 (SEND/SUBSCRIBE에서 재검증용)
         accessor.sessionAttributes?.set(TOKEN_HEADER, token)
+
+        // 세션 레지스트리에 토큰 등록 (주기적 만료 검사용)
+        accessor.sessionId?.let { sessionId ->
+            sessionRegistry.registerToken(sessionId, token)
+        }
     }
 
     private fun handleAuthenticatedCommand(accessor: StompHeaderAccessor) {
+        // 토큰 갱신 시도: 클라이언트가 Authorization 헤더에 새 토큰을 보낸 경우
+        val refreshedToken =
+            accessor.getFirstNativeHeader("Authorization")
+                ?.removePrefix(BEARER_PREFIX)
+
+        if (refreshedToken != null && jwtTokenProvider.validateToken(refreshedToken) &&
+            jwtTokenProvider.isAccessToken(refreshedToken)
+        ) {
+            accessor.sessionAttributes?.set(TOKEN_HEADER, refreshedToken)
+            accessor.sessionId?.let { sessionId ->
+                sessionRegistry.updateToken(sessionId, refreshedToken)
+            }
+            // 인증 정보도 갱신
+            val userId = jwtTokenProvider.getUserId(refreshedToken)
+            val roles = jwtTokenProvider.getRoles(refreshedToken)
+            val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }
+            accessor.user =
+                UsernamePasswordAuthenticationToken(userId, refreshedToken, authorities)
+            log.debug(
+                "WebSocket 토큰 갱신 완료: sessionId={}",
+                accessor.sessionId,
+            )
+            return
+        }
+
+        // 기존 토큰 만료 검증
         val token =
             accessor.sessionAttributes?.get(TOKEN_HEADER) as? String
                 ?: return
@@ -84,6 +119,7 @@ class WebSocketAuthInterceptor(
                 "WebSocket JWT 만료 감지, 세션 종료: sessionId={}",
                 accessor.sessionId,
             )
+            accessor.sessionId?.let { sessionRegistry.remove(it) }
             throw AuthenticationCredentialsNotFoundException(
                 "JWT 토큰이 만료되었습니다. 재연결이 필요합니다.",
             )

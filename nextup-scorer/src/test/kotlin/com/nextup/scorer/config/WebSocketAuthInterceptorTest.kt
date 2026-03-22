@@ -3,6 +3,7 @@ package com.nextup.scorer.config
 import com.nextup.infrastructure.security.jwt.JwtTokenProvider
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -18,12 +19,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 @DisplayName("WebSocketAuthInterceptor")
 class WebSocketAuthInterceptorTest {
     private lateinit var jwtTokenProvider: JwtTokenProvider
+    private lateinit var sessionRegistry: WebSocketSessionRegistry
     private lateinit var interceptor: WebSocketAuthInterceptor
 
     @BeforeEach
     fun setUp() {
         jwtTokenProvider = mockk()
-        interceptor = WebSocketAuthInterceptor(jwtTokenProvider)
+        sessionRegistry = mockk(relaxed = true)
+        interceptor = WebSocketAuthInterceptor(jwtTokenProvider, sessionRegistry)
     }
 
     @Nested
@@ -73,6 +76,29 @@ class WebSocketAuthInterceptorTest {
             // then
             val auth = accessor.user as UsernamePasswordAuthenticationToken
             assertThat(auth.credentials).isEqualTo(token)
+        }
+
+        @Test
+        fun `should register token in session registry on CONNECT`() {
+            // given
+            val token = "valid-jwt-token"
+            val accessor = StompHeaderAccessor.create(StompCommand.CONNECT)
+            accessor.setLeaveMutable(true)
+            accessor.sessionId = "test-session-id"
+            accessor.sessionAttributes = mutableMapOf()
+            accessor.addNativeHeader("Authorization", "Bearer $token")
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(token) } returns true
+            every { jwtTokenProvider.isAccessToken(token) } returns true
+            every { jwtTokenProvider.getUserId(token) } returns 1L
+            every { jwtTokenProvider.getRoles(token) } returns setOf("SCORER")
+
+            // when
+            interceptor.preSend(message, mockk())
+
+            // then
+            verify { sessionRegistry.registerToken("test-session-id", token) }
         }
 
         @Test
@@ -164,6 +190,27 @@ class WebSocketAuthInterceptorTest {
         }
 
         @Test
+        fun `should remove session from registry when token is expired`() {
+            // given
+            val token = "expired-token"
+            val sessionId = "test-session-id"
+            val accessor = StompHeaderAccessor.create(StompCommand.SEND)
+            accessor.destination = "/app/game/1/event"
+            accessor.sessionId = sessionId
+            accessor.sessionAttributes = mutableMapOf<String, Any>("token" to token)
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(token) } returns false
+
+            // when & then
+            assertThatThrownBy {
+                interceptor.preSend(message, mockk())
+            }.isInstanceOf(AuthenticationCredentialsNotFoundException::class.java)
+
+            verify { sessionRegistry.remove(sessionId) }
+        }
+
+        @Test
         fun `should allow SEND when token is still valid`() {
             // given
             val token = "valid-token"
@@ -194,6 +241,104 @@ class WebSocketAuthInterceptorTest {
 
             // then
             assertThat(result).isNotNull
+        }
+    }
+
+    @Nested
+    @DisplayName("Token refresh on SEND/SUBSCRIBE")
+    inner class TokenRefresh {
+        @Test
+        fun `should refresh token when valid new token is provided in Authorization header`() {
+            // given
+            val oldToken = "old-valid-token"
+            val newToken = "new-valid-token"
+            val accessor = StompHeaderAccessor.create(StompCommand.SEND)
+            accessor.destination = "/app/game/1/event"
+            accessor.sessionAttributes = mutableMapOf<String, Any>("token" to oldToken)
+            accessor.addNativeHeader("Authorization", "Bearer $newToken")
+            accessor.setLeaveMutable(true)
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(newToken) } returns true
+            every { jwtTokenProvider.isAccessToken(newToken) } returns true
+            every { jwtTokenProvider.getUserId(newToken) } returns 1L
+            every { jwtTokenProvider.getRoles(newToken) } returns setOf("SCORER")
+
+            // when
+            val result = interceptor.preSend(message, mockk())
+
+            // then
+            assertThat(result).isNotNull
+            assertThat(accessor.sessionAttributes?.get("token")).isEqualTo(newToken)
+            val auth = accessor.user as UsernamePasswordAuthenticationToken
+            assertThat(auth.principal).isEqualTo(1L)
+        }
+
+        @Test
+        fun `should update registry when token is refreshed`() {
+            // given
+            val oldToken = "old-valid-token"
+            val newToken = "new-valid-token"
+            val accessor = StompHeaderAccessor.create(StompCommand.SEND)
+            accessor.destination = "/app/game/1/event"
+            accessor.sessionId = "test-session-id"
+            accessor.sessionAttributes = mutableMapOf<String, Any>("token" to oldToken)
+            accessor.addNativeHeader("Authorization", "Bearer $newToken")
+            accessor.setLeaveMutable(true)
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(newToken) } returns true
+            every { jwtTokenProvider.isAccessToken(newToken) } returns true
+            every { jwtTokenProvider.getUserId(newToken) } returns 1L
+            every { jwtTokenProvider.getRoles(newToken) } returns setOf("SCORER")
+
+            // when
+            interceptor.preSend(message, mockk())
+
+            // then
+            verify { sessionRegistry.updateToken("test-session-id", newToken) }
+        }
+
+        @Test
+        fun `should fall back to existing token validation when new token is invalid`() {
+            // given
+            val oldToken = "old-valid-token"
+            val invalidNewToken = "invalid-new-token"
+            val accessor = StompHeaderAccessor.create(StompCommand.SEND)
+            accessor.destination = "/app/game/1/event"
+            accessor.sessionAttributes = mutableMapOf<String, Any>("token" to oldToken)
+            accessor.addNativeHeader("Authorization", "Bearer $invalidNewToken")
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(invalidNewToken) } returns false
+            every { jwtTokenProvider.validateToken(oldToken) } returns true
+
+            // when
+            val result = interceptor.preSend(message, mockk())
+
+            // then
+            assertThat(result).isNotNull
+        }
+
+        @Test
+        fun `should reject when both new and old tokens are expired`() {
+            // given
+            val oldToken = "expired-old-token"
+            val expiredNewToken = "expired-new-token"
+            val accessor = StompHeaderAccessor.create(StompCommand.SEND)
+            accessor.destination = "/app/game/1/event"
+            accessor.sessionAttributes = mutableMapOf<String, Any>("token" to oldToken)
+            accessor.addNativeHeader("Authorization", "Bearer $expiredNewToken")
+            val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
+
+            every { jwtTokenProvider.validateToken(expiredNewToken) } returns false
+            every { jwtTokenProvider.validateToken(oldToken) } returns false
+
+            // when & then
+            assertThatThrownBy {
+                interceptor.preSend(message, mockk())
+            }.isInstanceOf(AuthenticationCredentialsNotFoundException::class.java)
+                .hasMessageContaining("JWT 토큰이 만료되었습니다")
         }
     }
 
