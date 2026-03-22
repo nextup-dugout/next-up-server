@@ -98,6 +98,11 @@ interface GameRepository :
         @Param("threshold") threshold: LocalDateTime,
     ): List<Game>
 
+    @Query("SELECT g FROM Game g WHERE g.status = :status")
+    override fun findByStatus(
+        @Param("status") status: GameStatus,
+    ): List<Game>
+
     // ---- 페이징용 내부 쿼리 메서드 (Spring Data Pageable은 Infra 레이어에서만 사용) ----
 
     @Query(

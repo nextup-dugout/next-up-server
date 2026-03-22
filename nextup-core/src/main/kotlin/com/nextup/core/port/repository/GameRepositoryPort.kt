@@ -89,4 +89,9 @@ interface GameRepositoryPort {
         status: GameStatus?,
         pageCommand: PageCommand,
     ): PageResult<Game>
+
+    /**
+     * L-11: 특정 상태의 경기 목록을 조회합니다. (SUSPENDED 타임아웃 스케줄러용)
+     */
+    fun findByStatus(status: GameStatus): List<Game>
 }

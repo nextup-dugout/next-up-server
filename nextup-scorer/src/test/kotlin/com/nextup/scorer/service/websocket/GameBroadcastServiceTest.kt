@@ -96,4 +96,36 @@ class GameBroadcastServiceTest {
             messagingTemplate.convertAndSend("/topic/games/$gameId/state", state)
         }
     }
+
+    @Test
+    fun `should broadcast warning to correct topic`() {
+        // given
+        val gameId = 1L
+        val warning =
+            WarningMessage(
+                gameId = gameId,
+                warningType = WarningType.PITCH_COUNT,
+                severity = WarningSeverity.CRITICAL,
+                title = "투구 수 제한 도달",
+                message = "투수가 투구 수 제한(100구)에 도달했습니다(현재 102구). 투수 교체를 권고합니다.",
+                details =
+                    mapOf(
+                        "gamePlayerId" to 5L,
+                        "playerId" to 10L,
+                        "pitchesThrown" to 102,
+                        "pitchCountLimit" to 100,
+                        "remainingPitches" to -2,
+                        "isSubstitutionRecommended" to true,
+                    ),
+                timestamp = Instant.now(),
+            )
+
+        // when
+        service.broadcastWarning(gameId, warning)
+
+        // then
+        verify(exactly = 1) {
+            messagingTemplate.convertAndSend("/topic/games/$gameId/warnings", warning)
+        }
+    }
 }
