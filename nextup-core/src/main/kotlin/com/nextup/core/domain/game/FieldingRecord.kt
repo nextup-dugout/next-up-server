@@ -86,6 +86,20 @@ class FieldingRecord(
     var passedBalls: Int = 0
         protected set
 
+    /**
+     * 도루 저지(CS, Caught Stealing) - 포수가 도루를 저지한 횟수 (포수 전용)
+     */
+    @Column(name = "caught_stealing", nullable = false)
+    var caughtStealing: Int = 0
+        protected set
+
+    /**
+     * 도루 허용(SB Allowed) - 포수가 도루를 허용한 횟수 (포수 전용)
+     */
+    @Column(name = "stolen_bases_allowed", nullable = false)
+    var stolenBasesAllowed: Int = 0
+        protected set
+
     // Calculated properties
 
     /**
@@ -151,6 +165,20 @@ class FieldingRecord(
     }
 
     /**
+     * 도루 저지(CS)를 기록합니다 (포수 전용).
+     */
+    fun recordCaughtStealing() {
+        caughtStealing++
+    }
+
+    /**
+     * 도루 허용(SB Allowed)을 기록합니다 (포수 전용).
+     */
+    fun recordStolenBaseAllowed() {
+        stolenBasesAllowed++
+    }
+
+    /**
      * 자살(PO)을 취소합니다 (Undo용).
      */
     fun revertPutOut() {
@@ -199,6 +227,22 @@ class FieldingRecord(
     }
 
     /**
+     * 도루 저지(CS)를 취소합니다 (Undo용).
+     */
+    fun revertCaughtStealing() {
+        require(caughtStealing > 0) { "취소할 도루 저지 기록이 없습니다." }
+        caughtStealing--
+    }
+
+    /**
+     * 도루 허용(SB Allowed)을 취소합니다 (Undo용).
+     */
+    fun revertStolenBaseAllowed() {
+        require(stolenBasesAllowed > 0) { "취소할 도루 허용 기록이 없습니다." }
+        stolenBasesAllowed--
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
@@ -208,6 +252,8 @@ class FieldingRecord(
         require(doublePlays >= 0) { "병살 관여($doublePlays)는 음수일 수 없습니다." }
         require(triplePlays >= 0) { "삼중살 관여($triplePlays)는 음수일 수 없습니다." }
         require(passedBalls >= 0) { "포일($passedBalls)은 음수일 수 없습니다." }
+        require(caughtStealing >= 0) { "도루 저지($caughtStealing)는 음수일 수 없습니다." }
+        require(stolenBasesAllowed >= 0) { "도루 허용($stolenBasesAllowed)은 음수일 수 없습니다." }
     }
 
     /**
@@ -233,7 +279,10 @@ class FieldingRecord(
                 "assists" -> assists.also { assists = intValue }
                 "errors" -> errors.also { errors = intValue }
                 "doublePlays" -> doublePlays.also { doublePlays = intValue }
+                "triplePlays" -> triplePlays.also { triplePlays = intValue }
                 "passedBalls" -> passedBalls.also { passedBalls = intValue }
+                "caughtStealing" -> caughtStealing.also { caughtStealing = intValue }
+                "stolenBasesAllowed" -> stolenBasesAllowed.also { stolenBasesAllowed = intValue }
                 else -> throw IllegalArgumentException("유효하지 않은 수비 기록 필드입니다: $fieldName")
             }
 

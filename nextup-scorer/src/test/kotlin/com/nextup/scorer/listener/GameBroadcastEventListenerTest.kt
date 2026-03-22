@@ -3,9 +3,13 @@ package com.nextup.scorer.listener
 import com.nextup.core.domain.event.GameEndedEvent
 import com.nextup.core.domain.event.GameStartedEvent
 import com.nextup.core.domain.event.HalfInningAdvancedEvent
+import com.nextup.core.domain.event.PitchCountWarningEvent
+import com.nextup.core.domain.event.PitchCountWarningType
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlayerSubstitutedEvent
 import com.nextup.core.domain.event.RecordCorrectedEvent
+import com.nextup.core.domain.event.TimeLimitWarningEvent
+import com.nextup.core.domain.event.TimeLimitWarningType
 import com.nextup.core.domain.game.CorrectionType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
@@ -26,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 @DisplayName("GameBroadcastEventListener 테스트")
 class GameBroadcastEventListenerTest {
@@ -475,6 +480,141 @@ class GameBroadcastEventListenerTest {
             // then
             verify(exactly = 0) { gameBroadcastService.broadcastState(any(), any()) }
             verify(exactly = 0) { gameBroadcastService.broadcastScoreboard(any(), any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("onPitchCountWarning - 투구수 제한 경고 이벤트")
+    inner class OnPitchCountWarning {
+
+        @Test
+        @DisplayName("LIMIT_REACHED 시 broadcastWarning 호출")
+        fun `투구수 제한 도달 시 경고 브로드캐스트`() {
+            // given
+            val event =
+                PitchCountWarningEvent(
+                    gameId = GAME_ID,
+                    gamePlayerId = 50L,
+                    playerId = 100L,
+                    pitchesThrown = 105,
+                    pitchCountLimit = 100,
+                    warningType = PitchCountWarningType.LIMIT_REACHED,
+                )
+
+            // when
+            listener.onPitchCountWarning(event)
+
+            // then
+            verify(exactly = 1) { gameBroadcastService.broadcastWarning(eq(GAME_ID), any()) }
+        }
+
+        @Test
+        @DisplayName("APPROACHING_LIMIT 시 broadcastWarning 호출")
+        fun `투구수 제한 임박 시 경고 브로드캐스트`() {
+            // given
+            val event =
+                PitchCountWarningEvent(
+                    gameId = GAME_ID,
+                    gamePlayerId = 50L,
+                    playerId = 100L,
+                    pitchesThrown = 92,
+                    pitchCountLimit = 100,
+                    warningType = PitchCountWarningType.APPROACHING_LIMIT,
+                )
+
+            // when
+            listener.onPitchCountWarning(event)
+
+            // then
+            verify(exactly = 1) { gameBroadcastService.broadcastWarning(eq(GAME_ID), any()) }
+        }
+
+        @Test
+        @DisplayName("broadcastWarning 실패 시 예외를 삼킴")
+        fun `브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every {
+                gameBroadcastService.broadcastWarning(any(), any())
+            } throws RuntimeException("WebSocket 전송 실패")
+
+            val event =
+                PitchCountWarningEvent(
+                    gameId = GAME_ID,
+                    gamePlayerId = 50L,
+                    playerId = 100L,
+                    pitchesThrown = 105,
+                    pitchCountLimit = 100,
+                    warningType = PitchCountWarningType.LIMIT_REACHED,
+                )
+
+            // when & then - 예외가 전파되지 않음
+            listener.onPitchCountWarning(event)
+        }
+    }
+
+    @Nested
+    @DisplayName("onTimeLimitWarning - 시간 제한 경고 이벤트")
+    inner class OnTimeLimitWarning {
+
+        @Test
+        @DisplayName("LIMIT_REACHED 시 broadcastWarning 호출")
+        fun `시간 제한 도달 시 경고 브로드캐스트`() {
+            // given
+            val event =
+                TimeLimitWarningEvent(
+                    gameId = GAME_ID,
+                    startedAt = Instant.now().minusSeconds(7200),
+                    timeLimitMinutes = 120,
+                    elapsedMinutes = 125,
+                    warningType = TimeLimitWarningType.LIMIT_REACHED,
+                )
+
+            // when
+            listener.onTimeLimitWarning(event)
+
+            // then
+            verify(exactly = 1) { gameBroadcastService.broadcastWarning(eq(GAME_ID), any()) }
+        }
+
+        @Test
+        @DisplayName("APPROACHING_LIMIT 시 broadcastWarning 호출")
+        fun `시간 제한 임박 시 경고 브로드캐스트`() {
+            // given
+            val event =
+                TimeLimitWarningEvent(
+                    gameId = GAME_ID,
+                    startedAt = Instant.now().minusSeconds(6600),
+                    timeLimitMinutes = 120,
+                    elapsedMinutes = 112,
+                    warningType = TimeLimitWarningType.APPROACHING_LIMIT,
+                )
+
+            // when
+            listener.onTimeLimitWarning(event)
+
+            // then
+            verify(exactly = 1) { gameBroadcastService.broadcastWarning(eq(GAME_ID), any()) }
+        }
+
+        @Test
+        @DisplayName("broadcastWarning 실패 시 예외를 삼킴")
+        fun `브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every {
+                gameBroadcastService.broadcastWarning(any(), any())
+            } throws RuntimeException("WebSocket 전송 실패")
+
+            val event =
+                TimeLimitWarningEvent(
+                    gameId = GAME_ID,
+                    startedAt = Instant.now().minusSeconds(7200),
+                    timeLimitMinutes = 120,
+                    elapsedMinutes = 125,
+                    warningType = TimeLimitWarningType.LIMIT_REACHED,
+                )
+
+            // when & then - 예외가 전파되지 않음
+            listener.onTimeLimitWarning(event)
         }
     }
 }

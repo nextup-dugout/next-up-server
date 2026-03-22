@@ -189,6 +189,23 @@ class TeamMember private constructor(
     }
 
     /**
+     * L-10: 관리자/시스템에 의한 강제 강퇴입니다.
+     *
+     * OWNER를 포함한 모든 역할의 멤버를 강제로 강퇴할 수 있습니다.
+     * 일반 강퇴([kick])와 달리 역할 제한이 없으며, 요청자 권한 검증도 수행하지 않습니다.
+     *
+     * @param reason 강퇴 사유
+     * @return 강퇴된 멤버가 OWNER였는지 여부 (선거 트리거 판단용)
+     */
+    fun forceKick(reason: String? = null): Boolean {
+        val wasOwner = this.role == TeamMemberRole.OWNER
+        this.status = TeamMemberStatus.KICKED
+        this.leftAt = LocalDateTime.now()
+        this.memo = reason
+        return wasOwner
+    }
+
+    /**
      * 자진 탈퇴합니다.
      *
      * @throws IllegalStateException OWNER이거나 상태가 부적절한 경우

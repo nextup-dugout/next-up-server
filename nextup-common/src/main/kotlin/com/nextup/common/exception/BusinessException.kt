@@ -39,3 +39,11 @@ open class ForbiddenException(
     code: String,
     message: String,
 ) : BusinessException(code, message)
+
+/**
+ * 리소스 충돌(동시성 경쟁)이 발생했을 때 사용하는 예외 (HTTP 409)
+ */
+open class ConflictException(
+    code: String,
+    message: String,
+) : BusinessException(code, message)

@@ -5,9 +5,11 @@ import com.nextup.core.common.PageResult
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.port.repository.GameRepositoryPort
+import jakarta.persistence.LockModeType
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
@@ -18,6 +20,14 @@ interface GameRepository :
     JpaRepository<Game, Long>,
     GameRepositoryPort {
     override fun findByIdOrNull(id: Long): Game? = findById(id).orElse(null)
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM Game g WHERE g.id = :id")
+    fun findByIdWithPessimisticLock(
+        @Param("id") id: Long,
+    ): Game?
+
+    override fun findByIdForUpdate(id: Long): Game? = findByIdWithPessimisticLock(id)
 
     @Query("SELECT g FROM Game g WHERE g.id IN :ids")
     override fun findAllByIds(
@@ -86,6 +96,11 @@ interface GameRepository :
     )
     override fun findLockedGamesBefore(
         @Param("threshold") threshold: LocalDateTime,
+    ): List<Game>
+
+    @Query("SELECT g FROM Game g WHERE g.status = :status")
+    override fun findByStatus(
+        @Param("status") status: GameStatus,
     ): List<Game>
 
     // ---- 페이징용 내부 쿼리 메서드 (Spring Data Pageable은 Infra 레이어에서만 사용) ----

@@ -8,6 +8,8 @@ import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PitchCountWarningEvent
 import com.nextup.core.domain.event.PitchCountWarningType
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
+import com.nextup.core.domain.event.TimeLimitWarningEvent
+import com.nextup.core.domain.event.TimeLimitWarningType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GamePlayer
@@ -16,6 +18,7 @@ import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PitchCountStatus
 import com.nextup.core.domain.game.PlateAppearanceResult
+import com.nextup.core.domain.game.TimeLimitStatus
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -30,6 +33,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 타석 결과 기록 서비스 구현
@@ -170,6 +174,7 @@ class PlateAppearanceRecordServiceImpl(
 
         if (!walkOff) {
             detectPitchCountWarning(savedGame, pitcher, warnings)
+            detectTimeLimitWarning(savedGame, warnings)
         }
 
         return PlateAppearanceRecordResult(game = savedGame, warnings = warnings)
@@ -264,6 +269,64 @@ class PlateAppearanceRecordServiceImpl(
                         pitchesThrown = pitchesThrown,
                         pitchCountLimit = limit,
                         warningType = PitchCountWarningType.APPROACHING_LIMIT,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * 경기 시간 제한 경고를 감지합니다 (M-5).
+     *
+     * 경기 시작 시각 기반으로 현재 경과 시간을 체크하여
+     * 시간 제한 임박 또는 도달 시 TimeLimitWarningEvent를 발행합니다.
+     */
+    private fun detectTimeLimitWarning(
+        game: Game,
+        warnings: MutableList<String>,
+    ) {
+        val now = LocalDateTime.now()
+        val status = game.checkTimeLimitStatus(now) ?: return
+        val startedAt = game.startedAt ?: return
+        val timeLimitMinutes = game.competition.gameRules.timeLimitMinutes ?: return
+        val elapsedMinutes =
+            java.time.Duration.between(startedAt, now).toMinutes()
+
+        when (status) {
+            TimeLimitStatus.LIMIT_REACHED -> {
+                log.warn(
+                    "시간 제한 경고: 경기(ID: {}) 경과 시간 {}분 — 제한({}분) 도달",
+                    game.id,
+                    elapsedMinutes,
+                    timeLimitMinutes,
+                )
+                warnings.add(
+                    "시간 제한 경고: 경기 시간 제한(${timeLimitMinutes}분)에 도달했습니다" +
+                        "(경과 시간: ${elapsedMinutes}분).",
+                )
+                eventPublisher.publishEvent(
+                    TimeLimitWarningEvent(
+                        gameId = game.id,
+                        startedAt = startedAt.atZone(java.time.ZoneId.systemDefault()).toInstant(),
+                        timeLimitMinutes = timeLimitMinutes,
+                        elapsedMinutes = elapsedMinutes,
+                        warningType = TimeLimitWarningType.LIMIT_REACHED,
+                    ),
+                )
+            }
+            TimeLimitStatus.APPROACHING_LIMIT -> {
+                val remaining = timeLimitMinutes - elapsedMinutes
+                warnings.add(
+                    "시간 제한 주의: 경기 시간 제한에 임박했습니다. " +
+                        "남은 시간: ${remaining}분 (제한: ${timeLimitMinutes}분, 경과: ${elapsedMinutes}분).",
+                )
+                eventPublisher.publishEvent(
+                    TimeLimitWarningEvent(
+                        gameId = game.id,
+                        startedAt = startedAt.atZone(java.time.ZoneId.systemDefault()).toInstant(),
+                        timeLimitMinutes = timeLimitMinutes,
+                        elapsedMinutes = elapsedMinutes,
+                        warningType = TimeLimitWarningType.APPROACHING_LIMIT,
                     ),
                 )
             }

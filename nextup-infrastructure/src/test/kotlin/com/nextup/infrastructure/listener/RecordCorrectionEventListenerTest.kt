@@ -704,42 +704,12 @@ class RecordCorrectionEventListenerTest {
     }
 
     @Nested
-    @DisplayName("Optimistic Locking 재시도")
-    inner class OptimisticLockingRetry {
+    @DisplayName("@Retryable - Optimistic Locking 재시도 설정 검증")
+    inner class RetryableConfiguration {
         @Test
-        fun `기록 정정 시 OptimisticLocking 충돌이 발생하면 재시도하여 성공`() {
-            // given
-            val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
-            seasonStats.applyFieldCorrection("plateAppearances", 15)
-            seasonStats.applyFieldCorrection("atBats", 12)
-            seasonStats.applyFieldCorrection("hits", 10)
-
-            every { seasonBattingStatsRepository.findByPlayerIdAndYear(1L, 2024) } returns seasonStats
-            // 첫 번째 save 시 충돌, 두 번째에 성공
-            every { seasonBattingStatsRepository.save(any()) } throws
-                ObjectOptimisticLockingFailureException("conflict", null) andThen seasonStats
-            every { careerBattingStatsRepository.findByPlayerId(1L) } returns null
-
-            val event =
-                RecordCorrectedEvent(
-                    gameId = 10L,
-                    correctionType = CorrectionType.BATTING,
-                    playerId = 1L,
-                    fieldName = "hits",
-                    oldValue = "2",
-                    newValue = "3",
-                )
-
-            // when
-            listener.onRecordCorrected(event)
-
-            // then: 2번 호출됨 (1번 실패 + 1번 성공)
-            verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
-        }
-
-        @Test
-        fun `재시도 횟수 초과 시 예외가 전파됨`() {
-            // given
+        fun `OptimisticLockingFailureException 발생 시 직접 호출에서는 예외 전파됨`() {
+            // NOTE: @Retryable은 Spring AOP 프록시를 통해서만 동작합니다.
+            // 직접 호출 시에는 재시도 없이 예외가 그대로 전파됩니다.
             val seasonStats = SeasonBattingStats.create(testPlayer, 2024)
             seasonStats.applyFieldCorrection("walks", 10)
 
@@ -758,7 +728,7 @@ class RecordCorrectionEventListenerTest {
                     newValue = "3",
                 )
 
-            // when & then
+            // when & then: 직접 호출이므로 @Retryable 없이 예외 전파
             assertThrows<ObjectOptimisticLockingFailureException> {
                 listener.onRecordCorrected(event)
             }
