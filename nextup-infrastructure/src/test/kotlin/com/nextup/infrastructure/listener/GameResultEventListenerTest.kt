@@ -49,6 +49,8 @@ class GameResultEventListenerTest {
         game = createGame(10L, competition, GameStatus.FINISHED)
 
         every { cacheManager.getCache(CacheConfig.STANDINGS_CACHE) } returns standingsCache
+        every { cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE) } returns mockk(relaxed = true)
+        every { cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE) } returns mockk(relaxed = true)
         every { standingsCache.evict(any<Long>()) } returns Unit
     }
 
