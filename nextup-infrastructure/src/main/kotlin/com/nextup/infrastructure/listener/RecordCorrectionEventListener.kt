@@ -312,8 +312,10 @@ class RecordCorrectionEventListener(
         val game = gameRepository.findByIdOrNull(gameId) ?: return
         val competitionId = game.competition.id
         cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE)?.clear()
+        cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE)?.clear()
         logger.debug(
-            "기록 정정으로 순위 캐시 무효화 (competitionId={}, gameId={})",
+            "기록 정정으로 캐시 무효화 (competitionId={}, gameId={})",
             competitionId,
             gameId,
         )

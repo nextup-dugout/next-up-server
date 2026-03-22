@@ -250,9 +250,11 @@ class GameCancelEventListener(
 
         val competitionId = game.competition.id
         cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE)?.clear()
+        cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE)?.clear()
 
         logger.debug(
-            "경기 취소 후 순위 캐시 무효화 완료 (competitionId={}, gameId={})",
+            "경기 취소 후 캐시 무효화 완료 (competitionId={}, gameId={})",
             competitionId,
             gameId,
         )
