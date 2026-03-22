@@ -36,9 +36,14 @@ import org.springframework.transaction.event.TransactionalEventListener
 /**
  * 실시간 통계 갱신 이벤트 리스너
  *
- * 경기 중 타석 이벤트를 수신하여 시즌 타격 통계를 즉시 갱신합니다.
- * 경기 종료 이벤트를 수신하여 투수 스탯 및 커리어 스탯을 집계합니다.
- * Infrastructure 계층에 위치하여 Core의 Port를 통해 데이터에 접근합니다.
+ * 경기 중 타석 이벤트를 수신하여 시즌 타격/투수 통계를 즉시 갱신합니다.
+ * 경기 종료 이벤트를 수신하여 경기 요약 필드(이닝, 실점, 자책점, 결정 등) 및
+ * 커리어 스탯을 집계합니다. Infrastructure 계층에 위치하여 Core의 Port를 통해
+ * 데이터에 접근합니다.
+ *
+ * 투수 통계 중복 방지 전략:
+ * - 경기 중: applyLiveUpdate()로 타석 단위 필드(피안타, 삼진, 볼넷, 사구, 피홈런, 대면타자) 실시간 갱신
+ * - 경기 종료 시: addGameRecordForEndOfGame()으로 경기 요약 필드만 추가 (실시간 갱신 필드 제외)
  *
  * Optimistic Locking(@Version) 기반 동시성 제어를 적용하여
  * Lost Update를 방지합니다. 충돌 시 @Retryable로 메서드 레벨에서
@@ -90,24 +95,17 @@ class StatsEventListener(
         )
 
         // 투수 통계 실시간 갱신
-        val pitchingStats =
-            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
-        if (pitchingStats != null) {
-            pitchingStats.applyLiveUpdate(event.result)
-            seasonPitchingStatsRepository.save(pitchingStats)
-            logger.debug(
-                "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, result={})",
-                event.pitcherId,
-                year,
-                event.result,
-            )
-        } else {
-            logger.debug(
-                "시즌 투수 통계 없음 - 갱신 건너뜀 (pitcherId={}, year={})",
-                event.pitcherId,
-                year,
-            )
-        }
+        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year)
+
+        pitchingStats.applyLiveUpdate(event.result)
+        seasonPitchingStatsRepository.save(pitchingStats)
+
+        logger.debug(
+            "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, result={})",
+            event.pitcherId,
+            year,
+            event.result,
+        )
     }
 
     /**
@@ -160,33 +158,27 @@ class StatsEventListener(
         )
 
         // 투수 통계 역산
-        val pitchingStats =
-            seasonPitchingStatsRepository.findByPlayerIdAndYear(event.pitcherId, year)
-        if (pitchingStats != null) {
-            pitchingStats.revertLiveUpdate(event.result)
-            seasonPitchingStatsRepository.save(pitchingStats)
-            logger.debug(
-                "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, result={})",
-                event.pitcherId,
-                year,
-                event.result,
-            )
-        } else {
-            logger.debug(
-                "시즌 투수 통계 없음 - Undo 건너뜀 (pitcherId={}, year={})",
-                event.pitcherId,
-                year,
-            )
-        }
+        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year)
+
+        pitchingStats.revertLiveUpdate(event.result)
+        seasonPitchingStatsRepository.save(pitchingStats)
+
+        logger.debug(
+            "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, result={})",
+            event.pitcherId,
+            year,
+            event.result,
+        )
     }
 
     /**
      * 경기 결과 확정 이벤트를 처리합니다.
      *
      * 경기 종료 시점에 다음 통계를 일괄 집계합니다:
-     * - SeasonPitchingStats: 경기별 투수 기록 누적 (신규)
-     * - CareerBattingStats: 커리어 타격 기록 누적 (신규)
-     * - CareerPitchingStats: 커리어 투수 기록 누적 (신규)
+     * - SeasonPitchingStats: 경기 요약 필드만 추가 (이닝, 실점, 자책점, 결정 등)
+     *   실시간 갱신 필드(피안타, 삼진, 볼넷 등)는 applyLiveUpdate로 이미 반영되었으므로 제외
+     * - CareerBattingStats: 커리어 타격 기록 누적
+     * - CareerPitchingStats: 커리어 투수 기록 누적
      *
      * SeasonBattingStats는 PlateAppearanceRecordedEvent를 통해 실시간 반영되므로
      * 여기서는 처리하지 않습니다.
@@ -224,9 +216,16 @@ class StatsEventListener(
             val isFirstPitchingSeason = existingSeasonPitching == null
 
             // SeasonPitchingStats 갱신
+            // 기존 시즌 통계가 있으면 경기 중 applyLiveUpdate로 실시간 갱신된 필드는 이미 반영되어 있으므로
+            // 경기 종료 시에만 확정되는 필드(이닝, 실점, 자책점, 결정 등)만 추가한다.
+            // 새로 생성된 경우에는 실시간 갱신이 적용되지 않았으므로 전체 기록을 추가한다.
             val seasonPitchingStats =
                 existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year)
-            seasonPitchingStats.addGameRecord(pitchingRecord)
+            if (existingSeasonPitching != null) {
+                seasonPitchingStats.addGameRecordForEndOfGame(pitchingRecord)
+            } else {
+                seasonPitchingStats.addGameRecord(pitchingRecord)
+            }
             seasonPitchingStatsRepository.save(seasonPitchingStats)
 
             // CareerPitchingStats 갱신
@@ -317,6 +316,31 @@ class StatsEventListener(
             pitchingRecords.size,
             fieldingRecords.size,
         )
+    }
+
+    /**
+     * 선수의 시즌 투수 통계를 조회하거나, 없으면 자동 생성합니다.
+     *
+     * 첫 시즌 투수의 실시간 통계가 누락되는 문제를 방지합니다.
+     * DB unique constraint (player_id, year, team_id)에 의해 동시성 중복 생성이 방어됩니다.
+     */
+    private fun findOrCreateSeasonPitchingStats(
+        pitcherId: Long,
+        year: Int,
+    ): SeasonPitchingStats {
+        return seasonPitchingStatsRepository.findByPlayerIdAndYear(pitcherId, year)
+            ?: run {
+                val player =
+                    playerRepository.findByIdOrNull(pitcherId)
+                        ?: throw PlayerNotFoundException(pitcherId)
+                logger.info(
+                    "시즌 투수 통계 자동 생성 (pitcherId={}, year={})",
+                    pitcherId,
+                    year,
+                )
+                val newStats = SeasonPitchingStats.create(player = player, year = year)
+                seasonPitchingStatsRepository.save(newStats)
+            }
     }
 
     /**
