@@ -59,6 +59,10 @@ data class TeamStandingResponse(
     val runDifferential: Int,
     val isPlayoffPosition: Boolean,
     val logoUrl: String? = null,
+    /** 타이브레이커가 적용되었는지 여부 */
+    val tiebreakerApplied: Boolean = false,
+    /** 타이브레이커 적용 사유 */
+    val tiebreakerReason: String? = null,
 ) {
     companion object {
         fun from(
@@ -81,6 +85,8 @@ data class TeamStandingResponse(
                 runDifferential = dto.runDifferential,
                 isPlayoffPosition = isPlayoffPosition,
                 logoUrl = dto.logoUrl,
+                tiebreakerApplied = dto.tiebreakerApplied,
+                tiebreakerReason = dto.tiebreakerReason,
             )
     }
 }

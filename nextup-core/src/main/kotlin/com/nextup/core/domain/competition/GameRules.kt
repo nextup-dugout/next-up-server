@@ -62,6 +62,9 @@ data class GameRules(
     /** L-3: 용병(머서너리) 쿼터 제한 (null이면 무제한) */
     @Column(name = "max_mercenary_count")
     val maxMercenaryCount: Int? = null,
+    /** L-13: 순위 동률 타이브레이커 기준 순서 (쉼표 구분, 기본: 상대전적→득실점차→다득점) */
+    @Column(name = "standings_tiebreaker_order")
+    val standingsTiebreakerOrder: String = "HEAD_TO_HEAD,RUN_DIFFERENTIAL,RUNS_SCORED",
 ) {
     init {
         require(defaultInnings in 3..12) { "기본 이닝은 3~12 사이여야 합니다." }
@@ -101,5 +104,26 @@ data class GameRules(
         maxMercenaryCount?.let {
             require(it >= 0) { "용병 쿼터 제한은 0 이상이어야 합니다." }
         }
+
+        require(standingsTiebreakerOrder.isNotBlank()) {
+            "타이브레이커 기준 순서는 비어있을 수 없습니다."
+        }
+        val criteria = parseTiebreakerOrder()
+        require(criteria.isNotEmpty()) {
+            "타이브레이커 기준 순서에 유효한 기준이 최소 1개 이상 있어야 합니다."
+        }
+        require(criteria.size == criteria.toSet().size) {
+            "타이브레이커 기준 순서에 중복된 기준이 있습니다."
+        }
     }
+
+    /**
+     * 타이브레이커 기준 순서를 파싱하여 리스트로 반환합니다.
+     */
+    fun parseTiebreakerOrder(): List<TiebreakerCriterion> =
+        standingsTiebreakerOrder
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { TiebreakerCriterion.valueOf(it) }
 }

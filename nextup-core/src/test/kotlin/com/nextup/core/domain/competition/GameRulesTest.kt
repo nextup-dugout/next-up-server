@@ -352,4 +352,71 @@ class GameRulesTest {
             assertThat(rules.maxExtraInnings).isEqualTo(1)
         }
     }
+
+    @Nested
+    @DisplayName("순위 타이브레이커 설정")
+    inner class StandingsTiebreakerValidation {
+        @Test
+        fun `기본 타이브레이커 순서는 상대전적-득실점차-다득점이다`() {
+            val rules = GameRules()
+
+            assertThat(rules.standingsTiebreakerOrder)
+                .isEqualTo("HEAD_TO_HEAD,RUN_DIFFERENTIAL,RUNS_SCORED")
+        }
+
+        @Test
+        fun `기본 타이브레이커 순서를 파싱할 수 있다`() {
+            val rules = GameRules()
+            val criteria = rules.parseTiebreakerOrder()
+
+            assertThat(criteria).containsExactly(
+                TiebreakerCriterion.HEAD_TO_HEAD,
+                TiebreakerCriterion.RUN_DIFFERENTIAL,
+                TiebreakerCriterion.RUNS_SCORED,
+            )
+        }
+
+        @Test
+        fun `커스텀 타이브레이커 순서를 설정할 수 있다`() {
+            val rules =
+                GameRules(standingsTiebreakerOrder = "RUN_DIFFERENTIAL,RUNS_SCORED,HEAD_TO_HEAD")
+            val criteria = rules.parseTiebreakerOrder()
+
+            assertThat(criteria).containsExactly(
+                TiebreakerCriterion.RUN_DIFFERENTIAL,
+                TiebreakerCriterion.RUNS_SCORED,
+                TiebreakerCriterion.HEAD_TO_HEAD,
+            )
+        }
+
+        @Test
+        fun `단일 기준만 설정할 수 있다`() {
+            val rules = GameRules(standingsTiebreakerOrder = "HEAD_TO_HEAD")
+            val criteria = rules.parseTiebreakerOrder()
+
+            assertThat(criteria).containsExactly(TiebreakerCriterion.HEAD_TO_HEAD)
+        }
+
+        @Test
+        fun `빈 타이브레이커 순서는 예외가 발생한다`() {
+            assertThatThrownBy { GameRules(standingsTiebreakerOrder = "") }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("비어있을 수 없습니다")
+        }
+
+        @Test
+        fun `중복된 기준이 있으면 예외가 발생한다`() {
+            assertThatThrownBy {
+                GameRules(standingsTiebreakerOrder = "HEAD_TO_HEAD,HEAD_TO_HEAD")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("중복된 기준")
+        }
+
+        @Test
+        fun `유효하지 않은 기준이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                GameRules(standingsTiebreakerOrder = "INVALID_CRITERION")
+            }.isInstanceOf(IllegalArgumentException::class.java)
+        }
+    }
 }
