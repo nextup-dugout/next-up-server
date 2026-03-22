@@ -24,6 +24,28 @@ class CareerFieldingStatsTest {
         careerFieldingStats = CareerFieldingStats.create(player)
     }
 
+    private fun createFieldingRecordMock(
+        putOuts: Int = 0,
+        assists: Int = 0,
+        errors: Int = 0,
+        doublePlays: Int = 0,
+        passedBalls: Int = 0,
+        triplePlays: Int = 0,
+        caughtStealing: Int = 0,
+        stolenBasesAllowed: Int = 0,
+    ): FieldingRecord {
+        val record = mockk<FieldingRecord>()
+        every { record.putOuts } returns putOuts
+        every { record.assists } returns assists
+        every { record.errors } returns errors
+        every { record.doublePlays } returns doublePlays
+        every { record.passedBalls } returns passedBalls
+        every { record.triplePlays } returns triplePlays
+        every { record.caughtStealing } returns caughtStealing
+        every { record.stolenBasesAllowed } returns stolenBasesAllowed
+        return record
+    }
+
     @Nested
     @DisplayName("생성")
     inner class CreateTest {
@@ -36,6 +58,9 @@ class CareerFieldingStatsTest {
             assertThat(careerFieldingStats.errors).isEqualTo(0)
             assertThat(careerFieldingStats.doublePlays).isEqualTo(0)
             assertThat(careerFieldingStats.passedBalls).isEqualTo(0)
+            assertThat(careerFieldingStats.triplePlays).isEqualTo(0)
+            assertThat(careerFieldingStats.caughtStealing).isEqualTo(0)
+            assertThat(careerFieldingStats.stolenBasesAllowed).isEqualTo(0)
         }
 
         @Test
@@ -66,12 +91,14 @@ class CareerFieldingStatsTest {
         @Test
         fun `addGameRecord 호출 시 gamesPlayed가 1 증가하고 수비 기록이 누적된다`() {
             // given
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 5
-            every { record.assists } returns 3
-            every { record.errors } returns 1
-            every { record.doublePlays } returns 2
-            every { record.passedBalls } returns 1
+            val record =
+                createFieldingRecordMock(
+                    putOuts = 5,
+                    assists = 3,
+                    errors = 1,
+                    doublePlays = 2,
+                    passedBalls = 1,
+                )
 
             // when
             careerFieldingStats.addGameRecord(record)
@@ -88,19 +115,14 @@ class CareerFieldingStatsTest {
         @Test
         fun `여러 경기 기록을 누적하면 합산된다`() {
             // given
-            val record1 = mockk<FieldingRecord>()
-            every { record1.putOuts } returns 3
-            every { record1.assists } returns 1
-            every { record1.errors } returns 0
-            every { record1.doublePlays } returns 0
-            every { record1.passedBalls } returns 0
-
-            val record2 = mockk<FieldingRecord>()
-            every { record2.putOuts } returns 4
-            every { record2.assists } returns 2
-            every { record2.errors } returns 1
-            every { record2.doublePlays } returns 1
-            every { record2.passedBalls } returns 0
+            val record1 = createFieldingRecordMock(putOuts = 3, assists = 1)
+            val record2 =
+                createFieldingRecordMock(
+                    putOuts = 4,
+                    assists = 2,
+                    errors = 1,
+                    doublePlays = 1,
+                )
 
             // when
             careerFieldingStats.addGameRecord(record1)
@@ -121,12 +143,14 @@ class CareerFieldingStatsTest {
         @Test
         fun `revertGameRecord 호출 시 gamesPlayed가 1 감소하고 수비 기록이 차감된다`() {
             // given
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 5
-            every { record.assists } returns 3
-            every { record.errors } returns 1
-            every { record.doublePlays } returns 2
-            every { record.passedBalls } returns 1
+            val record =
+                createFieldingRecordMock(
+                    putOuts = 5,
+                    assists = 3,
+                    errors = 1,
+                    doublePlays = 2,
+                    passedBalls = 1,
+                )
 
             careerFieldingStats.addGameRecord(record)
             assertThat(careerFieldingStats.gamesPlayed).isEqualTo(1)
@@ -146,12 +170,14 @@ class CareerFieldingStatsTest {
         @Test
         fun `초기 상태에서 revertGameRecord를 호출해도 음수가 되지 않는다`() {
             // given
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 5
-            every { record.assists } returns 3
-            every { record.errors } returns 1
-            every { record.doublePlays } returns 2
-            every { record.passedBalls } returns 1
+            val record =
+                createFieldingRecordMock(
+                    putOuts = 5,
+                    assists = 3,
+                    errors = 1,
+                    doublePlays = 2,
+                    passedBalls = 1,
+                )
 
             // when
             careerFieldingStats.revertGameRecord(record)
@@ -168,19 +194,8 @@ class CareerFieldingStatsTest {
         @Test
         fun `여러 경기 중 하나를 롤백하면 나머지만 남는다`() {
             // given
-            val record1 = mockk<FieldingRecord>()
-            every { record1.putOuts } returns 3
-            every { record1.assists } returns 1
-            every { record1.errors } returns 0
-            every { record1.doublePlays } returns 0
-            every { record1.passedBalls } returns 0
-
-            val record2 = mockk<FieldingRecord>()
-            every { record2.putOuts } returns 4
-            every { record2.assists } returns 2
-            every { record2.errors } returns 1
-            every { record2.doublePlays } returns 1
-            every { record2.passedBalls } returns 0
+            val record1 = createFieldingRecordMock(putOuts = 3, assists = 1)
+            val record2 = createFieldingRecordMock(putOuts = 4, assists = 2, errors = 1, doublePlays = 1)
 
             careerFieldingStats.addGameRecord(record1)
             careerFieldingStats.addGameRecord(record2)
@@ -209,12 +224,7 @@ class CareerFieldingStatsTest {
         @Test
         fun `수비 기회는 자살 + 보살 + 실책이다`() {
             // given
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 5
-            every { record.assists } returns 3
-            every { record.errors } returns 2
-            every { record.doublePlays } returns 0
-            every { record.passedBalls } returns 0
+            val record = createFieldingRecordMock(putOuts = 5, assists = 3, errors = 2)
 
             careerFieldingStats.addGameRecord(record)
 
@@ -234,12 +244,7 @@ class CareerFieldingStatsTest {
         @Test
         fun `수비 기회가 있으면 수비율을 반환한다`() {
             // given: PO=9, A=3, E=1 -> TC=13, FPCT=12/13
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 9
-            every { record.assists } returns 3
-            every { record.errors } returns 1
-            every { record.doublePlays } returns 0
-            every { record.passedBalls } returns 0
+            val record = createFieldingRecordMock(putOuts = 9, assists = 3, errors = 1)
 
             careerFieldingStats.addGameRecord(record)
 
@@ -250,12 +255,7 @@ class CareerFieldingStatsTest {
         @Test
         fun `실책이 없으면 수비율은 1이다`() {
             // given: PO=5, A=3, E=0 -> TC=8, FPCT=8/8=1.000
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 5
-            every { record.assists } returns 3
-            every { record.errors } returns 0
-            every { record.doublePlays } returns 0
-            every { record.passedBalls } returns 0
+            val record = createFieldingRecordMock(putOuts = 5, assists = 3)
 
             careerFieldingStats.addGameRecord(record)
 
@@ -267,12 +267,7 @@ class CareerFieldingStatsTest {
         @Test
         fun `수비율은 소수점 3자리로 계산된다`() {
             // given: PO=2, A=1, E=1 -> TC=4, FPCT=3/4=0.750
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 2
-            every { record.assists } returns 1
-            every { record.errors } returns 1
-            every { record.doublePlays } returns 0
-            every { record.passedBalls } returns 0
+            val record = createFieldingRecordMock(putOuts = 2, assists = 1, errors = 1)
 
             careerFieldingStats.addGameRecord(record)
 
@@ -288,12 +283,7 @@ class CareerFieldingStatsTest {
         @Test
         fun `정상 상태에서 validate는 예외를 발생시키지 않는다`() {
             // given: 정상 상태
-            val record = mockk<FieldingRecord>()
-            every { record.putOuts } returns 3
-            every { record.assists } returns 1
-            every { record.errors } returns 0
-            every { record.doublePlays } returns 0
-            every { record.passedBalls } returns 0
+            val record = createFieldingRecordMock(putOuts = 3, assists = 1)
             careerFieldingStats.addGameRecord(record)
             careerFieldingStats.addSeason()
 
@@ -351,6 +341,27 @@ class CareerFieldingStatsTest {
         @Test
         fun `passedBalls가 음수이면 StatsValidationException이 발생한다`() {
             setFieldDirectly(careerFieldingStats, "passedBalls", -1)
+            assertThatThrownBy { careerFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `triplePlays가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(careerFieldingStats, "triplePlays", -1)
+            assertThatThrownBy { careerFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `caughtStealing이 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(careerFieldingStats, "caughtStealing", -1)
+            assertThatThrownBy { careerFieldingStats.validate() }
+                .isInstanceOf(StatsValidationException::class.java)
+        }
+
+        @Test
+        fun `stolenBasesAllowed가 음수이면 StatsValidationException이 발생한다`() {
+            setFieldDirectly(careerFieldingStats, "stolenBasesAllowed", -1)
             assertThatThrownBy { careerFieldingStats.validate() }
                 .isInstanceOf(StatsValidationException::class.java)
         }

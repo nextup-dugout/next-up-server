@@ -2,6 +2,8 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
+import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.common.exception.NoCatcherInLineupException
 import com.nextup.common.exception.NonAttendingPlayerInLineupException
 import com.nextup.common.exception.UnregisteredPlayerInLineupException
@@ -12,6 +14,7 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.user.User
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -379,6 +382,273 @@ class LineupValidatorTest {
         // when & then
         assertThatCode {
             LineupValidator.validateLeagueRegisteredPlayers(entries, registeredPlayerIds)
+        }.doesNotThrowAnyException()
+    }
+
+    // ========== Post-DH Release Batting Order Validation Tests ==========
+
+    @Test
+    fun `should pass post-DH release validation with 9 batters in order`() {
+        // given: DH 해제 후 투수 포함 9명이 타순에 있는 상태
+        val gameTeam = mockk<GameTeam>(relaxed = true)
+        val players =
+            (1..8).map { order ->
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("야수$order", Position.CATCHER, order.toLong()),
+                    position = Position.CATCHER,
+                    battingOrder = order,
+                )
+            } +
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("투수", Position.STARTING_PITCHER, 9L),
+                    position = Position.STARTING_PITCHER,
+                    battingOrder = 9,
+                )
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validatePostDhReleaseBattingOrder(players)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should fail post-DH release validation with 8 batters in order`() {
+        // given: DH 해제 후 투수가 타순을 할당받지 못해 8명만 타순에 있는 상태
+        val gameTeam = mockk<GameTeam>(relaxed = true)
+        val players =
+            (1..8).map { order ->
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("야수$order", Position.CATCHER, order.toLong()),
+                    position = Position.CATCHER,
+                    battingOrder = order,
+                )
+            } +
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("투수", Position.STARTING_PITCHER, 9L),
+                    position = Position.STARTING_PITCHER,
+                    battingOrder = null, // 투수에게 타순이 할당되지 않음
+                )
+
+        // when & then
+        val exception =
+            assertThrows<InvalidGameStateException> {
+                LineupValidator.validatePostDhReleaseBattingOrder(players)
+            }
+        assert(exception.message?.contains("8명") == true)
+    }
+
+    @Test
+    fun `should fail post-DH release validation with 10 batters in order`() {
+        // given: 잘못된 상태로 10명이 타순에 있는 경우
+        val gameTeam = mockk<GameTeam>(relaxed = true)
+        val players =
+            (1..10).map { order ->
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("선수$order", Position.CATCHER, order.toLong()),
+                    position = Position.CATCHER,
+                    battingOrder = order,
+                )
+            }
+
+        // when & then
+        val exception =
+            assertThrows<InvalidGameStateException> {
+                LineupValidator.validatePostDhReleaseBattingOrder(players)
+            }
+        assert(exception.message?.contains("10명") == true)
+    }
+
+    @Test
+    fun `should only count currently playing players in post-DH release validation`() {
+        // given: 퇴장한 선수는 카운트에서 제외
+        val gameTeam = mockk<GameTeam>(relaxed = true)
+        val activePlayers =
+            (1..9).map { order ->
+                GamePlayer.createStarter(
+                    gameTeam = gameTeam,
+                    player = createPlayer("야수$order", Position.CATCHER, order.toLong()),
+                    position = Position.CATCHER,
+                    battingOrder = order,
+                )
+            }
+        val exitedPlayer =
+            GamePlayer.createStarter(
+                gameTeam = gameTeam,
+                player = createPlayer("퇴장선수", Position.LEFT_FIELD, 10L),
+                position = Position.LEFT_FIELD,
+                battingOrder = 5,
+            )
+        exitedPlayer.exitGame(3)
+
+        // when & then: 퇴장한 선수(isCurrentlyPlaying=false)는 제외되므로 9명으로 통과
+        assertThatCode {
+            LineupValidator.validatePostDhReleaseBattingOrder(activePlayers + exitedPlayer)
+        }.doesNotThrowAnyException()
+    }
+
+    // ========== L-3: Mercenary Quota Tests ==========
+
+    @Test
+    fun `should pass mercenary quota validation when mercenary count is within limit`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val mercenaryPlayerIds = setOf(1L, 2L) // 2명이 용병
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = mercenaryPlayerIds,
+                maxMercenaryCount = 3,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should throw MercenaryQuotaExceededException when mercenary count exceeds limit`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val mercenaryPlayerIds = setOf(1L, 2L, 3L) // 3명이 용병
+
+        // when & then
+        assertThrows<MercenaryQuotaExceededException> {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = mercenaryPlayerIds,
+                maxMercenaryCount = 2,
+            )
+        }
+    }
+
+    @Test
+    fun `should skip mercenary validation when mercenaryPlayerIds is null`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+
+        // when & then - should pass even without mercenary info
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = null,
+                maxMercenaryCount = 2,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should skip mercenary validation when maxMercenaryCount is null`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val mercenaryPlayerIds = setOf(1L, 2L, 3L, 4L, 5L) // 5명이 용병
+
+        // when & then - should pass because maxMercenaryCount is null (unlimited)
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = mercenaryPlayerIds,
+                maxMercenaryCount = null,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should pass mercenary quota when count equals max`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val mercenaryPlayerIds = setOf(1L, 2L) // 정확히 2명이 용병
+
+        // when & then - 정확히 한도와 같으면 통과
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = mercenaryPlayerIds,
+                maxMercenaryCount = 2,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should pass mercenary quota when maxMercenaryCount is 0 and no mercenaries`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+        val mercenaryPlayerIds = setOf(100L, 200L) // 라인업에 없는 용병들
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validate(
+                entries,
+                mercenaryPlayerIds = mercenaryPlayerIds,
+                maxMercenaryCount = 0,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    // ========== L-3: Mercenary Quota Substitution Tests ==========
+
+    @Test
+    fun `should pass substitution mercenary quota when adding non-mercenary`() {
+        // given: 현재 용병 2명, 최대 2명, 비용병 투입
+        // when & then
+        assertThatCode {
+            LineupValidator.validateMercenaryQuotaForSubstitution(
+                currentMercenaryCount = 2,
+                isIncomingPlayerMercenary = false,
+                isOutgoingPlayerMercenary = false,
+                maxMercenaryCount = 2,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should fail substitution mercenary quota when adding mercenary exceeds limit`() {
+        // given: 현재 용병 2명, 최대 2명, 용병 투입 + 비용병 퇴장
+        // when & then
+        assertThrows<MercenaryQuotaExceededException> {
+            LineupValidator.validateMercenaryQuotaForSubstitution(
+                currentMercenaryCount = 2,
+                isIncomingPlayerMercenary = true,
+                isOutgoingPlayerMercenary = false,
+                maxMercenaryCount = 2,
+            )
+        }
+    }
+
+    @Test
+    fun `should pass substitution when replacing mercenary with mercenary`() {
+        // given: 현재 용병 2명, 최대 2명, 용병 교체 (용병→용병)
+        // when & then
+        assertThatCode {
+            LineupValidator.validateMercenaryQuotaForSubstitution(
+                currentMercenaryCount = 2,
+                isIncomingPlayerMercenary = true,
+                isOutgoingPlayerMercenary = true,
+                maxMercenaryCount = 2,
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should pass substitution when removing mercenary frees up quota`() {
+        // given: 현재 용병 2명, 최대 2명, 용병 퇴장 + 비용병 투입
+        // when & then
+        assertThatCode {
+            LineupValidator.validateMercenaryQuotaForSubstitution(
+                currentMercenaryCount = 2,
+                isIncomingPlayerMercenary = false,
+                isOutgoingPlayerMercenary = true,
+                maxMercenaryCount = 2,
+            )
         }.doesNotThrowAnyException()
     }
 

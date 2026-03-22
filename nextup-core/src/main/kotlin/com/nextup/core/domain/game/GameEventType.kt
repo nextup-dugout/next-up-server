@@ -14,6 +14,7 @@ enum class GameEventType(
     GAME_STATUS("경기 상태 변경"),
     POSITION_CHANGE("포지션 변경"),
     EJECTION("퇴장"),
+    EMERGENCY_SUBSTITUTION("긴급 교체"),
     NO_HITTER("노히트노런"),
     PERFECT_GAME("퍼펙트게임"),
 }

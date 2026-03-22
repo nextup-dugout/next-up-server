@@ -1,5 +1,6 @@
 package com.nextup.core.domain.stats
 
+import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.FieldingRecord
@@ -82,6 +83,23 @@ class SeasonFieldingStats(
     var passedBalls: Int = 0
         protected set
 
+    @Column(name = "triple_plays", nullable = false)
+    var triplePlays: Int = 0
+        protected set
+
+    @Column(name = "caught_stealing", nullable = false)
+    var caughtStealing: Int = 0
+        protected set
+
+    @Column(name = "stolen_bases_allowed", nullable = false)
+    var stolenBasesAllowed: Int = 0
+        protected set
+
+    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
+    @Column(name = "is_finalized", nullable = false)
+    var isFinalized: Boolean = false
+        protected set
+
     // Calculated properties
 
     /**
@@ -108,24 +126,32 @@ class SeasonFieldingStats(
      * 경기 수비 기록을 누적합니다.
      */
     fun addGameRecord(record: FieldingRecord) {
+        requireNotFinalized()
         gamesPlayed++
         putOuts += record.putOuts
         assists += record.assists
         errors += record.errors
         doublePlays += record.doublePlays
         passedBalls += record.passedBalls
+        triplePlays += record.triplePlays
+        caughtStealing += record.caughtStealing
+        stolenBasesAllowed += record.stolenBasesAllowed
     }
 
     /**
      * 경기 수비 기록을 롤백합니다 (경기 취소 시).
      */
     fun revertGameRecord(record: FieldingRecord) {
+        requireNotFinalized()
         gamesPlayed--
         putOuts -= record.putOuts
         assists -= record.assists
         errors -= record.errors
         doublePlays -= record.doublePlays
         passedBalls -= record.passedBalls
+        triplePlays -= record.triplePlays
+        caughtStealing -= record.caughtStealing
+        stolenBasesAllowed -= record.stolenBasesAllowed
         validate()
     }
 
@@ -139,12 +165,16 @@ class SeasonFieldingStats(
         fieldName: String,
         delta: Int,
     ) {
+        requireNotFinalized()
         when (fieldName) {
             "putOuts" -> putOuts = maxOf(0, putOuts + delta)
             "assists" -> assists = maxOf(0, assists + delta)
             "errors" -> errors = maxOf(0, errors + delta)
             "doublePlays" -> doublePlays = maxOf(0, doublePlays + delta)
             "passedBalls" -> passedBalls = maxOf(0, passedBalls + delta)
+            "triplePlays" -> triplePlays = maxOf(0, triplePlays + delta)
+            "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
+            "stolenBasesAllowed" -> stolenBasesAllowed = maxOf(0, stolenBasesAllowed + delta)
             else -> throw IllegalArgumentException("유효하지 않은 시즌 수비 통계 필드입니다: $fieldName")
         }
         validate()
@@ -171,6 +201,43 @@ class SeasonFieldingStats(
         }
         if (passedBalls < 0) {
             throw StatsValidationException("포일($passedBalls)은 음수일 수 없습니다.")
+        }
+        if (triplePlays < 0) {
+            throw StatsValidationException("삼중살 관여($triplePlays)는 음수일 수 없습니다.")
+        }
+        if (caughtStealing < 0) {
+            throw StatsValidationException("도루 저지($caughtStealing)는 음수일 수 없습니다.")
+        }
+        if (stolenBasesAllowed < 0) {
+            throw StatsValidationException("도루 허용($stolenBasesAllowed)은 음수일 수 없습니다.")
+        }
+    }
+
+    /**
+     * L-8: 시즌 통계를 확정합니다.
+     *
+     * 확정된 통계는 추가 갱신이 불가합니다.
+     */
+    fun finalize() {
+        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
+        validate()
+        this.isFinalized = true
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
+     */
+    fun unfinalize() {
+        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
+        this.isFinalized = false
+    }
+
+    /**
+     * 확정된 통계의 수정을 방지하는 가드 메서드.
+     */
+    private fun requireNotFinalized() {
+        if (isFinalized) {
+            throw FrozenStatsException()
         }
     }
 

@@ -806,6 +806,19 @@ class SeasonPitchingStatsTest {
         }
 
         @Test
+        fun `낫아웃 삼진 결과를 반영하면 탈삼진이 증가한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+
+            // when
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // then
+            assertThat(stats.battersFaced).isEqualTo(1)
+            assertThat(stats.strikeouts).isEqualTo(1)
+        }
+
+        @Test
         fun `볼넷 결과를 반영하면 볼넷허용이 증가한다`() {
             // given
             val stats = SeasonPitchingStats.create(testPlayer, 2024)
@@ -899,6 +912,19 @@ class SeasonPitchingStatsTest {
 
             // when
             stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+
+            // then
+            assertThat(stats.strikeouts).isZero
+        }
+
+        @Test
+        fun `낫아웃 삼진 역산 시 삼진이 감소한다`() {
+            // given
+            val stats = SeasonPitchingStats.create(testPlayer, 2024)
+            stats.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
+
+            // when
+            stats.revertLiveUpdate(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD)
 
             // then
             assertThat(stats.strikeouts).isZero

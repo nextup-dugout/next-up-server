@@ -1,5 +1,6 @@
 package com.nextup.core.domain.stats
 
+import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.PitchingRecord
@@ -267,6 +268,7 @@ class SeasonPitchingStats(
      * 경기 취소 후 전체 재집계, 또는 실시간 갱신 없이 경기가 종료된 경우에 해당합니다.
      */
     fun addGameRecord(record: PitchingRecord) {
+        requireNotFinalized()
         addGameSummaryFields(record)
         addLiveTrackingFields(record)
     }
@@ -283,6 +285,7 @@ class SeasonPitchingStats(
      * - 승/패/세이브/홀드/블론세이브
      */
     fun addGameRecordForEndOfGame(record: PitchingRecord) {
+        requireNotFinalized()
         addGameSummaryFields(record)
     }
 
@@ -339,6 +342,7 @@ class SeasonPitchingStats(
      * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
      */
     fun revertGameRecord(record: PitchingRecord) {
+        requireNotFinalized()
         gamesPlayed = maxOf(0, gamesPlayed - 1)
         if (record.isStartingPitcher) {
             gamesStarted = maxOf(0, gamesStarted - 1)
@@ -379,6 +383,7 @@ class SeasonPitchingStats(
      * 대면 타자 수, 피안타, 삼진, 볼넷, 사구, 피홈런을 갱신합니다.
      */
     fun applyLiveUpdate(result: PlateAppearanceResult) {
+        requireNotFinalized()
         battersFaced++
 
         when (result) {
@@ -392,7 +397,9 @@ class SeasonPitchingStats(
                 hitsAllowed++
                 homeRunsAllowed++
             }
-            PlateAppearanceResult.STRIKEOUT -> {
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> {
                 strikeouts++
             }
             PlateAppearanceResult.WALK,
@@ -415,6 +422,7 @@ class SeasonPitchingStats(
      * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
      */
     fun revertLiveUpdate(result: PlateAppearanceResult) {
+        requireNotFinalized()
         if (battersFaced > 0) battersFaced--
 
         when (result) {
@@ -428,7 +436,9 @@ class SeasonPitchingStats(
                 if (hitsAllowed > 0) hitsAllowed--
                 if (homeRunsAllowed > 0) homeRunsAllowed--
             }
-            PlateAppearanceResult.STRIKEOUT -> {
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> {
                 if (strikeouts > 0) strikeouts--
             }
             PlateAppearanceResult.WALK,
@@ -472,8 +482,9 @@ class SeasonPitchingStats(
      */
     fun applyFieldCorrection(
         fieldName: String,
-        delta: Int
+        delta: Int,
     ) {
+        requireNotFinalized()
         when (fieldName) {
             "inningsPitchedOuts" -> inningsPitchedOuts = maxOf(0, inningsPitchedOuts + delta)
             "earnedRuns" -> earnedRuns = maxOf(0, earnedRuns + delta)
@@ -508,6 +519,15 @@ class SeasonPitchingStats(
         }
         if (pitchesThrown != null && strikesThrown != null && strikesThrown!! > pitchesThrown!!) {
             throw StatsValidationException("스트라이크 수($strikesThrown)가 총 투구 수($pitchesThrown)보다 클 수 없습니다.")
+        }
+    }
+
+    /**
+     * 확정된 통계의 수정을 방지하는 가드 메서드.
+     */
+    private fun requireNotFinalized() {
+        if (isFinalized) {
+            throw FrozenStatsException()
         }
     }
 

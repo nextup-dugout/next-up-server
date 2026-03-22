@@ -1,5 +1,6 @@
 package com.nextup.core.domain.stats
 
+import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.BattingRecord
@@ -220,6 +221,7 @@ class SeasonBattingStats(
      * 경기 타격 기록을 누적합니다.
      */
     fun addGameRecord(record: BattingRecord) {
+        requireNotFinalized()
         gamesPlayed++
         plateAppearances += record.plateAppearances
         atBats += record.atBats
@@ -246,6 +248,7 @@ class SeasonBattingStats(
      * 이벤트 기반으로 호출되며, 경기 종료 전에도 통계가 반영됩니다.
      */
     fun applyLiveUpdate(result: PlateAppearanceResult) {
+        requireNotFinalized()
         plateAppearances++
 
         if (result.isAtBat) {
@@ -266,7 +269,9 @@ class SeasonBattingStats(
             PlateAppearanceResult.WALK -> walks++
             PlateAppearanceResult.INTENTIONAL_WALK -> intentionalWalks++
             PlateAppearanceResult.HIT_BY_PITCH -> hitByPitch++
-            PlateAppearanceResult.STRIKEOUT -> strikeouts++
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> strikeouts++
             PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
             PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
             else -> Unit
@@ -279,6 +284,7 @@ class SeasonBattingStats(
      * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
      */
     fun revertLiveUpdate(result: PlateAppearanceResult) {
+        requireNotFinalized()
         if (plateAppearances > 0) plateAppearances--
 
         if (result.isAtBat && atBats > 0) {
@@ -299,7 +305,9 @@ class SeasonBattingStats(
             PlateAppearanceResult.WALK -> if (walks > 0) walks--
             PlateAppearanceResult.INTENTIONAL_WALK -> if (intentionalWalks > 0) intentionalWalks--
             PlateAppearanceResult.HIT_BY_PITCH -> if (hitByPitch > 0) hitByPitch--
-            PlateAppearanceResult.STRIKEOUT -> if (strikeouts > 0) strikeouts--
+            PlateAppearanceResult.STRIKEOUT,
+            PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD,
+            -> if (strikeouts > 0) strikeouts--
             PlateAppearanceResult.SACRIFICE_BUNT -> if (sacrificeBunts > 0) sacrificeBunts--
             PlateAppearanceResult.SACRIFICE_FLY -> if (sacrificeFlies > 0) sacrificeFlies--
             else -> Unit
@@ -314,6 +322,7 @@ class SeasonBattingStats(
      * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
      */
     fun revertGameRecord(record: BattingRecord) {
+        requireNotFinalized()
         gamesPlayed = maxOf(0, gamesPlayed - 1)
         plateAppearances = maxOf(0, plateAppearances - record.plateAppearances)
         atBats = maxOf(0, atBats - record.atBats)
@@ -342,8 +351,9 @@ class SeasonBattingStats(
      */
     fun applyFieldCorrection(
         fieldName: String,
-        delta: Int
+        delta: Int,
     ) {
+        requireNotFinalized()
         when (fieldName) {
             "plateAppearances" -> plateAppearances = maxOf(0, plateAppearances + delta)
             "atBats" -> atBats = maxOf(0, atBats + delta)
@@ -430,6 +440,15 @@ class SeasonBattingStats(
             mismatches.add("타수: 시즌통계=$atBats, BoxScore합산=$totalAtBats")
         }
         return mismatches
+    }
+
+    /**
+     * 확정된 통계의 수정을 방지하는 가드 메서드.
+     */
+    private fun requireNotFinalized() {
+        if (isFinalized) {
+            throw FrozenStatsException()
+        }
     }
 
     companion object {

@@ -3,10 +3,14 @@ package com.nextup.scorer.listener
 import com.nextup.core.domain.event.GameEndedEvent
 import com.nextup.core.domain.event.GameStartedEvent
 import com.nextup.core.domain.event.HalfInningAdvancedEvent
+import com.nextup.core.domain.event.PitchCountWarningEvent
+import com.nextup.core.domain.event.PitchCountWarningType
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlayerSubstitutedEvent
 import com.nextup.core.domain.event.PositionChangedEvent
 import com.nextup.core.domain.event.RecordCorrectedEvent
+import com.nextup.core.domain.event.TimeLimitWarningEvent
+import com.nextup.core.domain.event.TimeLimitWarningType
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
@@ -19,6 +23,9 @@ import com.nextup.scorer.dto.websocket.PlayerBriefDto
 import com.nextup.scorer.dto.websocket.RunnersDto
 import com.nextup.scorer.dto.websocket.ScoreboardMessage
 import com.nextup.scorer.dto.websocket.TeamScoreDto
+import com.nextup.scorer.dto.websocket.WarningMessage
+import com.nextup.scorer.dto.websocket.WarningSeverity
+import com.nextup.scorer.dto.websocket.WarningType
 import com.nextup.scorer.service.websocket.GameBroadcastService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -319,6 +326,120 @@ class GameBroadcastEventListener(
             )
         } catch (ex: Exception) {
             log.error("RecordCorrectedEvent 브로드캐스트 실패 (gameId={}): {}", event.gameId, ex.message, ex)
+        }
+    }
+
+    /**
+     * 투구수 제한 경고 이벤트를 처리합니다.
+     *
+     * broadcastWarning(PITCH_COUNT)
+     * LIMIT_REACHED 시 투수 교체 권고 메시지를 포함합니다.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onPitchCountWarning(event: PitchCountWarningEvent) {
+        try {
+            val severity =
+                when (event.warningType) {
+                    PitchCountWarningType.LIMIT_REACHED -> WarningSeverity.CRITICAL
+                    PitchCountWarningType.APPROACHING_LIMIT -> WarningSeverity.WARNING
+                }
+            val title = event.warningType.displayName
+            val message =
+                when (event.warningType) {
+                    PitchCountWarningType.LIMIT_REACHED ->
+                        "투수가 투구 수 제한(${event.pitchCountLimit}구)에 도달했습니다" +
+                            "(현재 ${event.pitchesThrown}구). 투수 교체를 권고합니다."
+                    PitchCountWarningType.APPROACHING_LIMIT ->
+                        "투수가 ${event.pitchesThrown}구를 던졌습니다. " +
+                            "제한(${event.pitchCountLimit}구)까지 ${event.remainingPitches}구 남았습니다."
+                }
+            val details =
+                mapOf(
+                    "gamePlayerId" to event.gamePlayerId,
+                    "playerId" to event.playerId,
+                    "pitchesThrown" to event.pitchesThrown,
+                    "pitchCountLimit" to event.pitchCountLimit,
+                    "remainingPitches" to event.remainingPitches,
+                    "isSubstitutionRecommended" to event.isSubstitutionRecommended,
+                )
+
+            val warningMessage =
+                WarningMessage(
+                    gameId = event.gameId,
+                    warningType = WarningType.PITCH_COUNT,
+                    severity = severity,
+                    title = title,
+                    message = message,
+                    details = details,
+                    timestamp = Instant.now(),
+                )
+            gameBroadcastService.broadcastWarning(event.gameId, warningMessage)
+
+            log.debug(
+                "투구수 경고 브로드캐스트 완료 (gameId={}, pitchesThrown={}, limit={}, type={})",
+                event.gameId,
+                event.pitchesThrown,
+                event.pitchCountLimit,
+                event.warningType,
+            )
+        } catch (ex: Exception) {
+            log.error("PitchCountWarningEvent 브로드캐스트 실패 (gameId={}): {}", event.gameId, ex.message, ex)
+        }
+    }
+
+    /**
+     * 시간 제한 경고 이벤트를 처리합니다.
+     *
+     * broadcastWarning(TIME_LIMIT)
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onTimeLimitWarning(event: TimeLimitWarningEvent) {
+        try {
+            val severity =
+                when (event.warningType) {
+                    TimeLimitWarningType.LIMIT_REACHED -> WarningSeverity.CRITICAL
+                    TimeLimitWarningType.APPROACHING_LIMIT -> WarningSeverity.WARNING
+                }
+            val title = event.warningType.displayName
+            val message =
+                when (event.warningType) {
+                    TimeLimitWarningType.LIMIT_REACHED ->
+                        "경기 시간 제한(${event.timeLimitMinutes}분)에 도달했습니다" +
+                            "(경과 시간: ${event.elapsedMinutes}분)."
+                    TimeLimitWarningType.APPROACHING_LIMIT ->
+                        "경기 시간 제한에 임박했습니다. " +
+                            "남은 시간: ${event.remainingMinutes}분 " +
+                            "(제한: ${event.timeLimitMinutes}분, 경과: ${event.elapsedMinutes}분)."
+                }
+            val details =
+                mapOf<String, Any?>(
+                    "startedAt" to event.startedAt.toString(),
+                    "timeLimitMinutes" to event.timeLimitMinutes,
+                    "elapsedMinutes" to event.elapsedMinutes,
+                    "remainingMinutes" to event.remainingMinutes,
+                )
+
+            val warningMessage =
+                WarningMessage(
+                    gameId = event.gameId,
+                    warningType = WarningType.TIME_LIMIT,
+                    severity = severity,
+                    title = title,
+                    message = message,
+                    details = details,
+                    timestamp = Instant.now(),
+                )
+            gameBroadcastService.broadcastWarning(event.gameId, warningMessage)
+
+            log.debug(
+                "시간 제한 경고 브로드캐스트 완료 (gameId={}, elapsed={}분, limit={}분, type={})",
+                event.gameId,
+                event.elapsedMinutes,
+                event.timeLimitMinutes,
+                event.warningType,
+            )
+        } catch (ex: Exception) {
+            log.error("TimeLimitWarningEvent 브로드캐스트 실패 (gameId={}): {}", event.gameId, ex.message, ex)
         }
     }
 

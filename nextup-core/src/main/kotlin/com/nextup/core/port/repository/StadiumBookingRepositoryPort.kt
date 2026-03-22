@@ -24,4 +24,13 @@ interface StadiumBookingRepositoryPort {
         slotId: Long,
         status: BookingStatus,
     ): Boolean
+
+    /**
+     * L-12: 구장 ID와 예약 상태로 예약 목록을 조회합니다.
+     * StadiumBooking → StadiumSlot → Stadium 관계를 통해 조회합니다.
+     */
+    fun findByStadiumIdAndStatus(
+        stadiumId: Long,
+        status: BookingStatus,
+    ): List<StadiumBooking>
 }
