@@ -12,6 +12,8 @@ import com.nextup.core.service.stats.dto.BattingCategory
 import com.nextup.core.service.stats.dto.BattingLeaderDto
 import com.nextup.core.service.stats.dto.PitchingCategory
 import com.nextup.core.service.stats.dto.PitchingLeaderDto
+import com.nextup.infrastructure.config.CacheConfig
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -34,6 +36,10 @@ class IndividualRankingServiceImpl(
         const val DEFAULT_TEAM_GAMES = 10
     }
 
+    @Cacheable(
+        cacheNames = [CacheConfig.LEADERBOARD_CACHE],
+        key = "'batting:' + #competitionId + ':' + #category + ':' + #limit",
+    )
     override fun getBattingLeaders(
         competitionId: Long,
         category: BattingCategory,
@@ -73,6 +79,10 @@ class IndividualRankingServiceImpl(
         }
     }
 
+    @Cacheable(
+        cacheNames = [CacheConfig.LEADERBOARD_CACHE],
+        key = "'pitching:' + #competitionId + ':' + #category + ':' + #limit",
+    )
     override fun getPitchingLeaders(
         competitionId: Long,
         category: PitchingCategory,

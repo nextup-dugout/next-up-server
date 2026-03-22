@@ -207,7 +207,9 @@ class StatsEventListenerTest {
                 seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceRecordedEvent(
@@ -220,10 +222,11 @@ class StatsEventListenerTest {
             // when
             listener.onPlateAppearanceRecorded(event)
 
-            // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
+            // then: 타격/투수 통계 모두 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회씩)
             verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
             verify { playerRepository.findByIdOrNull(testPlayer.id) }
-            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
+            verify(exactly = 2) { seasonPitchingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPitcher.id) }
         }
 
         @Test
@@ -234,10 +237,12 @@ class StatsEventListenerTest {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
             every { seasonBattingStatsRepository.save(capture(savedStats)) } answers { firstArg() }
             every {
                 seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
             } returns null
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceRecordedEvent(
@@ -455,7 +460,7 @@ class StatsEventListenerTest {
         }
 
         @Test
-        fun `투수 시즌 통계가 없는 경우 투수 통계 갱신 건너뜀`() {
+        fun `투수 시즌 통계가 없는 경우 자동 생성 후 투수 통계 갱신됨`() {
             // given
             val battingStats = SeasonBattingStats.create(testPlayer, 2024)
             every {
@@ -465,6 +470,8 @@ class StatsEventListenerTest {
             every {
                 seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
             } returns null
+            every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceRecordedEvent(
@@ -477,9 +484,10 @@ class StatsEventListenerTest {
             // when
             listener.onPlateAppearanceRecorded(event)
 
-            // then: 타격 통계는 저장, 투수 통계는 저장 안 됨
+            // then: 타격 통계 저장 1회, 투수 통계 자동 생성 + 갱신 = 2회
             verify(exactly = 1) { seasonBattingStatsRepository.save(any()) }
-            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
+            verify(exactly = 2) { seasonPitchingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPitcher.id) }
         }
     }
 
@@ -564,7 +572,9 @@ class StatsEventListenerTest {
                 seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
 
             val event =
                 PlateAppearanceUndoneEvent(
@@ -577,10 +587,11 @@ class StatsEventListenerTest {
             // when
             listener.onPlateAppearanceUndone(event)
 
-            // then: 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회)
+            // then: 타격/투수 통계 모두 자동 생성 후 저장 (생성 1회 + 갱신 1회 = save 2회씩)
             verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
             verify { playerRepository.findByIdOrNull(testPlayer.id) }
-            verify(exactly = 0) { seasonPitchingStatsRepository.save(any()) }
+            verify(exactly = 2) { seasonPitchingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPitcher.id) }
         }
 
         @Test
@@ -719,6 +730,68 @@ class StatsEventListenerTest {
             // then: gamesPlayed 가 1 증가함
             assertThat(seasonPitching.gamesPlayed).isEqualTo(initialGames + 1)
             verify(exactly = 1) { seasonPitchingStatsRepository.save(seasonPitching) }
+        }
+
+        @Test
+        fun `경기 종료 시 기존 SeasonPitchingStats에 실시간 갱신 필드가 중복 추가되지 않음`() {
+            // given: 경기 중 실시간 갱신으로 피안타 3, 삼진 2, 볼넷 1이 이미 반영된 상태
+            val seasonPitching = SeasonPitchingStats.create(testPitcher, 2024)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.DOUBLE)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.STRIKEOUT)
+            seasonPitching.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            val careerPitching = CareerPitchingStats.create(testPitcher)
+            careerPitching.addSeason()
+
+            // PitchingRecord mock: 동일한 경기 결과를 반영
+            val pitchingRecord = mockk<PitchingRecord>(relaxed = true)
+            every { pitchingRecord.gamePlayer } returns mockPitcherGamePlayer
+            every { pitchingRecord.hitsAllowed } returns 3
+            every { pitchingRecord.strikeouts } returns 2
+            every { pitchingRecord.walksAllowed } returns 1
+            every { pitchingRecord.homeRunsAllowed } returns 1
+            every { pitchingRecord.hitBatsmen } returns 0
+            every { pitchingRecord.battersFaced } returns 6
+            every { pitchingRecord.inningsPitchedOuts } returns 9 // 3이닝
+            every { pitchingRecord.earnedRuns } returns 2
+            every { pitchingRecord.runsAllowed } returns 3
+            every { pitchingRecord.wildPitches } returns 1
+            every { pitchingRecord.balks } returns 0
+            every { pitchingRecord.isStartingPitcher } returns true
+            every { pitchingRecord.pitchesThrown } returns null
+            every { pitchingRecord.strikesThrown } returns null
+            every { pitchingRecord.decision } returns com.nextup.core.domain.game.PitchingDecision.WIN
+
+            every { battingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(pitchingRecord)
+            every {
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(testPitcher.id, 2024)
+            } returns seasonPitching
+            every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
+            every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
+            every { careerPitchingStatsRepository.save(any()) } answers { firstArg() }
+
+            // when
+            listener.onGameResultConfirmed(event)
+
+            // then: 실시간 갱신 필드는 중복 추가되지 않음 (applyLiveUpdate 값 그대로)
+            assertThat(seasonPitching.hitsAllowed).isEqualTo(3)
+            assertThat(seasonPitching.strikeouts).isEqualTo(2)
+            assertThat(seasonPitching.walksAllowed).isEqualTo(1)
+            assertThat(seasonPitching.homeRunsAllowed).isEqualTo(1)
+            assertThat(seasonPitching.battersFaced).isEqualTo(6)
+
+            // then: 경기 종료 시에만 확정되는 필드는 정상 추가됨
+            assertThat(seasonPitching.gamesPlayed).isEqualTo(1)
+            assertThat(seasonPitching.gamesStarted).isEqualTo(1)
+            assertThat(seasonPitching.inningsPitchedOuts).isEqualTo(9)
+            assertThat(seasonPitching.earnedRuns).isEqualTo(2)
+            assertThat(seasonPitching.runsAllowed).isEqualTo(3)
+            assertThat(seasonPitching.wildPitches).isEqualTo(1)
+            assertThat(seasonPitching.wins).isEqualTo(1)
         }
 
         @Test
