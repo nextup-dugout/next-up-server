@@ -286,5 +286,36 @@ class GameEvent(
                 description = description,
                 batter = ejectedPlayer,
             )
+
+        /**
+         * 긴급 교체 이벤트를 생성합니다.
+         *
+         * 퇴장(부상/심판 퇴장 등)으로 인한 긴급 교체를 기록합니다.
+         * 일반 교체(SUBSTITUTION)와 구분되며, 퇴장 사유를 포함합니다.
+         *
+         * @param game 경기
+         * @param incomingPlayer 교체 들어오는 선수
+         * @param outgoingPlayer 퇴장하는 선수
+         * @param reason 퇴장 사유
+         * @param description 긴급 교체 설명
+         */
+        fun createEmergencySubstitution(
+            game: Game,
+            incomingPlayer: GamePlayer,
+            outgoingPlayer: GamePlayer,
+            reason: EjectionReason,
+            description: String,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = game.gameState.outs,
+                outCountAfter = game.gameState.outs,
+                eventType = GameEventType.EMERGENCY_SUBSTITUTION,
+                description = description,
+                batter = incomingPlayer,
+                pitcher = outgoingPlayer,
+            )
     }
 }

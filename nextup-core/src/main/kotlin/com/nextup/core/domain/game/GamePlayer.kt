@@ -70,6 +70,15 @@ class GamePlayer(
         protected set
 
     /**
+     * 퇴장 사유 (부상/심판 퇴장/기타)
+     * null이면 퇴장이 아닌 일반 교체로 퇴장한 경우입니다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ejection_reason", length = 30)
+    var ejectionReason: EjectionReason? = null
+        protected set
+
+    /**
      * 포지션 변경 이력
      * DB에는 CSV 형식("이닝:포지션,이닝:포지션,...")으로 저장됩니다.
      */
@@ -131,6 +140,32 @@ class GamePlayer(
         this.isCurrentlyPlaying = false
         this.exitInning = inning
     }
+
+    /**
+     * 부상/퇴장 사유와 함께 경기에서 퇴장합니다.
+     *
+     * 일반 교체(exitGame)와 달리 퇴장 사유를 기록합니다.
+     * 부상 퇴장, 심판 퇴장 명령 등의 사유를 구분하여 추적합니다.
+     *
+     * @param inning 퇴장 이닝
+     * @param reason 퇴장 사유
+     */
+    fun eject(
+        inning: Int,
+        reason: EjectionReason,
+    ) {
+        require(inning >= 1) { "이닝은 1 이상이어야 합니다." }
+        require(isCurrentlyPlaying) { "현재 출전 중인 선수만 퇴장할 수 있습니다." }
+        this.isCurrentlyPlaying = false
+        this.exitInning = inning
+        this.ejectionReason = reason
+    }
+
+    /**
+     * 퇴장된 선수인지 확인합니다 (퇴장 사유가 있는 경우).
+     */
+    val isEjected: Boolean
+        get() = ejectionReason != null
 
     /**
      * 포지션을 변경합니다.
