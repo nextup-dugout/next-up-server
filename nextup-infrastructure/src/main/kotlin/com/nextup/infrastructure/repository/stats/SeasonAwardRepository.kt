@@ -44,11 +44,30 @@ interface SeasonAwardRepository :
     ): List<SeasonAward>
 
     /**
+     * 특정 대회의 모든 시즌 타이틀을 조회합니다.
+     */
+    @Query(
+        "SELECT a FROM SeasonAward a JOIN FETCH a.player WHERE a.competitionId = :competitionId ORDER BY a.title",
+    )
+    override fun findAllByCompetitionId(
+        @Param("competitionId") competitionId: Long,
+    ): List<SeasonAward>
+
+    /**
      * 특정 연도의 모든 시즌 타이틀을 삭제합니다 (재계산 시 사용).
      */
     @Modifying
     @Query("DELETE FROM SeasonAward a WHERE a.year = :year")
     override fun deleteAllByYear(
         @Param("year") year: Int,
+    )
+
+    /**
+     * 특정 대회의 모든 시즌 타이틀을 삭제합니다 (재계산 시 사용).
+     */
+    @Modifying
+    @Query("DELETE FROM SeasonAward a WHERE a.competitionId = :competitionId")
+    override fun deleteAllByCompetitionId(
+        @Param("competitionId") competitionId: Long,
     )
 }

@@ -19,6 +19,7 @@ import java.math.BigDecimal
         Index(name = "idx_season_awards_year", columnList = "year"),
         Index(name = "idx_season_awards_title", columnList = "title"),
         Index(name = "idx_season_awards_year_title", columnList = "year, title"),
+        Index(name = "idx_season_awards_competition", columnList = "competition_id"),
     ],
 )
 class SeasonAward private constructor(
@@ -27,6 +28,9 @@ class SeasonAward private constructor(
     val player: Player,
     @Column(nullable = false)
     val year: Int,
+    /** 대회 ID (대회별 타이틀 조회에 사용) */
+    @Column(name = "competition_id")
+    val competitionId: Long? = null,
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     val title: SeasonAwardTitle,
@@ -46,6 +50,7 @@ class SeasonAward private constructor(
          *
          * @param player 수상 선수
          * @param year 시즌 연도
+         * @param competitionId 대회 ID (선택)
          * @param title 타이틀 종류
          * @param statValue 수상 기준 값
          */
@@ -54,11 +59,13 @@ class SeasonAward private constructor(
             year: Int,
             title: SeasonAwardTitle,
             statValue: BigDecimal? = null,
+            competitionId: Long? = null,
         ): SeasonAward {
             require(year > 0) { "연도는 양수여야 합니다." }
             return SeasonAward(
                 player = player,
                 year = year,
+                competitionId = competitionId,
                 title = title,
                 statValue = statValue,
             )

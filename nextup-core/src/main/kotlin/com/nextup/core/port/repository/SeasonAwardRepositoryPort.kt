@@ -35,7 +35,17 @@ interface SeasonAwardRepositoryPort {
     ): List<SeasonAward>
 
     /**
+     * 특정 대회의 모든 시즌 타이틀을 조회합니다.
+     */
+    fun findAllByCompetitionId(competitionId: Long): List<SeasonAward>
+
+    /**
      * 특정 연도의 모든 시즌 타이틀을 삭제합니다 (재계산 시 사용).
      */
     fun deleteAllByYear(year: Int)
+
+    /**
+     * 특정 대회의 모든 시즌 타이틀을 삭제합니다 (재계산 시 사용).
+     */
+    fun deleteAllByCompetitionId(competitionId: Long)
 }

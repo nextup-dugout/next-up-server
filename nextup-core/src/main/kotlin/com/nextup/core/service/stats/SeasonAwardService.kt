@@ -40,4 +40,23 @@ interface SeasonAwardService {
      * @return 해당 선수의 타이틀 목록
      */
     fun getAwardsByPlayerId(playerId: Long): List<SeasonAward>
+
+    /**
+     * 특정 대회의 시즌 타이틀 목록을 조회합니다.
+     *
+     * @param competitionId 대회 ID
+     * @return 해당 대회의 타이틀 목록
+     */
+    fun getAwardsByCompetitionId(competitionId: Long): List<SeasonAward>
+
+    /**
+     * 대회 종료 시 각 부문별 타이틀을 계산하고 부여합니다.
+     *
+     * 기존에 부여된 동일 대회 타이틀은 삭제 후 재계산합니다.
+     * Competition의 GameRules에서 규정타석/규정이닝 배수를 자동 적용합니다.
+     *
+     * @param competitionId 대회 ID
+     * @return 부여된 타이틀 목록
+     */
+    fun calculateAndAwardTitlesByCompetition(competitionId: Long): List<SeasonAward>
 }
