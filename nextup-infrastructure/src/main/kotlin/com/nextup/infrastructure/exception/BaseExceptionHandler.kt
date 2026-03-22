@@ -2,6 +2,7 @@ package com.nextup.infrastructure.exception
 
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.BusinessException
+import com.nextup.common.exception.ConflictException
 import com.nextup.common.exception.NotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -28,6 +29,14 @@ abstract class BaseExceptionHandler {
         log.warn("NotFoundException: code={}, message={}", ex.code, ex.message)
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error(ex.code, ex.message))
+    }
+
+    @ExceptionHandler(ConflictException::class)
+    fun handleConflictException(ex: ConflictException): ResponseEntity<ApiResponse<Nothing>> {
+        log.warn("ConflictException: code={}, message={}", ex.code, ex.message)
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
             .body(ApiResponse.error(ex.code, ex.message))
     }
 

@@ -74,12 +74,12 @@ class NoEventToUndoException :
     )
 
 /**
- * 다른 기록원이 이미 경기를 잠금한 상태에서 기록을 시도할 때 발생하는 예외
+ * 다른 기록원이 이미 경기를 잠금한 상태에서 기록을 시도할 때 발생하는 예외 (HTTP 409)
  */
 class GameAlreadyLockedException(
     gameId: Long,
     lockedByScorerId: Long,
-) : InvalidStateException(
+) : ConflictException(
         "GAME_ALREADY_LOCKED",
         "Game $gameId is already locked by scorer $lockedByScorerId",
     )

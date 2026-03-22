@@ -51,6 +51,9 @@ dependencies {
     // Spring AOP (for AuditLog aspect)
     implementation("org.springframework.boot:spring-boot-starter-aop")
 
+    // Spring Retry (for @Retryable on event listeners)
+    implementation("org.springframework.retry:spring-retry")
+
     // Rate Limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
 

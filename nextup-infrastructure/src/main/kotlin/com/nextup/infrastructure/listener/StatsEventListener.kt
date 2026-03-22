@@ -25,6 +25,8 @@ import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.orm.ObjectOptimisticLockingFailureException
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -39,7 +41,8 @@ import org.springframework.transaction.event.TransactionalEventListener
  * Infrastructure 계층에 위치하여 Core의 Port를 통해 데이터에 접근합니다.
  *
  * Optimistic Locking(@Version) 기반 동시성 제어를 적용하여
- * Lost Update를 방지합니다. 충돌 시 최대 3회 재시도합니다.
+ * Lost Update를 방지합니다. 충돌 시 @Retryable로 메서드 레벨에서
+ * 최대 3회 재시도하며, 각 재시도마다 새 트랜잭션(REQUIRES_NEW)에서 실행됩니다.
  */
 @Component
 class StatsEventListener(
@@ -62,26 +65,29 @@ class StatsEventListener(
      *
      * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 실시간으로 갱신합니다.
      * 시즌 통계가 없는 경우 자동으로 생성합니다.
-     * Optimistic Locking 충돌 시 최대 3회 재시도합니다.
+     * Optimistic Locking 충돌 시 @Retryable로 최대 3회 재시도합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Retryable(
+        retryFor = [ObjectOptimisticLockingFailureException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 100),
+    )
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
 
-        retryOnOptimisticLock("onPlateAppearanceRecorded") {
-            val stats = findOrCreateSeasonBattingStats(event.playerId, year)
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
 
-            stats.applyLiveUpdate(event.result)
-            seasonBattingStatsRepository.save(stats)
+        stats.applyLiveUpdate(event.result)
+        seasonBattingStatsRepository.save(stats)
 
-            logger.debug(
-                "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
-                event.playerId,
-                year,
-                event.result,
-            )
-        }
+        logger.debug(
+            "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
+            event.playerId,
+            year,
+            event.result,
+        )
 
         // 투수 통계 실시간 갱신
         val pitchingStats =
@@ -129,26 +135,29 @@ class StatsEventListener(
      *
      * 해당 선수의 시즌 타격 통계와 투수의 시즌 투수 통계를 역산합니다.
      * 시즌 통계가 없는 경우 자동으로 생성한 뒤 역산합니다.
-     * Optimistic Locking 충돌 시 최대 3회 재시도합니다.
+     * Optimistic Locking 충돌 시 @Retryable로 최대 3회 재시도합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Retryable(
+        retryFor = [ObjectOptimisticLockingFailureException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 100),
+    )
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
 
-        retryOnOptimisticLock("onPlateAppearanceUndone") {
-            val stats = findOrCreateSeasonBattingStats(event.playerId, year)
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
 
-            stats.revertLiveUpdate(event.result)
-            seasonBattingStatsRepository.save(stats)
+        stats.revertLiveUpdate(event.result)
+        seasonBattingStatsRepository.save(stats)
 
-            logger.debug(
-                "실시간 타격 통계 역산 완료 (playerId={}, year={}, result={})",
-                event.playerId,
-                year,
-                event.result,
-            )
-        }
+        logger.debug(
+            "실시간 타격 통계 역산 완료 (playerId={}, year={}, result={})",
+            event.playerId,
+            year,
+            event.result,
+        )
 
         // 투수 통계 역산
         val pitchingStats =
@@ -186,10 +195,15 @@ class StatsEventListener(
      * 1. 투수 스탯: isFirstSeasonRecord 확인 → SeasonPitchingStats 갱신 → CareerPitchingStats 갱신
      * 2. 타자 스탯: isFirstSeasonRecord 확인 → CareerBattingStats 갱신
      *
-     * 각 선수별 갱신에 Optimistic Locking 재시도를 적용합니다.
+     * Optimistic Locking 충돌 시 @Retryable로 최대 3회 재시도합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Retryable(
+        retryFor = [ObjectOptimisticLockingFailureException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 100),
+    )
     fun onGameResultConfirmed(event: GameResultConfirmedEvent) {
         val gameId = event.gameId
         val year = resolveYear(gameId)
@@ -205,35 +219,33 @@ class StatsEventListener(
             val player = pitchingRecord.gamePlayer.player
             val playerId = player.id
 
-            retryOnOptimisticLock("onGameResultConfirmed-pitching(playerId=$playerId)") {
-                val existingSeasonPitching =
-                    seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
-                val isFirstPitchingSeason = existingSeasonPitching == null
+            val existingSeasonPitching =
+                seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
+            val isFirstPitchingSeason = existingSeasonPitching == null
 
-                // SeasonPitchingStats 갱신
-                val seasonPitchingStats =
-                    existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year)
-                seasonPitchingStats.addGameRecord(pitchingRecord)
-                seasonPitchingStatsRepository.save(seasonPitchingStats)
+            // SeasonPitchingStats 갱신
+            val seasonPitchingStats =
+                existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year)
+            seasonPitchingStats.addGameRecord(pitchingRecord)
+            seasonPitchingStatsRepository.save(seasonPitchingStats)
 
-                // CareerPitchingStats 갱신
-                val careerPitchingStats =
-                    careerPitchingStatsRepository.findByPlayerId(playerId)
-                        ?: CareerPitchingStats.create(player = player)
+            // CareerPitchingStats 갱신
+            val careerPitchingStats =
+                careerPitchingStatsRepository.findByPlayerId(playerId)
+                    ?: CareerPitchingStats.create(player = player)
 
-                if (isFirstPitchingSeason) {
-                    careerPitchingStats.addSeason()
-                }
-                careerPitchingStats.addGameRecord(pitchingRecord)
-                careerPitchingStatsRepository.save(careerPitchingStats)
-
-                logger.debug(
-                    "투수 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
-                    playerId,
-                    year,
-                    isFirstPitchingSeason,
-                )
+            if (isFirstPitchingSeason) {
+                careerPitchingStats.addSeason()
             }
+            careerPitchingStats.addGameRecord(pitchingRecord)
+            careerPitchingStatsRepository.save(careerPitchingStats)
+
+            logger.debug(
+                "투수 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
+                playerId,
+                year,
+                isFirstPitchingSeason,
+            )
         }
 
         // 커리어 타격 스탯 집계: CareerBattingStats
@@ -243,26 +255,24 @@ class StatsEventListener(
             val player = battingRecord.gamePlayer.player
             val playerId = player.id
 
-            retryOnOptimisticLock("onGameResultConfirmed-batting(playerId=$playerId)") {
-                val isFirstBattingSeason =
-                    seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) == null
+            val isFirstBattingSeason =
+                seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) == null
 
-                val careerBattingStats =
-                    careerBattingStatsRepository.findByPlayerId(playerId)
-                        ?: CareerBattingStats.create(player = player)
+            val careerBattingStats =
+                careerBattingStatsRepository.findByPlayerId(playerId)
+                    ?: CareerBattingStats.create(player = player)
 
-                if (isFirstBattingSeason) {
-                    careerBattingStats.addSeason()
-                }
-                careerBattingStats.addGameRecord(battingRecord)
-                careerBattingStatsRepository.save(careerBattingStats)
-
-                logger.debug(
-                    "커리어 타격 통계 갱신 완료 (playerId={}, isFirstSeason={})",
-                    playerId,
-                    isFirstBattingSeason,
-                )
+            if (isFirstBattingSeason) {
+                careerBattingStats.addSeason()
             }
+            careerBattingStats.addGameRecord(battingRecord)
+            careerBattingStatsRepository.save(careerBattingStats)
+
+            logger.debug(
+                "커리어 타격 통계 갱신 완료 (playerId={}, isFirstSeason={})",
+                playerId,
+                isFirstBattingSeason,
+            )
         }
 
         // 수비 스탯 집계: SeasonFieldingStats + CareerFieldingStats
@@ -271,35 +281,33 @@ class StatsEventListener(
             val player = fieldingRecord.gamePlayer.player
             val playerId = player.id
 
-            retryOnOptimisticLock("onGameResultConfirmed-fielding(playerId=$playerId)") {
-                val existingSeasonFielding =
-                    seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
-                val isFirstFieldingSeason = existingSeasonFielding == null
+            val existingSeasonFielding =
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+            val isFirstFieldingSeason = existingSeasonFielding == null
 
-                // SeasonFieldingStats 갱신
-                val seasonFieldingStats =
-                    existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
-                seasonFieldingStats.addGameRecord(fieldingRecord)
-                seasonFieldingStatsRepository.save(seasonFieldingStats)
+            // SeasonFieldingStats 갱신
+            val seasonFieldingStats =
+                existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
+            seasonFieldingStats.addGameRecord(fieldingRecord)
+            seasonFieldingStatsRepository.save(seasonFieldingStats)
 
-                // CareerFieldingStats 갱신
-                val careerFieldingStats =
-                    careerFieldingStatsRepository.findByPlayerId(playerId)
-                        ?: CareerFieldingStats.create(player = player)
+            // CareerFieldingStats 갱신
+            val careerFieldingStats =
+                careerFieldingStatsRepository.findByPlayerId(playerId)
+                    ?: CareerFieldingStats.create(player = player)
 
-                if (isFirstFieldingSeason) {
-                    careerFieldingStats.addSeason()
-                }
-                careerFieldingStats.addGameRecord(fieldingRecord)
-                careerFieldingStatsRepository.save(careerFieldingStats)
-
-                logger.debug(
-                    "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
-                    playerId,
-                    year,
-                    isFirstFieldingSeason,
-                )
+            if (isFirstFieldingSeason) {
+                careerFieldingStats.addSeason()
             }
+            careerFieldingStats.addGameRecord(fieldingRecord)
+            careerFieldingStatsRepository.save(careerFieldingStats)
+
+            logger.debug(
+                "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
+                playerId,
+                year,
+                isFirstFieldingSeason,
+            )
         }
 
         logger.info(
@@ -341,43 +349,5 @@ class StatsEventListener(
             gameRepository.findByIdOrNull(gameId)
                 ?: throw GameNotFoundException(gameId)
         return game.scheduledAt.year
-    }
-
-    companion object {
-        private const val MAX_RETRIES = 3
-        private val log = LoggerFactory.getLogger(StatsEventListener::class.java)
-
-        /**
-         * Optimistic Locking 충돌 시 재시도하는 헬퍼 메서드.
-         *
-         * @param operationName 로깅용 작업명
-         * @param action 재시도할 작업
-         */
-        internal fun retryOnOptimisticLock(
-            operationName: String,
-            action: () -> Unit,
-        ) {
-            var lastException: ObjectOptimisticLockingFailureException? = null
-            for (attempt in 1..MAX_RETRIES) {
-                try {
-                    action()
-                    return
-                } catch (ex: ObjectOptimisticLockingFailureException) {
-                    lastException = ex
-                    log.warn(
-                        "Optimistic Locking 충돌 발생 - 재시도 {}/{} (operation={})",
-                        attempt,
-                        MAX_RETRIES,
-                        operationName,
-                    )
-                }
-            }
-            log.error(
-                "Optimistic Locking 재시도 초과 (operation={}, maxRetries={})",
-                operationName,
-                MAX_RETRIES,
-            )
-            throw lastException!!
-        }
     }
 }
