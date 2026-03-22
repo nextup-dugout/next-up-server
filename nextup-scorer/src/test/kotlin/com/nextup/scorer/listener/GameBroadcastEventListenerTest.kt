@@ -341,6 +341,92 @@ class GameBroadcastEventListenerTest {
     }
 
     @Nested
+    @DisplayName("예외 처리 - 브로드캐스트 실패 시 예외를 삼키고 계속 동작")
+    inner class ExceptionHandling {
+
+        @Test
+        @DisplayName("onGameStarted에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `경기 시작 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameBroadcastService.broadcastEvent(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event = GameStartedEvent(gameId = GAME_ID)
+
+            // when & then - 예외가 전파되지 않음
+            listener.onGameStarted(event)
+        }
+
+        @Test
+        @DisplayName("onPlateAppearanceRecorded에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `타석 결과 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameBroadcastService.broadcastState(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event =
+                PlateAppearanceRecordedEvent(
+                    gameId = GAME_ID,
+                    playerId = 100L,
+                    pitcherId = 200L,
+                    result = PlateAppearanceResult.SINGLE,
+                )
+
+            // when & then
+            listener.onPlateAppearanceRecorded(event)
+        }
+
+        @Test
+        @DisplayName("onHalfInningAdvanced에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `이닝 진행 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameBroadcastService.broadcastEvent(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event = HalfInningAdvancedEvent(gameId = GAME_ID, newInning = 4, newIsTopInning = false)
+
+            // when & then
+            listener.onHalfInningAdvanced(event)
+        }
+
+        @Test
+        @DisplayName("onGameEnded에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `경기 종료 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameBroadcastService.broadcastEvent(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event = GameEndedEvent(gameId = GAME_ID, finalStatus = "FINISHED")
+
+            // when & then
+            listener.onGameEnded(event)
+        }
+
+        @Test
+        @DisplayName("onPlayerSubstituted에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `선수 교체 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameEventRepository.findByIdOrNull(99L) } returns null
+            every { gameBroadcastService.broadcastEvent(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event = PlayerSubstitutedEvent(gameId = GAME_ID, gameEventId = 99L)
+
+            // when & then
+            listener.onPlayerSubstituted(event)
+        }
+
+        @Test
+        @DisplayName("onRecordCorrected에서 broadcastService 예외 발생 시 예외를 삼킴")
+        fun `기록 정정 브로드캐스트 실패 시 예외 전파 없음`() {
+            // given
+            every { gameBroadcastService.broadcastState(any(), any()) } throws RuntimeException("WebSocket 전송 실패")
+            val event =
+                RecordCorrectedEvent(
+                    gameId = GAME_ID,
+                    correctionType = CorrectionType.BATTING,
+                    playerId = 100L,
+                    fieldName = "result",
+                    oldValue = "SINGLE",
+                    newValue = "DOUBLE",
+                )
+
+            // when & then
+            listener.onRecordCorrected(event)
+        }
+    }
+
+    @Nested
     @DisplayName("onRecordCorrected - 기록 정정 이벤트")
     inner class OnRecordCorrected {
 
