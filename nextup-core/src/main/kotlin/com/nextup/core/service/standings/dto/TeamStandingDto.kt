@@ -20,4 +20,8 @@ data class TeamStandingDto(
     val runsAllowed: Int,
     val runDifferential: Int,
     val logoUrl: String? = null,
+    /** 타이브레이커가 적용되었는지 여부 */
+    val tiebreakerApplied: Boolean = false,
+    /** 타이브레이커 적용 사유 (예: "상대 전적", "득실점차") */
+    val tiebreakerReason: String? = null,
 )

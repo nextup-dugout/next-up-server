@@ -1,6 +1,7 @@
 package com.nextup.infrastructure.service.standings
 
 import com.nextup.common.exception.CompetitionNotFoundException
+import com.nextup.core.domain.competition.TiebreakerCriterion
 import com.nextup.core.domain.game.GameResult
 import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.port.repository.CompetitionRepositoryPort
@@ -34,7 +35,8 @@ class StandingsServiceImpl(
 
         // 2. 대회의 모든 GameTeam 조회
         val allGameTeams = gameTeamRepository.findAllByCompetitionId(competitionId)
-        val decidedGameTeams = gameTeamRepository.findAllByCompetitionIdWithDecidedResult(competitionId)
+        val decidedGameTeams =
+            gameTeamRepository.findAllByCompetitionIdWithDecidedResult(competitionId)
 
         // 3. 팀별로 그룹화하여 통계 계산
         val teamStats = calculateTeamStats(decidedGameTeams, allGameTeams)
@@ -42,28 +44,28 @@ class StandingsServiceImpl(
         // L-13: 상대전적 기반 타이브레이커 계산
         val headToHeadRecords = calculateHeadToHeadRecords(decidedGameTeams)
 
-        // 4. 정렬: 승률 DESC → L-13: 상대전적 DESC → 득실차 DESC → 득점 DESC
+        // 4. 대회 GameRules에서 타이브레이커 순서 가져오기
+        val tiebreakerOrder = competition.gameRules.parseTiebreakerOrder()
+
+        // 5. 승률 기준 1차 정렬 + 타이브레이커 적용
         val sortedStats =
             teamStats.sortedWith(
-                compareByDescending<TeamStats> { it.winningPercentage }
-                    .thenByDescending { stats ->
-                        // L-13: 동률 팀 간 상대전적 승률 계산
-                        val sameWinPctTeams =
-                            teamStats.filter { it.winningPercentage == stats.winningPercentage }
-                        if (sameWinPctTeams.size <= 1) {
-                            BigDecimal.ZERO
-                        } else {
-                            calculateHeadToHeadWinPct(stats.teamId, sameWinPctTeams, headToHeadRecords)
-                        }
-                    }
-                    .thenByDescending { it.runDifferential }
-                    .thenByDescending { it.runsScored },
+                buildTiebreakerComparator(teamStats, headToHeadRecords, tiebreakerOrder),
             )
 
-        // 5. 순위 부여 및 게임 차 계산
+        // 6. 타이브레이커 사유 결정
+        val tiebreakerInfoMap =
+            determineTiebreakerReasons(
+                sortedStats,
+                headToHeadRecords,
+                tiebreakerOrder,
+            )
+
+        // 7. 순위 부여 및 게임 차 계산
         val leader = sortedStats.firstOrNull()
         val standings =
             sortedStats.mapIndexed { index, stats ->
+                val info = tiebreakerInfoMap[stats.teamId]
                 TeamStandingDto(
                     rank = index + 1,
                     teamId = stats.teamId,
@@ -78,6 +80,8 @@ class StandingsServiceImpl(
                     runsScored = stats.runsScored,
                     runsAllowed = stats.runsAllowed,
                     runDifferential = stats.runDifferential,
+                    tiebreakerApplied = info?.applied ?: false,
+                    tiebreakerReason = info?.reason,
                 )
             }
 
@@ -89,6 +93,120 @@ class StandingsServiceImpl(
             lastUpdated = LocalDateTime.now(),
         )
     }
+
+    /**
+     * 타이브레이커 순서에 따른 Comparator 생성
+     */
+    private fun buildTiebreakerComparator(
+        teamStats: List<TeamStats>,
+        headToHeadRecords: Map<Pair<Long, Long>, Pair<Int, Int>>,
+        tiebreakerOrder: List<TiebreakerCriterion>,
+    ): Comparator<TeamStats> {
+        var comparator = compareByDescending<TeamStats> { it.winningPercentage }
+
+        for (criterion in tiebreakerOrder) {
+            comparator =
+                when (criterion) {
+                    TiebreakerCriterion.HEAD_TO_HEAD ->
+                        comparator.thenByDescending { stats ->
+                            val sameWinPctTeams =
+                                teamStats.filter {
+                                    it.winningPercentage == stats.winningPercentage
+                                }
+                            if (sameWinPctTeams.size <= 1) {
+                                BigDecimal.ZERO
+                            } else {
+                                calculateHeadToHeadWinPct(
+                                    stats.teamId,
+                                    sameWinPctTeams,
+                                    headToHeadRecords,
+                                )
+                            }
+                        }
+
+                    TiebreakerCriterion.RUN_DIFFERENTIAL ->
+                        comparator.thenByDescending { it.runDifferential }
+
+                    TiebreakerCriterion.RUNS_SCORED ->
+                        comparator.thenByDescending { it.runsScored }
+                }
+        }
+
+        return comparator
+    }
+
+    /**
+     * 동률 팀들에 대해 어떤 타이브레이커 기준으로 순위가 결정되었는지 판단합니다.
+     */
+    private fun determineTiebreakerReasons(
+        sortedStats: List<TeamStats>,
+        headToHeadRecords: Map<Pair<Long, Long>, Pair<Int, Int>>,
+        tiebreakerOrder: List<TiebreakerCriterion>,
+    ): Map<Long, TiebreakerInfo> {
+        val result = mutableMapOf<Long, TiebreakerInfo>()
+
+        // 승률이 같은 팀들을 그룹으로 묶기
+        val winPctGroups =
+            sortedStats.groupBy { it.winningPercentage }
+
+        for ((_, teamsInGroup) in winPctGroups) {
+            if (teamsInGroup.size <= 1) continue
+
+            // 이 그룹 내의 팀들은 승률이 동일 → 타이브레이커 적용 대상
+            for (team in teamsInGroup) {
+                val reason = findResolvingCriterion(team, teamsInGroup, headToHeadRecords, tiebreakerOrder)
+                result[team.teamId] =
+                    TiebreakerInfo(
+                        applied = true,
+                        reason = reason,
+                    )
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * 특정 팀의 순위를 결정한 타이브레이커 기준을 찾습니다.
+     *
+     * 동률 그룹 내에서 어떤 기준에 의해 이 팀이 다른 팀과 구분되었는지 판별합니다.
+     * 모든 기준으로도 구분이 안 되면 null을 반환합니다.
+     */
+    private fun findResolvingCriterion(
+        team: TeamStats,
+        tiedTeams: List<TeamStats>,
+        headToHeadRecords: Map<Pair<Long, Long>, Pair<Int, Int>>,
+        tiebreakerOrder: List<TiebreakerCriterion>,
+    ): String? {
+        for (criterion in tiebreakerOrder) {
+            val allSame =
+                tiedTeams.all { other ->
+                    getCriterionValue(criterion, team, tiedTeams, headToHeadRecords) ==
+                        getCriterionValue(criterion, other, tiedTeams, headToHeadRecords)
+                }
+            if (!allSame) {
+                return criterion.displayName
+            }
+        }
+        return null
+    }
+
+    /**
+     * 특정 기준에 대한 팀의 비교 값을 반환합니다.
+     */
+    private fun getCriterionValue(
+        criterion: TiebreakerCriterion,
+        team: TeamStats,
+        tiedTeams: List<TeamStats>,
+        headToHeadRecords: Map<Pair<Long, Long>, Pair<Int, Int>>,
+    ): Comparable<*> =
+        when (criterion) {
+            TiebreakerCriterion.HEAD_TO_HEAD ->
+                calculateHeadToHeadWinPct(team.teamId, tiedTeams, headToHeadRecords)
+
+            TiebreakerCriterion.RUN_DIFFERENTIAL -> team.runDifferential
+            TiebreakerCriterion.RUNS_SCORED -> team.runsScored
+        }
 
     /**
      * 팀별 통계 계산
@@ -234,23 +352,27 @@ class StandingsServiceImpl(
                     team1.result == GameResult.WIN && team1.team.id == key.first ->
                         Pair(
                             current.first + 1,
-                            current.second
+                            current.second,
                         )
+
                     team1.result == GameResult.LOSS && team1.team.id == key.first ->
                         Pair(
                             current.first,
-                            current.second + 1
+                            current.second + 1,
                         )
+
                     team1.result == GameResult.WIN && team1.team.id == key.second ->
                         Pair(
                             current.first,
-                            current.second + 1
+                            current.second + 1,
                         )
+
                     team1.result == GameResult.LOSS && team1.team.id == key.second ->
                         Pair(
                             current.first + 1,
-                            current.second
+                            current.second,
                         )
+
                     else -> current // DRAW
                 }
 
@@ -299,6 +421,14 @@ class StandingsServiceImpl(
             BigDecimal(h2hWins).divide(BigDecimal(h2hGames), 3, RoundingMode.HALF_UP)
         }
     }
+
+    /**
+     * 타이브레이커 정보
+     */
+    private data class TiebreakerInfo(
+        val applied: Boolean,
+        val reason: String?,
+    )
 
     /**
      * 팀 통계 내부 데이터 클래스
