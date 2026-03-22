@@ -31,6 +31,9 @@ class SeasonFieldingStatsRevertGameRecordTest {
         errors: Int = 0,
         doublePlays: Int = 0,
         passedBalls: Int = 0,
+        triplePlays: Int = 0,
+        caughtStealing: Int = 0,
+        stolenBasesAllowed: Int = 0,
     ): FieldingRecord {
         val record = mockk<FieldingRecord>()
         every { record.putOuts } returns putOuts
@@ -38,6 +41,9 @@ class SeasonFieldingStatsRevertGameRecordTest {
         every { record.errors } returns errors
         every { record.doublePlays } returns doublePlays
         every { record.passedBalls } returns passedBalls
+        every { record.triplePlays } returns triplePlays
+        every { record.caughtStealing } returns caughtStealing
+        every { record.stolenBasesAllowed } returns stolenBasesAllowed
         return record
     }
 
