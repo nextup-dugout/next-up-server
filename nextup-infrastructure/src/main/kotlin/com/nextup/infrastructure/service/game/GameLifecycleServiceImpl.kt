@@ -3,9 +3,12 @@ package com.nextup.infrastructure.service.game
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.core.domain.event.GameCancelledEvent
+import com.nextup.core.domain.event.GameEndedEvent
 import com.nextup.core.domain.event.GamePostponedEvent
 import com.nextup.core.domain.event.GameRescheduledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
+import com.nextup.core.domain.event.GameStartedEvent
+import com.nextup.core.domain.event.HalfInningAdvancedEvent
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
@@ -45,7 +48,9 @@ class GameLifecycleServiceImpl(
         val game = findGame(gameId)
         game.validateScorer(scorerId)
         game.start()
-        return gameRepository.save(game)
+        val savedGame = gameRepository.save(game)
+        eventPublisher.publishEvent(GameStartedEvent(gameId = gameId))
+        return savedGame
     }
 
     @Transactional
@@ -68,10 +73,24 @@ class GameLifecycleServiceImpl(
             val savedGame = gameRepository.save(game)
             assignPitchingDecisions(gameId)
             publishGameResultEvent(gameId)
+            eventPublisher.publishEvent(
+                GameEndedEvent(
+                    gameId = gameId,
+                    finalStatus = game.status.name,
+                ),
+            )
             return savedGame
         }
 
-        return gameRepository.save(game)
+        val savedGame = gameRepository.save(game)
+        eventPublisher.publishEvent(
+            HalfInningAdvancedEvent(
+                gameId = gameId,
+                newInning = savedGame.currentInning,
+                newIsTopInning = savedGame.isTopInning,
+            ),
+        )
+        return savedGame
     }
 
     @Transactional
@@ -106,6 +125,12 @@ class GameLifecycleServiceImpl(
 
         assignPitchingDecisions(gameId)
         publishGameResultEvent(gameId)
+        eventPublisher.publishEvent(
+            GameEndedEvent(
+                gameId = gameId,
+                finalStatus = savedGame.status.name,
+            ),
+        )
         return savedGame
     }
 
@@ -141,6 +166,12 @@ class GameLifecycleServiceImpl(
 
         val savedGame = gameRepository.save(game)
         publishGameResultEvent(gameId)
+        eventPublisher.publishEvent(
+            GameEndedEvent(
+                gameId = gameId,
+                finalStatus = savedGame.status.name,
+            ),
+        )
         return savedGame
     }
 
@@ -173,6 +204,12 @@ class GameLifecycleServiceImpl(
                 gameId = gameId,
                 homeTeamId = homeTeam?.team?.id ?: 0L,
                 awayTeamId = awayTeam?.team?.id ?: 0L,
+            ),
+        )
+        eventPublisher.publishEvent(
+            GameEndedEvent(
+                gameId = gameId,
+                finalStatus = savedGame.status.name,
             ),
         )
 
