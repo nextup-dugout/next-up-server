@@ -7,7 +7,11 @@ import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
+import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
+import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
+import com.nextup.core.service.competition.dto.SeasonArchiveResult
 import com.nextup.core.service.competition.dto.SeasonSummaryDto
 import com.nextup.core.service.standings.StandingsService
 import org.springframework.stereotype.Service
@@ -26,6 +30,9 @@ class SeasonTransitionService(
     private val competitionPlayerRepository: CompetitionPlayerRepositoryPort,
     private val standingsService: StandingsService,
     private val competitionService: CompetitionService,
+    private val seasonBattingStatsRepository: SeasonBattingStatsRepositoryPort,
+    private val seasonPitchingStatsRepository: SeasonPitchingStatsRepositoryPort,
+    private val seasonFieldingStatsRepository: SeasonFieldingStatsRepositoryPort,
 ) {
     /**
      * 완료된 대회의 시즌 요약을 조회합니다.
@@ -143,6 +150,101 @@ class SeasonTransitionService(
             registeredTeamCount = registeredTeamIds.size,
             registeredPlayerCount = newRegistrations.size,
             skippedPlayerCount = skippedCount,
+        )
+    }
+
+    /**
+     * L-8: 완료된 대회의 시즌 통계를 확정(아카이브)합니다.
+     *
+     * 해당 대회 연도의 모든 시즌 타격/투수/수비 통계를 frozen 상태로 전환합니다.
+     * 확정된 통계는 기록 정정 시 reject 처리됩니다.
+     */
+    @Transactional
+    fun archiveSeason(competitionId: Long): SeasonArchiveResult {
+        val competition =
+            competitionRepository.findByIdWithLeague(competitionId)
+                ?: throw CompetitionNotFoundException(competitionId)
+
+        if (competition.status != CompetitionStatus.COMPLETED) {
+            throw InvalidCompetitionStateException(
+                "시즌 아카이브는 완료된 대회에서만 가능합니다.",
+            )
+        }
+
+        val year = competition.year
+
+        val battingStats = seasonBattingStatsRepository.findAllByYear(year)
+        val pitchingStats = seasonPitchingStatsRepository.findAllByYear(year)
+        val fieldingStats = seasonFieldingStatsRepository.findAllByYear(year)
+
+        var battingFinalized = 0
+        var pitchingFinalized = 0
+        var fieldingFinalized = 0
+
+        battingStats.filter { !it.isFinalized }.forEach {
+            it.finalize()
+            battingFinalized++
+        }
+        pitchingStats.filter { !it.isFinalized }.forEach {
+            it.finalize()
+            pitchingFinalized++
+        }
+        fieldingStats.filter { !it.isFinalized }.forEach {
+            it.finalize()
+            fieldingFinalized++
+        }
+
+        return SeasonArchiveResult(
+            competitionId = competitionId,
+            competitionName = competition.name,
+            year = year,
+            battingStatsFinalized = battingFinalized,
+            pitchingStatsFinalized = pitchingFinalized,
+            fieldingStatsFinalized = fieldingFinalized,
+        )
+    }
+
+    /**
+     * L-8: 시즌 통계 확정을 해제합니다 (관리자 전용).
+     *
+     * 공식 항의 등 특수한 경우 관리자가 아카이브를 해제하여 정정이 가능하도록 합니다.
+     */
+    @Transactional
+    fun unarchiveSeason(competitionId: Long): SeasonArchiveResult {
+        val competition =
+            competitionRepository.findByIdWithLeague(competitionId)
+                ?: throw CompetitionNotFoundException(competitionId)
+
+        val year = competition.year
+
+        val battingStats = seasonBattingStatsRepository.findAllByYear(year)
+        val pitchingStats = seasonPitchingStatsRepository.findAllByYear(year)
+        val fieldingStats = seasonFieldingStatsRepository.findAllByYear(year)
+
+        var battingUnfinalized = 0
+        var pitchingUnfinalized = 0
+        var fieldingUnfinalized = 0
+
+        battingStats.filter { it.isFinalized }.forEach {
+            it.unfinalize()
+            battingUnfinalized++
+        }
+        pitchingStats.filter { it.isFinalized }.forEach {
+            it.unfinalize()
+            pitchingUnfinalized++
+        }
+        fieldingStats.filter { it.isFinalized }.forEach {
+            it.unfinalize()
+            fieldingUnfinalized++
+        }
+
+        return SeasonArchiveResult(
+            competitionId = competitionId,
+            competitionName = competition.name,
+            year = year,
+            battingStatsFinalized = battingUnfinalized,
+            pitchingStatsFinalized = pitchingUnfinalized,
+            fieldingStatsFinalized = fieldingUnfinalized,
         )
     }
 }
