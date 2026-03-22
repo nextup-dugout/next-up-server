@@ -187,15 +187,16 @@ class GameCancelEventListener(
         }
 
         // 수비 스탯 롤백
+        // L-1: 한 선수가 여러 포지션을 소화한 경우 FieldingRecord가 포지션별로 여러 개 존재.
+        // gamesPlayed는 선수당 1회만 차감하고, 수비 기록은 모든 포지션별 기록을 합산 차감.
         if (fieldingRecords.isNotEmpty()) {
-            // 시즌 수비 통계 롤백
             val seasonFieldingStatsList = seasonFieldingStatsRepository.findAllByGameId(gameId)
             val statsByPlayerId = seasonFieldingStatsList.associateBy { it.player.id }
+            val fieldingRecordsByPlayer = fieldingRecords.groupBy { it.gamePlayer.player.id }
 
-            for (fieldingRecord in fieldingRecords) {
-                val playerId = fieldingRecord.gamePlayer.player.id
+            for ((playerId, playerFieldingRecords) in fieldingRecordsByPlayer) {
+                // 시즌 수비 통계 롤백
                 val stats = statsByPlayerId[playerId]
-
                 if (stats == null) {
                     logger.debug(
                         "시즌 수비 통계 없음 - 롤백 건너뜀 (playerId={}, gameId={})",
@@ -203,21 +204,26 @@ class GameCancelEventListener(
                         gameId,
                     )
                 } else {
-                    stats.revertGameRecord(fieldingRecord)
+                    for (fieldingRecord in playerFieldingRecords) {
+                        stats.revertGameRecord(fieldingRecord)
+                    }
+                    // revertGameRecord는 gamesPlayed를 레코드마다 차감하므로
+                    // 추가 포지션 기록 수만큼 gamesPlayed를 보정한다.
+                    // (N개 레코드 → N번 차감 → 실제로는 1번만 차감해야 함)
+                    repeat(playerFieldingRecords.size - 1) {
+                        stats.addGamePlayedOnly()
+                    }
                     seasonFieldingStatsRepository.save(stats)
                     logger.debug(
-                        "시즌 수비 통계 롤백 완료 (playerId={}, gameId={})",
+                        "시즌 수비 통계 롤백 완료 (playerId={}, gameId={}, positionRecords={})",
                         playerId,
                         gameId,
+                        playerFieldingRecords.size,
                     )
                 }
-            }
 
-            // 커리어 수비 통계 롤백
-            for (fieldingRecord in fieldingRecords) {
-                val playerId = fieldingRecord.gamePlayer.player.id
+                // 커리어 수비 통계 롤백
                 val careerStats = careerFieldingStatsRepository.findByPlayerId(playerId)
-
                 if (careerStats == null) {
                     logger.debug(
                         "커리어 수비 통계 없음 - 롤백 건너뜀 (playerId={}, gameId={})",
@@ -225,12 +231,18 @@ class GameCancelEventListener(
                         gameId,
                     )
                 } else {
-                    careerStats.revertGameRecord(fieldingRecord)
+                    for (fieldingRecord in playerFieldingRecords) {
+                        careerStats.revertGameRecord(fieldingRecord)
+                    }
+                    repeat(playerFieldingRecords.size - 1) {
+                        careerStats.addGamePlayedOnly()
+                    }
                     careerFieldingStatsRepository.save(careerStats)
                     logger.debug(
-                        "커리어 수비 통계 롤백 완료 (playerId={}, gameId={})",
+                        "커리어 수비 통계 롤백 완료 (playerId={}, gameId={}, positionRecords={})",
                         playerId,
                         gameId,
+                        playerFieldingRecords.size,
                     )
                 }
             }
@@ -255,9 +267,11 @@ class GameCancelEventListener(
 
         val competitionId = game.competition.id
         cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE)?.clear()
+        cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE)?.clear()
 
         logger.debug(
-            "경기 취소 후 순위 캐시 무효화 완료 (competitionId={}, gameId={})",
+            "경기 취소 후 캐시 무효화 완료 (competitionId={}, gameId={})",
             competitionId,
             gameId,
         )

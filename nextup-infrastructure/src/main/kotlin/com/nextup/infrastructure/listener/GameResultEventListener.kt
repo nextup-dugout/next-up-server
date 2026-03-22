@@ -98,12 +98,21 @@ class GameResultEventListener(
                 }
 
         val competitionId = game.competition.id
-        cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        evictStatsCaches(competitionId)
 
         logger.debug(
-            "순위 캐시 무효화 완료 (competitionId={}, gameId={})",
+            "캐시 무효화 완료 (competitionId={}, gameId={})",
             competitionId,
             event.gameId,
         )
+    }
+
+    /**
+     * 순위, 리더보드, 팀 통계 캐시를 일괄 무효화합니다.
+     */
+    private fun evictStatsCaches(competitionId: Long) {
+        cacheManager.getCache(CacheConfig.STANDINGS_CACHE)?.evict(competitionId)
+        cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE)?.clear()
+        cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE)?.clear()
     }
 }

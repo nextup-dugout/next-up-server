@@ -268,6 +268,7 @@ class SeasonPitchingStats(
      * 경기 취소 후 전체 재집계, 또는 실시간 갱신 없이 경기가 종료된 경우에 해당합니다.
      */
     fun addGameRecord(record: PitchingRecord) {
+        requireNotFinalized()
         addGameSummaryFields(record)
         addLiveTrackingFields(record)
     }
@@ -284,6 +285,7 @@ class SeasonPitchingStats(
      * - 승/패/세이브/홀드/블론세이브
      */
     fun addGameRecordForEndOfGame(record: PitchingRecord) {
+        requireNotFinalized()
         addGameSummaryFields(record)
     }
 
