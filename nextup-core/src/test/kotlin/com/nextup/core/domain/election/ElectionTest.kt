@@ -322,4 +322,152 @@ class ElectionTest {
         // then
         assertThat(isVotingOpen).isFalse()
     }
+
+    @Test
+    fun `should create runoff election from parent election`() {
+        // given
+        val startAt = Instant.now().minus(7, ChronoUnit.DAYS)
+        val endAt = startAt.plus(3, ChronoUnit.DAYS)
+        val parentElection =
+            Election.create(
+                teamId = 1L,
+                title = "구단주 선출",
+                description = "2024년 구단주 선출",
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        setElectionId(parentElection, 100L)
+
+        // when
+        val runoff =
+            Election.createRunoff(
+                parentElection = parentElection,
+                currentRunoffCount = 0,
+            )
+
+        // then
+        assertThat(runoff.teamId).isEqualTo(1L)
+        assertThat(runoff.electionType).isEqualTo(ElectionType.OWNER_ELECTION)
+        assertThat(runoff.isRunoff).isTrue()
+        assertThat(runoff.parentElectionId).isEqualTo(100L)
+        assertThat(runoff.status).isEqualTo(ElectionStatus.SCHEDULED)
+        assertThat(runoff.title).contains("재선거 #1")
+        assertThat(runoff.description).contains("동률 발생으로 인한 재선거")
+    }
+
+    @Test
+    fun `should create second runoff election`() {
+        // given
+        val startAt = Instant.now().minus(7, ChronoUnit.DAYS)
+        val endAt = startAt.plus(3, ChronoUnit.DAYS)
+        val parentElection =
+            Election.create(
+                teamId = 1L,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        setElectionId(parentElection, 100L)
+
+        // when
+        val runoff =
+            Election.createRunoff(
+                parentElection = parentElection,
+                currentRunoffCount = 1,
+            )
+
+        // then
+        assertThat(runoff.title).contains("재선거 #2")
+        assertThat(runoff.isRunoff).isTrue()
+    }
+
+    @Test
+    fun `should throw exception when max runoff count exceeded`() {
+        // given
+        val startAt = Instant.now().minus(7, ChronoUnit.DAYS)
+        val endAt = startAt.plus(3, ChronoUnit.DAYS)
+        val parentElection =
+            Election.create(
+                teamId = 1L,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        setElectionId(parentElection, 100L)
+
+        // when & then
+        assertThrows<IllegalArgumentException> {
+            Election.createRunoff(
+                parentElection = parentElection,
+                currentRunoffCount = Election.MAX_RUNOFF_COUNT.toLong(),
+            )
+        }
+    }
+
+    @Test
+    fun `runoff election should preserve original duration`() {
+        // given
+        val startAt = Instant.now().minus(7, ChronoUnit.DAYS)
+        val endAt = startAt.plus(5, ChronoUnit.DAYS)
+        val parentElection =
+            Election.create(
+                teamId = 1L,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+        setElectionId(parentElection, 100L)
+        val originalDuration =
+            java.time.Duration.between(parentElection.startAt, parentElection.endAt)
+
+        // when
+        val runoff =
+            Election.createRunoff(
+                parentElection = parentElection,
+                currentRunoffCount = 0,
+            )
+
+        // then
+        val runoffDuration =
+            java.time.Duration.between(runoff.startAt, runoff.endAt)
+        assertThat(runoffDuration).isEqualTo(originalDuration)
+    }
+
+    @Test
+    fun `default election should not be runoff`() {
+        // given
+        val startAt = Instant.now().plus(1, ChronoUnit.DAYS)
+        val endAt = startAt.plus(7, ChronoUnit.DAYS)
+
+        // when
+        val election =
+            Election.create(
+                teamId = 1L,
+                title = "구단주 선출",
+                description = null,
+                electionType = ElectionType.OWNER_ELECTION,
+                startAt = startAt,
+                endAt = endAt,
+            )
+
+        // then
+        assertThat(election.isRunoff).isFalse()
+        assertThat(election.parentElectionId).isNull()
+    }
+
+    private fun setElectionId(
+        election: Election,
+        id: Long,
+    ) {
+        val idField = Election::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(election, id)
+    }
 }

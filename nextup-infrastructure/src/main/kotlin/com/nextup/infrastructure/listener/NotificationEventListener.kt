@@ -7,6 +7,7 @@ import com.nextup.core.domain.event.GamePostponedEvent
 import com.nextup.core.domain.event.GameRescheduledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.LineupConfirmedEvent
+import com.nextup.core.domain.event.RunoffElectionCreatedEvent
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -129,6 +130,30 @@ class NotificationEventListener(
                     type = NotificationType.LINEUP_CONFIRMED,
                     title = "라인업 확정",
                     body = "경기 라인업이 확정되었습니다.",
+                )
+            }
+        notificationService.sendBatchNotifications(requests)
+    }
+
+    /**
+     * 재선거(결선투표) 생성 이벤트를 처리합니다.
+     *
+     * 해당 팀의 모든 활성 멤버에게 재선거 알림을 발송합니다.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun handleRunoffElectionCreated(event: RunoffElectionCreatedEvent) {
+        val activeMembers =
+            teamMemberRepository.findByTeamIdAndStatus(event.teamId, TeamMemberStatus.ACTIVE)
+        val requests =
+            activeMembers.map { member ->
+                SendNotificationRequest(
+                    userId = member.user.id,
+                    type = NotificationType.RUNOFF_ELECTION_CREATED,
+                    title = "재선거 생성",
+                    body =
+                        "동률 발생으로 재선거가 자동 생성되었습니다. " +
+                            "${event.tiedCandidateCount}명의 후보가 결선투표에 참여합니다.",
                 )
             }
         notificationService.sendBatchNotifications(requests)
