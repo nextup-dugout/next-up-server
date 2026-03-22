@@ -72,14 +72,14 @@ class GameLifecycleServiceImplLockTest {
     @DisplayName("lockGame")
     inner class LockGameTest {
         @Test
-        @DisplayName("경기를 잠금하고 저장된 Game을 반환한다")
+        @DisplayName("경기를 비관적 락으로 잠금하고 저장된 Game을 반환한다")
         fun locksGameAndReturnsSaved() {
             // given
             val gameId = 1L
             val scorerId = 100L
             val game = createGame(gameId, GameStatus.SCHEDULED)
 
-            every { gameRepository.findByIdOrNull(gameId) } returns game
+            every { gameRepository.findByIdForUpdate(gameId) } returns game
             every { gameRepository.save(any()) } answers { firstArg() }
 
             // when
@@ -87,7 +87,7 @@ class GameLifecycleServiceImplLockTest {
 
             // then
             assertThat(result.scorerId).isEqualTo(scorerId)
-            verify(exactly = 1) { gameRepository.findByIdOrNull(gameId) }
+            verify(exactly = 1) { gameRepository.findByIdForUpdate(gameId) }
             verify(exactly = 1) { gameRepository.save(any()) }
         }
 
@@ -96,7 +96,7 @@ class GameLifecycleServiceImplLockTest {
         fun throwsWhenGameNotFound() {
             // given
             val gameId = 999L
-            every { gameRepository.findByIdOrNull(gameId) } returns null
+            every { gameRepository.findByIdForUpdate(gameId) } returns null
 
             // when & then
             assertThatThrownBy { service.lockGame(gameId, 100L) }

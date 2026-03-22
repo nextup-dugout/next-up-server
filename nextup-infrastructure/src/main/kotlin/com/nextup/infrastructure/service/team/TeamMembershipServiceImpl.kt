@@ -3,6 +3,7 @@ package com.nextup.infrastructure.service.team
 import com.nextup.common.exception.*
 import com.nextup.core.common.PageCommand
 import com.nextup.core.common.PageResult
+import com.nextup.core.domain.event.OwnerKickedEvent
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -486,5 +487,55 @@ class TeamMembershipServiceImpl(
     @Transactional
     override fun deleteMemberByAdmin(memberId: Long) {
         teamMemberRepository.deleteById(memberId)
+    }
+
+    @Transactional
+    override fun forceKickMember(
+        memberId: Long,
+        reason: String,
+        addToBlacklist: Boolean,
+    ) {
+        val member =
+            teamMemberRepository.findByIdOrNull(memberId)
+                ?: throw TeamMemberNotFoundException(memberId)
+
+        // L-10: 강제 강퇴 (OWNER 포함 가능)
+        val wasOwner = member.forceKick(reason)
+        teamMemberRepository.save(member)
+
+        // 블랙리스트 추가 옵션
+        if (addToBlacklist) {
+            val blacklist =
+                TeamBlacklist.createPermanent(
+                    team = member.team,
+                    user = member.user,
+                    player = member.player,
+                    reason = reason,
+                    registeredBy = member.user,
+                )
+            teamBlacklistRepository.save(blacklist)
+        }
+
+        // 일반 강퇴 이벤트 발행
+        eventPublisher.publishEvent(
+            TeamMemberKickedEvent(
+                teamId = member.team.id,
+                userId = member.user.id,
+                playerId = member.player.id,
+                memberId = member.id,
+                teamName = member.team.name,
+            ),
+        )
+
+        // L-10: OWNER가 강퇴된 경우 자동 선거 트리거 이벤트 발행
+        if (wasOwner) {
+            eventPublisher.publishEvent(
+                OwnerKickedEvent(
+                    teamId = member.team.id,
+                    kickedPlayerId = member.player.id,
+                    kickedMemberId = member.id,
+                ),
+            )
+        }
     }
 }

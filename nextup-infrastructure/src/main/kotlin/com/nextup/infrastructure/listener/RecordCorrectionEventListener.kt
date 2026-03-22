@@ -16,6 +16,9 @@ import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import com.nextup.infrastructure.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
+import org.springframework.orm.ObjectOptimisticLockingFailureException
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -49,6 +52,11 @@ class RecordCorrectionEventListener(
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Retryable(
+        retryFor = [ObjectOptimisticLockingFailureException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 100),
+    )
     fun onRecordCorrected(event: RecordCorrectedEvent) {
         val delta = parseDeltaSafely(event.newValue, event.oldValue)
         if (delta == 0) {
@@ -71,15 +79,13 @@ class RecordCorrectionEventListener(
             delta,
         )
 
-        StatsEventListener.retryOnOptimisticLock("onRecordCorrected(playerId=${event.playerId})") {
-            when (event.correctionType) {
-                CorrectionType.BATTING ->
-                    applyBattingCorrection(event.gameId, event.playerId, year, event.fieldName, delta)
-                CorrectionType.PITCHING ->
-                    applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
-                CorrectionType.FIELDING ->
-                    applyFieldingCorrection(event.playerId, year, event.fieldName, delta)
-            }
+        when (event.correctionType) {
+            CorrectionType.BATTING ->
+                applyBattingCorrection(event.gameId, event.playerId, year, event.fieldName, delta)
+            CorrectionType.PITCHING ->
+                applyPitchingCorrection(event.playerId, year, event.fieldName, delta)
+            CorrectionType.FIELDING ->
+                applyFieldingCorrection(event.playerId, year, event.fieldName, delta)
         }
 
         logger.info(

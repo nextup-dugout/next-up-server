@@ -19,10 +19,18 @@ interface StadiumBookingJpaRepository : JpaRepository<StadiumBooking, Long> {
     ): List<StadiumBooking>
 
     @Query(
-        "SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM StadiumBooking b WHERE b.slot.id = :slotId AND b.status = :status"
+        "SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM StadiumBooking b WHERE b.slot.id = :slotId AND b.status = :status",
     )
     fun existsBySlotIdAndStatus(
         slotId: Long,
         status: BookingStatus,
     ): Boolean
+
+    @Query(
+        "SELECT b FROM StadiumBooking b JOIN b.slot s WHERE s.stadium.id = :stadiumId AND b.status = :status",
+    )
+    fun findByStadiumIdAndStatus(
+        stadiumId: Long,
+        status: BookingStatus,
+    ): List<StadiumBooking>
 }

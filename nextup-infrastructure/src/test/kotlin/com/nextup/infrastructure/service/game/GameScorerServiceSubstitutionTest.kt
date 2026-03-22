@@ -7,12 +7,14 @@ import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
+import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
@@ -447,6 +449,367 @@ class GameScorerServiceSubstitutionTest {
                 gameSubstitutionService.substitutePlayer(1L, request, 999L)
             }.isInstanceOf(InvalidGameStateException::class.java)
                 .hasMessageContaining("DH 타순")
+        }
+    }
+
+    @Nested
+    @DisplayName("M-10: 투수 교체 시 이닝 마감 처리")
+    inner class PitcherInningClose {
+        @Test
+        fun `투수 교체 시 이전 투수의 PitchingRecord에 closeInning이 호출된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            val existingPitchingRecord = PitchingRecord.create(outgoingPitcher, isStartingPitcher = true)
+            // 3아웃 기록 (1이닝 소화)
+            repeat(3) { existingPitchingRecord.recordOut() }
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(10L) } returns existingPitchingRecord
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - PitchingRecord가 저장됨 (closeInning 후)
+            verify { pitchingRecordRepository.save(existingPitchingRecord) }
+        }
+
+        @Test
+        fun `투수 교체 시 PitchingRecord가 없으면 저장을 건너뛴다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(10L) } returns null
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - pitchingRecordRepository.save는 incomingPitcher 기록 생성 1회만 호출
+            verify(exactly = 1) { pitchingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `비투수 교체 시에는 closeInning이 호출되지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPlayer = createStartingPlayer(10L, Position.LEFT_FIELD, 5)
+            val incomingPlayer = createBenchPlayer(20L, Position.CENTER_FIELD)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPlayer
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPlayer
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.LEFT_FIELD,
+                    newBattingOrder = 5,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - 투수가 아니므로 pitchingRecordRepository.findByGamePlayerId(outgoing)는 호출되지 않음
+            verify(exactly = 0) { pitchingRecordRepository.findByGamePlayerId(10L) }
+        }
+
+        @Test
+        fun `투수 교체 시 currentPitcherId가 갱신된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then
+            assertThat(game.gameState.currentPitcherId).isEqualTo(20L)
+            verify { gameRepository.save(game) }
+        }
+    }
+
+    @Nested
+    @DisplayName("M-11: 교체 선수 기록 자동 생성")
+    inner class SubstituteRecordAutoCreation {
+        @Test
+        fun `대타 투입 시 BattingRecord가 자동 생성된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPlayer = createStartingPlayer(10L, Position.LEFT_FIELD, 5)
+            val incomingPlayer = createBenchPlayer(20L, Position.LEFT_FIELD)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPlayer
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPlayer
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.LEFT_FIELD,
+                    newBattingOrder = 5,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - BattingRecord가 생성 및 저장됨
+            verify { battingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `구원 투수 투입 시 PitchingRecord가 자동 생성된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - 구원투수 PitchingRecord가 생성됨
+            verify { pitchingRecordRepository.save(match { !it.isStartingPitcher }) }
+        }
+
+        @Test
+        fun `이미 BattingRecord가 존재하면 중복 생성하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPlayer = createStartingPlayer(10L, Position.LEFT_FIELD, 5)
+            val incomingPlayer = createBenchPlayer(20L, Position.LEFT_FIELD)
+
+            val existingBattingRecord = mockk<BattingRecord>(relaxed = true)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPlayer
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPlayer
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { battingRecordRepository.findByGamePlayerId(20L) } returns existingBattingRecord
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.LEFT_FIELD,
+                    newBattingOrder = 5,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - 이미 존재하므로 save 호출 안 됨
+            verify(exactly = 0) { battingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `이미 PitchingRecord가 존재하면 중복 생성하지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            val outgoingPitchingRecord =
+                PitchingRecord.create(outgoingPitcher, isStartingPitcher = true)
+            val existingIncomingPitchingRecord = mockk<PitchingRecord>(relaxed = true)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(10L) } returns outgoingPitchingRecord
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns existingIncomingPitchingRecord
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1,
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - outgoing의 closeInning save(1회) + incoming은 기존 존재하므로 save 안 됨
+            verify(exactly = 1) { pitchingRecordRepository.save(outgoingPitchingRecord) }
+            verify(exactly = 0) { pitchingRecordRepository.save(existingIncomingPitchingRecord) }
+        }
+
+        @Test
+        fun `타순 없는 교체 선수는 BattingRecord가 생성되지 않는다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = null, // 타순 없음 (DH 사용 시 투수는 타순에 안 들어감)
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - 타순이 null이므로 BattingRecord 조회/생성 안 함
+            verify(exactly = 0) { battingRecordRepository.findByGamePlayerId(20L) }
+            verify(exactly = 0) { battingRecordRepository.save(any()) }
+        }
+
+        @Test
+        fun `구원투수에게 타순이 있으면 BattingRecord와 PitchingRecord가 모두 생성된다`() {
+            // given
+            val game = createGame(1L, GameStatus.IN_PROGRESS)
+            val outgoingPitcher = createStartingPlayer(10L, Position.STARTING_PITCHER, 1)
+            val incomingPitcher = createBenchPlayer(20L, Position.RELIEF_PITCHER)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns outgoingPitcher
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns incomingPitcher
+            every { gamePlayerRepository.save(any()) } answers { firstArg() }
+            every { gameRepository.save(any()) } answers { firstArg() }
+            every { pitchingRecordRepository.findByGamePlayerId(20L) } returns null
+            every { battingRecordRepository.findByGamePlayerId(20L) } returns null
+
+            val savedEvent = mockk<GameEvent>(relaxed = true)
+            every { savedEvent.eventType } returns GameEventType.SUBSTITUTION
+            every { gameEventRepository.save(any()) } returns savedEvent
+
+            val request =
+                SubstitutionRequest(
+                    gameTeamId = 1L,
+                    outgoingPlayerId = 10L,
+                    incomingPlayerId = 20L,
+                    newPosition = Position.RELIEF_PITCHER,
+                    newBattingOrder = 1, // DH 미사용 시 투수도 타순에 포함
+                )
+
+            // when
+            gameSubstitutionService.substitutePlayer(1L, request, 999L)
+
+            // then - BattingRecord + PitchingRecord 모두 생성
+            verify { battingRecordRepository.save(any()) }
+            verify { pitchingRecordRepository.save(match { !it.isStartingPitcher }) }
         }
     }
 
