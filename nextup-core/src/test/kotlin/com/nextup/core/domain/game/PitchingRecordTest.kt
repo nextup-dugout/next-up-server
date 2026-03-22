@@ -631,6 +631,17 @@ class PitchingRecordTest {
         }
 
         @Test
+        fun `이미 승리 결정이 있는 투수에게 패배를 부여하면 예외가 발생한다`() {
+            // given
+            pitchingRecord.assignWin()
+
+            // when & then
+            assertThatThrownBy { pitchingRecord.assignLoss() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 다른 결정이 부여된 투수입니다")
+        }
+
+        @Test
         fun `이미 패배 결정이 있는 투수에게 세이브를 부여하면 예외가 발생한다`() {
             // given
             pitchingRecord.assignLoss()
