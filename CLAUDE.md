@@ -96,10 +96,11 @@ nextup-scorer     ─┘
 | `reviewer` | VETO 권한, 빌드/테스트/보안 검증 |
 | `devops` | GitHub PR/Issue 관리, 문서 유지보수 |
 
-### Skills (13개)
+### Skills (14개)
 
 | Skill | 역할 |
 |-------|------|
+| `issue-progress` | 이슈 번호 기반 전체 구현 파이프라인 자동 실행 (스킬 매핑 포함) |
 | `domain-baseball` | 야구 규칙 검증 체크리스트 |
 | `backend-patterns` | Kotlin/Spring Boot 컨벤션 |
 | `git-workflow` | GitHub 자동화, CI/CD 연동 |
@@ -130,6 +131,7 @@ nextup-scorer     ─┘
 
 | Command | 기능 |
 |---------|------|
+| `/issue-progress` | 이슈 번호 기반 전체 구현 파이프라인 실행 |
 | `/tdd` | TDD 워크플로우 활성화 |
 | `/build` | Gradle 빌드 & 테스트 실행 |
 | `/review` | 코드 품질 & 보안 검증 |
