@@ -86,8 +86,8 @@ class CompetitionReportServiceImplTest {
         every { competitionRepository.findByIdOrNull(competitionId) } returns competition
         every { standingsService.getStandings(competitionId) } returns standingsDto
         every { gameRepository.findByCompetitionId(competitionId) } returns emptyList()
-        every { battingRecordRepository.findAllByGameId(any()) } returns emptyList()
-        every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
+        every { battingRecordRepository.findAllByGameIds(any()) } returns emptyList()
+        every { pitchingRecordRepository.findAllByGameIds(any()) } returns emptyList()
         every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(competitionId) } returns emptyList()
 
         // when
@@ -203,8 +203,8 @@ class CompetitionReportServiceImplTest {
         every { gameRepository.findByCompetitionId(competitionId) } returns listOf(game1, game2)
         every { gameTeamRepository.findAllByGameIds(listOf(1L, 2L)) } returns
             listOf(gameTeam1, gameTeam2, gameTeam3, gameTeam4)
-        every { battingRecordRepository.findAllByGameId(any()) } returns emptyList()
-        every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
+        every { battingRecordRepository.findAllByGameIds(any()) } returns emptyList()
+        every { pitchingRecordRepository.findAllByGameIds(any()) } returns emptyList()
         every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(competitionId) } returns
             listOf(gameTeam1, gameTeam2, gameTeam3, gameTeam4)
 
@@ -348,8 +348,8 @@ class CompetitionReportServiceImplTest {
         every { gameRepository.findByCompetitionId(competitionId) } returns
             listOf(game1, game2, game3, game4, game5)
         every { gameTeamRepository.findAllByGameIds(any()) } returns emptyList()
-        every { battingRecordRepository.findAllByGameId(any()) } returns emptyList()
-        every { pitchingRecordRepository.findAllByGameId(any()) } returns emptyList()
+        every { battingRecordRepository.findAllByGameIds(any()) } returns emptyList()
+        every { pitchingRecordRepository.findAllByGameIds(any()) } returns emptyList()
         every { gameTeamRepository.findAllByCompetitionIdWithDecidedResult(competitionId) } returns
             listOf(gameTeam1, gameTeam2, gameTeam3, gameTeam4, gameTeam5)
 

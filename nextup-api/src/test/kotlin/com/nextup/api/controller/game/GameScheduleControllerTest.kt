@@ -3,6 +3,7 @@ package com.nextup.api.controller.game
 import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.player.Position
@@ -79,6 +80,14 @@ class GameScheduleControllerTest {
                     createGameSummaryDto(gameId = 1L),
                     createGameSummaryDto(gameId = 2L, status = GameStatus.IN_PROGRESS, homeScore = 3, awayScore = 1),
                 )
+            val pageResult =
+                PageResult(
+                    content = games,
+                    page = 0,
+                    size = 20,
+                    totalElements = 2L,
+                    totalPages = 1,
+                )
             every {
                 gameScheduleService.getGames(
                     date = null,
@@ -87,26 +96,37 @@ class GameScheduleControllerTest {
                     page = 0,
                     size = 20,
                 )
-            } returns games
+            } returns pageResult
 
             // when & then
             mockMvc
                 .perform(get("/api/v1/games"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].gameId").value(1))
-                .andExpect(jsonPath("$.data[0].homeTeam.teamName").value("홈팀"))
-                .andExpect(jsonPath("$.data[0].awayTeam.teamName").value("원정팀"))
-                .andExpect(jsonPath("$.data[0].status").value("SCHEDULED"))
-                .andExpect(jsonPath("$.data[1].homeTeam.score").value(3))
-                .andExpect(jsonPath("$.data[1].awayTeam.score").value(1))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].gameId").value(1))
+                .andExpect(jsonPath("$.data.content[0].homeTeam.teamName").value("홈팀"))
+                .andExpect(jsonPath("$.data.content[0].awayTeam.teamName").value("원정팀"))
+                .andExpect(jsonPath("$.data.content[0].status").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.content[1].homeTeam.score").value(3))
+                .andExpect(jsonPath("$.data.content[1].awayTeam.score").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.currentPage").value(0))
         }
 
         @Test
         fun `빈 경기 목록을 반환한다`() {
             // given
+            val emptyPageResult =
+                PageResult(
+                    content = emptyList<GameSummaryDto>(),
+                    page = 0,
+                    size = 20,
+                    totalElements = 0L,
+                    totalPages = 0,
+                )
             every {
                 gameScheduleService.getGames(
                     date = null,
@@ -115,15 +135,16 @@ class GameScheduleControllerTest {
                     page = 0,
                     size = 20,
                 )
-            } returns emptyList()
+            } returns emptyPageResult
 
             // when & then
             mockMvc
                 .perform(get("/api/v1/games"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(0))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
         }
     }
 

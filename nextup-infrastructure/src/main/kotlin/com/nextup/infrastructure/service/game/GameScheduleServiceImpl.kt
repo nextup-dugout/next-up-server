@@ -1,6 +1,8 @@
 package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.GameNotFoundException
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.GameTeam
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 /**
  * 경기 일정 조회 서비스 구현
@@ -31,34 +32,24 @@ class GameScheduleServiceImpl(
         competitionId: Long?,
         page: Int,
         size: Int,
-    ): List<GameSummaryDto> {
-        val games =
-            when {
-                competitionId != null -> gameRepository.findByCompetitionId(competitionId)
-                date != null -> {
-                    val start = date.atStartOfDay()
-                    val end = date.atTime(LocalTime.MAX)
-                    gameRepository.findByScheduledAtBetween(start, end)
-                }
-                else -> gameRepository.findAll()
-            }
+    ): PageResult<GameSummaryDto> {
+        val pageCommand = PageCommand(page = page, size = size)
+        val pageResult =
+            gameRepository.findGames(
+                date = date,
+                teamId = teamId,
+                competitionId = competitionId,
+                status = null,
+                pageCommand = pageCommand,
+            )
 
-        val filteredGames =
-            if (teamId != null) {
-                val teamGameIds =
-                    gameTeamRepository.findAllByTeamId(teamId)
-                        .map { it.game.id }
-                        .toSet()
-                games.filter { it.id in teamGameIds }
-            } else {
-                games
-            }
+        val gameTeams = gameTeamRepository.findAllByGameIds(pageResult.content.map { it.id })
+        val gameTeamsByGameId = gameTeams.groupBy { it.game.id }
 
-        // 페이징
-        val start = page * size
-        val paged = filteredGames.drop(start).take(size)
-
-        return toSummaryDtos(paged)
+        return pageResult.map { game ->
+            val teams = gameTeamsByGameId[game.id] ?: emptyList()
+            toSummaryDto(game, teams)
+        }
     }
 
     override fun getGameDetail(gameId: Long): GameDetailDto {
@@ -129,8 +120,8 @@ class GameScheduleServiceImpl(
         if (teamIds.isEmpty()) return emptyList()
 
         val now = LocalDateTime.now()
-        val gameTeams =
-            teamIds.flatMap { gameTeamRepository.findAllByTeamId(it) }
+        // 배치 조회로 N+1 방지 — teamIds.flatMap 대신 단일 쿼리
+        val gameTeams = gameTeamRepository.findAllByTeamIdIn(teamIds)
         val gameIds = gameTeams.map { it.game.id }.distinct()
         val games =
             gameRepository.findAllByIds(gameIds)

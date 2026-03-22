@@ -1,5 +1,6 @@
 package com.nextup.core.service.game
 
+import com.nextup.core.common.PageResult
 import com.nextup.core.service.game.dto.GameDetailDto
 import com.nextup.core.service.game.dto.GameSummaryDto
 import java.time.LocalDate
@@ -9,7 +10,7 @@ import java.time.LocalDate
  */
 interface GameScheduleService {
     /**
-     * 경기 목록을 조회합니다. (날짜/팀 필터, 페이징)
+     * 경기 목록을 페이징하여 조회합니다. (날짜/팀 필터, DB 페이징)
      */
     fun getGames(
         date: LocalDate? = null,
@@ -17,7 +18,7 @@ interface GameScheduleService {
         competitionId: Long? = null,
         page: Int = 0,
         size: Int = 20,
-    ): List<GameSummaryDto>
+    ): PageResult<GameSummaryDto>
 
     /**
      * 경기 상세 정보를 조회합니다.

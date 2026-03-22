@@ -110,4 +110,10 @@ interface BattingRecordRepositoryPort {
         playerId: Long,
         competitionId: Long,
     ): List<BattingRecord>
+
+    /**
+     * 여러 경기 ID로 타격 기록을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     * 빈 리스트 전달 시 빈 결과를 반환합니다.
+     */
+    fun findAllByGameIds(gameIds: List<Long>): List<BattingRecord>
 }

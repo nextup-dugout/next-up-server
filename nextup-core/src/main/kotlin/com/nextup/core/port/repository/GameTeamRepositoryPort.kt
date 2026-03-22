@@ -71,4 +71,10 @@ interface GameTeamRepositoryPort {
         opponentId: Long,
         competitionId: Long? = null,
     ): List<GameTeam>
+
+    /**
+     * 여러 팀 ID에 해당하는 GameTeam을 한 번에 조회합니다. (N+1 방지용 배치 쿼리)
+     * 빈 리스트 전달 시 빈 결과를 반환합니다.
+     */
+    fun findAllByTeamIdIn(teamIds: List<Long>): List<GameTeam>
 }

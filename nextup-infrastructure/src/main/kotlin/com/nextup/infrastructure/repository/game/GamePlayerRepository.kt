@@ -17,7 +17,10 @@ interface GamePlayerRepository :
     @Query(
         """
         SELECT gp FROM GamePlayer gp
-        JOIN gp.gameTeam gt
+        JOIN FETCH gp.gameTeam gt
+        JOIN FETCH gt.game
+        JOIN FETCH gt.team
+        JOIN FETCH gp.player
         WHERE gt.game.id = :gameId
         AND gp.player.id = :playerId
     """,
@@ -33,7 +36,10 @@ interface GamePlayerRepository :
     @Query(
         """
         SELECT gp FROM GamePlayer gp
-        JOIN gp.gameTeam gt
+        JOIN FETCH gp.gameTeam gt
+        JOIN FETCH gt.game
+        JOIN FETCH gt.team
+        JOIN FETCH gp.player
         WHERE gt.game.id = :gameId
     """,
     )

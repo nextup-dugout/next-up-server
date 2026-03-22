@@ -48,4 +48,13 @@ interface CompetitionRepositoryPort {
      * 리그와 함께 대회 조회 (N+1 방지)
      */
     fun findByIdWithLeague(id: Long): Competition?
+
+    /**
+     * 이름에 키워드가 포함된 대회 목록을 조회합니다. (대소문자 무시)
+     * 빈 리스트 전달 시 빈 결과를 반환합니다.
+     */
+    fun findByNameContaining(
+        name: String,
+        limit: Int,
+    ): List<Competition>
 }

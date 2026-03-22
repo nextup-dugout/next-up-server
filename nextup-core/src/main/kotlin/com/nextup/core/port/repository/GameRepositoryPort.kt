@@ -1,6 +1,9 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.common.PageCommand
+import com.nextup.core.common.PageResult
 import com.nextup.core.domain.game.Game
+import com.nextup.core.domain.game.GameStatus
 import java.time.LocalDateTime
 
 /**
@@ -67,4 +70,16 @@ interface GameRepositoryPort {
      * (잠금 만료 자동 해제용)
      */
     fun findLockedGamesBefore(threshold: LocalDateTime): List<Game>
+
+    /**
+     * 경기 목록을 페이징하여 조회합니다. (날짜/팀/대회 필터 지원)
+     * Core 모듈이 Spring에 의존하지 않도록 PageCommand/PageResult 커스텀 타입을 사용합니다.
+     */
+    fun findGames(
+        date: java.time.LocalDate?,
+        teamId: Long?,
+        competitionId: Long?,
+        status: GameStatus?,
+        pageCommand: PageCommand,
+    ): PageResult<Game>
 }

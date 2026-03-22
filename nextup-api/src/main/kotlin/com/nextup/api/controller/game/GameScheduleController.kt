@@ -1,5 +1,6 @@
 package com.nextup.api.controller.game
 
+import com.nextup.api.dto.common.PagedResponse
 import com.nextup.api.dto.game.AvailableRosterResponse
 import com.nextup.api.dto.game.GameDetailResponse
 import com.nextup.api.dto.game.GameSummaryResponse
@@ -24,7 +25,7 @@ class GameScheduleController(
     private val availableRosterService: AvailableRosterService,
 ) {
     /**
-     * 경기 목록을 조회합니다. (날짜/팀/대회 필터, 페이징)
+     * 경기 목록을 조회합니다. (날짜/팀/대회 필터, DB 페이징)
      */
     @GetMapping("/games")
     fun getGames(
@@ -33,8 +34,8 @@ class GameScheduleController(
         @RequestParam(required = false) competitionId: Long?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): ApiResponse<List<GameSummaryResponse>> {
-        val games =
+    ): ApiResponse<PagedResponse<GameSummaryResponse>> {
+        val pageResult =
             gameScheduleService.getGames(
                 date = date,
                 teamId = teamId,
@@ -42,7 +43,8 @@ class GameScheduleController(
                 page = page,
                 size = size,
             )
-        return ApiResponse.success(games.map { GameSummaryResponse.from(it) })
+        val mapped = pageResult.map { GameSummaryResponse.from(it) }
+        return ApiResponse.success(PagedResponse.from(mapped))
     }
 
     /**
