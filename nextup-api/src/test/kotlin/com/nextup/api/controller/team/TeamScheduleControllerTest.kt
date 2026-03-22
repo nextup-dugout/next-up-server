@@ -18,6 +18,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -47,11 +50,15 @@ class TeamScheduleControllerTest {
         objectMapper =
             jacksonObjectMapper().registerModule(JavaTimeModule())
 
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(1L, null, emptyList())
+
         val controller = TeamScheduleController(teamScheduleService)
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
+                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
                 .build()
 
         every { mockTeam.id } returns teamId
