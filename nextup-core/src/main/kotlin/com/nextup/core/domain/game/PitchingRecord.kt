@@ -401,10 +401,14 @@ class PitchingRecord(
 
     /**
      * 패배 결정을 부여합니다.
+     *
+     * 블론세이브(BLOWN_SAVE)가 이미 부여된 투수에게도 패전을 부여할 수 있습니다.
+     * 야구 규칙상 세이브 상황에서 역전을 허용한 투수는 블론세이브와 패전을 동시에
+     * 기록할 수 있으며, 이 경우 패전(LOSS)이 최종 결정으로 기록됩니다.
      */
     fun assignLoss() {
-        require(decision == PitchingDecision.NONE) {
-            "이미 다른 결정이 부여된 투수입니다."
+        require(decision == PitchingDecision.NONE || decision == PitchingDecision.BLOWN_SAVE) {
+            "이미 다른 결정이 부여된 투수입니다: $decision"
         }
         this.decision = PitchingDecision.LOSS
     }

@@ -618,6 +618,30 @@ class PitchingRecordTest {
         }
 
         @Test
+        fun `블론세이브 상태에서 패배 결정을 부여하면 LOSS로 전환된다`() {
+            // given: 구원투수에게 먼저 블론세이브 부여
+            pitchingRecord.assignBlownSave()
+            assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.BLOWN_SAVE)
+
+            // when: 패전 부여 (야구 규칙: BS+L 동시 기록 가능)
+            pitchingRecord.assignLoss()
+
+            // then
+            assertThat(pitchingRecord.decision).isEqualTo(PitchingDecision.LOSS)
+        }
+
+        @Test
+        fun `이미 승리 결정이 있는 투수에게 패배를 부여하면 예외가 발생한다`() {
+            // given
+            pitchingRecord.assignWin()
+
+            // when & then
+            assertThatThrownBy { pitchingRecord.assignLoss() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 다른 결정이 부여된 투수입니다")
+        }
+
+        @Test
         fun `이미 패배 결정이 있는 투수에게 세이브를 부여하면 예외가 발생한다`() {
             // given
             pitchingRecord.assignLoss()
