@@ -8,6 +8,8 @@ import com.nextup.core.service.team.TeamScheduleService
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -31,13 +33,15 @@ class TeamScheduleController(
     private val teamScheduleService: TeamScheduleService,
 ) {
     /**
-     * 팀 일정을 생성합니다.
+     * 팀 일정을 생성합니다. 매니저 이상 권한이 필요합니다.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun createSchedule(
         @PathVariable teamId: Long,
         @Valid @RequestBody request: CreateTeamScheduleRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<TeamScheduleResponse> {
         val schedule =
             teamScheduleService.create(
@@ -90,13 +94,15 @@ class TeamScheduleController(
     }
 
     /**
-     * 팀 일정을 수정합니다.
+     * 팀 일정을 수정합니다. 매니저 이상 권한이 필요합니다.
      */
     @PatchMapping("/{scheduleId}")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun updateSchedule(
         @PathVariable teamId: Long,
         @PathVariable scheduleId: Long,
         @Valid @RequestBody request: UpdateTeamScheduleRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<TeamScheduleResponse> {
         val schedule =
             teamScheduleService.update(
@@ -112,13 +118,15 @@ class TeamScheduleController(
     }
 
     /**
-     * 팀 일정을 삭제합니다.
+     * 팀 일정을 삭제합니다. 매니저 이상 권한이 필요합니다.
      */
     @DeleteMapping("/{scheduleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#teamId, authentication.principal)")
     fun deleteSchedule(
         @PathVariable teamId: Long,
         @PathVariable scheduleId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<Unit> {
         teamScheduleService.delete(scheduleId)
         return ApiResponse.success(Unit)
