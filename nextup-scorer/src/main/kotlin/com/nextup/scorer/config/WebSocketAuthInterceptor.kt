@@ -89,7 +89,8 @@ class WebSocketAuthInterceptor(
             accessor.getFirstNativeHeader("Authorization")
                 ?.removePrefix(BEARER_PREFIX)
 
-        if (refreshedToken != null && jwtTokenProvider.validateToken(refreshedToken) &&
+        if (refreshedToken != null &&
+            jwtTokenProvider.validateToken(refreshedToken) &&
             jwtTokenProvider.isAccessToken(refreshedToken)
         ) {
             accessor.sessionAttributes?.set(TOKEN_HEADER, refreshedToken)

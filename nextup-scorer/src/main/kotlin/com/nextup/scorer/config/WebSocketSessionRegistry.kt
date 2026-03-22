@@ -90,8 +90,7 @@ class WebSocketSessionRegistry {
      * @param sessionId WebSocket 세션 ID
      * @return WebSocketSession (없으면 null)
      */
-    fun getWebSocketSession(sessionId: String): WebSocketSession? =
-        webSocketSessions[sessionId]
+    fun getWebSocketSession(sessionId: String): WebSocketSession? = webSocketSessions[sessionId]
 
     /**
      * 등록된 세션 수를 반환합니다.
