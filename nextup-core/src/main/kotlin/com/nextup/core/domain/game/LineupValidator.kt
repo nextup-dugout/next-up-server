@@ -2,6 +2,7 @@ package com.nextup.core.domain.game
 
 import com.nextup.common.exception.DuplicatePlayerInLineupException
 import com.nextup.common.exception.InvalidDhRuleException
+import com.nextup.common.exception.InvalidGameStateException
 import com.nextup.common.exception.InvalidLineupBattingOrderCountException
 import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.common.exception.NoCatcherInLineupException
@@ -126,6 +127,27 @@ object LineupValidator {
 
     /** 타순에 필요한 선수 수 */
     private const val REQUIRED_BATTING_ORDER_COUNT = 9
+
+    /**
+     * DH 해제 후 현재 출전 중인 선수들의 타순 인원을 검증합니다.
+     *
+     * DH 해제 시 DH 선수가 퇴장하고 투수가 타순에 편입되므로,
+     * 활성 타순 인원이 정확히 9명(투수 포함)이어야 합니다.
+     * 투수가 DH의 타순을 이어받으므로 총 타순 인원은 9명으로 유지됩니다.
+     *
+     * @param currentlyPlayingPlayers 현재 출전 중인 선수 목록 (해당 팀의 선수만)
+     * @throws InvalidGameStateException 타순 인원이 올바르지 않은 경우
+     */
+    fun validatePostDhReleaseBattingOrder(currentlyPlayingPlayers: List<GamePlayer>) {
+        val battersInOrder =
+            currentlyPlayingPlayers.filter { it.isCurrentlyPlaying && it.battingOrder != null }
+        if (battersInOrder.size != REQUIRED_BATTING_ORDER_COUNT) {
+            throw InvalidGameStateException(
+                "DH 해제 후 타순 인원이 올바르지 않습니다. " +
+                    "예상: ${REQUIRED_BATTING_ORDER_COUNT}명, 현재: ${battersInOrder.size}명",
+            )
+        }
+    }
 
     /**
      * 참석(ATTENDING) 선수만 라인업에 포함되었는지 검증
