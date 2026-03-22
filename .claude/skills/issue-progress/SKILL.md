@@ -258,7 +258,7 @@ Agent:
 3. 변경 파일 기반 verify 스킬 자동 선택 + 실행
 4. Jacoco 커버리지 80%+ 확인
 
-**Gate 실패 시**: 실패 원인을 수정하고 Gate를 다시 실행한다. Phase 4(implementer)로 돌아가서 코드를 수정한 뒤, 다시 Phase 5-1부터 시작한다. 이 루프는 최대 3회까지 허용한다.
+**Gate 실패 시**: 실패 원인을 수정하고 Gate를 다시 실행한다. Phase 4(implementer)로 돌아가서 코드를 수정한 뒤, 다시 Phase 5-1부터 시작한다.
 
 **빌드가 정말 안 될 때**: Gradle 데몬 크래시 등으로 빌드가 반복 실패하면:
 1. `pkill -9 -f "GradleDaemon"` 실행
@@ -293,7 +293,9 @@ reviewer는 빌드/테스트를 다시 돌릴 필요 없이, 아키텍처 규칙
 
 **reviewer에게 이전 Phase 컨텍스트 전달**: reviewer가 planner/architect/implementer의 의도를 이해할 수 있도록, 이전 Phase의 계획/설계/구현 요약을 프롬프트에 포함한다.
 
-**reviewer REJECT 시**: 사유를 분석하고 implementer에게 수정을 요청한 뒤, **Phase 5-1(pre-pr-gate)부터** 다시 시작한다. 최대 3회 반복 후에도 REJECT이면 사용자에게 보고하고 **파이프라인 중단 처리**를 수행한다.
+**reviewer REJECT 시**: 사유를 분석하고 implementer에게 수정을 요청한 뒤, **Phase 5-1(pre-pr-gate)부터** 다시 시작한다.
+
+**Phase 5 전체 재시도 하드캡: 5회.** pre-pr-gate 실행 + reviewer 실행을 합산하여 최대 5회까지만 허용한다. 5회 소진 후에도 통과하지 못하면 사용자에게 보고하고 **파이프라인 중단 처리**를 수행한다. (예: pre-pr-gate 2회 실패 후 통과 → reviewer REJECT → pre-pr-gate 1회 실패 후 통과 → reviewer REJECT = 총 5회 소진)
 
 ---
 
