@@ -15,6 +15,7 @@ import com.nextup.core.service.game.correction.FieldingCorrectionRequest
 import com.nextup.core.service.game.correction.PitchingCorrectionRequest
 import com.nextup.core.service.game.correction.RecordCorrectionService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController
  * 경기 타격/투수 기록을 관리자 권한으로 정정합니다.
  * 경기 상태(FINISHED 포함)와 무관하게 정정 가능합니다.
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/games/{gameId}")
 class RecordCorrectionAdminController(

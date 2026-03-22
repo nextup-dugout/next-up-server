@@ -6,6 +6,7 @@ import com.nextup.api.dto.attendance.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.ActivityService
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 팀원의 활동 점수(경기 참여율, 연습 참석률, 기여도)를 관리합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/teams/{teamId}/members")
 class TeamActivityController(

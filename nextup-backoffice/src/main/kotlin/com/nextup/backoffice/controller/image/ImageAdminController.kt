@@ -5,6 +5,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.EmptyImageFileException
 import com.nextup.core.service.image.ImageUploadService
 import org.springframework.http.MediaType
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile
  * - PUT /api/backoffice/leagues/{leagueId}/logo : 리그 로고 설정
  * - PUT /api/backoffice/associations/{associationId}/logo : 협회 로고 설정
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice")
 class ImageAdminController(

@@ -7,6 +7,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.association.AssociationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 협회 관리 API Controller (관리자용)
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/associations")
 class AssociationAdminController(

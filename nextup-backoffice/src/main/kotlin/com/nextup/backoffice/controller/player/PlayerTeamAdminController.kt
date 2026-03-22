@@ -5,11 +5,13 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.player.PlayerTeamService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
  * 선수-팀 소속 관리 API Controller (관리자용)
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/player-teams")
 class PlayerTeamAdminController(

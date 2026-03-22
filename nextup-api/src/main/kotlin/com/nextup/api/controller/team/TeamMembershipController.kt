@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*
 /**
  * 팀 멤버십 API 컨트롤러
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/teams/{teamId}")
 class TeamMembershipController(

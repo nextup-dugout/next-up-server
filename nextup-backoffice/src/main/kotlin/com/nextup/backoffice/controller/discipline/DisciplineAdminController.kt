@@ -8,6 +8,7 @@ import com.nextup.core.domain.discipline.DisciplineType
 import com.nextup.core.service.discipline.DisciplineService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*
  *
  * 전체 권한: 생성, 조회, 취소
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/disciplines")
 class DisciplineAdminController(

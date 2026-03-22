@@ -29,6 +29,7 @@ import java.time.LocalDate
  *
  * 일반 사용자가 팀을 생성/수정/삭제/조회합니다.
  */
+@PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/teams")
 class TeamController(

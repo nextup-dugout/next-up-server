@@ -6,6 +6,7 @@ import com.nextup.backoffice.service.PlayerBulkImportService
 import com.nextup.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  *
  * CSV 파싱 후 전달된 선수 목록을 일괄 등록합니다.
  */
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/backoffice/players/bulk-import")
 class PlayerBulkImportController(

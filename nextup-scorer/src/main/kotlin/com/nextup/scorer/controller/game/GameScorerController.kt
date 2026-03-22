@@ -62,6 +62,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/v1/scorer/games")
+@PreAuthorize("isAuthenticated()")
 class GameScorerController(
     private val gameLifecycleService: GameLifecycleService,
     private val plateAppearanceRecordService: PlateAppearanceRecordService,

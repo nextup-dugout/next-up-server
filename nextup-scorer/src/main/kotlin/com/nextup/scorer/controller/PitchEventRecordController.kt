@@ -8,6 +8,7 @@ import com.nextup.scorer.dto.pitch.toResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/v1/scorer/games/{gameId}/pitch-events")
+@PreAuthorize("isAuthenticated()")
 class PitchEventRecordController(
     private val pitchEventService: PitchEventService,
 ) {
