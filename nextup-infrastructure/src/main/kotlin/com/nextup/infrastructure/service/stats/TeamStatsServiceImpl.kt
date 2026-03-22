@@ -11,6 +11,8 @@ import com.nextup.core.service.stats.dto.TeamBattingStatsDto
 import com.nextup.core.service.stats.dto.TeamPitchingStatsDto
 import com.nextup.core.service.stats.dto.TeamRecordDto
 import com.nextup.core.service.stats.dto.TeamStatsDto
+import com.nextup.infrastructure.config.CacheConfig
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -24,6 +26,10 @@ class TeamStatsServiceImpl(
     private val battingRecordRepositoryPort: BattingRecordRepositoryPort,
     private val pitchingRecordRepositoryPort: PitchingRecordRepositoryPort,
 ) : TeamStatsService {
+    @Cacheable(
+        cacheNames = [CacheConfig.TEAM_STATS_CACHE],
+        key = "#teamId + ':' + #year + ':' + #competitionId",
+    )
     override fun getTeamStats(
         teamId: Long,
         year: Int?,

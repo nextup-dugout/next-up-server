@@ -30,6 +30,7 @@ import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
+import com.nextup.infrastructure.config.CacheConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -369,7 +370,9 @@ class RecordCorrectionEventListenerTest {
             listener.onRecordCorrected(event)
 
             // then
-            verify(exactly = 1) { cacheManager.getCache("standings") }
+            verify(exactly = 1) { cacheManager.getCache(CacheConfig.STANDINGS_CACHE) }
+            verify(exactly = 1) { cacheManager.getCache(CacheConfig.LEADERBOARD_CACHE) }
+            verify(exactly = 1) { cacheManager.getCache(CacheConfig.TEAM_STATS_CACHE) }
             verify(exactly = 1) { mockCache.evict(100L) }
         }
 

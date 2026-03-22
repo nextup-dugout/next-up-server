@@ -135,6 +135,6 @@ class RecordCorrectionEventListenerCoverageTest {
         listener.onRecordCorrected(event)
 
         // then
-        verify(exactly = 1) { cacheManager.getCache(any()) }
+        verify(exactly = 3) { cacheManager.getCache(any()) }
     }
 }
