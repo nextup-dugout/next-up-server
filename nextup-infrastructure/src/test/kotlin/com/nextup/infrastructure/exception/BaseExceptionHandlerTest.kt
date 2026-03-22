@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.exception
 
+import com.nextup.common.exception.ConflictException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -19,6 +20,20 @@ class BaseExceptionHandlerTest {
     @BeforeEach
     fun setUp() {
         handler = TestExceptionHandler()
+    }
+
+    @Test
+    fun `should handle ConflictException and return 409`() {
+        // given
+        val exception = ConflictException("GAME_ALREADY_LOCKED", "Game 1 is already locked by scorer 2")
+
+        // when
+        val response = handler.handleConflictException(exception)
+
+        // then
+        assertThat(response.statusCode).isEqualTo(HttpStatus.CONFLICT)
+        assertThat(response.body?.success).isFalse()
+        assertThat(response.body?.error?.code).isEqualTo("GAME_ALREADY_LOCKED")
     }
 
     @Test

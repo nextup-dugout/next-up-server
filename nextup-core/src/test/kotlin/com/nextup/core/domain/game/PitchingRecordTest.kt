@@ -2005,4 +2005,110 @@ class PitchingRecordTest {
             pitchingRecord.validateInningReduction(5) // 5이닝 = 15아웃이 최대
         }
     }
+
+    @Nested
+    @DisplayName("closeInning - 투수 교체 시 이닝 마감")
+    inner class CloseInningTest {
+        @Test
+        fun `정상적인 이닝과 아웃 카운트로 이닝을 마감할 수 있다`() {
+            // given
+            repeat(5) { pitchingRecord.recordOut() } // 1.2이닝 소화
+
+            // when & then (예외 없이 정상 수행)
+            pitchingRecord.closeInning(currentInning = 3, currentOuts = 2)
+        }
+
+        @Test
+        fun `1이닝 0아웃에서 이닝 마감이 가능하다`() {
+            // when & then
+            pitchingRecord.closeInning(currentInning = 1, currentOuts = 0)
+        }
+
+        @Test
+        fun `9이닝 2아웃에서 이닝 마감이 가능하다`() {
+            // given
+            repeat(26) { pitchingRecord.recordOut() } // 8.2이닝 소화
+
+            // when & then
+            pitchingRecord.closeInning(currentInning = 9, currentOuts = 2)
+        }
+
+        @Test
+        fun `이닝이 0 이하이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.closeInning(currentInning = 0, currentOuts = 1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이닝은 1 이상이어야 합니다")
+        }
+
+        @Test
+        fun `아웃 카운트가 음수이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.closeInning(currentInning = 3, currentOuts = -1)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("아웃 카운트는 0-2 사이여야 합니다")
+        }
+
+        @Test
+        fun `아웃 카운트가 3 이상이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                pitchingRecord.closeInning(currentInning = 3, currentOuts = 3)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("아웃 카운트는 0-2 사이여야 합니다")
+        }
+
+        @Test
+        fun `이닝 마감 후에도 기존 기록(inningsPitchedOuts)은 유지된다`() {
+            // given
+            repeat(6) { pitchingRecord.recordOut() } // 2.0이닝 소화
+            val beforeOuts = pitchingRecord.inningsPitchedOuts
+
+            // when
+            pitchingRecord.closeInning(currentInning = 3, currentOuts = 0)
+
+            // then - BoxScore 실시간 기록이므로 추가 갱신 없음
+            assertThat(pitchingRecord.inningsPitchedOuts).isEqualTo(beforeOuts)
+        }
+    }
+
+    @Nested
+    @DisplayName("create - 팩토리 메서드")
+    inner class CreateTest {
+        @Test
+        fun `선발 투수로 생성하면 isStartingPitcher가 true이다`() {
+            // when
+            val record = PitchingRecord.create(gamePlayer, isStartingPitcher = true)
+
+            // then
+            assertThat(record.isStartingPitcher).isTrue()
+            assertThat(record.inningsPitchedOuts).isEqualTo(0)
+            assertThat(record.decision).isEqualTo(PitchingDecision.NONE)
+        }
+
+        @Test
+        fun `구원 투수로 생성하면 isStartingPitcher가 false이다`() {
+            // when
+            val record = PitchingRecord.create(gamePlayer, isStartingPitcher = false)
+
+            // then
+            assertThat(record.isStartingPitcher).isFalse()
+            assertThat(record.inningsPitchedOuts).isEqualTo(0)
+            assertThat(record.battersFaced).isEqualTo(0)
+            assertThat(record.earnedRuns).isEqualTo(0)
+            assertThat(record.runsAllowed).isEqualTo(0)
+            assertThat(record.hitsAllowed).isEqualTo(0)
+            assertThat(record.walksAllowed).isEqualTo(0)
+            assertThat(record.strikeouts).isEqualTo(0)
+            assertThat(record.homeRunsAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `기본값으로 생성하면 선발 투수가 아니다`() {
+            // when
+            val record = PitchingRecord.create(gamePlayer)
+
+            // then
+            assertThat(record.isStartingPitcher).isFalse()
+        }
+    }
 }

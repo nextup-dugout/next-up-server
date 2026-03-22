@@ -285,4 +285,21 @@ interface TeamMembershipService {
      * @param memberId 멤버 ID
      */
     fun deleteMemberByAdmin(memberId: Long)
+
+    /**
+     * L-10: 관리자에 의한 강제 강퇴입니다.
+     *
+     * OWNER를 포함한 모든 역할의 멤버를 강제로 강퇴할 수 있습니다.
+     * OWNER가 강퇴되면 OwnerKickedEvent를 발행하여 자동 선거를 트리거합니다.
+     *
+     * @param memberId 강퇴 대상 멤버 ID
+     * @param reason 강퇴 사유
+     * @param addToBlacklist 블랙리스트 추가 여부
+     * @throws TeamMemberNotFoundException 멤버를 찾을 수 없는 경우
+     */
+    fun forceKickMember(
+        memberId: Long,
+        reason: String,
+        addToBlacklist: Boolean,
+    )
 }

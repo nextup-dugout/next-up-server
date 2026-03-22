@@ -6,6 +6,8 @@ import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.event.GameResultConfirmedEvent
+import com.nextup.core.domain.event.TimeLimitWarningEvent
+import com.nextup.core.domain.event.TimeLimitWarningType
 import com.nextup.core.domain.game.Base
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
@@ -399,6 +401,162 @@ class PlateAppearanceRecordServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("시간 제한 경고 감지 (M-5)")
+    inner class TimeLimitWarningDetection {
+
+        @Test
+        @DisplayName("시간 제한 도달 시 TimeLimitWarningEvent(LIMIT_REACHED) 발행")
+        fun timeLimitReachedPublishesEvent() {
+            // given: 120분 제한, 시작 125분 전 → 제한 도달
+            val game =
+                createGameWithTimeLimit(
+                    id = 1L,
+                    currentInning = 5,
+                    isTopInning = true,
+                    timeLimitMinutes = 120,
+                    startedAt = LocalDateTime.now().minusMinutes(125),
+                )
+            val batter = createGamePlayer(10L, playerId = 100L, battingOrder = 1)
+            val pitcher = createGamePlayer(20L, playerId = 200L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = service.recordPlateAppearance(1L, request, 999L)
+
+            // then
+            val timeLimitEvents =
+                publishedEvents.filterIsInstance<TimeLimitWarningEvent>()
+            assertThat(timeLimitEvents).hasSize(1)
+            assertThat(timeLimitEvents[0].warningType)
+                .isEqualTo(TimeLimitWarningType.LIMIT_REACHED)
+            assertThat(result.warnings).anyMatch { it.contains("시간 제한 경고") }
+        }
+
+        @Test
+        @DisplayName("시간 제한 임박 시 TimeLimitWarningEvent(APPROACHING_LIMIT) 발행")
+        fun timeLimitApproachingPublishesEvent() {
+            // given: 120분 제한, 시작 112분 전 → 임박 (10분 이하 남음)
+            val game =
+                createGameWithTimeLimit(
+                    id = 1L,
+                    currentInning = 5,
+                    isTopInning = true,
+                    timeLimitMinutes = 120,
+                    startedAt = LocalDateTime.now().minusMinutes(112),
+                )
+            val batter = createGamePlayer(10L, playerId = 100L, battingOrder = 1)
+            val pitcher = createGamePlayer(20L, playerId = 200L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            val result = service.recordPlateAppearance(1L, request, 999L)
+
+            // then
+            val timeLimitEvents =
+                publishedEvents.filterIsInstance<TimeLimitWarningEvent>()
+            assertThat(timeLimitEvents).hasSize(1)
+            assertThat(timeLimitEvents[0].warningType)
+                .isEqualTo(TimeLimitWarningType.APPROACHING_LIMIT)
+            assertThat(result.warnings).anyMatch { it.contains("시간 제한 주의") }
+        }
+
+        @Test
+        @DisplayName("시간 제한이 없는 경기에서는 경고 이벤트 미발행")
+        fun noTimeLimitNoEvent() {
+            // given: 시간 제한 없음 (기본 GameRules)
+            val game = createGame(1L, currentInning = 5, isTopInning = true)
+            val batter = createGamePlayer(10L, playerId = 100L, battingOrder = 1)
+            val pitcher = createGamePlayer(20L, playerId = 200L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            service.recordPlateAppearance(1L, request, 999L)
+
+            // then
+            val timeLimitEvents =
+                publishedEvents.filterIsInstance<TimeLimitWarningEvent>()
+            assertThat(timeLimitEvents).isEmpty()
+        }
+
+        @Test
+        @DisplayName("시간 제한 정상 범위면 경고 이벤트 미발행")
+        fun withinTimeLimitNoEvent() {
+            // given: 120분 제한, 시작 60분 전 → 정상 범위
+            val game =
+                createGameWithTimeLimit(
+                    id = 1L,
+                    currentInning = 3,
+                    isTopInning = true,
+                    timeLimitMinutes = 120,
+                    startedAt = LocalDateTime.now().minusMinutes(60),
+                )
+            val batter = createGamePlayer(10L, playerId = 100L, battingOrder = 1)
+            val pitcher = createGamePlayer(20L, playerId = 200L)
+
+            every { gameRepository.findByIdOrNull(1L) } returns game
+            every { gamePlayerRepository.findByIdOrNull(10L) } returns batter
+            every { gamePlayerRepository.findByIdOrNull(20L) } returns pitcher
+            every { gameRepository.save(any()) } answers { firstArg() }
+
+            val request =
+                PlateAppearanceRequest(
+                    batterId = 10L,
+                    pitcherId = 20L,
+                    result = PlateAppearanceResult.STRIKEOUT,
+                    runnerMovements = emptyList(),
+                    rbis = 0,
+                )
+
+            // when
+            service.recordPlateAppearance(1L, request, 999L)
+
+            // then
+            val timeLimitEvents =
+                publishedEvents.filterIsInstance<TimeLimitWarningEvent>()
+            assertThat(timeLimitEvents).isEmpty()
+        }
+    }
+
     // Helper methods
 
     private fun createGamePlayer(
@@ -479,6 +637,73 @@ class PlateAppearanceRecordServiceImplTest {
             currentInning = currentInning,
             isTopInning = isTopInning,
             totalInnings = totalInnings,
+            gameState = GameState(),
+            scorerId = 999L,
+            id = id,
+        )
+    }
+
+    private fun createGameWithTimeLimit(
+        id: Long,
+        currentInning: Int = 1,
+        isTopInning: Boolean = true,
+        totalInnings: Int = 9,
+        timeLimitMinutes: Int,
+        startedAt: LocalDateTime,
+    ): Game {
+        val association =
+            Association(
+                name = "서울시야구협회",
+                region = "서울",
+            ).also { setEntityId(it, 1L) }
+        val league =
+            League(
+                association = association,
+                name = "1부 리그",
+                foundedYear = 2020,
+            ).also { setEntityId(it, 1L) }
+        val competition =
+            Competition(
+                league = league,
+                name = "2025 춘계대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                status = CompetitionStatus.IN_PROGRESS,
+                gameRules =
+                    GameRules(
+                        defaultInnings = totalInnings,
+                        timeLimitMinutes = timeLimitMinutes,
+                    ),
+            ).also { setEntityId(it, 1L) }
+        val homeTeam =
+            Team(
+                league = league,
+                name = "홈팀",
+                city = "서울",
+                foundedYear = 2020,
+                id = 1L,
+            )
+        val awayTeam =
+            Team(
+                league = league,
+                name = "원정팀",
+                city = "부산",
+                foundedYear = 2020,
+                id = 2L,
+            )
+
+        return Game.createForTest(
+            competition = competition,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+            status = GameStatus.IN_PROGRESS,
+            currentInning = currentInning,
+            isTopInning = isTopInning,
+            totalInnings = totalInnings,
+            startedAt = startedAt,
             gameState = GameState(),
             scorerId = 999L,
             id = id,
