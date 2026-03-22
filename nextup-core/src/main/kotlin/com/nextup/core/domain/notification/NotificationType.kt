@@ -88,4 +88,9 @@ enum class NotificationType {
      * 대회 완료
      */
     COMPETITION_COMPLETED,
+
+    /**
+     * 재선거(결선투표) 생성
+     */
+    RUNOFF_ELECTION_CREATED,
 }

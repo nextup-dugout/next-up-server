@@ -8,6 +8,7 @@ import com.nextup.core.domain.election.Candidate
 import com.nextup.core.domain.election.Election
 import com.nextup.core.domain.election.ElectionVote
 import com.nextup.core.domain.event.ElectionCompletedEvent
+import com.nextup.core.domain.event.RunoffElectionCreatedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
@@ -207,6 +208,80 @@ class ElectionService(
      * 선거를 ID로 조회합니다.
      */
     fun getElectionById(electionId: Long): Election = findElection(electionId)
+
+    /**
+     * 재선거(결선투표)를 생성합니다.
+     *
+     * 동률이 발생한 원본 선거를 기반으로, 동률 후보들만 포함하는 재선거를 생성합니다.
+     * 최대 재선거 횟수(Election.MAX_RUNOFF_COUNT)를 초과하면 예외가 발생합니다.
+     *
+     * @param parentElectionId 원본 선거 ID
+     * @param tiedCandidateIds 동률 후보자 ID 목록
+     * @return 생성된 재선거
+     */
+    @Transactional
+    fun createRunoffElection(
+        parentElectionId: Long,
+        tiedCandidateIds: List<Long>,
+    ): Election {
+        val parentElection = findElection(parentElectionId)
+
+        // 재선거 체인의 루트 선거를 찾아 총 재선거 횟수를 계산
+        val rootElectionId = findRootElectionId(parentElection)
+        val currentRunoffCount =
+            electionRepository.countByParentElectionId(rootElectionId) +
+                if (parentElection.isRunoff) {
+                    electionRepository.countByParentElectionId(parentElectionId)
+                } else {
+                    0L
+                }
+
+        val runoffElection =
+            Election.createRunoff(
+                parentElection = parentElection,
+                currentRunoffCount = currentRunoffCount,
+            )
+        val savedRunoff = electionRepository.save(runoffElection)
+
+        // 동률 후보들을 재선거에 등록
+        val originalCandidates =
+            tiedCandidateIds.mapNotNull { candidateRepository.findById(it) }
+        for (candidate in originalCandidates) {
+            val runoffCandidate =
+                Candidate.create(
+                    electionId = savedRunoff.id,
+                    memberId = candidate.memberId,
+                    memberName = candidate.memberName,
+                    statement = candidate.statement,
+                )
+            candidateRepository.save(runoffCandidate)
+        }
+
+        eventPublisher.publishEvent(
+            RunoffElectionCreatedEvent(
+                runoffElectionId = savedRunoff.id,
+                parentElectionId = parentElectionId,
+                teamId = savedRunoff.teamId,
+                electionType = savedRunoff.electionType,
+                tiedCandidateCount = originalCandidates.size,
+            ),
+        )
+
+        return savedRunoff
+    }
+
+    /**
+     * 재선거 체인의 루트(최초 원본) 선거 ID를 찾습니다.
+     */
+    private fun findRootElectionId(election: Election): Long {
+        var current = election
+        while (current.parentElectionId != null) {
+            current =
+                electionRepository.findById(current.parentElectionId!!)
+                    ?: break
+        }
+        return current.id
+    }
 
     /**
      * Election을 조회하고 없으면 예외를 던집니다.

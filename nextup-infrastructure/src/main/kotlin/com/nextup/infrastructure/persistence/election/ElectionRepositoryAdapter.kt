@@ -21,4 +21,7 @@ class ElectionRepositoryAdapter(
     override fun delete(election: Election) {
         jpaRepository.delete(election)
     }
+
+    override fun countByParentElectionId(parentElectionId: Long): Long =
+        jpaRepository.countByParentElectionId(parentElectionId)
 }

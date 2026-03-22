@@ -6,6 +6,7 @@ import com.nextup.common.exception.ElectionNotFoundException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.domain.election.*
 import com.nextup.core.domain.event.ElectionCompletedEvent
+import com.nextup.core.domain.event.RunoffElectionCreatedEvent
 import com.nextup.core.port.repository.CandidateRepositoryPort
 import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.ElectionVoteRepositoryPort
@@ -838,6 +839,122 @@ class ElectionServiceTest {
             assertThatThrownBy {
                 electionService.getElectionById(999L)
             }.isInstanceOf(ElectionNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("createRunoffElection")
+    inner class CreateRunoffElection {
+        @Test
+        fun `동률 후보들로 재선거를 생성할 수 있다`() {
+            // given
+            val parentElection = createTestOwnerElection(1L, ElectionStatus.COMPLETED)
+            val candidate1 = createTestCandidate(10L, 1L, 100L, "김철수")
+            val candidate2 = createTestCandidate(20L, 1L, 200L, "이영희")
+
+            every { electionRepository.findById(1L) } returns parentElection
+            every { electionRepository.countByParentElectionId(1L) } returns 0L
+            every { electionRepository.save(any()) } answers {
+                val election = firstArg<Election>()
+                setElectionId(election, 50L)
+                election
+            }
+            every { candidateRepository.findById(10L) } returns candidate1
+            every { candidateRepository.findById(20L) } returns candidate2
+            every { candidateRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result =
+                electionService.createRunoffElection(
+                    parentElectionId = 1L,
+                    tiedCandidateIds = listOf(10L, 20L),
+                )
+
+            // then
+            assertThat(result.isRunoff).isTrue()
+            assertThat(result.parentElectionId).isEqualTo(1L)
+            assertThat(result.teamId).isEqualTo(1L)
+            assertThat(result.electionType).isEqualTo(ElectionType.OWNER_ELECTION)
+            verify(exactly = 2) { candidateRepository.save(any()) }
+            verify {
+                eventPublisher.publishEvent(
+                    match<RunoffElectionCreatedEvent> {
+                        it.runoffElectionId == 50L &&
+                            it.parentElectionId == 1L &&
+                            it.teamId == 1L &&
+                            it.tiedCandidateCount == 2
+                    },
+                )
+            }
+        }
+
+        @Test
+        fun `최대 재선거 횟수를 초과하면 예외가 발생한다`() {
+            // given
+            val parentElection = createTestOwnerElection(1L, ElectionStatus.COMPLETED)
+
+            every { electionRepository.findById(1L) } returns parentElection
+            every { electionRepository.countByParentElectionId(1L) } returns
+                Election.MAX_RUNOFF_COUNT.toLong()
+
+            // when & then
+            assertThatThrownBy {
+                electionService.createRunoffElection(
+                    parentElectionId = 1L,
+                    tiedCandidateIds = listOf(10L, 20L),
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최대 재선거 횟수")
+        }
+
+        @Test
+        fun `존재하지 않는 선거에 대해 재선거를 생성하면 예외가 발생한다`() {
+            // given
+            every { electionRepository.findById(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                electionService.createRunoffElection(
+                    parentElectionId = 999L,
+                    tiedCandidateIds = listOf(10L, 20L),
+                )
+            }.isInstanceOf(ElectionNotFoundException::class.java)
+        }
+
+        @Test
+        fun `존재하지 않는 후보자는 재선거에서 제외된다`() {
+            // given
+            val parentElection = createTestOwnerElection(1L, ElectionStatus.COMPLETED)
+            val candidate1 = createTestCandidate(10L, 1L, 100L, "김철수")
+
+            every { electionRepository.findById(1L) } returns parentElection
+            every { electionRepository.countByParentElectionId(1L) } returns 0L
+            every { electionRepository.save(any()) } answers {
+                val election = firstArg<Election>()
+                setElectionId(election, 50L)
+                election
+            }
+            every { candidateRepository.findById(10L) } returns candidate1
+            every { candidateRepository.findById(20L) } returns null
+            every { candidateRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result =
+                electionService.createRunoffElection(
+                    parentElectionId = 1L,
+                    tiedCandidateIds = listOf(10L, 20L),
+                )
+
+            // then
+            assertThat(result.isRunoff).isTrue()
+            verify(exactly = 1) { candidateRepository.save(any()) }
+            verify {
+                eventPublisher.publishEvent(
+                    match<RunoffElectionCreatedEvent> {
+                        it.tiedCandidateCount == 1
+                    },
+                )
+            }
         }
     }
 

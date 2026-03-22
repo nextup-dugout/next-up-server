@@ -25,4 +25,10 @@ interface ElectionRepositoryPort {
      * Election을 삭제합니다.
      */
     fun delete(election: Election)
+
+    /**
+     * 특정 선거를 부모로 하는 재선거 횟수를 조회합니다.
+     * 재선거 체인 깊이를 확인하여 최대 횟수 제한에 사용합니다.
+     */
+    fun countByParentElectionId(parentElectionId: Long): Long
 }

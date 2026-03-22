@@ -108,6 +108,7 @@ nextup-scorer     ─┘
 | `quality-metrics` | 빌드/테스트/커버리지/정적분석 |
 | `security-audit` | OWASP Top 10 보안 체크리스트 |
 | `db-manager` | PostgreSQL/PostGIS 쿼리 |
+| `pre-pr-gate` | PR 생성 전 필수 품질 게이트 (ktlint→빌드→verify→커버리지, 전체 PASS 필수) |
 | `verify-implementation` | 모든 verify 스킬을 순차 실행하여 통합 검증 보고서 생성 |
 | `manage-skills` | 세션 변경사항 분석하여 검증 스킬 생성/업데이트 및 CLAUDE.md 관리 |
 | `verify-entity-leak` | Controller 반환 타입에 Entity 직접 노출 방지 검증 |

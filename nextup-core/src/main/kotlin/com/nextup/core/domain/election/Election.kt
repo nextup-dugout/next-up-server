@@ -50,6 +50,12 @@ class Election private constructor(
     /** 비상대책위원회 모드: 정규 선거 마감 기한 (긴급 선거 발동 후 14일) */
     @Column(name = "regular_election_deadline")
     val regularElectionDeadline: Instant? = null,
+    /** 재선거(결선투표)인 경우, 원본 선거 ID */
+    @Column(name = "parent_election_id")
+    val parentElectionId: Long? = null,
+    /** 결선투표 여부 */
+    @Column(name = "is_runoff", nullable = false)
+    val isRunoff: Boolean = false,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -146,6 +152,9 @@ class Election private constructor(
         /** 정규 선거 마감 기한 (긴급 선거 발동 후 일수) */
         const val REGULAR_ELECTION_DEADLINE_DAYS = 14L
 
+        /** 최대 재선거(결선투표) 횟수 */
+        const val MAX_RUNOFF_COUNT = 2
+
         /**
          * Election을 생성합니다.
          *
@@ -223,6 +232,48 @@ class Election private constructor(
                 status = ElectionStatus.IN_PROGRESS,
                 triggeredByMemberId = triggeredByMemberId,
                 regularElectionDeadline = regularElectionDeadline,
+            )
+        }
+
+        /**
+         * 재선거(결선투표)를 생성합니다.
+         *
+         * 동률이 발생한 원본 선거를 기반으로 결선투표를 생성합니다.
+         * 투표 기간은 원본 선거와 동일한 길이로 설정됩니다.
+         *
+         * @param parentElection 원본 선거
+         * @param currentRunoffCount 현재까지 진행된 재선거 횟수
+         * @return 생성된 재선거 (SCHEDULED 상태)
+         * @throws IllegalArgumentException 최대 재선거 횟수를 초과한 경우
+         */
+        fun createRunoff(
+            parentElection: Election,
+            currentRunoffCount: Long,
+        ): Election {
+            require(currentRunoffCount < MAX_RUNOFF_COUNT) {
+                "최대 재선거 횟수($MAX_RUNOFF_COUNT)를 초과했습니다. " +
+                    "현재 재선거 횟수: $currentRunoffCount"
+            }
+
+            val now = Instant.now()
+            val originalDuration =
+                java.time.Duration.between(parentElection.startAt, parentElection.endAt)
+            val runoffStartAt = now.plus(1, ChronoUnit.HOURS)
+            val runoffEndAt = runoffStartAt.plus(originalDuration)
+
+            val runoffNumber = currentRunoffCount + 1
+
+            return Election(
+                teamId = parentElection.teamId,
+                title = "${parentElection.title} (재선거 #$runoffNumber)",
+                description =
+                    "동률 발생으로 인한 재선거입니다. " +
+                        "원본 선거: ${parentElection.title} (ID: ${parentElection.id})",
+                electionType = parentElection.electionType,
+                startAt = runoffStartAt,
+                endAt = runoffEndAt,
+                parentElectionId = parentElection.id,
+                isRunoff = true,
             )
         }
     }
