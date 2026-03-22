@@ -124,6 +124,27 @@ class CareerFieldingStats(
     }
 
     /**
+     * L-1: 한 경기의 포지션별 수비 기록 목록을 한꺼번에 누적합니다.
+     *
+     * gamesPlayed는 1회만 증가시키고, 각 포지션별 기록의 필드를 합산합니다.
+     * 같은 선수가 여러 포지션을 소화한 경우 사용합니다.
+     */
+    fun addGameRecords(records: List<FieldingRecord>) {
+        require(records.isNotEmpty()) { "수비 기록 목록이 비어있습니다." }
+        gamesPlayed++
+        for (record in records) {
+            putOuts += record.putOuts
+            assists += record.assists
+            errors += record.errors
+            doublePlays += record.doublePlays
+            passedBalls += record.passedBalls
+            triplePlays += record.triplePlays
+            caughtStealing += record.caughtStealing
+            stolenBasesAllowed += record.stolenBasesAllowed
+        }
+    }
+
+    /**
      * 경기 수비 기록을 롤백합니다 (경기 취소 시 사용).
      * 모든 필드를 maxOf(0, ...) 로 보호하여 음수 방지합니다.
      */
@@ -137,6 +158,15 @@ class CareerFieldingStats(
         triplePlays = maxOf(0, triplePlays - record.triplePlays)
         caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
         stolenBasesAllowed = maxOf(0, stolenBasesAllowed - record.stolenBasesAllowed)
+    }
+
+    /**
+     * L-1: gamesPlayed만 1 증가시킵니다 (수비 기록 필드는 변경하지 않음).
+     *
+     * revertGameRecord가 레코드마다 gamesPlayed를 차감하는 문제를 보정할 때 사용합니다.
+     */
+    fun addGamePlayedOnly() {
+        gamesPlayed++
     }
 
     /**

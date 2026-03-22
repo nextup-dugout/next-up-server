@@ -266,10 +266,13 @@ class StatsEventListener(
         }
 
         // 수비 스탯 집계: SeasonFieldingStats + CareerFieldingStats
+        // L-1: 한 선수가 여러 포지션을 소화하면 FieldingRecord가 포지션별로 여러 개 존재.
+        // gamesPlayed는 선수당 1회만 증가시키고, 수비 기록은 모든 포지션별 기록을 합산.
         val fieldingRecords = fieldingRecordRepository.findAllByGameId(gameId)
-        for (fieldingRecord in fieldingRecords) {
-            val player = fieldingRecord.gamePlayer.player
-            val playerId = player.id
+        val fieldingRecordsByPlayer = fieldingRecords.groupBy { it.gamePlayer.player.id }
+
+        for ((playerId, playerFieldingRecords) in fieldingRecordsByPlayer) {
+            val player = playerFieldingRecords.first().gamePlayer.player
 
             retryOnOptimisticLock("onGameResultConfirmed-fielding(playerId=$playerId)") {
                 val existingSeasonFielding =
@@ -279,7 +282,7 @@ class StatsEventListener(
                 // SeasonFieldingStats 갱신
                 val seasonFieldingStats =
                     existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
-                seasonFieldingStats.addGameRecord(fieldingRecord)
+                seasonFieldingStats.addGameRecords(playerFieldingRecords)
                 seasonFieldingStatsRepository.save(seasonFieldingStats)
 
                 // CareerFieldingStats 갱신
@@ -290,14 +293,15 @@ class StatsEventListener(
                 if (isFirstFieldingSeason) {
                     careerFieldingStats.addSeason()
                 }
-                careerFieldingStats.addGameRecord(fieldingRecord)
+                careerFieldingStats.addGameRecords(playerFieldingRecords)
                 careerFieldingStatsRepository.save(careerFieldingStats)
 
                 logger.debug(
-                    "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
+                    "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={}, positionRecords={})",
                     playerId,
                     year,
                     isFirstFieldingSeason,
+                    playerFieldingRecords.size,
                 )
             }
         }
