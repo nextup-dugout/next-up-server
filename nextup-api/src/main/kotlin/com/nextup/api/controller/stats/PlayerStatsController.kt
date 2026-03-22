@@ -31,37 +31,79 @@ class PlayerStatsController(
     /**
      * 시즌 타격 통계 조회
      *
-     * GET /api/v1/players/{playerId}/stats/batting/season/{year}
+     * GET /api/v1/players/{playerId}/stats/batting/season/{year} — 전체 합산 (첫 번째 팀 기록)
+     * GET /api/v1/players/{playerId}/stats/batting/season/{year}?teamId={teamId} — 팀별 필터
      *
      * @param playerId 선수 ID
      * @param year 시즌 연도
+     * @param teamId 팀 ID (선택, 미지정 시 첫 번째 팀 기록 반환)
      * @return 시즌 타격 통계 응답
      */
     @GetMapping("/batting/season/{year}")
     fun getSeasonBattingStats(
         @PathVariable playerId: Long,
         @PathVariable year: Int,
+        @RequestParam(required = false) teamId: Long?,
     ): ApiResponse<SeasonBattingStatsResponse> {
-        val stats = playerStatsService.getSeasonBattingStats(playerId, year)
+        val stats = playerStatsService.getSeasonBattingStats(playerId, year, teamId)
         return ApiResponse.success(stats.toResponse())
+    }
+
+    /**
+     * 시즌 타격 통계 팀별 목록 조회
+     *
+     * GET /api/v1/players/{playerId}/stats/batting/season/{year}/teams — 팀별 분리 기록 전체
+     *
+     * @param playerId 선수 ID
+     * @param year 시즌 연도
+     * @return 팀별 시즌 타격 통계 목록
+     */
+    @GetMapping("/batting/season/{year}/teams")
+    fun getSeasonBattingStatsByTeam(
+        @PathVariable playerId: Long,
+        @PathVariable year: Int,
+    ): ApiResponse<List<SeasonBattingStatsResponse>> {
+        val statsList = playerStatsService.getSeasonBattingStatsByTeam(playerId, year)
+        return ApiResponse.success(statsList.toSeasonBattingResponse())
     }
 
     /**
      * 시즌 투수 통계 조회
      *
-     * GET /api/v1/players/{playerId}/stats/pitching/season/{year}
+     * GET /api/v1/players/{playerId}/stats/pitching/season/{year} — 전체 합산 (첫 번째 팀 기록)
+     * GET /api/v1/players/{playerId}/stats/pitching/season/{year}?teamId={teamId} — 팀별 필터
      *
      * @param playerId 선수 ID
      * @param year 시즌 연도
+     * @param teamId 팀 ID (선택, 미지정 시 첫 번째 팀 기록 반환)
      * @return 시즌 투수 통계 응답
      */
     @GetMapping("/pitching/season/{year}")
     fun getSeasonPitchingStats(
         @PathVariable playerId: Long,
         @PathVariable year: Int,
+        @RequestParam(required = false) teamId: Long?,
     ): ApiResponse<SeasonPitchingStatsResponse> {
-        val stats = playerStatsService.getSeasonPitchingStats(playerId, year)
+        val stats = playerStatsService.getSeasonPitchingStats(playerId, year, teamId)
         return ApiResponse.success(stats.toResponse())
+    }
+
+    /**
+     * 시즌 투수 통계 팀별 목록 조회
+     *
+     * GET /api/v1/players/{playerId}/stats/pitching/season/{year}/teams — 팀별 분리 기록 전체
+     *
+     * @param playerId 선수 ID
+     * @param year 시즌 연도
+     * @return 팀별 시즌 투수 통계 목록
+     */
+    @GetMapping("/pitching/season/{year}/teams")
+    fun getSeasonPitchingStatsByTeam(
+        @PathVariable playerId: Long,
+        @PathVariable year: Int,
+    ): ApiResponse<List<SeasonPitchingStatsResponse>> {
+        val statsList = playerStatsService.getSeasonPitchingStatsByTeam(playerId, year)
+        return ApiResponse.success(statsList.toSeasonPitchingResponse())
     }
 
     /**

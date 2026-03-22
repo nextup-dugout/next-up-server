@@ -124,6 +124,8 @@ class PlateAppearanceRecordServiceImpl(
                 gameId = gameId,
                 playerId = batter.player.id,
                 pitcherId = pitcher.player.id,
+                batterTeamId = batter.gameTeam.team.id,
+                pitcherTeamId = pitcher.gameTeam.team.id,
                 result = request.result,
             ),
         )

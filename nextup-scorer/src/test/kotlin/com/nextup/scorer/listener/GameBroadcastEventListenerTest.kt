@@ -155,6 +155,8 @@ class GameBroadcastEventListenerTest {
                     gameId = GAME_ID,
                     playerId = 100L,
                     pitcherId = 200L,
+                    batterTeamId = 10L,
+                    pitcherTeamId = 20L,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -177,6 +179,8 @@ class GameBroadcastEventListenerTest {
                     gameId = GAME_ID,
                     playerId = 100L,
                     pitcherId = 200L,
+                    batterTeamId = 10L,
+                    pitcherTeamId = 20L,
                     result = PlateAppearanceResult.SINGLE,
                 )
 
@@ -370,6 +374,8 @@ class GameBroadcastEventListenerTest {
                     gameId = GAME_ID,
                     playerId = 100L,
                     pitcherId = 200L,
+                    batterTeamId = 10L,
+                    pitcherTeamId = 20L,
                     result = PlateAppearanceResult.SINGLE,
                 )
 

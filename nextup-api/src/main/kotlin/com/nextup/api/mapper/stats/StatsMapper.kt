@@ -18,6 +18,7 @@ fun SeasonBattingStats.toResponse(): SeasonBattingStatsResponse =
         id = this.id,
         playerId = this.player.id,
         year = this.year,
+        teamId = this.teamId,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         // 출전 정보
@@ -63,6 +64,7 @@ fun SeasonPitchingStats.toResponse(): SeasonPitchingStatsResponse =
         id = this.id,
         playerId = this.player.id,
         year = this.year,
+        teamId = this.teamId,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         // 출전 정보

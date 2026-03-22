@@ -82,28 +82,30 @@ class StatsEventListener(
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
         val year = resolveYear(event.gameId)
 
-        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId)
 
         stats.applyLiveUpdate(event.result)
         seasonBattingStatsRepository.save(stats)
 
         logger.debug(
-            "실시간 타격 통계 갱신 완료 (playerId={}, year={}, result={})",
+            "실시간 타격 통계 갱신 완료 (playerId={}, year={}, teamId={}, result={})",
             event.playerId,
             year,
+            event.batterTeamId,
             event.result,
         )
 
         // 투수 통계 실시간 갱신
-        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year)
+        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId)
 
         pitchingStats.applyLiveUpdate(event.result)
         seasonPitchingStatsRepository.save(pitchingStats)
 
         logger.debug(
-            "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, result={})",
+            "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, teamId={}, result={})",
             event.pitcherId,
             year,
+            event.pitcherTeamId,
             event.result,
         )
     }
@@ -145,28 +147,30 @@ class StatsEventListener(
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
         val year = resolveYear(event.gameId)
 
-        val stats = findOrCreateSeasonBattingStats(event.playerId, year)
+        val stats = findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId)
 
         stats.revertLiveUpdate(event.result)
         seasonBattingStatsRepository.save(stats)
 
         logger.debug(
-            "실시간 타격 통계 역산 완료 (playerId={}, year={}, result={})",
+            "실시간 타격 통계 역산 완료 (playerId={}, year={}, teamId={}, result={})",
             event.playerId,
             year,
+            event.batterTeamId,
             event.result,
         )
 
         // 투수 통계 역산
-        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year)
+        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId)
 
         pitchingStats.revertLiveUpdate(event.result)
         seasonPitchingStatsRepository.save(pitchingStats)
 
         logger.debug(
-            "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, result={})",
+            "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, teamId={}, result={})",
             event.pitcherId,
             year,
+            event.pitcherTeamId,
             event.result,
         )
     }
@@ -210,9 +214,10 @@ class StatsEventListener(
         for (pitchingRecord in pitchingRecords) {
             val player = pitchingRecord.gamePlayer.player
             val playerId = player.id
+            val teamId = pitchingRecord.gamePlayer.gameTeam.team.id
 
             val existingSeasonPitching =
-                seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
             val isFirstPitchingSeason = existingSeasonPitching == null
 
             // SeasonPitchingStats 갱신
@@ -220,7 +225,7 @@ class StatsEventListener(
             // 경기 종료 시에만 확정되는 필드(이닝, 실점, 자책점, 결정 등)만 추가한다.
             // 새로 생성된 경우에는 실시간 갱신이 적용되지 않았으므로 전체 기록을 추가한다.
             val seasonPitchingStats =
-                existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year)
+                existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year, teamId = teamId)
             if (existingSeasonPitching != null) {
                 seasonPitchingStats.addGameRecordForEndOfGame(pitchingRecord)
             } else {
@@ -240,22 +245,24 @@ class StatsEventListener(
             careerPitchingStatsRepository.save(careerPitchingStats)
 
             logger.debug(
-                "투수 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={})",
+                "투수 통계 갱신 완료 (playerId={}, year={}, teamId={}, isFirstSeason={})",
                 playerId,
                 year,
+                teamId,
                 isFirstPitchingSeason,
             )
         }
 
         // 커리어 타격 스탯 집계: CareerBattingStats
         // SeasonBattingStats는 PlateAppearanceRecordedEvent로 실시간 갱신되므로
-        // 해당 시즌 통계 존재 여부로 첫 시즌인지 판단합니다.
+        // 해당 시즌+팀 통계 존재 여부로 첫 시즌인지 판단합니다.
         for (battingRecord in battingRecords) {
             val player = battingRecord.gamePlayer.player
             val playerId = player.id
+            val teamId = battingRecord.gamePlayer.gameTeam.team.id
 
             val isFirstBattingSeason =
-                seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) == null
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId) == null
 
             val careerBattingStats =
                 careerBattingStatsRepository.findByPlayerId(playerId)
@@ -268,8 +275,9 @@ class StatsEventListener(
             careerBattingStatsRepository.save(careerBattingStats)
 
             logger.debug(
-                "커리어 타격 통계 갱신 완료 (playerId={}, isFirstSeason={})",
+                "커리어 타격 통계 갱신 완료 (playerId={}, teamId={}, isFirstSeason={})",
                 playerId,
+                teamId,
                 isFirstBattingSeason,
             )
         }
@@ -319,7 +327,7 @@ class StatsEventListener(
     }
 
     /**
-     * 선수의 시즌 투수 통계를 조회하거나, 없으면 자동 생성합니다.
+     * 선수의 팀별 시즌 투수 통계를 조회하거나, 없으면 자동 생성합니다.
      *
      * 첫 시즌 투수의 실시간 통계가 누락되는 문제를 방지합니다.
      * DB unique constraint (player_id, year, team_id)에 의해 동시성 중복 생성이 방어됩니다.
@@ -327,43 +335,47 @@ class StatsEventListener(
     private fun findOrCreateSeasonPitchingStats(
         pitcherId: Long,
         year: Int,
+        teamId: Long,
     ): SeasonPitchingStats {
-        return seasonPitchingStatsRepository.findByPlayerIdAndYear(pitcherId, year)
+        return seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(pitcherId, year, teamId)
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(pitcherId)
                         ?: throw PlayerNotFoundException(pitcherId)
                 logger.info(
-                    "시즌 투수 통계 자동 생성 (pitcherId={}, year={})",
+                    "시즌 투수 통계 자동 생성 (pitcherId={}, year={}, teamId={})",
                     pitcherId,
                     year,
+                    teamId,
                 )
-                val newStats = SeasonPitchingStats.create(player = player, year = year)
+                val newStats = SeasonPitchingStats.create(player = player, year = year, teamId = teamId)
                 seasonPitchingStatsRepository.save(newStats)
             }
     }
 
     /**
-     * 선수의 시즌 타격 통계를 조회하거나, 없으면 자동 생성합니다.
+     * 선수의 팀별 시즌 타격 통계를 조회하거나, 없으면 자동 생성합니다.
      *
      * 첫 시즌 선수의 실시간 타격 통계가 누락되는 문제를 방지합니다.
-     * DB unique constraint (player_id, year)에 의해 동시성 중복 생성이 방어됩니다.
+     * DB unique constraint (player_id, year, team_id)에 의해 동시성 중복 생성이 방어됩니다.
      */
     private fun findOrCreateSeasonBattingStats(
         playerId: Long,
         year: Int,
+        teamId: Long,
     ): SeasonBattingStats {
-        return seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
+        return seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(playerId)
                         ?: throw PlayerNotFoundException(playerId)
                 logger.info(
-                    "시즌 타격 통계 자동 생성 (playerId={}, year={})",
+                    "시즌 타격 통계 자동 생성 (playerId={}, year={}, teamId={})",
                     playerId,
                     year,
+                    teamId,
                 )
-                val newStats = SeasonBattingStats.create(player = player, year = year)
+                val newStats = SeasonBattingStats.create(player = player, year = year, teamId = teamId)
                 seasonBattingStatsRepository.save(newStats)
             }
     }

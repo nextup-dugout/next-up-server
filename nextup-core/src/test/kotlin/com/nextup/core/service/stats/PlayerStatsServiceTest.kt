@@ -83,25 +83,40 @@ class PlayerStatsServiceTest {
         fun `should return season batting stats when exists`() {
             // given
             val stats = SeasonBattingStats.create(testPlayer, year)
-            every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns stats
+            every { seasonBattingStatsRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(stats)
 
             // when
             val result = playerStatsService.getSeasonBattingStats(playerId, year)
 
             // then
             assertThat(result).isEqualTo(stats)
-            verify { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) }
+            verify { seasonBattingStatsRepository.findAllByPlayerIdAndYear(playerId, year) }
         }
 
         @Test
         fun `should throw exception when season batting stats not found`() {
             // given
-            every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns null
+            every { seasonBattingStatsRepository.findAllByPlayerIdAndYear(playerId, year) } returns emptyList()
 
             // when & then
             assertThrows<IllegalArgumentException> {
                 playerStatsService.getSeasonBattingStats(playerId, year)
             }
+        }
+
+        @Test
+        fun `should return team-specific season batting stats when teamId provided`() {
+            // given
+            val teamId = 100L
+            val stats = SeasonBattingStats.create(testPlayer, year, teamId)
+            every { seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId) } returns stats
+
+            // when
+            val result = playerStatsService.getSeasonBattingStats(playerId, year, teamId)
+
+            // then
+            assertThat(result).isEqualTo(stats)
+            assertThat(result.teamId).isEqualTo(teamId)
         }
     }
 
@@ -112,25 +127,40 @@ class PlayerStatsServiceTest {
         fun `should return season pitching stats when exists`() {
             // given
             val stats = SeasonPitchingStats.create(testPlayer, year)
-            every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns stats
+            every { seasonPitchingStatsRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(stats)
 
             // when
             val result = playerStatsService.getSeasonPitchingStats(playerId, year)
 
             // then
             assertThat(result).isEqualTo(stats)
-            verify { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) }
+            verify { seasonPitchingStatsRepository.findAllByPlayerIdAndYear(playerId, year) }
         }
 
         @Test
         fun `should throw exception when season pitching stats not found`() {
             // given
-            every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns null
+            every { seasonPitchingStatsRepository.findAllByPlayerIdAndYear(playerId, year) } returns emptyList()
 
             // when & then
             assertThrows<IllegalArgumentException> {
                 playerStatsService.getSeasonPitchingStats(playerId, year)
             }
+        }
+
+        @Test
+        fun `should return team-specific season pitching stats when teamId provided`() {
+            // given
+            val teamId = 200L
+            val stats = SeasonPitchingStats.create(testPlayer, year, teamId)
+            every { seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId) } returns stats
+
+            // when
+            val result = playerStatsService.getSeasonPitchingStats(playerId, year, teamId)
+
+            // then
+            assertThat(result).isEqualTo(stats)
+            assertThat(result.teamId).isEqualTo(teamId)
         }
     }
 

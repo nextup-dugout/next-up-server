@@ -35,27 +35,61 @@ class PlayerStatsService(
 
     /**
      * 시즌 타격 통계를 조회합니다.
+     * teamId가 null이면 모든 팀 기록 중 첫 번째를 반환합니다 (하위 호환).
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
     fun getSeasonBattingStats(
         playerId: Long,
         year: Int,
+        teamId: Long? = null,
     ): SeasonBattingStats =
-        seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
-            ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 타격 통계가 존재하지 않습니다.")
+        if (teamId != null) {
+            seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
+                ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 팀 ID $teamId 타격 통계가 존재하지 않습니다.")
+        } else {
+            // 하위 호환: teamId 미지정 시 해당 시즌의 첫 번째 기록 반환
+            val allStats = seasonBattingStatsRepository.findAllByPlayerIdAndYear(playerId, year)
+            allStats.firstOrNull()
+                ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 타격 통계가 존재하지 않습니다.")
+        }
+
+    /**
+     * 시즌 타격 통계 목록을 조회합니다 (팀별 분리된 기록 전체).
+     */
+    fun getSeasonBattingStatsByTeam(
+        playerId: Long,
+        year: Int,
+    ): List<SeasonBattingStats> = seasonBattingStatsRepository.findAllByPlayerIdAndYear(playerId, year)
 
     /**
      * 시즌 투수 통계를 조회합니다.
+     * teamId가 null이면 모든 팀 기록 중 첫 번째를 반환합니다 (하위 호환).
      *
      * @throws IllegalArgumentException 통계가 존재하지 않을 때
      */
     fun getSeasonPitchingStats(
         playerId: Long,
         year: Int,
+        teamId: Long? = null,
     ): SeasonPitchingStats =
-        seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
-            ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 투수 통계가 존재하지 않습니다.")
+        if (teamId != null) {
+            seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
+                ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 팀 ID $teamId 투수 통계가 존재하지 않습니다.")
+        } else {
+            // 하위 호환: teamId 미지정 시 해당 시즌의 첫 번째 기록 반환
+            val allStats = seasonPitchingStatsRepository.findAllByPlayerIdAndYear(playerId, year)
+            allStats.firstOrNull()
+                ?: throw IllegalArgumentException("선수 ID $playerId 의 ${year}년도 투수 통계가 존재하지 않습니다.")
+        }
+
+    /**
+     * 시즌 투수 통계 목록을 조회합니다 (팀별 분리된 기록 전체).
+     */
+    fun getSeasonPitchingStatsByTeam(
+        playerId: Long,
+        year: Int,
+    ): List<SeasonPitchingStats> = seasonPitchingStatsRepository.findAllByPlayerIdAndYear(playerId, year)
 
     /**
      * 통산 타격 통계를 조회합니다.

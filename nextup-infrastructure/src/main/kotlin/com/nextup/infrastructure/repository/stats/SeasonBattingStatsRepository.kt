@@ -35,6 +35,21 @@ interface SeasonBattingStatsRepository :
     ): SeasonBattingStats?
 
     /**
+     * 선수 ID와 연도로 모든 팀별 시즌 타격 통계를 조회합니다 (이적 시 팀별 기록).
+     */
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.player.id = :playerId AND s.year = :year
+        ORDER BY s.teamId ASC NULLS FIRST
+    """,
+    )
+    override fun findAllByPlayerIdAndYear(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+    ): List<SeasonBattingStats>
+
+    /**
      * 선수 ID로 모든 시즌 타격 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonBattingStats s WHERE s.player.id = :playerId ORDER BY s.year DESC")
