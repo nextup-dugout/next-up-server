@@ -56,4 +56,24 @@ interface FieldingRecordRepository :
     override fun findAllByPlayerId(
         @Param("playerId") playerId: Long,
     ): List<FieldingRecord>
+
+    /**
+     * 선수의 특정 연도 수비 기록을 조회합니다.
+     * L-7: 경기 종료 시 시즌 통계 교차 검증에 사용됩니다.
+     */
+    @Query(
+        """
+        SELECT fr FROM FieldingRecord fr
+        JOIN fr.gamePlayer gp
+        JOIN gp.gameTeam gt
+        JOIN gt.game g
+        WHERE gp.player.id = :playerId
+        AND YEAR(g.scheduledAt) = :year
+        ORDER BY g.scheduledAt DESC
+    """,
+    )
+    override fun findAllByPlayerIdAndYear(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+    ): List<FieldingRecord>
 }

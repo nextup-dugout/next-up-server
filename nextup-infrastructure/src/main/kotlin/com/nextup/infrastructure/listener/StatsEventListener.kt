@@ -2,10 +2,10 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
-import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.stats.CareerBattingStats
 import com.nextup.core.domain.stats.CareerFieldingStats
 import com.nextup.core.domain.stats.CareerPitchingStats
@@ -105,23 +105,36 @@ class StatsEventListener(
     }
 
     /**
-     * L-6: 타석 결과 기록 시 수비 통계도 실시간 갱신합니다.
+     * L-6: 수비 기록 갱신 이벤트를 처리합니다.
      *
-     * 수비 관련 결과(실책, 야수선택 등)가 발생하면
-     * 해당 수비수의 시즌 수비 통계를 실시간으로 반영합니다.
+     * 경기 중 수비 기록(자살, 보살, 실책 등)이 발생하면
+     * 해당 수비수의 시즌 수비 통계를 실시간으로 갱신합니다.
+     * 시즌 통계가 없는 경우 자동으로 생성합니다.
+     * Optimistic Locking 충돌 시 최대 3회 재시도합니다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun onPlateAppearanceRecordedForFielding(event: PlateAppearanceRecordedEvent) {
-        if (event.result != PlateAppearanceResult.ERROR) return
-
+    fun onFieldingRecordUpdated(event: FieldingRecordUpdatedEvent) {
         val year = resolveYear(event.gameId)
-        logger.debug(
-            "수비 통계 실시간 갱신 대기 (gameId={}, year={}, result={})",
-            event.gameId,
-            year,
-            event.result,
-        )
+
+        retryOnOptimisticLock("onFieldingRecordUpdated") {
+            val stats = findOrCreateSeasonFieldingStats(event.playerId, year)
+
+            if (event.isRevert) {
+                stats.revertLiveFieldingUpdate(event.type)
+            } else {
+                stats.applyLiveFieldingUpdate(event.type)
+            }
+            seasonFieldingStatsRepository.save(stats)
+
+            logger.debug(
+                "실시간 수비 통계 {} 완료 (playerId={}, year={}, type={})",
+                if (event.isRevert) "역산" else "갱신",
+                event.playerId,
+                year,
+                event.type,
+            )
+        }
     }
 
     /**
@@ -302,6 +315,12 @@ class StatsEventListener(
             }
         }
 
+        // L-7: SeasonBattingStats vs BattingRecord 합산값 교차 검증
+        verifyBattingConsistency(battingRecords, year, gameId)
+
+        // L-7: SeasonFieldingStats vs FieldingRecord 합산값 교차 검증
+        verifyFieldingConsistency(fieldingRecords, year, gameId)
+
         logger.info(
             "경기 결과 확정 스탯 집계 완료 (gameId={}, battingRecords={}, pitchingRecords={}, fieldingRecords={})",
             gameId,
@@ -334,6 +353,119 @@ class StatsEventListener(
                 val newStats = SeasonBattingStats.create(player = player, year = year)
                 seasonBattingStatsRepository.save(newStats)
             }
+    }
+
+    /**
+     * 선수의 시즌 수비 통계를 조회하거나, 없으면 자동 생성합니다.
+     *
+     * L-6: 첫 시즌 선수의 실시간 수비 통계가 누락되는 문제를 방지합니다.
+     * DB unique constraint (player_id, year)에 의해 동시성 중복 생성이 방어됩니다.
+     */
+    private fun findOrCreateSeasonFieldingStats(
+        playerId: Long,
+        year: Int,
+    ): SeasonFieldingStats {
+        return seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+            ?: run {
+                val player =
+                    playerRepository.findByIdOrNull(playerId)
+                        ?: throw PlayerNotFoundException(playerId)
+                logger.info(
+                    "시즌 수비 통계 자동 생성 (playerId={}, year={})",
+                    playerId,
+                    year,
+                )
+                val newStats = SeasonFieldingStats.create(player = player, year = year)
+                seasonFieldingStatsRepository.save(newStats)
+            }
+    }
+
+    /**
+     * L-7: SeasonBattingStats와 BattingRecord 합산값의 교차 검증을 수행합니다.
+     *
+     * 해당 시즌 전체 BattingRecord 합산과 실시간 갱신된 SeasonBattingStats를 비교합니다.
+     * 불일치 발견 시 경고 로그를 출력합니다.
+     */
+    private fun verifyBattingConsistency(
+        battingRecords: List<com.nextup.core.domain.game.BattingRecord>,
+        year: Int,
+        gameId: Long,
+    ) {
+        val playerIds = battingRecords.map { it.gamePlayer.player.id }.distinct()
+
+        for (playerId in playerIds) {
+            val seasonStats =
+                seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) ?: continue
+
+            // 시즌 전체 BattingRecord를 합산하여 교차 검증
+            val allSeasonRecords =
+                battingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
+
+            val totalPlateAppearances = allSeasonRecords.sumOf { it.plateAppearances }
+            val totalHits = allSeasonRecords.sumOf { it.hits }
+            val totalAtBats = allSeasonRecords.sumOf { it.atBats }
+
+            val mismatches =
+                seasonStats.verifyConsistency(
+                    totalPlateAppearances = totalPlateAppearances,
+                    totalHits = totalHits,
+                    totalAtBats = totalAtBats,
+                )
+
+            if (mismatches.isNotEmpty()) {
+                logger.warn(
+                    "L-7 타격 통계 정합성 불일치 발견 (gameId={}, playerId={}, year={}): {}",
+                    gameId,
+                    playerId,
+                    year,
+                    mismatches.joinToString("; "),
+                )
+            }
+        }
+    }
+
+    /**
+     * L-7: SeasonFieldingStats와 FieldingRecord 합산값의 교차 검증을 수행합니다.
+     *
+     * 해당 시즌 전체 FieldingRecord 합산과 실시간 갱신된 SeasonFieldingStats를 비교합니다.
+     * 불일치 발견 시 경고 로그를 출력합니다.
+     */
+    private fun verifyFieldingConsistency(
+        fieldingRecords: List<com.nextup.core.domain.game.FieldingRecord>,
+        year: Int,
+        gameId: Long,
+    ) {
+        val playerIds = fieldingRecords.map { it.gamePlayer.player.id }.distinct()
+
+        for (playerId in playerIds) {
+            val seasonStats =
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year) ?: continue
+
+            // 시즌 전체 FieldingRecord를 합산하여 교차 검증
+            val allSeasonRecords =
+                fieldingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
+
+            val totalPutOuts = allSeasonRecords.sumOf { it.putOuts }
+            val totalAssists = allSeasonRecords.sumOf { it.assists }
+            val totalErrors = allSeasonRecords.sumOf { it.errors }
+
+            val mismatches =
+                seasonStats.verifyConsistency(
+                    totalPutOuts = totalPutOuts,
+                    totalAssists = totalAssists,
+                    totalErrors = totalErrors,
+                )
+
+            if (mismatches.isNotEmpty()) {
+                logger.warn(
+                    "L-7 수비 통계 정합성 불일치 발견 (gameId={}, playerId={}, year={}): {}",
+                    gameId,
+                    playerId,
+                    year,
+                    mismatches.joinToString("; "),
+                )
+            }
+        }
     }
 
     private fun resolveYear(gameId: Long): Int {

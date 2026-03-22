@@ -4,9 +4,12 @@ import com.nextup.common.exception.FieldingRecordNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundByGameAndPlayerException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.RecordAlreadyExistsException
+import com.nextup.core.domain.event.FieldingEventType
+import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.port.repository.FieldingRecordRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -14,12 +17,14 @@ import org.springframework.transaction.annotation.Transactional
  * 수비 기록 서비스
  *
  * 비즈니스 로직은 Entity에 위임하고, 서비스는 조율(orchestration)만 수행합니다.
+ * L-6: 수비 기록 변경 시 FieldingRecordUpdatedEvent를 발행하여 실시간 통계 갱신을 트리거합니다.
  */
 @Service
 @Transactional(readOnly = true)
 class FieldingRecordService(
     private val fieldingRecordRepository: FieldingRecordRepositoryPort,
     private val gamePlayerRepository: GamePlayerRepositoryPort,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     /**
      * gameId와 playerId로 수비 기록을 생성합니다.
@@ -67,6 +72,7 @@ class FieldingRecordService(
     fun recordPutOut(gamePlayerId: Long) {
         val record = getByGamePlayerId(gamePlayerId)
         record.recordPutOut()
+        publishFieldingEvent(record, FieldingEventType.PUT_OUT)
     }
 
     /**
@@ -76,6 +82,7 @@ class FieldingRecordService(
     fun recordAssist(gamePlayerId: Long) {
         val record = getByGamePlayerId(gamePlayerId)
         record.recordAssist()
+        publishFieldingEvent(record, FieldingEventType.ASSIST)
     }
 
     /**
@@ -85,6 +92,7 @@ class FieldingRecordService(
     fun recordError(gamePlayerId: Long) {
         val record = getByGamePlayerId(gamePlayerId)
         record.recordError()
+        publishFieldingEvent(record, FieldingEventType.ERROR)
     }
 
     /**
@@ -94,6 +102,7 @@ class FieldingRecordService(
     fun recordDoublePlay(gamePlayerId: Long) {
         val record = getByGamePlayerId(gamePlayerId)
         record.recordDoublePlay()
+        publishFieldingEvent(record, FieldingEventType.DOUBLE_PLAY)
     }
 
     /**
@@ -103,6 +112,26 @@ class FieldingRecordService(
     fun recordPassedBall(gamePlayerId: Long) {
         val record = getByGamePlayerId(gamePlayerId)
         record.recordPassedBall()
+        publishFieldingEvent(record, FieldingEventType.PASSED_BALL)
+    }
+
+    /**
+     * L-6: 수비 기록 변경 시 이벤트를 발행합니다.
+     */
+    private fun publishFieldingEvent(
+        record: FieldingRecord,
+        type: FieldingEventType,
+        isRevert: Boolean = false,
+    ) {
+        val gamePlayer = record.gamePlayer
+        eventPublisher.publishEvent(
+            FieldingRecordUpdatedEvent(
+                gameId = gamePlayer.gameTeam.game.id!!,
+                playerId = gamePlayer.player.id,
+                type = type,
+                isRevert = isRevert,
+            ),
+        )
     }
 
     /**

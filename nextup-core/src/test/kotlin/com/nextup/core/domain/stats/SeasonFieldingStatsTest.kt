@@ -1,6 +1,7 @@
 package com.nextup.core.domain.stats
 
 import com.nextup.common.exception.StatsValidationException
+import com.nextup.core.domain.event.FieldingEventType
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.player.Player
 import io.mockk.every
@@ -253,6 +254,171 @@ class SeasonFieldingStatsTest {
             setFieldDirectly(seasonFieldingStats, "passedBalls", -1)
             assertThatThrownBy { seasonFieldingStats.validate() }
                 .isInstanceOf(StatsValidationException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("L-6: 실시간 수비 통계 갱신")
+    inner class LiveFieldingUpdateTest {
+        @Test
+        fun `PUT_OUT 이벤트로 자살이 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            assertThat(seasonFieldingStats.putOuts).isEqualTo(1)
+        }
+
+        @Test
+        fun `ASSIST 이벤트로 보살이 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
+            assertThat(seasonFieldingStats.assists).isEqualTo(1)
+        }
+
+        @Test
+        fun `ERROR 이벤트로 실책이 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ERROR)
+            assertThat(seasonFieldingStats.errors).isEqualTo(1)
+        }
+
+        @Test
+        fun `DOUBLE_PLAY 이벤트로 병살 관여가 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.DOUBLE_PLAY)
+            assertThat(seasonFieldingStats.doublePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `TRIPLE_PLAY 이벤트로 삼중살 관여가 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.TRIPLE_PLAY)
+            assertThat(seasonFieldingStats.triplePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `PASSED_BALL 이벤트로 포일이 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PASSED_BALL)
+            assertThat(seasonFieldingStats.passedBalls).isEqualTo(1)
+        }
+
+        @Test
+        fun `CAUGHT_STEALING 이벤트로 도루 저지가 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.CAUGHT_STEALING)
+            assertThat(seasonFieldingStats.caughtStealing).isEqualTo(1)
+        }
+
+        @Test
+        fun `STOLEN_BASE_ALLOWED 이벤트로 도루 허용이 증가한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.STOLEN_BASE_ALLOWED)
+            assertThat(seasonFieldingStats.stolenBasesAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `여러 이벤트를 순차 적용하면 합산된다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ERROR)
+
+            assertThat(seasonFieldingStats.putOuts).isEqualTo(2)
+            assertThat(seasonFieldingStats.assists).isEqualTo(1)
+            assertThat(seasonFieldingStats.errors).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("L-6: 실시간 수비 통계 역산")
+    inner class RevertLiveFieldingUpdateTest {
+        @Test
+        fun `PUT_OUT 역산으로 자살이 감소한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            assertThat(seasonFieldingStats.putOuts).isEqualTo(0)
+        }
+
+        @Test
+        fun `ASSIST 역산으로 보살이 감소한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.ASSIST)
+            assertThat(seasonFieldingStats.assists).isEqualTo(0)
+        }
+
+        @Test
+        fun `ERROR 역산으로 실책이 감소한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ERROR)
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.ERROR)
+            assertThat(seasonFieldingStats.errors).isEqualTo(0)
+        }
+
+        @Test
+        fun `0에서 역산해도 음수가 되지 않는다`() {
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            assertThat(seasonFieldingStats.putOuts).isEqualTo(0)
+
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.ASSIST)
+            assertThat(seasonFieldingStats.assists).isEqualTo(0)
+
+            seasonFieldingStats.revertLiveFieldingUpdate(FieldingEventType.ERROR)
+            assertThat(seasonFieldingStats.errors).isEqualTo(0)
+        }
+
+        @Test
+        fun `모든 유형의 역산이 음수를 방지한다`() {
+            for (type in FieldingEventType.entries) {
+                seasonFieldingStats.revertLiveFieldingUpdate(type)
+            }
+            seasonFieldingStats.validate()
+        }
+    }
+
+    @Nested
+    @DisplayName("L-7: 정합성 교차 검증")
+    inner class VerifyConsistencyTest {
+        @Test
+        fun `통계가 일치하면 빈 목록을 반환한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.ERROR)
+
+            val mismatches =
+                seasonFieldingStats.verifyConsistency(
+                    totalPutOuts = 2,
+                    totalAssists = 1,
+                    totalErrors = 1,
+                )
+            assertThat(mismatches).isEmpty()
+        }
+
+        @Test
+        fun `자살이 불일치하면 해당 항목을 반환한다`() {
+            seasonFieldingStats.applyLiveFieldingUpdate(FieldingEventType.PUT_OUT)
+
+            val mismatches =
+                seasonFieldingStats.verifyConsistency(
+                    totalPutOuts = 2,
+                    totalAssists = 0,
+                    totalErrors = 0,
+                )
+            assertThat(mismatches).hasSize(1)
+            assertThat(mismatches[0]).contains("자살")
+        }
+
+        @Test
+        fun `여러 항목이 불일치하면 모든 항목을 반환한다`() {
+            val mismatches =
+                seasonFieldingStats.verifyConsistency(
+                    totalPutOuts = 1,
+                    totalAssists = 2,
+                    totalErrors = 3,
+                )
+            assertThat(mismatches).hasSize(3)
+        }
+
+        @Test
+        fun `모든 값이 0이면 빈 목록을 반환한다`() {
+            val mismatches =
+                seasonFieldingStats.verifyConsistency(
+                    totalPutOuts = 0,
+                    totalAssists = 0,
+                    totalErrors = 0,
+                )
+            assertThat(mismatches).isEmpty()
         }
     }
 

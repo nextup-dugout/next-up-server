@@ -2,6 +2,8 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.domain.event.FieldingEventType
+import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
@@ -665,6 +667,9 @@ class StatsEventListenerTest {
             every { mockFielderGamePlayer.player } returns testPlayer
             // 기본적으로 수비 기록 없음 (수비 테스트에서만 오버라이드)
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            // L-7: 교차 검증용 기본 목 설정 (개별 테스트에서 오버라이드 가능)
+            every { battingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
+            every { fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
         }
 
         @Test
@@ -1093,6 +1098,228 @@ class StatsEventListenerTest {
 
             // then: 2번 호출됨 (1번 실패 + 1번 성공)
             verify(exactly = 2) { seasonBattingStatsRepository.save(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("L-6: onFieldingRecordUpdated - 수비 기록 실시간 갱신")
+    inner class OnFieldingRecordUpdated {
+        @Test
+        fun `PUT_OUT 이벤트로 시즌 수비 통계가 갱신됨`() {
+            // given
+            val stats = SeasonFieldingStats.create(testPlayer, 2024)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            every { seasonFieldingStatsRepository.save(any()) } returns stats
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.PUT_OUT,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then
+            assertThat(stats.putOuts).isEqualTo(1)
+            verify { seasonFieldingStatsRepository.save(stats) }
+        }
+
+        @Test
+        fun `ERROR 이벤트로 실책 통계가 갱신됨`() {
+            // given
+            val stats = SeasonFieldingStats.create(testPlayer, 2024)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            every { seasonFieldingStatsRepository.save(any()) } returns stats
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.ERROR,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then
+            assertThat(stats.errors).isEqualTo(1)
+        }
+
+        @Test
+        fun `isRevert=true이면 역산 처리됨`() {
+            // given
+            val stats = SeasonFieldingStats.create(testPlayer, 2024)
+            stats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
+
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            every { seasonFieldingStatsRepository.save(any()) } returns stats
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.ASSIST,
+                    isRevert = true,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then
+            assertThat(stats.assists).isEqualTo(0)
+        }
+
+        @Test
+        fun `시즌 수비 통계가 없는 경우 자동 생성 후 갱신`() {
+            // given
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns null
+            every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
+            every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.PUT_OUT,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then: 자동 생성 1회 + 갱신 1회 = save 2회
+            verify(exactly = 2) { seasonFieldingStatsRepository.save(any()) }
+            verify { playerRepository.findByIdOrNull(testPlayer.id) }
+        }
+
+        @Test
+        fun `선수를 찾을 수 없는 경우 PlayerNotFoundException 발생`() {
+            // given
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(999L, 2024)
+            } returns null
+            every { playerRepository.findByIdOrNull(999L) } returns null
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = 999L,
+                    type = FieldingEventType.PUT_OUT,
+                )
+
+            // when & then
+            assertThrows<PlayerNotFoundException> {
+                listener.onFieldingRecordUpdated(event)
+            }
+        }
+
+        @Test
+        fun `DOUBLE_PLAY 이벤트로 병살 관여 통계가 갱신됨`() {
+            // given
+            val stats = SeasonFieldingStats.create(testPlayer, 2024)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            every { seasonFieldingStatsRepository.save(any()) } returns stats
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.DOUBLE_PLAY,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then
+            assertThat(stats.doublePlays).isEqualTo(1)
+        }
+
+        @Test
+        fun `PASSED_BALL 이벤트로 포일 통계가 갱신됨`() {
+            // given
+            val stats = SeasonFieldingStats.create(testPlayer, 2024)
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns stats
+            every { seasonFieldingStatsRepository.save(any()) } returns stats
+
+            val event =
+                FieldingRecordUpdatedEvent(
+                    gameId = 10L,
+                    playerId = testPlayer.id,
+                    type = FieldingEventType.PASSED_BALL,
+                )
+
+            // when
+            listener.onFieldingRecordUpdated(event)
+
+            // then
+            assertThat(stats.passedBalls).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("L-7: 경기 종료 시 통계 정합성 교차 검증")
+    inner class ConsistencyVerification {
+        @Test
+        fun `경기 종료 시 타격 통계 정합성 검증이 수행됨 - 일치`() {
+            // given
+            val gamePlayer = mockk<GamePlayer>()
+            every { gamePlayer.player } returns testPlayer
+
+            val battingRecord = mockk<BattingRecord>(relaxed = true)
+            every { battingRecord.gamePlayer } returns gamePlayer
+            every { battingRecord.plateAppearances } returns 4
+            every { battingRecord.hits } returns 2
+            every { battingRecord.atBats } returns 3
+
+            val seasonBattingStats = SeasonBattingStats.create(testPlayer, 2024)
+            // 실시간 갱신으로 4타석, 3타수, 2안타를 시뮬레이션
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.GROUND_OUT)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            every { battingRecordRepository.findAllByGameId(10L) } returns listOf(battingRecord)
+            every { pitchingRecordRepository.findAllByGameId(10L) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(10L) } returns emptyList()
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns seasonBattingStats
+            every {
+                battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns listOf(battingRecord)
+            every {
+                fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any())
+            } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns null
+            every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
+
+            val event =
+                GameResultConfirmedEvent(
+                    gameId = 10L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    homeScore = 5,
+                    awayScore = 3,
+                )
+
+            // when - 정합성 일치이면 경고 로그 없이 정상 완료
+            listener.onGameResultConfirmed(event)
+
+            // then: 정합성 검증 수행됨 (findAllByPlayerIdAndYear 호출)
+            verify { battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024) }
         }
     }
 }
