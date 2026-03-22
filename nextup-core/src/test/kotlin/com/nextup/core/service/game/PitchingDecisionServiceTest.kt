@@ -705,6 +705,34 @@ class PitchingDecisionServiceTest {
             // 야구 규칙: BS와 L은 동시 기록 가능하며, 최종 결정은 LOSS
             assertThat(loserRelief.decision).isEqualTo(PitchingDecision.LOSS)
         }
+
+        @Test
+        fun `블론세이브 투수가 패전 투수와 동일하면 BLOWN_SAVE에서 LOSS로 전환된다`() {
+            // given: 패배팀이 1회에 1점 리드 후, 구원 투수가 2회부터 등판하여 역전 허용
+            // 패팀: 1,0,0,0,0,0,0,0,0 = 1
+            // 승팀: 0,2,0,0,0,0,0,0,0 = 2 (2회에 역전)
+            val loserStarter =
+                makeRecord(isStarter = true, outs = 3, runsAllowed = 0) // 1회
+            val loserRelief =
+                makeRecord(isStarter = false, outs = 24, runsAllowed = 2) // 2~9회 (역전 허용)
+
+            val winnerTeam = makeGameTeam("0,2,0,0,0,0,0,0,0", 2)
+            val loserTeam = makeGameTeam("1,0,0,0,0,0,0,0,0", 1)
+
+            // when
+            service.assignDecisions(
+                winnerTeamRecords = emptyList(),
+                loserTeamRecords = listOf(loserStarter, loserRelief),
+                winnerGameTeam = winnerTeam,
+                loserGameTeam = loserTeam,
+                gameRules = gameRules,
+            )
+
+            // then: loserRelief는 먼저 BS를 받은 뒤, 결승점 허용으로 LOSS 부여
+            // BS 상태에서 assignLoss() 호출 → BLOWN_SAVE 분기 커버
+            assertThat(loserRelief.decision).isEqualTo(PitchingDecision.LOSS)
+            assertThat(loserStarter.decision).isEqualTo(PitchingDecision.NONE)
+        }
     }
 
     // ────────────────────────────────────────────────────────────
