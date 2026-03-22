@@ -2019,4 +2019,66 @@ class BattingRecordTest {
                 .hasMessageContaining("정정 값은 정수여야 합니다")
         }
     }
+
+    @Nested
+    @DisplayName("create - 팩토리 메서드")
+    inner class CreateTest {
+        @Test
+        fun `교체 선수용 BattingRecord를 생성하면 모든 기록이 0이다`() {
+            // when
+            val record = BattingRecord.create(gamePlayer = gamePlayer)
+
+            // then
+            assertThat(record.gamePlayer).isEqualTo(gamePlayer)
+            assertThat(record.plateAppearances).isEqualTo(0)
+            assertThat(record.atBats).isEqualTo(0)
+            assertThat(record.hits).isEqualTo(0)
+            assertThat(record.doubles).isEqualTo(0)
+            assertThat(record.triples).isEqualTo(0)
+            assertThat(record.homeRuns).isEqualTo(0)
+            assertThat(record.runs).isEqualTo(0)
+            assertThat(record.runsBattedIn).isEqualTo(0)
+            assertThat(record.walks).isEqualTo(0)
+            assertThat(record.intentionalWalks).isEqualTo(0)
+            assertThat(record.hitByPitch).isEqualTo(0)
+            assertThat(record.strikeouts).isEqualTo(0)
+            assertThat(record.sacrificeBunts).isEqualTo(0)
+            assertThat(record.sacrificeFlies).isEqualTo(0)
+            assertThat(record.stolenBases).isEqualTo(0)
+            assertThat(record.caughtStealing).isEqualTo(0)
+            assertThat(record.groundedIntoDoublePlays).isEqualTo(0)
+            assertThat(record.triplePlays).isEqualTo(0)
+        }
+
+        @Test
+        fun `생성 직후 계산 속성이 올바르다`() {
+            // when
+            val record = BattingRecord.create(gamePlayer = gamePlayer)
+
+            // then
+            assertThat(record.singles).isEqualTo(0)
+            assertThat(record.totalBases).isEqualTo(0)
+            assertThat(record.extraBaseHits).isEqualTo(0)
+            assertThat(record.sacrifices).isEqualTo(0)
+            assertThat(record.totalWalks).isEqualTo(0)
+            assertThat(record.battingAverage).isEqualByComparingTo(BigDecimal.ZERO)
+            assertThat(record.onBasePercentage).isEqualByComparingTo(BigDecimal.ZERO)
+            assertThat(record.sluggingPercentage).isEqualByComparingTo(BigDecimal.ZERO)
+            assertThat(record.ops).isEqualByComparingTo(BigDecimal.ZERO)
+        }
+
+        @Test
+        fun `생성 후 즉시 타석 결과를 기록할 수 있다`() {
+            // given
+            val record = BattingRecord.create(gamePlayer = gamePlayer)
+
+            // when
+            record.applyPlateAppearanceResult(PlateAppearanceResult.SINGLE, rbis = 1)
+
+            // then
+            assertThat(record.plateAppearances).isEqualTo(1)
+            assertThat(record.hits).isEqualTo(1)
+            assertThat(record.runsBattedIn).isEqualTo(1)
+        }
+    }
 }
