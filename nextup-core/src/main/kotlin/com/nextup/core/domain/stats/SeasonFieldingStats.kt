@@ -82,6 +82,18 @@ class SeasonFieldingStats(
     var passedBalls: Int = 0
         protected set
 
+    @Column(name = "triple_plays", nullable = false)
+    var triplePlays: Int = 0
+        protected set
+
+    @Column(name = "caught_stealing", nullable = false)
+    var caughtStealing: Int = 0
+        protected set
+
+    @Column(name = "stolen_bases_allowed", nullable = false)
+    var stolenBasesAllowed: Int = 0
+        protected set
+
     // Calculated properties
 
     /**
@@ -114,6 +126,9 @@ class SeasonFieldingStats(
         errors += record.errors
         doublePlays += record.doublePlays
         passedBalls += record.passedBalls
+        triplePlays += record.triplePlays
+        caughtStealing += record.caughtStealing
+        stolenBasesAllowed += record.stolenBasesAllowed
     }
 
     /**
@@ -126,6 +141,9 @@ class SeasonFieldingStats(
         errors -= record.errors
         doublePlays -= record.doublePlays
         passedBalls -= record.passedBalls
+        triplePlays -= record.triplePlays
+        caughtStealing -= record.caughtStealing
+        stolenBasesAllowed -= record.stolenBasesAllowed
         validate()
     }
 
@@ -145,6 +163,9 @@ class SeasonFieldingStats(
             "errors" -> errors = maxOf(0, errors + delta)
             "doublePlays" -> doublePlays = maxOf(0, doublePlays + delta)
             "passedBalls" -> passedBalls = maxOf(0, passedBalls + delta)
+            "triplePlays" -> triplePlays = maxOf(0, triplePlays + delta)
+            "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
+            "stolenBasesAllowed" -> stolenBasesAllowed = maxOf(0, stolenBasesAllowed + delta)
             else -> throw IllegalArgumentException("유효하지 않은 시즌 수비 통계 필드입니다: $fieldName")
         }
         validate()
@@ -171,6 +192,15 @@ class SeasonFieldingStats(
         }
         if (passedBalls < 0) {
             throw StatsValidationException("포일($passedBalls)은 음수일 수 없습니다.")
+        }
+        if (triplePlays < 0) {
+            throw StatsValidationException("삼중살 관여($triplePlays)는 음수일 수 없습니다.")
+        }
+        if (caughtStealing < 0) {
+            throw StatsValidationException("도루 저지($caughtStealing)는 음수일 수 없습니다.")
+        }
+        if (stolenBasesAllowed < 0) {
+            throw StatsValidationException("도루 허용($stolenBasesAllowed)은 음수일 수 없습니다.")
         }
     }
 

@@ -69,6 +69,9 @@ class SeasonFieldingStatsTest {
             every { record.errors } returns 1
             every { record.doublePlays } returns 1
             every { record.passedBalls } returns 0
+            every { record.triplePlays } returns 0
+            every { record.caughtStealing } returns 0
+            every { record.stolenBasesAllowed } returns 0
 
             // when
             seasonFieldingStats.addGameRecord(record)
@@ -91,6 +94,9 @@ class SeasonFieldingStatsTest {
             every { record1.errors } returns 0
             every { record1.doublePlays } returns 0
             every { record1.passedBalls } returns 0
+            every { record1.triplePlays } returns 0
+            every { record1.caughtStealing } returns 0
+            every { record1.stolenBasesAllowed } returns 0
 
             val record2 = mockk<FieldingRecord>()
             every { record2.putOuts } returns 3
@@ -98,6 +104,9 @@ class SeasonFieldingStatsTest {
             every { record2.errors } returns 1
             every { record2.doublePlays } returns 1
             every { record2.passedBalls } returns 1
+            every { record2.triplePlays } returns 0
+            every { record2.caughtStealing } returns 0
+            every { record2.stolenBasesAllowed } returns 0
 
             // when
             seasonFieldingStats.addGameRecord(record1)
@@ -128,6 +137,9 @@ class SeasonFieldingStatsTest {
             every { record.errors } returns 1
             every { record.doublePlays } returns 0
             every { record.passedBalls } returns 0
+            every { record.triplePlays } returns 0
+            every { record.caughtStealing } returns 0
+            every { record.stolenBasesAllowed } returns 0
 
             seasonFieldingStats.addGameRecord(record)
 
@@ -145,6 +157,9 @@ class SeasonFieldingStatsTest {
             every { record.errors } returns 0
             every { record.doublePlays } returns 0
             every { record.passedBalls } returns 0
+            every { record.triplePlays } returns 0
+            every { record.caughtStealing } returns 0
+            every { record.stolenBasesAllowed } returns 0
 
             seasonFieldingStats.addGameRecord(record)
 
@@ -162,6 +177,9 @@ class SeasonFieldingStatsTest {
             every { record.errors } returns 1
             every { record.doublePlays } returns 0
             every { record.passedBalls } returns 0
+            every { record.triplePlays } returns 0
+            every { record.caughtStealing } returns 0
+            every { record.stolenBasesAllowed } returns 0
 
             seasonFieldingStats.addGameRecord(record)
 
@@ -182,6 +200,9 @@ class SeasonFieldingStatsTest {
             every { record.errors } returns 0
             every { record.doublePlays } returns 0
             every { record.passedBalls } returns 0
+            every { record.triplePlays } returns 0
+            every { record.caughtStealing } returns 0
+            every { record.stolenBasesAllowed } returns 0
             seasonFieldingStats.addGameRecord(record)
 
             seasonFieldingStats.validate()

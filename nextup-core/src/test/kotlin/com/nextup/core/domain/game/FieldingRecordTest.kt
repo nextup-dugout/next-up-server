@@ -30,7 +30,10 @@ class FieldingRecordTest {
             assertThat(fieldingRecord.assists).isEqualTo(0)
             assertThat(fieldingRecord.errors).isEqualTo(0)
             assertThat(fieldingRecord.doublePlays).isEqualTo(0)
+            assertThat(fieldingRecord.triplePlays).isEqualTo(0)
             assertThat(fieldingRecord.passedBalls).isEqualTo(0)
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(0)
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(0)
         }
 
         @Test
@@ -440,6 +443,141 @@ class FieldingRecordTest {
                 fieldingRecord.correctField("putOuts", "-1")
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("정정 값은 0 이상이어야 합니다")
+        }
+
+        @Test
+        fun `triplePlays 필드를 정정할 수 있다`() {
+            fieldingRecord.recordTriplePlay()
+            val oldValue = fieldingRecord.correctField("triplePlays", "3")
+            assertThat(oldValue).isEqualTo("1")
+            assertThat(fieldingRecord.triplePlays).isEqualTo(3)
+        }
+
+        @Test
+        fun `caughtStealing 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("caughtStealing", "5")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(5)
+        }
+
+        @Test
+        fun `stolenBasesAllowed 필드를 정정할 수 있다`() {
+            val oldValue = fieldingRecord.correctField("stolenBasesAllowed", "7")
+            assertThat(oldValue).isEqualTo("0")
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(7)
+        }
+    }
+
+    @Nested
+    @DisplayName("도루 저지(CS) 기록 - 포수 전용")
+    inner class RecordCaughtStealingTest {
+        @Test
+        fun `도루 저지를 기록하면 caughtStealing이 1 증가한다`() {
+            // when
+            fieldingRecord.recordCaughtStealing()
+
+            // then
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(1)
+        }
+
+        @Test
+        fun `도루 저지를 여러 번 기록하면 누적된다`() {
+            // when
+            repeat(3) { fieldingRecord.recordCaughtStealing() }
+
+            // then
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("도루 허용(SB Allowed) 기록 - 포수 전용")
+    inner class RecordStolenBaseAllowedTest {
+        @Test
+        fun `도루 허용을 기록하면 stolenBasesAllowed가 1 증가한다`() {
+            // when
+            fieldingRecord.recordStolenBaseAllowed()
+
+            // then
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `도루 허용을 여러 번 기록하면 누적된다`() {
+            // when
+            repeat(4) { fieldingRecord.recordStolenBaseAllowed() }
+
+            // then
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(4)
+        }
+    }
+
+    @Nested
+    @DisplayName("도루 저지/허용 Undo")
+    inner class RevertCatcherFieldsTest {
+        @Test
+        fun `도루 저지를 취소하면 caughtStealing이 1 감소한다`() {
+            // given
+            fieldingRecord.recordCaughtStealing()
+
+            // when
+            fieldingRecord.revertCaughtStealing()
+
+            // then
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(0)
+        }
+
+        @Test
+        fun `도루 저지 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertCaughtStealing() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("취소할 도루 저지 기록이 없습니다")
+        }
+
+        @Test
+        fun `도루 허용을 취소하면 stolenBasesAllowed가 1 감소한다`() {
+            // given
+            fieldingRecord.recordStolenBaseAllowed()
+
+            // when
+            fieldingRecord.revertStolenBaseAllowed()
+
+            // then
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(0)
+        }
+
+        @Test
+        fun `도루 허용 기록이 없는 상태에서 취소하면 예외가 발생한다`() {
+            assertThatThrownBy { fieldingRecord.revertStolenBaseAllowed() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("취소할 도루 허용 기록이 없습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("도루 저지/허용 validate 검증")
+    inner class CatcherFieldsValidateTest {
+        @Test
+        fun `도루 저지와 도루 허용이 포함된 상태에서 validate는 예외를 발생시키지 않는다`() {
+            // given
+            fieldingRecord.recordCaughtStealing()
+            fieldingRecord.recordStolenBaseAllowed()
+
+            // when & then (no exception)
+            fieldingRecord.validate()
+            assertThat(fieldingRecord.caughtStealing).isEqualTo(1)
+            assertThat(fieldingRecord.stolenBasesAllowed).isEqualTo(1)
+        }
+
+        @Test
+        fun `도루 저지와 도루 허용은 수비 기회에 포함되지 않는다`() {
+            // given
+            fieldingRecord.recordCaughtStealing()
+            fieldingRecord.recordStolenBaseAllowed()
+            fieldingRecord.recordPutOut()
+
+            // then: totalChances = putOuts + assists + errors = 1
+            assertThat(fieldingRecord.totalChances).isEqualTo(1)
         }
     }
 }
