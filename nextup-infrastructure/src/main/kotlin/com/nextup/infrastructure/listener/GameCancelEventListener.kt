@@ -12,9 +12,11 @@ import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import com.nextup.infrastructure.config.CacheConfig
-import com.nextup.infrastructure.listener.StatsEventListener.Companion.retryOnOptimisticLock
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
+import org.springframework.orm.ObjectOptimisticLockingFailureException
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -57,13 +59,16 @@ class GameCancelEventListener(
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Retryable(
+        retryFor = [ObjectOptimisticLockingFailureException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 100),
+    )
     fun onGameCancelled(event: GameCancelledEvent) {
         val gameId = event.gameId
         logger.info("경기 취소 스탯 롤백 시작 (gameId={})", gameId)
 
-        retryOnOptimisticLock("onGameCancelled(gameId=$gameId)") {
-            rollbackStats(gameId)
-        }
+        rollbackStats(gameId)
 
         evictStandingsCache(gameId)
     }

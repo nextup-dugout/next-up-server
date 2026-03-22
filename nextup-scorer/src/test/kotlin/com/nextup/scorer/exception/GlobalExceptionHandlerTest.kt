@@ -1,6 +1,7 @@
 package com.nextup.scorer.exception
 
 import com.nextup.common.exception.BusinessException
+import com.nextup.common.exception.ConflictException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.NotFoundException
@@ -69,6 +70,20 @@ class GlobalExceptionHandlerTest {
             assertThat(response.body?.success).isFalse()
             assertThat(response.body?.error?.code).isEqualTo("INVALID_INPUT")
             assertThat(response.body?.error?.message).isEqualTo("Invalid input")
+        }
+
+        @Test
+        fun `should return 409 for ConflictException`() {
+            // given
+            val exception = object : ConflictException("GAME_ALREADY_LOCKED", "Game already locked") {}
+
+            // when
+            val response = handler.handleBusinessException(exception)
+
+            // then
+            assertThat(response.statusCode).isEqualTo(HttpStatus.CONFLICT)
+            assertThat(response.body?.success).isFalse()
+            assertThat(response.body?.error?.code).isEqualTo("GAME_ALREADY_LOCKED")
         }
 
         @Test
