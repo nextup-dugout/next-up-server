@@ -1,0 +1,42 @@
+[
+  {
+    "query": "TeamController에서 팀 생성 로직을 만들어야 하는데, LeagueRepositoryPort를 주입받아서 리그 존재 여부를 직접 확인하고 TeamRepositoryPort.save()로 저장하면 될 것 같아",
+    "should_trigger": true
+  },
+  {
+    "query": "CompetitionController에 대회 참가 팀 목록 조회를 추가해줘. CompetitionPlayerRepositoryPort를 주입받아서 findByCompetitionId로 가져오면 돼",
+    "should_trigger": true
+  },
+  {
+    "query": "ProfileController를 만들어야 하는데 사용자의 팀 멤버십을 보여줘야 해. TeamMemberRepositoryPort를 constructor에 추가해서 직접 조회하려고",
+    "should_trigger": true
+  },
+  {
+    "query": "BattingRecordController에 GamePlayerRepositoryPort를 주입해서 타석 기록을 조회하는 API를 만들어줘",
+    "should_trigger": true
+  },
+  {
+    "query": "새로운 StadiumController를 만드는데 StadiumRepositoryPort를 import해서 구장 목록을 직접 조회하려고 해",
+    "should_trigger": true
+  },
+  {
+    "query": "TeamDashboardServiceImpl에서 teamRepository.findById를 호출해서 팀 정보를 가져오는 로직을 추가해줘",
+    "should_trigger": false
+  },
+  {
+    "query": "BoxScoreServiceImpl의 N+1 문제를 해결하기 위해 BattingRecordRepositoryPort에 findAllByGamePlayerIds 배치 메서드를 추가해줘",
+    "should_trigger": false
+  },
+  {
+    "query": "Game 엔티티에 lockForScorer 메서드를 수정해서 비관적 락으로 바꾸고 싶어",
+    "should_trigger": false
+  },
+  {
+    "query": "StatsEventListener에서 retryOnOptimisticLock 로직을 @Retryable로 교체해줘",
+    "should_trigger": false
+  },
+  {
+    "query": "nextup-api의 SecurityConfig에서 CORS 설정을 수정해야 해. allowedOrigins에 새 도메인을 추가해줘",
+    "should_trigger": false
+  }
+]

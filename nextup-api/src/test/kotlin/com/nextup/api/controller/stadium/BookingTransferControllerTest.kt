@@ -18,6 +18,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
@@ -39,6 +41,9 @@ class BookingTransferControllerTest {
     @BeforeEach
     fun setUp() {
         bookingTransferService = mockk()
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(1L, null, emptyList())
+
         val controller = BookingTransferController(bookingTransferService)
         mockMvc =
             MockMvcBuilders

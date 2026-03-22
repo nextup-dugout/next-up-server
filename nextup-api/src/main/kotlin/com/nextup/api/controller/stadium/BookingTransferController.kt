@@ -35,9 +35,10 @@ class BookingTransferController(
      * POST /api/v1/booking-transfers
      */
     @PostMapping
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.sellerTeamId, authentication.principal)")
     fun requestTransfer(
-        @RequestBody @Valid request: CreateBookingTransferApiRequest,
         @AuthenticationPrincipal userId: Long,
+        @RequestBody @Valid request: CreateBookingTransferApiRequest,
     ): ResponseEntity<ApiResponse<BookingTransferResponse>> {
         val transfer =
             bookingTransferService.createTransfer(
@@ -62,10 +63,11 @@ class BookingTransferController(
      * PATCH /api/v1/booking-transfers/{transferId}/accept
      */
     @PatchMapping("/{transferId}/accept")
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.buyerTeamId, authentication.principal)")
     fun acceptTransfer(
         @PathVariable transferId: Long,
-        @RequestBody @Valid request: AcceptBookingTransferApiRequest,
         @AuthenticationPrincipal userId: Long,
+        @RequestBody @Valid request: AcceptBookingTransferApiRequest,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
             bookingTransferService.acceptTransfer(

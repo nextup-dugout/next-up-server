@@ -7,6 +7,7 @@ import com.nextup.core.service.appeal.AppealService
 import com.nextup.core.service.appeal.dto.CreateAppealRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -25,15 +26,17 @@ class AppealController(
      */
     @PostMapping("/games/{gameId}/appeals")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
     fun createAppeal(
         @PathVariable gameId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: CreateAppealApiRequest,
     ): ApiResponse<AppealResponse> {
         val appeal =
             appealService.createAppeal(
                 CreateAppealRequest(
                     gameId = gameId,
-                    appealerId = request.appealerId,
+                    appealerId = userId,
                     appealerName = request.appealerName,
                     type = request.type,
                     title = request.title,

@@ -562,9 +562,6 @@ class Game private constructor(
         /** 시간 제한 경고 임박 기준 (분) */
         const val DEFAULT_TIME_LIMIT_WARNING_THRESHOLD = 10
 
-        /** L-4: 더블헤더 이닝 축소 기본값 (기본 이닝 - 2) */
-        const val DEFAULT_DOUBLEHEADER_INNING_REDUCTION = 2
-
         /** L-11: SUSPENDED 경기 자동 타임아웃 기본값 (48시간) */
         const val DEFAULT_SUSPENDED_TIMEOUT_HOURS = 48L
 
@@ -594,10 +591,10 @@ class Game private constructor(
                 }
             }
 
-            // L-4: 더블헤더 시 이닝 자동 축소
+            // L-4: 더블헤더 시 GameRules의 doubleheaderInnings 적용
             val effectiveInnings =
                 if (isDoubleheader) {
-                    maxOf(3, competition.gameRules.defaultInnings - DEFAULT_DOUBLEHEADER_INNING_REDUCTION)
+                    competition.gameRules.doubleheaderInnings
                 } else {
                     competition.gameRules.defaultInnings
                 }
@@ -736,6 +733,29 @@ class Game private constructor(
             } else {
                 null
             }
+
+    /**
+     * L-5: 경기 이닝 수를 축소합니다.
+     *
+     * 축소 전에 모든 투수 기록이 새로운 이닝 수와 충돌하지 않는지 검증합니다.
+     *
+     * @param newTotalInnings 새로운 총 이닝 수
+     * @param pitchingRecords 해당 경기의 모든 투수 기록
+     * @throws IllegalArgumentException 이닝 수가 유효하지 않거나 기존 기록과 충돌하는 경우
+     */
+    fun reduceTotalInnings(
+        newTotalInnings: Int,
+        pitchingRecords: List<PitchingRecord>,
+    ) {
+        require(newTotalInnings in 3..12) {
+            "이닝 수는 3~12 사이여야 합니다."
+        }
+        require(newTotalInnings <= totalInnings) {
+            "이닝 축소만 가능합니다. 현재: ${totalInnings}이닝, 요청: ${newTotalInnings}이닝"
+        }
+        pitchingRecords.forEach { it.validateInningReduction(newTotalInnings) }
+        totalInnings = newTotalInnings
+    }
 
     /**
      * L-11: 중단된 경기가 타임아웃 되었는지 확인합니다.

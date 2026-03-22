@@ -1,6 +1,6 @@
 ---
 name: verify-custom-exception
-description: 표준 Java 예외 대신 BusinessException 계열 커스텀 예외 사용을 검증합니다. 예외 처리 로직 변경 후 사용.
+description: 예외를 throw하는 코드를 작성할 때 반드시 이 스킬을 참조하라. IllegalArgumentException, IllegalStateException 등 표준 Java 예외를 사용하면 안 되며, 반드시 BusinessException 계열 커스텀 예외를 사용해야 한다. throw 키워드를 작성하거나, catch 블록을 수정하거나, 새로운 예외 클래스를 만들 때 즉시 트리거하라.
 ---
 
 # CustomException 사용 검증

@@ -33,7 +33,7 @@ class GameRulesTest {
     inner class DefaultInningsValidation {
         @Test
         fun `3이닝도 유효하다`() {
-            val rules = GameRules(defaultInnings = 3)
+            val rules = GameRules(defaultInnings = 3, doubleheaderInnings = 3)
 
             assertThat(rules.defaultInnings).isEqualTo(3)
         }
@@ -57,6 +57,34 @@ class GameRulesTest {
             assertThatThrownBy { GameRules(defaultInnings = 2) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("기본 이닝은 3~12 사이여야 합니다")
+        }
+
+        @Test
+        fun `더블헤더 이닝 기본값은 7이다`() {
+            val rules = GameRules()
+            assertThat(rules.doubleheaderInnings).isEqualTo(7)
+        }
+
+        @Test
+        fun `더블헤더 이닝을 커스텀 설정할 수 있다`() {
+            val rules = GameRules(doubleheaderInnings = 5)
+            assertThat(rules.doubleheaderInnings).isEqualTo(5)
+        }
+
+        @Test
+        fun `더블헤더 이닝이 기본 이닝보다 크면 예외가 발생한다`() {
+            assertThatThrownBy {
+                GameRules(defaultInnings = 7, doubleheaderInnings = 9)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("더블헤더 이닝은 3 이상 기본 이닝")
+        }
+
+        @Test
+        fun `더블헤더 이닝이 3 미만이면 예외가 발생한다`() {
+            assertThatThrownBy {
+                GameRules(doubleheaderInnings = 2)
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("더블헤더 이닝은 3 이상")
         }
 
         @Test

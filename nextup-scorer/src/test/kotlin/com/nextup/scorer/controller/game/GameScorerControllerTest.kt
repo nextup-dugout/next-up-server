@@ -43,6 +43,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -86,7 +89,14 @@ class GameScorerControllerTest {
                 gameStateQueryService,
                 gameTimelineService,
             )
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(100L, null, emptyList())
+
+        mockMvc =
+            MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+                .build()
         objectMapper = ObjectMapper().registerModule(JavaTimeModule())
     }
 

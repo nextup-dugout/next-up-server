@@ -1,6 +1,6 @@
 ---
 name: verify-api-response
-description: 모든 Controller가 ApiResponse로 감싸서 반환하는지 검증합니다. Controller 추가/수정 후 사용.
+description: Controller 엔드포인트의 반환 타입을 작성할 때 반드시 이 스킬을 참조하라. 모든 Controller 메서드는 ApiResponse<T>로 감싸서 반환해야 한다. ResponseEntity나 raw 타입을 반환하려 할 때 즉시 트리거하라. fun 메서드의 반환 타입을 정의하는 순간 항상 확인.
 ---
 
 # ApiResponse 사용 검증

@@ -1,6 +1,6 @@
 ---
 name: verify-entity-leak
-description: Controller 반환 타입에 Entity 직접 노출을 검증합니다. Entity/DTO 변경 후 사용.
+description: Controller의 반환 타입을 작성하거나 수정할 때 반드시 이 스킬을 참조하라. Entity를 API 응답으로 직접 반환하는 것은 Zero Entity Leak 위반이며 즉시 REJECT 사유다. Controller에서 fun 메서드의 반환 타입을 정의하거나, Response DTO를 만들거나, Entity를 import할 때 즉시 트리거하라. 반드시 DTO/Response로 변환하여 반환해야 한다.
 ---
 
 # Zero Entity Leak 검증

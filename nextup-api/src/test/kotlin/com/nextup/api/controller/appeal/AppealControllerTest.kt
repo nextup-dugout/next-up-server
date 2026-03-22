@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -38,6 +40,9 @@ class AppealControllerTest {
     fun setUp() {
         appealService = mockk()
         objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
+
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(1L, null, emptyList())
 
         val controller = AppealController(appealService)
         mockMvc =

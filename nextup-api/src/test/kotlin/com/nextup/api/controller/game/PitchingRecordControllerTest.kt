@@ -89,7 +89,7 @@ class PitchingRecordControllerTest {
                     every { strikeoutToWalkRatio } returns java.math.BigDecimal("3.00")
                     every { strikePercentage } returns java.math.BigDecimal("0.647")
                     every { unearnedRuns } returns 1
-                    every { isQualifiedForWin } returns true
+                    every { isQualifiedForWin() } returns true
                 }
 
             every { pitchingRecordService.getAllByGameId(gameId) } returns listOf(record)
@@ -245,6 +245,6 @@ class PitchingRecordControllerTest {
             every { strikeoutToWalkRatio } returns java.math.BigDecimal("0.00")
             every { strikePercentage } returns null
             every { unearnedRuns } returns 0
-            every { isQualifiedForWin } returns false
+            every { isQualifiedForWin() } returns false
         }
 }

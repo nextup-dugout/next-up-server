@@ -34,6 +34,8 @@ argument-hint: "[선택사항: 특정 verify 스킬 이름]"
 | 3 | `verify-api-response` | Controller의 ApiResponse 래핑 사용 검증 |
 | 4 | `verify-custom-exception` | BusinessException 계열 커스텀 예외 사용 검증 |
 | 5 | `verify-url-prefix` | 모듈별 URL 프리픽스 통일 검증 |
+| 6 | `verify-authorization` | mutating 엔드포인트 @PreAuthorize/@AuthenticationPrincipal 적용 검증 |
+| 7 | `verify-repository-injection` | Controller에서 Repository/RepositoryPort 직접 주입 금지 검증 |
 
 ## 워크플로우
 

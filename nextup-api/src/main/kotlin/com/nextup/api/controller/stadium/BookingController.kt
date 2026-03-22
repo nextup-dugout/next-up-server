@@ -5,6 +5,8 @@ import com.nextup.api.dto.stadium.BookingResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.service.stadium.StadiumService
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -42,8 +44,10 @@ class BookingController(
      * 예약을 취소합니다.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     fun cancelBooking(
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingResponse> {
         val booking = stadiumService.cancelBooking(id)
         return ApiResponse.success(BookingResponse.from(booking))
@@ -53,8 +57,10 @@ class BookingController(
      * 예약을 완료 처리합니다.
      */
     @PutMapping("/{id}/complete")
+    @PreAuthorize("isAuthenticated()")
     fun completeBooking(
         @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingResponse> {
         val booking = stadiumService.completeBooking(id)
         return ApiResponse.success(BookingResponse.from(booking))
