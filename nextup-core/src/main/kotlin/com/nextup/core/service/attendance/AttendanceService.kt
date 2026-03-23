@@ -47,6 +47,26 @@ interface AttendanceService {
     ): AttendanceVote
 
     /**
+     * 출석 투표에 응답합니다 (userId로부터 playerId를 도출).
+     *
+     * @param pollId 투표 ID
+     * @param teamId 팀 ID
+     * @param userId 사용자 ID (서버에서 playerId를 도출)
+     * @param voteType 투표 유형
+     * @param absenceReason 불참 사유 (불참/미정 시 선택 가능)
+     * @param reasonDetail 상세 사유 (OTHER 선택 시 입력 가능)
+     * @return 생성된 AttendanceVote
+     */
+    fun submitVoteByUserId(
+        pollId: Long,
+        teamId: Long,
+        userId: Long,
+        voteType: VoteType,
+        absenceReason: AbsenceReason? = null,
+        reasonDetail: String? = null,
+    ): AttendanceVote
+
+    /**
      * 출석 투표를 조회합니다.
      *
      * @param pollId 투표 ID

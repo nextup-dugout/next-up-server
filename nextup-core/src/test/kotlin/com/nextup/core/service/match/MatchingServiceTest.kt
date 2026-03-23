@@ -15,11 +15,17 @@ import com.nextup.core.domain.match.MatchRequestStatus
 import com.nextup.core.domain.match.MatchResponse
 import com.nextup.core.domain.match.MatchResponseStatus
 import com.nextup.core.domain.match.SkillLevel
+import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
+import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberRole
+import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto
@@ -37,6 +43,7 @@ class MatchingServiceTest {
     private lateinit var matchRequestRepository: MatchRequestRepositoryPort
     private lateinit var matchResponseRepository: MatchResponseRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
     private lateinit var competitionRepository: CompetitionRepositoryPort
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var matchingService: MatchingService
@@ -45,12 +52,14 @@ class MatchingServiceTest {
     private lateinit var league: League
     private lateinit var teamA: Team
     private lateinit var teamB: Team
+    private lateinit var ownerMember: TeamMember
 
     @BeforeEach
     fun setUp() {
         matchRequestRepository = mockk()
         matchResponseRepository = mockk()
         teamRepository = mockk()
+        teamMemberRepository = mockk()
         competitionRepository = mockk()
         gameRepository = mockk()
         matchingService =
@@ -58,6 +67,7 @@ class MatchingServiceTest {
                 matchRequestRepository = matchRequestRepository,
                 matchResponseRepository = matchResponseRepository,
                 teamRepository = teamRepository,
+                teamMemberRepository = teamMemberRepository,
                 competitionRepository = competitionRepository,
                 gameRepository = gameRepository,
             )
@@ -87,6 +97,20 @@ class MatchingServiceTest {
                 foundedYear = 2021,
                 id = 2L,
             )
+
+        // OWNER 멤버 기본 설정 (userId=100L)
+        val user = mockk<User>(relaxed = true)
+        every { user.id } returns 100L
+        val player = Player(name = "테스트선수", primaryPosition = Position.STARTING_PITCHER)
+        ownerMember =
+            TeamMember.create(
+                team = teamA,
+                user = user,
+                player = player,
+                uniformNumber = 1,
+                role = TeamMemberRole.OWNER,
+            )
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 100L) } returns ownerMember
     }
 
     // ========== createRequest 테스트 ==========
@@ -366,7 +390,7 @@ class MatchingServiceTest {
         every { gameRepository.save(any()) } returns game
 
         // when
-        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
 
         // then
         assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
@@ -422,7 +446,7 @@ class MatchingServiceTest {
         every { gameRepository.save(any()) } returns savedGame
 
         // when
-        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
 
         // then
         assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
@@ -474,7 +498,7 @@ class MatchingServiceTest {
         every { gameRepository.save(any()) } returns savedGame
 
         // when
-        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
 
         // then
         assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
@@ -524,7 +548,7 @@ class MatchingServiceTest {
         }
 
         // when
-        matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+        matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
 
         // then
         assertThat(capturedGames).hasSize(1)
@@ -577,7 +601,7 @@ class MatchingServiceTest {
         }
 
         // when
-        matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+        matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
 
         // then
         assertThat(capturedGames).hasSize(1)
@@ -593,7 +617,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<MatchRequestNotFoundException> {
-            matchingService.acceptResponse(requestId = 999L, responseId = 1L)
+            matchingService.acceptResponse(requestId = 999L, responseId = 1L, userId = 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(999L) }
@@ -617,7 +641,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<MatchResponseNotFoundException> {
-            matchingService.acceptResponse(requestId = 1L, responseId = 999L)
+            matchingService.acceptResponse(requestId = 1L, responseId = 999L, userId = 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(1L) }
@@ -650,7 +674,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<InvalidStateException> {
-            matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+            matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(1L) }
@@ -684,7 +708,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<InvalidStateException> {
-            matchingService.acceptResponse(requestId = 1L, responseId = 2L)
+            matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(1L) }
@@ -709,7 +733,7 @@ class MatchingServiceTest {
         every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
 
         // when
-        val result = matchingService.cancelRequest(1L)
+        val result = matchingService.cancelRequest(1L, 100L)
 
         // then
         assertThat(result.status).isEqualTo(MatchRequestStatus.CANCELLED)
@@ -724,7 +748,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<MatchRequestNotFoundException> {
-            matchingService.cancelRequest(999L)
+            matchingService.cancelRequest(999L, 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(999L) }
@@ -748,7 +772,7 @@ class MatchingServiceTest {
 
         // when & then
         assertThrows<InvalidStateException> {
-            matchingService.cancelRequest(1L)
+            matchingService.cancelRequest(1L, 100L)
         }
 
         verify { matchRequestRepository.findByIdOrNull(1L) }

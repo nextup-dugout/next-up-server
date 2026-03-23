@@ -17,6 +17,7 @@ import com.nextup.core.domain.team.Team
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -37,6 +38,7 @@ class AttendanceServiceImplTest {
     private lateinit var attendancePollRepository: AttendancePollRepositoryPort
     private lateinit var attendanceVoteRepository: AttendanceVoteRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
+    private lateinit var teamMemberRepository: TeamMemberRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var attendanceService: AttendanceServiceImpl
@@ -50,6 +52,7 @@ class AttendanceServiceImplTest {
         attendancePollRepository = mockk()
         attendanceVoteRepository = mockk()
         teamRepository = mockk()
+        teamMemberRepository = mockk()
         playerRepository = mockk()
         eventPublisher = mockk(relaxed = true)
         attendanceService =
@@ -57,6 +60,7 @@ class AttendanceServiceImplTest {
                 attendancePollRepository,
                 attendanceVoteRepository,
                 teamRepository,
+                teamMemberRepository,
                 playerRepository,
                 eventPublisher,
             )
