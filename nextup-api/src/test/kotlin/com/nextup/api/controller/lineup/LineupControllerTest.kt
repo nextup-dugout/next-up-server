@@ -322,11 +322,14 @@ class LineupControllerTest {
             } returns exchangedSubmission
             every { lineupService.getLineupEntries(2L) } returns emptyList()
 
+            val request = mapOf("teamId" to 1L)
+
             // when & then
             mockMvc
                 .perform(
                     post("/api/v1/lineups/games/1/exchange/approve")
-                        .param("teamId", "1"),
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("EXCHANGED"))
@@ -340,11 +343,14 @@ class LineupControllerTest {
                 lineupService.approveLineupExchange(gameId = 99L, approvingTeamId = 1L)
             } throws IllegalArgumentException("경기 ID 99 에서 팀 ID 1 의 라인업을 찾을 수 없습니다.")
 
+            val request = mapOf("teamId" to 1L)
+
             // when & then
             mockMvc
                 .perform(
                     post("/api/v1/lineups/games/99/exchange/approve")
-                        .param("teamId", "1"),
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.success").value(false))
         }
@@ -356,11 +362,14 @@ class LineupControllerTest {
                 lineupService.approveLineupExchange(gameId = 1L, approvingTeamId = 1L)
             } throws com.nextup.common.exception.LineupExchangeNotAuthorizedException(2L)
 
+            val request = mapOf("teamId" to 1L)
+
             // when & then
             mockMvc
                 .perform(
                     post("/api/v1/lineups/games/1/exchange/approve")
-                        .param("teamId", "1"),
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("LINEUP_EXCHANGE_NOT_AUTHORIZED"))

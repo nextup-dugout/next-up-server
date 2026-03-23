@@ -1,6 +1,7 @@
 package com.nextup.api.controller.lineup
 
 import com.nextup.api.dto.lineup.AddLineupEntryRequest
+import com.nextup.api.dto.lineup.ApproveLineupExchangeRequest
 import com.nextup.api.dto.lineup.CreateLineupRequest
 import com.nextup.api.dto.lineup.LineupDetailResponse
 import com.nextup.api.dto.lineup.LineupEntryResponse
@@ -40,6 +41,7 @@ class LineupController(
     /**
      * 라인업 제출을 생성합니다.
      */
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.teamId, authentication.principal)")
     @PostMapping
     fun createLineup(
         @Valid @RequestBody request: CreateLineupRequest,
@@ -111,6 +113,7 @@ class LineupController(
     /**
      * 라인업 엔트리를 추가합니다.
      */
+    @PreAuthorize("@lineupSecurity.canSubmit(#submissionId, authentication.principal)")
     @PostMapping("/{submissionId}/entries")
     fun addLineupEntry(
         @PathVariable submissionId: Long,
@@ -134,6 +137,7 @@ class LineupController(
     /**
      * 라인업 엔트리를 일괄 설정합니다.
      */
+    @PreAuthorize("@lineupSecurity.canSubmit(#submissionId, authentication.principal)")
     @PutMapping("/{submissionId}/entries")
     fun setLineupEntries(
         @PathVariable submissionId: Long,
@@ -180,15 +184,17 @@ class LineupController(
      * 양 팀 모두 라인업을 제출한 후(EXCHANGE_PENDING 상태) 각 팀 감독이 상대팀 라인업을 승인합니다.
      * 양 팀 감독 모두 승인해야 EXCHANGED 상태가 되어 상호 조회가 가능합니다.
      */
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.teamId, authentication.principal)")
     @PostMapping("/games/{gameId}/exchange/approve")
     fun approveLineupExchange(
         @PathVariable gameId: Long,
-        @RequestParam teamId: Long,
+        @Valid @RequestBody request: ApproveLineupExchangeRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<LineupSubmissionResponse>> {
         val opponentSubmission =
             lineupService.approveLineupExchange(
                 gameId = gameId,
-                approvingTeamId = teamId,
+                approvingTeamId = request.teamId,
             )
         val entries = lineupService.getLineupEntries(opponentSubmission.id)
 
@@ -201,6 +207,7 @@ class LineupController(
      * 거부된 상대팀은 라인업을 수정하여 재제출해야 합니다.
      * 거부 시 내 라인업도 SUBMITTED 상태로 복원됩니다.
      */
+    @PreAuthorize("@teamSecurity.isOwnerOrManager(#request.teamId, authentication.principal)")
     @PostMapping("/games/{gameId}/exchange/reject")
     fun rejectLineupExchange(
         @PathVariable gameId: Long,
