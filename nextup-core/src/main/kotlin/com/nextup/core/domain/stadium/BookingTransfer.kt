@@ -12,8 +12,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
 import jakarta.persistence.Version
-import java.math.BigDecimal
-import java.time.Instant
 
 /**
  * 구장 예약 양도 엔티티
