@@ -337,6 +337,25 @@ class SeasonFieldingStats(
     }
 
     /**
+     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        putOuts = 0
+        assists = 0
+        errors = 0
+        doublePlays = 0
+        passedBalls = 0
+        triplePlays = 0
+        caughtStealing = 0
+        stolenBasesAllowed = 0
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {

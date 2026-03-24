@@ -201,6 +201,24 @@ class CareerFieldingStats(
     }
 
     /**
+     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 통산 통계를 처음부터 다시 집계할 때 사용합니다.
+     */
+    fun reset() {
+        seasonsPlayed = 0
+        gamesPlayed = 0
+        putOuts = 0
+        assists = 0
+        errors = 0
+        doublePlays = 0
+        passedBalls = 0
+        triplePlays = 0
+        caughtStealing = 0
+        stolenBasesAllowed = 0
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {
