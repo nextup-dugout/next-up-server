@@ -30,6 +30,7 @@ data class CurrentGameStateResponse(
     val scheduledAt: LocalDateTime,
     val startedAt: LocalDateTime?,
     val endedAt: LocalDateTime?,
+    val timeLimitReached: Boolean = false,
 )
 
 /**
@@ -148,6 +149,7 @@ fun Game.toCurrentGameStateResponse(gameTeams: List<GameTeam>): CurrentGameState
         scheduledAt = this.scheduledAt,
         startedAt = this.startedAt,
         endedAt = this.endedAt,
+        timeLimitReached = this.timeLimitReached,
     )
 }
 

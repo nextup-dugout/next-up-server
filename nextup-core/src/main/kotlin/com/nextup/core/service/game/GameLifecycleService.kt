@@ -84,4 +84,20 @@ interface GameLifecycleService {
         gameId: Long,
         scorerId: Long,
     ): Game
+
+    /**
+     * 시간 제한 도달 플래그를 활성화합니다.
+     *
+     * 야구 규칙에 따라 시간 제한 도달 시 즉시 종료가 아니라
+     * "다음 이닝에 진입하지 않는" 방식으로 동작합니다.
+     * 실제 경기 종료는 이닝 전환(advanceHalfInning) 시점에서 자동 발생합니다.
+     *
+     * @param gameId 경기 ID
+     * @param scorerId 기록원 ID
+     * @return 플래그가 설정된 Game
+     */
+    fun activateTimeLimit(
+        gameId: Long,
+        scorerId: Long,
+    ): Game
 }
