@@ -523,6 +523,37 @@ class SeasonPitchingStats(
     }
 
     /**
+     * 모든 통계 필드를 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * Int 필드는 0으로, nullable 필드(pitchesThrown, strikesThrown)는 null로 초기화합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        gamesStarted = 0
+        inningsPitchedOuts = 0
+        wins = 0
+        losses = 0
+        saves = 0
+        holds = 0
+        blownSaves = 0
+        earnedRuns = 0
+        runsAllowed = 0
+        hitsAllowed = 0
+        walksAllowed = 0
+        strikeouts = 0
+        homeRunsAllowed = 0
+        hitBatsmen = 0
+        wildPitches = 0
+        balks = 0
+        battersFaced = 0
+        pitchesThrown = null
+        strikesThrown = null
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {

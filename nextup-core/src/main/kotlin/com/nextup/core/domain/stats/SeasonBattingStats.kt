@@ -463,6 +463,36 @@ class SeasonBattingStats(
     }
 
     /**
+     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        plateAppearances = 0
+        atBats = 0
+        hits = 0
+        doubles = 0
+        triples = 0
+        homeRuns = 0
+        runs = 0
+        runsBattedIn = 0
+        walks = 0
+        intentionalWalks = 0
+        hitByPitch = 0
+        strikeouts = 0
+        sacrificeBunts = 0
+        sacrificeFlies = 0
+        stolenBases = 0
+        caughtStealing = 0
+        groundedIntoDoublePlays = 0
+        batterInterferences = 0
+        runnerInterferences = 0
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {
