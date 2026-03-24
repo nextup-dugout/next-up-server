@@ -18,12 +18,10 @@ class BookingTransferRepositoryAdapter(
 
     override fun findByBookingId(bookingId: Long): List<BookingTransfer> = jpaRepository.findByBookingId(bookingId)
 
-    override fun findBySellerTeamId(sellerTeamId: Long): List<BookingTransfer> =
-        jpaRepository.findBySellerTeamId(sellerTeamId)
+    override fun findByFromTeamId(fromTeamId: Long): List<BookingTransfer> = jpaRepository.findByFromTeamId(fromTeamId)
 
-    override fun findByBuyerTeamId(buyerTeamId: Long): List<BookingTransfer> =
-        jpaRepository.findByBuyerTeamId(buyerTeamId)
+    override fun findByToTeamId(toTeamId: Long): List<BookingTransfer> = jpaRepository.findByToTeamId(toTeamId)
 
-    override fun existsOpenTransferForBooking(bookingId: Long): Boolean =
-        jpaRepository.existsOpenTransferForBooking(bookingId)
+    override fun existsPendingTransferForBooking(bookingId: Long): Boolean =
+        jpaRepository.existsPendingTransferForBooking(bookingId)
 }

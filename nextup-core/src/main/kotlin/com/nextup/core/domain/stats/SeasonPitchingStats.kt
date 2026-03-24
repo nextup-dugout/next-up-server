@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.Player
@@ -24,6 +25,7 @@ import java.math.RoundingMode
         Index(name = "idx_season_pitching_stats_year", columnList = "year"),
         Index(name = "idx_season_pitching_stats_games", columnList = "games_played"),
         Index(name = "idx_season_pitching_stats_team", columnList = "team_id"),
+        Index(name = "idx_season_pitching_stats_comp_type", columnList = "competition_type"),
     ],
 )
 class SeasonPitchingStats(
@@ -34,6 +36,9 @@ class SeasonPitchingStats(
     val year: Int,
     @Column(name = "team_id")
     val teamId: Long? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "competition_type", nullable = false, length = 20)
+    val competitionType: CompetitionType = CompetitionType.LEAGUE,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -517,6 +522,37 @@ class SeasonPitchingStats(
     }
 
     /**
+     * 모든 통계 필드를 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * Int 필드는 0으로, nullable 필드(pitchesThrown, strikesThrown)는 null로 초기화합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        gamesStarted = 0
+        inningsPitchedOuts = 0
+        wins = 0
+        losses = 0
+        saves = 0
+        holds = 0
+        blownSaves = 0
+        earnedRuns = 0
+        runsAllowed = 0
+        hitsAllowed = 0
+        walksAllowed = 0
+        strikeouts = 0
+        homeRunsAllowed = 0
+        hitBatsmen = 0
+        wildPitches = 0
+        balks = 0
+        battersFaced = 0
+        pitchesThrown = null
+        strikesThrown = null
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {
@@ -532,16 +568,23 @@ class SeasonPitchingStats(
          * @param player 선수
          * @param year 연도
          * @param teamId 팀 ID (이적 시 팀별 기록 분리 지원, null이면 팀 구분 없음)
+         * @param competitionType 대회 유형 (기본값 LEAGUE, FRIENDLY이면 공식 순위에서 제외)
          */
         fun create(
             player: Player,
             year: Int,
             teamId: Long? = null,
+            competitionType: CompetitionType = CompetitionType.LEAGUE,
         ): SeasonPitchingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }
-            return SeasonPitchingStats(player = player, year = year, teamId = teamId)
+            return SeasonPitchingStats(
+                player = player,
+                year = year,
+                teamId = teamId,
+                competitionType = competitionType,
+            )
         }
     }
 }

@@ -360,6 +360,36 @@ class CareerPitchingStats(
     }
 
     /**
+     * 모든 통계 필드를 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 통산 통계를 처음부터 다시 집계할 때 사용합니다.
+     * Int 필드는 0으로, nullable 필드(pitchesThrown, strikesThrown)는 null로 초기화합니다.
+     */
+    fun reset() {
+        seasonsPlayed = 0
+        gamesPlayed = 0
+        gamesStarted = 0
+        inningsPitchedOuts = 0
+        wins = 0
+        losses = 0
+        saves = 0
+        holds = 0
+        blownSaves = 0
+        earnedRuns = 0
+        runsAllowed = 0
+        hitsAllowed = 0
+        walksAllowed = 0
+        strikeouts = 0
+        homeRunsAllowed = 0
+        hitBatsmen = 0
+        wildPitches = 0
+        balks = 0
+        battersFaced = 0
+        pitchesThrown = null
+        strikesThrown = null
+    }
+
+    /**
      * 기록 유효성을 검증합니다.
      */
     fun validate() {

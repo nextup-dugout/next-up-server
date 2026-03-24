@@ -3,11 +3,14 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.event.FieldingEventType
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.player.Player
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -33,6 +36,7 @@ import java.math.RoundingMode
         Index(name = "idx_season_fielding_stats_player", columnList = "player_id"),
         Index(name = "idx_season_fielding_stats_year", columnList = "year"),
         Index(name = "idx_season_fielding_stats_team", columnList = "team_id"),
+        Index(name = "idx_season_fielding_stats_comp_type", columnList = "competition_type"),
     ],
 )
 class SeasonFieldingStats(
@@ -43,6 +47,9 @@ class SeasonFieldingStats(
     val year: Int,
     @Column(name = "team_id")
     val teamId: Long? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "competition_type", nullable = false, length = 20)
+    val competitionType: CompetitionType = CompetitionType.LEAGUE,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -330,6 +337,25 @@ class SeasonFieldingStats(
     }
 
     /**
+     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        putOuts = 0
+        assists = 0
+        errors = 0
+        doublePlays = 0
+        passedBalls = 0
+        triplePlays = 0
+        caughtStealing = 0
+        stolenBasesAllowed = 0
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {
@@ -345,16 +371,23 @@ class SeasonFieldingStats(
          * @param player 선수
          * @param year 연도
          * @param teamId 팀 ID (이적 시 팀별 기록 분리 지원, null이면 팀 구분 없음)
+         * @param competitionType 대회 유형 (기본값 LEAGUE, FRIENDLY이면 공식 순위에서 제외)
          */
         fun create(
             player: Player,
             year: Int,
             teamId: Long? = null,
+            competitionType: CompetitionType = CompetitionType.LEAGUE,
         ): SeasonFieldingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }
-            return SeasonFieldingStats(player = player, year = year, teamId = teamId)
+            return SeasonFieldingStats(
+                player = player,
+                year = year,
+                teamId = teamId,
+                competitionType = competitionType,
+            )
         }
     }
 }

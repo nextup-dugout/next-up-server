@@ -195,7 +195,7 @@ class StadiumBookingTest {
             // when & then
             assertThatThrownBy {
                 booking.transferTo(newTeamId = 200L)
-            }.isInstanceOf(com.nextup.common.exception.BookingTransferForbiddenException::class.java)
+            }.isInstanceOf(com.nextup.common.exception.InvalidStateException::class.java)
                 .hasMessageContaining("cannot be transferred")
         }
 
