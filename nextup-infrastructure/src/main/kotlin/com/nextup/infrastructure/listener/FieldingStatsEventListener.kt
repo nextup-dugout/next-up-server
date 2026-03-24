@@ -2,6 +2,7 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.stats.CareerFieldingStats
@@ -49,10 +50,10 @@ class FieldingStatsEventListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onFieldingRecordUpdated(event: FieldingRecordUpdatedEvent) {
-        val year = resolveYear(event.gameId)
+        val (year, competitionType) = resolveGameContext(event.gameId)
 
         retryOnOptimisticLock("onFieldingRecordUpdated") {
-            val stats = findOrCreateSeasonFieldingStats(event.playerId, year)
+            val stats = findOrCreateSeasonFieldingStats(event.playerId, year, competitionType)
 
             if (event.isRevert) {
                 stats.revertLiveFieldingUpdate(event.type)
@@ -62,10 +63,11 @@ class FieldingStatsEventListener(
             seasonFieldingStatsRepository.save(stats)
 
             logger.debug(
-                "실시간 수비 통계 {} 완료 (playerId={}, year={}, type={})",
+                "실시간 수비 통계 {} 완료 (playerId={}, year={}, competitionType={}, type={})",
                 if (event.isRevert) "역산" else "갱신",
                 event.playerId,
                 year,
+                competitionType,
                 event.type,
             )
         }
@@ -84,7 +86,7 @@ class FieldingStatsEventListener(
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onGameResultConfirmed(event: GameResultConfirmedEvent) {
         val gameId = event.gameId
-        val year = resolveYear(gameId)
+        val (year, competitionType) = resolveGameContext(gameId)
 
         val fieldingRecords = fieldingRecordRepository.findAllByGameId(gameId)
 
@@ -93,7 +95,7 @@ class FieldingStatsEventListener(
             return
         }
 
-        logger.info("수비 스탯 집계 시작 (gameId={}, year={}, records={})", gameId, year, fieldingRecords.size)
+        logger.info("수비 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})", gameId, year, competitionType, fieldingRecords.size)
 
         val fieldingRecordsByPlayer = fieldingRecords.groupBy { it.gamePlayer.player.id }
 
@@ -102,11 +104,21 @@ class FieldingStatsEventListener(
 
             retryOnOptimisticLock("onGameResultConfirmed-fielding(playerId=$playerId)") {
                 val existingSeasonFielding =
-                    seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+                    seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                        playerId,
+                        year,
+                        null,
+                        competitionType,
+                    )
                 val isFirstFieldingSeason = existingSeasonFielding == null
 
                 val seasonFieldingStats =
-                    existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
+                    existingSeasonFielding
+                        ?: SeasonFieldingStats.create(
+                            player = player,
+                            year = year,
+                            competitionType = competitionType,
+                        )
                 seasonFieldingStats.addGameRecords(playerFieldingRecords)
                 seasonFieldingStatsRepository.save(seasonFieldingStats)
 
@@ -121,9 +133,10 @@ class FieldingStatsEventListener(
                 careerFieldingStatsRepository.save(careerFieldingStats)
 
                 logger.debug(
-                    "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={}, positionRecords={})",
+                    "수비 통계 갱신 완료 (playerId={}, year={}, competitionType={}, isFirstSeason={}, positionRecords={})",
                     playerId,
                     year,
+                    competitionType,
                     isFirstFieldingSeason,
                     playerFieldingRecords.size,
                 )
@@ -142,18 +155,30 @@ class FieldingStatsEventListener(
     private fun findOrCreateSeasonFieldingStats(
         playerId: Long,
         year: Int,
+        competitionType: CompetitionType,
     ): SeasonFieldingStats {
-        return seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+        return seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+            playerId,
+            year,
+            null,
+            competitionType,
+        )
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(playerId)
                         ?: throw PlayerNotFoundException(playerId)
                 logger.info(
-                    "시즌 수비 통계 자동 생성 (playerId={}, year={})",
+                    "시즌 수비 통계 자동 생성 (playerId={}, year={}, competitionType={})",
                     playerId,
                     year,
+                    competitionType,
                 )
-                val newStats = SeasonFieldingStats.create(player = player, year = year)
+                val newStats =
+                    SeasonFieldingStats.create(
+                        player = player,
+                        year = year,
+                        competitionType = competitionType,
+                    )
                 seasonFieldingStatsRepository.save(newStats)
             }
     }
@@ -198,11 +223,11 @@ class FieldingStatsEventListener(
         }
     }
 
-    private fun resolveYear(gameId: Long): Int {
+    private fun resolveGameContext(gameId: Long): Pair<Int, CompetitionType> {
         val game =
             gameRepository.findByIdOrNull(gameId)
                 ?: throw GameNotFoundException(gameId)
-        return game.scheduledAt.year
+        return Pair(game.scheduledAt.year, game.competition.type)
     }
 
     companion object {

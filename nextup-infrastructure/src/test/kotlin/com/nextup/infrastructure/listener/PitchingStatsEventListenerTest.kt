@@ -2,6 +2,8 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
 import com.nextup.core.domain.event.PlateAppearanceUndoneEvent
@@ -59,10 +61,13 @@ class PitchingStatsEventListenerTest {
         )
 
     private val mockGame = mockk<Game>()
+    private val mockCompetition = mockk<Competition>()
 
     @BeforeEach
     fun setUp() {
         every { mockGame.scheduledAt } returns LocalDateTime.of(2024, 5, 15, 18, 0)
+        every { mockGame.competition } returns mockCompetition
+        every { mockCompetition.type } returns CompetitionType.LEAGUE
         every { gameRepository.findByIdOrNull(any()) } returns mockGame
     }
 
@@ -74,7 +79,7 @@ class PitchingStatsEventListenerTest {
             // given
             val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns pitchingStats
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
@@ -102,7 +107,7 @@ class PitchingStatsEventListenerTest {
             // given
             val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns pitchingStats
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
@@ -130,7 +135,7 @@ class PitchingStatsEventListenerTest {
             // given
             val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns pitchingStats
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
@@ -157,7 +162,7 @@ class PitchingStatsEventListenerTest {
             // given
             val pitchingStats = SeasonPitchingStats.create(testPitcher, 2024)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns pitchingStats
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
@@ -183,7 +188,7 @@ class PitchingStatsEventListenerTest {
         fun `투수 시즌 통계가 없는 경우 자동 생성 후 투수 통계 갱신됨`() {
             // given
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns null
             every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
@@ -210,7 +215,7 @@ class PitchingStatsEventListenerTest {
         fun `선수를 찾을 수 없는 경우 PlayerNotFoundException 발생`() {
             // given
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(999L, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(999L, 2024, 20L, any())
             } returns null
             every { playerRepository.findByIdOrNull(999L) } returns null
 
@@ -262,7 +267,7 @@ class PitchingStatsEventListenerTest {
             pitchingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
 
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns pitchingStats
             every { seasonPitchingStatsRepository.save(any()) } returns pitchingStats
 
@@ -289,7 +294,7 @@ class PitchingStatsEventListenerTest {
         fun `시즌 투수 통계가 없는 경우 자동 생성 후 역산 처리`() {
             // given
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns null
             every { playerRepository.findByIdOrNull(testPitcher.id) } returns testPitcher
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
@@ -368,7 +373,7 @@ class PitchingStatsEventListenerTest {
 
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns null
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
             every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
@@ -391,7 +396,7 @@ class PitchingStatsEventListenerTest {
 
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns seasonPitching
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
             every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
@@ -441,7 +446,7 @@ class PitchingStatsEventListenerTest {
 
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(pitchingRecord)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns seasonPitching
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
             every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
@@ -474,7 +479,7 @@ class PitchingStatsEventListenerTest {
 
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns null
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
             every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
@@ -496,7 +501,7 @@ class PitchingStatsEventListenerTest {
 
             every { pitchingRecordRepository.findAllByGameId(gameId) } returns listOf(mockPitchingRecord)
             every {
-                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(testPitcher.id, 2024, 20L)
+                seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPitcher.id, 2024, 20L, any())
             } returns existingSeason
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
             every { careerPitchingStatsRepository.findByPlayerId(testPitcher.id) } returns careerPitching
