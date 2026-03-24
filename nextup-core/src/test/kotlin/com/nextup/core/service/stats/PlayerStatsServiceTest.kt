@@ -300,6 +300,7 @@ class PlayerStatsServiceTest {
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
+            every { seasonBattingStatsRepository.delete(existingStats) } returns Unit
             every { battingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(record)
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
 
@@ -310,6 +311,7 @@ class PlayerStatsServiceTest {
             assertThat(result.gamesPlayed).isEqualTo(1)
             assertThat(result.hits).isEqualTo(2)
             assertThat(result.atBats).isEqualTo(4)
+            verify { seasonBattingStatsRepository.delete(existingStats) }
             verify { seasonBattingStatsRepository.save(any()) }
         }
 
@@ -363,6 +365,7 @@ class PlayerStatsServiceTest {
 
             every { playerRepository.findByIdOrNull(playerId) } returns testPlayer
             every { seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year) } returns existingStats
+            every { seasonPitchingStatsRepository.delete(existingStats) } returns Unit
             every { pitchingRecordRepository.findAllByPlayerIdAndYear(playerId, year) } returns listOf(record)
             every { seasonPitchingStatsRepository.save(any()) } answers { firstArg() }
 

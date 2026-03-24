@@ -316,8 +316,6 @@ class CareerBattingStats(
         stolenBases = 0
         caughtStealing = 0
         groundedIntoDoublePlays = 0
-        batterInterferences = 0
-        runnerInterferences = 0
     }
 
     /**

@@ -85,8 +85,6 @@ class StatsResetTest {
             assertThat(stats.stolenBases).isZero
             assertThat(stats.caughtStealing).isZero
             assertThat(stats.groundedIntoDoublePlays).isZero
-            assertThat(stats.batterInterferences).isZero
-            assertThat(stats.runnerInterferences).isZero
         }
 
         @Test

@@ -30,6 +30,7 @@ enum class FieldingEventType {
     ASSIST,
     ERROR,
     DOUBLE_PLAY,
+    TRIPLE_PLAY,
     PASSED_BALL,
     CAUGHT_STEALING,
     STOLEN_BASE_ALLOWED,
