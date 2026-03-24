@@ -407,7 +407,7 @@ class AttendanceServiceImplTest {
                     teamId = 1L,
                     userId = 100L,
                     voteType = VoteType.ABSENT,
-                    absenceReason = com.nextup.core.domain.attendance.AbsenceReason.WORK,
+                    absenceReason = com.nextup.core.domain.attendance.AbsenceReason.OTHER,
                     reasonDetail = "야근",
                 )
 
