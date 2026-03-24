@@ -27,8 +27,8 @@ class ScorerLockExpirationSchedulerTest {
             // given
             val expiredGame = mockk<Game>(relaxed = true)
             every { expiredGame.id } returns 1L
-            every { expiredGame.scorerId } returns 100L
-            every { expiredGame.lockedAt } returns LocalDateTime.now().minusMinutes(31)
+            every { expiredGame.scorerLock.scorerId } returns 100L
+            every { expiredGame.scorerLock.lockedAt } returns LocalDateTime.now().minusMinutes(31)
             every {
                 gameRepository.findLockedGamesBefore(any())
             } returns listOf(expiredGame)
@@ -61,13 +61,13 @@ class ScorerLockExpirationSchedulerTest {
             // given
             val game1 = mockk<Game>(relaxed = true)
             every { game1.id } returns 1L
-            every { game1.scorerId } returns 100L
-            every { game1.lockedAt } returns LocalDateTime.now().minusMinutes(35)
+            every { game1.scorerLock.scorerId } returns 100L
+            every { game1.scorerLock.lockedAt } returns LocalDateTime.now().minusMinutes(35)
 
             val game2 = mockk<Game>(relaxed = true)
             every { game2.id } returns 2L
-            every { game2.scorerId } returns 200L
-            every { game2.lockedAt } returns LocalDateTime.now().minusMinutes(60)
+            every { game2.scorerLock.scorerId } returns 200L
+            every { game2.scorerLock.lockedAt } returns LocalDateTime.now().minusMinutes(60)
 
             every {
                 gameRepository.findLockedGamesBefore(any())

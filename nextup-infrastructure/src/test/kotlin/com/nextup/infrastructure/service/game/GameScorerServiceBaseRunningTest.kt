@@ -15,6 +15,7 @@ import com.nextup.core.domain.game.GameEventType
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.ScorerLock
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -451,7 +452,7 @@ class GameScorerServiceBaseRunningTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-            scorerId = 999L,
+            scorerLock = ScorerLock(scorerId = 999L),
             id = id,
         )
     }

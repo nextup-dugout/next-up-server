@@ -90,9 +90,9 @@ interface GameRepository :
 
     @Query(
         "SELECT g FROM Game g " +
-            "WHERE g.scorerId IS NOT NULL " +
-            "AND g.lockedAt IS NOT NULL " +
-            "AND g.lockedAt < :threshold",
+            "WHERE g.scorerLock.scorerId IS NOT NULL " +
+            "AND g.scorerLock.lockedAt IS NOT NULL " +
+            "AND g.scorerLock.lockedAt < :threshold",
     )
     override fun findLockedGamesBefore(
         @Param("threshold") threshold: LocalDateTime,

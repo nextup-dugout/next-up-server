@@ -53,7 +53,7 @@ class PitcherChangeWarningTest {
                 currentInning = 3,
                 isTopInning = true,
             )
-        repeat(outs) { game.recordOut() }
+        repeat(outs) { game.gameState.recordOut() }
         return game
     }
 
