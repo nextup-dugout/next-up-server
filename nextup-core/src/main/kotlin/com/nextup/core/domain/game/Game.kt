@@ -65,6 +65,17 @@ class Game private constructor(
     var scorerId: Long? = null,
     @Column(name = "locked_at")
     var lockedAt: LocalDateTime? = null,
+    /**
+     * 시간 제한 도달 플래그.
+     *
+     * 기록원이 "시간 제한 도달" 버튼을 누르면 true로 설정됩니다.
+     * 이 플래그가 true이면 이닝 전환 시 다음 규칙이 적용됩니다:
+     * - 초공(원정팀 공격) 종료 시: 초공팀(원정)이 리드가 아니면 → 말공 생략, 경기 종료
+     * - 초공 종료 시: 초공팀(원정)이 리드하면 → 말공까지 진행
+     * - 말공(홈팀 공격) 종료 시: 다음 이닝 진입 차단, 경기 종료
+     */
+    @Column(name = "time_limit_reached", nullable = false)
+    var timeLimitReached: Boolean = false,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -197,6 +208,29 @@ class Game private constructor(
         require(status.isOngoing()) { "진행 중인 경기만 이닝을 진행할 수 있습니다." }
 
         val rules = competition.gameRules
+
+        // ===== 시간 제한 체크 (timeLimitReached 플래그 기반) =====
+        // 야구 규칙: 시간 제한 도달 시 즉시 종료가 아니라 이닝 전환 시점에서 판단
+        if (timeLimitReached && gameTeams.size == 2) {
+            val homeScore =
+                gameTeams.first { it.homeAway == HomeAway.HOME }.totalScore
+            val awayScore =
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.totalScore
+
+            if (isTopInning) {
+                // 초공(원정팀 공격) 종료 시점
+                // 원정팀이 리드가 아니면(홈팀 리드 또는 동점) → 말공 생략, 즉시 경기 종료
+                if (awayScore <= homeScore) {
+                    finishByTimeLimit(gameTeams)
+                    return TiebreakerResult.TIME_LIMIT_GAME_ENDED
+                }
+                // 원정팀이 리드 중이면 → 말공까지 진행 (아래 정상 흐름으로)
+            } else {
+                // 말공(홈팀 공격) 종료 시점 → 다음 이닝 진입 차단, 경기 종료
+                finishByTimeLimit(gameTeams)
+                return TiebreakerResult.TIME_LIMIT_GAME_ENDED
+            }
+        }
 
         // 초(원정팀 공격) 종료 후 말로 넘어가기 전에 홈팀 리드 확인
         // 정규 이닝 이상에서 홈팀이 리드하면 말 이닝 불필요 → 경기 종료
@@ -414,19 +448,38 @@ class Game private constructor(
     }
 
     /**
-     * 시간 제한으로 경기를 종료합니다.
+     * 시간 제한 도달 플래그를 활성화합니다.
      *
-     * 대회 규칙에 시간 제한(timeLimitMinutes)이 설정된 경우,
-     * 기록원이 시간 제한 도달을 확인하고 경기를 종료할 때 사용합니다.
+     * 야구 규칙에 따라 시간 제한이 도달하면 즉시 종료가 아니라
+     * "다음 이닝에 진입하지 않는" 방식으로 동작합니다:
+     * - 현재 이닝은 정상 진행됩니다.
+     * - 초공(원정팀 공격) 종료 시: 원정팀이 리드가 아니면 말공 생략 후 경기 종료
+     * - 초공 종료 시 원정팀이 리드하면: 말공까지 진행 후 경기 종료
+     * - 말공(홈팀 공격) 종료 시: 다음 이닝 진입 차단, 경기 종료
+     *
+     * 실제 경기 종료는 [nextHalfInning] 호출 시 자동으로 발생합니다.
+     */
+    fun activateTimeLimit() {
+        require(status.isOngoing()) { "진행 중인 경기만 시간 제한을 활성화할 수 있습니다." }
+        require(competition.gameRules.timeLimitMinutes != null) {
+            "시간 제한이 설정되지 않은 대회에서는 시간 제한을 활성화할 수 없습니다."
+        }
+        require(!timeLimitReached) { "이미 시간 제한이 활성화되어 있습니다." }
+
+        timeLimitReached = true
+        note = (note?.let { "$it\n" } ?: "") + "시간 제한 도달"
+    }
+
+    /**
+     * 시간 제한으로 경기를 종료합니다 (내부 전용).
+     *
+     * [nextHalfInning]에서 시간 제한 플래그 확인 후 자동으로 호출됩니다.
      * 양 팀의 점수를 비교하여 WIN/LOSS/DRAW 결과를 자동으로 설정합니다.
      *
      * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
      */
-    fun finishByTimeLimit(gameTeams: List<GameTeam>) {
+    internal fun finishByTimeLimit(gameTeams: List<GameTeam>) {
         require(status.isOngoing()) { "진행 중인 경기만 시간 제한 종료할 수 있습니다." }
-        require(competition.gameRules.timeLimitMinutes != null) {
-            "시간 제한이 설정되지 않은 대회에서는 시간 제한 종료를 사용할 수 없습니다."
-        }
 
         status = GameStatus.FINISHED
         endedAt = LocalDateTime.now()
@@ -664,6 +717,7 @@ class Game private constructor(
             gameState: GameState = GameState(),
             scorerId: Long? = null,
             lockedAt: LocalDateTime? = null,
+            timeLimitReached: Boolean = false,
             id: Long = 0L,
         ): Game {
             val game =
@@ -685,6 +739,7 @@ class Game private constructor(
                     gameState = gameState,
                     scorerId = scorerId,
                     lockedAt = lockedAt,
+                    timeLimitReached = timeLimitReached,
                     id = id,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = id * 100 + 1))

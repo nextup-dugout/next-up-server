@@ -68,8 +68,10 @@ class GameLifecycleServiceImpl(
         val gameTeams = gameTeamRepository.findAllByGameId(gameId)
         val result = game.nextHalfInning(gameTeams = gameTeams)
 
-        // 홈팀 리드로 말 이닝 생략 → 경기 종료 시 투수 판정 및 결과 이벤트 발행
-        if (result == com.nextup.core.domain.game.TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM) {
+        // 경기 종료 결과 처리 (홈팀 리드 말 생략, 시간 제한 종료 등)
+        if (result == com.nextup.core.domain.game.TiebreakerResult.HOME_TEAM_LEADS_SKIP_BOTTOM ||
+            result == com.nextup.core.domain.game.TiebreakerResult.TIME_LIMIT_GAME_ENDED
+        ) {
             val savedGame = gameRepository.save(game)
             assignPitchingDecisions(gameId)
             publishGameResultEvent(gameId)
@@ -114,8 +116,10 @@ class GameLifecycleServiceImpl(
                 game.callGame(reason = "콜드게임 (점수차)", gameTeams = gameTeams)
             GameEndReason.WEATHER ->
                 game.callGame(reason = "콜드게임 (기상 조건)", gameTeams = gameTeams)
-            GameEndReason.TIME_LIMIT ->
-                game.finishByTimeLimit(gameTeams = gameTeams)
+            GameEndReason.TIME_LIMIT -> throw InvalidGameStateException(
+                "시간 제한 종료는 전용 API(/time-limit)를 사용해주세요. " +
+                    "시간 제한 도달 시 플래그만 설정하고, 실제 종료는 이닝 전환 시 자동으로 처리됩니다.",
+            )
             GameEndReason.FORFEIT -> throw InvalidGameStateException(
                 "몰수 처리는 전용 API를 사용해주세요.",
             )
@@ -305,6 +309,24 @@ class GameLifecycleServiceImpl(
         val game = findGame(gameId)
         game.validateScorer(scorerId)
         game.resume()
+        return gameRepository.save(game)
+    }
+
+    @Transactional
+    override fun activateTimeLimit(
+        gameId: Long,
+        scorerId: Long,
+    ): Game {
+        val game = findGame(gameId)
+        game.validateScorer(scorerId)
+
+        if (game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "진행 중인 경기만 시간 제한을 활성화할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        game.activateTimeLimit()
         return gameRepository.save(game)
     }
 

@@ -21,6 +21,7 @@ fun Game.toResponse(warnings: List<String> = emptyList()): GameResponse {
         startedAt = this.startedAt,
         endedAt = this.endedAt,
         scorerId = this.scorerId,
+        timeLimitReached = this.timeLimitReached,
         warnings = warnings,
     )
 }
