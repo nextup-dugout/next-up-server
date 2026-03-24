@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.repository.stats
 
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.stats.SeasonPitchingStats
 import com.nextup.core.port.repository.SeasonPitchingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
@@ -35,6 +36,24 @@ interface SeasonPitchingStatsRepository :
     ): SeasonPitchingStats?
 
     /**
+     * 선수 ID, 연도, 팀 ID, 대회 유형으로 시즌 투수 통계를 조회합니다.
+     */
+    @Query(
+        """
+        SELECT s FROM SeasonPitchingStats s
+        WHERE s.player.id = :playerId AND s.year = :year
+        AND (s.teamId = :teamId OR (s.teamId IS NULL AND :teamId IS NULL))
+        AND s.competitionType = :competitionType
+    """,
+    )
+    override fun findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+        @Param("teamId") teamId: Long?,
+        @Param("competitionType") competitionType: CompetitionType,
+    ): SeasonPitchingStats?
+
+    /**
      * 선수 ID와 연도로 모든 팀별 시즌 투수 통계를 조회합니다 (이적 시 팀별 기록).
      */
     @Query(
@@ -66,7 +85,7 @@ interface SeasonPitchingStatsRepository :
     ): List<SeasonPitchingStats>
 
     /**
-     * ERA 상위 N명을 조회합니다 (최소 이닝 조건).
+     * ERA 상위 N명을 조회합니다 (최소 이닝 조건, FRIENDLY 제외).
      * ERA는 낮을수록 좋으므로 ASC 정렬합니다.
      */
     @Query(
@@ -74,6 +93,7 @@ interface SeasonPitchingStatsRepository :
         SELECT s FROM SeasonPitchingStats s
         WHERE s.year = :year
         AND s.inningsPitchedOuts >= :minInningsPitchedOuts
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (CAST(s.earnedRuns AS double) * 27.0 / CAST(s.inningsPitchedOuts AS double)) ASC
         LIMIT :limit
     """,
@@ -85,12 +105,13 @@ interface SeasonPitchingStatsRepository :
     ): List<SeasonPitchingStats>
 
     /**
-     * 승수 상위 N명을 조회합니다.
+     * 승수 상위 N명을 조회합니다 (FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonPitchingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.wins DESC
         LIMIT :limit
     """,
@@ -101,12 +122,13 @@ interface SeasonPitchingStatsRepository :
     ): List<SeasonPitchingStats>
 
     /**
-     * 삼진 상위 N명을 조회합니다.
+     * 삼진 상위 N명을 조회합니다 (FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonPitchingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.strikeouts DESC
         LIMIT :limit
     """,
@@ -117,12 +139,13 @@ interface SeasonPitchingStatsRepository :
     ): List<SeasonPitchingStats>
 
     /**
-     * 세이브 상위 N명을 조회합니다.
+     * 세이브 상위 N명을 조회합니다 (FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonPitchingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.saves DESC
         LIMIT :limit
     """,
@@ -133,7 +156,7 @@ interface SeasonPitchingStatsRepository :
     ): List<SeasonPitchingStats>
 
     /**
-     * WHIP 상위 N명을 조회합니다 (최소 이닝 조건).
+     * WHIP 상위 N명을 조회합니다 (최소 이닝 조건, FRIENDLY 제외).
      * WHIP는 낮을수록 좋으므로 ASC 정렬합니다.
      */
     @Query(
@@ -141,6 +164,7 @@ interface SeasonPitchingStatsRepository :
         SELECT s FROM SeasonPitchingStats s
         WHERE s.year = :year
         AND s.inningsPitchedOuts >= :minInningsPitchedOuts
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (CAST(s.hitsAllowed + s.walksAllowed AS double) * 3.0 / CAST(s.inningsPitchedOuts AS double)) ASC
         LIMIT :limit
     """,
@@ -168,6 +192,6 @@ interface SeasonPitchingStatsRepository :
     """,
     )
     override fun findAllByGameId(
-        @Param("gameId") gameId: Long
+        @Param("gameId") gameId: Long,
     ): List<SeasonPitchingStats>
 }
