@@ -19,12 +19,6 @@ import java.math.RoundingMode
 @Entity
 @Table(
     name = "season_pitching_stats",
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uk_season_pitching_stats_player_year_team",
-            columnNames = ["player_id", "year", "team_id"],
-        ),
-    ],
     indexes = [
         Index(name = "idx_season_pitching_stats_player", columnList = "player_id"),
         Index(name = "idx_season_pitching_stats_year", columnList = "year"),

@@ -16,7 +16,6 @@ import jakarta.persistence.Index
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
 import jakarta.persistence.Version
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -30,12 +29,6 @@ import java.math.RoundingMode
 @Entity
 @Table(
     name = "season_fielding_stats",
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uk_season_fielding_stats_player_year_team",
-            columnNames = ["player_id", "year", "team_id"],
-        ),
-    ],
     indexes = [
         Index(name = "idx_season_fielding_stats_player", columnList = "player_id"),
         Index(name = "idx_season_fielding_stats_year", columnList = "year"),

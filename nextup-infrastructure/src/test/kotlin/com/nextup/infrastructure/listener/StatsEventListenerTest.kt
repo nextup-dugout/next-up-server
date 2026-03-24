@@ -728,6 +728,7 @@ class StatsEventListenerTest {
             // 기본적으로 수비 기록 없음 (수비 테스트에서만 오버라이드)
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
             // L-7: 교차 검증용 기본 목 설정 (개별 테스트에서 오버라이드 가능)
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(any(), any()) } returns null
             every { battingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
             every { fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
         }
@@ -1341,8 +1342,14 @@ class StatsEventListenerTest {
         @Test
         fun `경기 종료 시 타격 통계 정합성 검증이 수행됨 - 일치`() {
             // given
+            val gameTeam = mockk<GameTeam>()
+            val team = mockk<com.nextup.core.domain.team.Team>()
+            every { gameTeam.team } returns team
+            every { team.id } returns 10L
+
             val gamePlayer = mockk<GamePlayer>()
             every { gamePlayer.player } returns testPlayer
+            every { gamePlayer.gameTeam } returns gameTeam
 
             val battingRecord = mockk<BattingRecord>(relaxed = true)
             every { battingRecord.gamePlayer } returns gamePlayer
@@ -1360,6 +1367,9 @@ class StatsEventListenerTest {
             every { battingRecordRepository.findAllByGameId(10L) } returns listOf(battingRecord)
             every { pitchingRecordRepository.findAllByGameId(10L) } returns emptyList()
             every { fieldingRecordRepository.findAllByGameId(10L) } returns emptyList()
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(testPlayer.id, 2024, 10L)
+            } returns seasonBattingStats
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
             } returns seasonBattingStats

@@ -47,6 +47,10 @@ class MercenaryRequest private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     /**
      * 마감 시한이 지났는지 확인합니다.
      */

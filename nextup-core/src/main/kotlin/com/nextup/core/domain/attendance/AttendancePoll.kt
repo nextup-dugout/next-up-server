@@ -37,6 +37,10 @@ class AttendancePoll private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        protected set
+
     /**
      * 투표가 진행 중인지 확인합니다.
      */
