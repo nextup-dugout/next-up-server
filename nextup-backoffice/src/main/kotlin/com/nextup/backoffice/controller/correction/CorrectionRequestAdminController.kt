@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.correction
 import com.nextup.backoffice.dto.correction.ApproveCorrectionRequestDto
 import com.nextup.backoffice.dto.correction.CorrectionRequestAdminResponse
 import com.nextup.backoffice.dto.correction.RejectCorrectionRequestDto
+import com.nextup.backoffice.dto.correction.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.game.correction.CorrectionRequestService
 import jakarta.validation.Valid
@@ -32,7 +33,7 @@ class CorrectionRequestAdminController(
     @GetMapping("/pending")
     fun getPendingRequests(): ApiResponse<List<CorrectionRequestAdminResponse>> {
         val requests = correctionRequestService.getPendingRequests()
-        return ApiResponse.success(requests.map { CorrectionRequestAdminResponse.from(it) })
+        return ApiResponse.success(requests.map { it.toAdminResponse() })
     }
 
     /**
@@ -43,7 +44,7 @@ class CorrectionRequestAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CorrectionRequestAdminResponse> {
         val request = correctionRequestService.getById(id)
-        return ApiResponse.success(CorrectionRequestAdminResponse.from(request))
+        return ApiResponse.success(request.toAdminResponse())
     }
 
     /**
@@ -63,7 +64,7 @@ class CorrectionRequestAdminController(
                 reviewerUserId = adminUserId,
                 comment = request.comment,
             )
-        return ApiResponse.success(CorrectionRequestAdminResponse.from(correctionRequest))
+        return ApiResponse.success(correctionRequest.toAdminResponse())
     }
 
     /**
@@ -81,6 +82,6 @@ class CorrectionRequestAdminController(
                 reviewerUserId = adminUserId,
                 comment = request.comment,
             )
-        return ApiResponse.success(CorrectionRequestAdminResponse.from(correctionRequest))
+        return ApiResponse.success(correctionRequest.toAdminResponse())
     }
 }

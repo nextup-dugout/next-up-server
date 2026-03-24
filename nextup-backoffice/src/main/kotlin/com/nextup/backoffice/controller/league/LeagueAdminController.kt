@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.league
 import com.nextup.backoffice.dto.league.CreateLeagueRequest
 import com.nextup.backoffice.dto.league.LeagueAdminResponse
 import com.nextup.backoffice.dto.league.UpdateLeagueRequest
+import com.nextup.backoffice.dto.league.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.league.LeagueService
 import jakarta.validation.Valid
@@ -34,7 +35,7 @@ class LeagueAdminController(
     fun getAllLeagues(): ApiResponse<List<LeagueAdminResponse>> {
         val leagues = leagueService.getAll()
         return ApiResponse.success(
-            leagues.map { LeagueAdminResponse.from(it) },
+            leagues.map { it.toAdminResponse() },
         )
     }
 
@@ -46,7 +47,7 @@ class LeagueAdminController(
         @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.getById(id)
-        return ApiResponse.success(LeagueAdminResponse.from(league))
+        return ApiResponse.success(league.toAdminResponse())
     }
 
     /**
@@ -67,7 +68,7 @@ class LeagueAdminController(
                 description = request.description,
                 logoUrl = request.logoUrl,
             )
-        return ApiResponse.success(LeagueAdminResponse.from(league))
+        return ApiResponse.success(league.toAdminResponse())
     }
 
     /**
@@ -84,7 +85,7 @@ class LeagueAdminController(
                 description = request.description,
                 logoUrl = request.logoUrl,
             )
-        return ApiResponse.success(LeagueAdminResponse.from(league))
+        return ApiResponse.success(league.toAdminResponse())
     }
 
     /**
@@ -95,7 +96,7 @@ class LeagueAdminController(
         @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.deactivate(id)
-        return ApiResponse.success(LeagueAdminResponse.from(league))
+        return ApiResponse.success(league.toAdminResponse())
     }
 
     /**
@@ -106,6 +107,6 @@ class LeagueAdminController(
         @PathVariable id: Long,
     ): ApiResponse<LeagueAdminResponse> {
         val league = leagueService.activate(id)
-        return ApiResponse.success(LeagueAdminResponse.from(league))
+        return ApiResponse.success(league.toAdminResponse())
     }
 }
