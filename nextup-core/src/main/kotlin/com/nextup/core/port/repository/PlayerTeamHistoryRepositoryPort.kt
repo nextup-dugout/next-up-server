@@ -1,7 +1,6 @@
 package com.nextup.core.port.repository
 
 import com.nextup.core.domain.player.PlayerTeamHistory
-import com.nextup.core.domain.player.PlayerTeamStatus
 import java.time.LocalDate
 
 /**
@@ -67,18 +66,6 @@ interface PlayerTeamHistoryRepositoryPort {
         playerId: Long,
         leagueId: Long,
     ): Boolean
-
-    /**
-     * 특정 상태의 소속 이력을 조회합니다.
-     *
-     * @param playerId 선수 ID
-     * @param status 소속 상태
-     * @return 해당 상태의 소속 이력 목록
-     */
-    fun findByPlayerIdAndStatus(
-        playerId: Long,
-        status: PlayerTeamStatus,
-    ): List<PlayerTeamHistory>
 
     /**
      * 팀의 활성 선수 목록을 조회합니다.

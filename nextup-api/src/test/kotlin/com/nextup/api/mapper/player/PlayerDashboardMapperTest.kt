@@ -122,7 +122,7 @@ class PlayerDashboardMapperTest {
                 endDate = LocalDate.of(2023, 12, 31),
                 position = Position.CATCHER,
                 uniformNumber = 21,
-                status = PlayerTeamStatus.TRANSFERRED,
+                status = PlayerTeamStatus.INACTIVE,
             )
 
         // when
