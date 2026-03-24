@@ -28,11 +28,6 @@ enum class TeamMemberRole(
     fun canVoteInPoll(): Boolean = this != GUEST
 
     /**
-     * 선거 참여 가능 여부를 확인합니다 (GUEST 제외).
-     */
-    fun canParticipateInElection(): Boolean = this != GUEST
-
-    /**
      * 가입 승인 권한이 있는지 확인합니다.
      */
     fun canApproveJoin(): Boolean = this in listOf(OWNER, MANAGER)

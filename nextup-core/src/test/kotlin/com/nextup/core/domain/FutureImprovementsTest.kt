@@ -5,7 +5,6 @@ import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
 import com.nextup.core.domain.event.CompetitionCompletedEvent
-import com.nextup.core.domain.event.OwnerKickedEvent
 import com.nextup.core.domain.event.StadiumClosedEvent
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.Game
@@ -435,26 +434,6 @@ class FutureImprovementsTest {
             assertThat(event.competitionId).isEqualTo(1L)
             assertThat(event.competitionName).isEqualTo("2026 춘계 리그")
             assertThat(event.leagueId).isEqualTo(10L)
-        }
-    }
-
-    // === L-10: OWNER 강퇴 시 자동 선거 트리거 ===
-
-    @Nested
-    @DisplayName("L-10: OWNER 강퇴 이벤트")
-    inner class L10OwnerKickedEventTest {
-        @Test
-        fun `OWNER 강퇴 이벤트를 생성할 수 있다`() {
-            val event =
-                OwnerKickedEvent(
-                    teamId = 1L,
-                    kickedPlayerId = 100L,
-                    kickedMemberId = 200L,
-                )
-
-            assertThat(event.teamId).isEqualTo(1L)
-            assertThat(event.kickedPlayerId).isEqualTo(100L)
-            assertThat(event.kickedMemberId).isEqualTo(200L)
         }
     }
 
