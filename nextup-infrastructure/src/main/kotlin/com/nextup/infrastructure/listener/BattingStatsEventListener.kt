@@ -122,7 +122,13 @@ class BattingStatsEventListener(
             return
         }
 
-        logger.info("타격 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})", gameId, year, competitionType, battingRecords.size)
+        logger.info(
+            "타격 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})",
+            gameId,
+            year,
+            competitionType,
+            battingRecords.size,
+        )
 
         for (battingRecord in battingRecords) {
             val player = battingRecord.gamePlayer.player
