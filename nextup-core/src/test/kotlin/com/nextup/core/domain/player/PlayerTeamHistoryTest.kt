@@ -15,7 +15,6 @@ import java.time.LocalDate
 class PlayerTeamHistoryTest {
     private lateinit var player: Player
     private lateinit var team: Team
-    private lateinit var otherTeam: Team
 
     @BeforeEach
     fun setUp() {
@@ -36,14 +35,6 @@ class PlayerTeamHistoryTest {
                 name = "타이거즈",
                 city = "서울",
                 foundedYear = 2015,
-            )
-
-        otherTeam =
-            Team(
-                league = league,
-                name = "라이온즈",
-                city = "부산",
-                foundedYear = 2016,
             )
     }
 
@@ -236,56 +227,7 @@ class PlayerTeamHistoryTest {
     }
 
     @Nested
-    @DisplayName("이적 처리")
-    inner class Transfer {
-        @Test
-        fun `ACTIVE 상태에서 이적할 수 있다`() {
-            // given
-            val history =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                )
-
-            // when
-            history.transfer(LocalDate.of(2023, 6, 30))
-
-            // then
-            assertThat(history.status).isEqualTo(PlayerTeamStatus.TRANSFERRED)
-            assertThat(history.endDate).isEqualTo(LocalDate.of(2023, 6, 30))
-        }
-
-        @Test
-        fun `ACTIVE 상태가 아니면 이적할 수 없다`() {
-            // given
-            val history =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                )
-            history.deactivate(LocalDate.of(2023, 1, 1))
-
-            // when & then
-            assertThatThrownBy { history.transfer(LocalDate.of(2023, 6, 30)) }
-                .isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("ACTIVE 상태인 선수만")
-        }
-
-        @Test
-        fun `이적일이 시작일보다 이전이면 예외가 발생한다`() {
-            // given
-            val history =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                )
-
-            // when & then
-            assertThatThrownBy { history.transfer(LocalDate.of(2019, 12, 31)) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("이적일은")
-        }
-    }
-
-    @Nested
-    @DisplayName("비활동 처리")
+    @DisplayName("비활동 처리 (탈퇴)")
     inner class Deactivate {
         @Test
         fun `ACTIVE 상태에서 비활동 처리할 수 있다`() {
@@ -310,7 +252,7 @@ class PlayerTeamHistoryTest {
                 createHistory(
                     startDate = LocalDate.of(2020, 1, 1),
                 )
-            history.transfer(LocalDate.of(2023, 1, 1))
+            history.deactivate(LocalDate.of(2023, 1, 1))
 
             // when & then
             assertThatThrownBy { history.deactivate(LocalDate.of(2023, 6, 30)) }
@@ -353,108 +295,6 @@ class PlayerTeamHistoryTest {
 
             // then
             assertThat(history.isActive).isFalse()
-        }
-
-        @Test
-        fun `TRANSFERRED 상태면 false를 반환한다`() {
-            // given
-            val history = createHistory()
-            history.transfer(LocalDate.now())
-
-            // then
-            assertThat(history.isActive).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("기간 중복 확인")
-    inner class Overlaps {
-        @Test
-        fun `같은 선수의 기간이 겹치면 true를 반환한다`() {
-            // given
-            val history1 =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                    endDate = LocalDate.of(2021, 12, 31),
-                )
-            val history2 =
-                PlayerTeamHistory(
-                    player = player,
-                    team = otherTeam,
-                    startDate = LocalDate.of(2021, 6, 1),
-                    endDate = LocalDate.of(2022, 12, 31),
-                    position = Position.SHORTSTOP,
-                )
-
-            // then
-            assertThat(history1.overlaps(history2)).isTrue()
-        }
-
-        @Test
-        fun `같은 선수의 기간이 겹치지 않으면 false를 반환한다`() {
-            // given
-            val history1 =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                    endDate = LocalDate.of(2021, 12, 31),
-                )
-            val history2 =
-                PlayerTeamHistory(
-                    player = player,
-                    team = otherTeam,
-                    startDate = LocalDate.of(2022, 1, 1),
-                    endDate = LocalDate.of(2023, 12, 31),
-                    position = Position.SHORTSTOP,
-                )
-
-            // then
-            assertThat(history1.overlaps(history2)).isFalse()
-        }
-
-        @Test
-        fun `종료일이 없는 경우도 중복 확인이 가능하다`() {
-            // given
-            val history1 =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                    endDate = null,
-                )
-            val history2 =
-                PlayerTeamHistory(
-                    player = player,
-                    team = otherTeam,
-                    startDate = LocalDate.of(2022, 1, 1),
-                    endDate = null,
-                    position = Position.SHORTSTOP,
-                )
-
-            // then
-            assertThat(history1.overlaps(history2)).isTrue()
-        }
-
-        @Test
-        fun `다른 선수의 기간은 중복되지 않는다`() {
-            // given
-            val otherPlayer =
-                Player(name = "김철수", primaryPosition = Position.CATCHER).apply {
-                    setId(this, 2L)
-                }
-            val history1 =
-                createHistory(
-                    startDate = LocalDate.of(2020, 1, 1),
-                    endDate = LocalDate.of(2021, 12, 31),
-                )
-            val history2 =
-                PlayerTeamHistory(
-                    player = otherPlayer,
-                    team = team,
-                    startDate = LocalDate.of(2020, 6, 1),
-                    endDate = LocalDate.of(2022, 12, 31),
-                    position = Position.CATCHER,
-                )
-
-            // then
-            assertThat(history1.overlaps(history2)).isFalse()
         }
     }
 }

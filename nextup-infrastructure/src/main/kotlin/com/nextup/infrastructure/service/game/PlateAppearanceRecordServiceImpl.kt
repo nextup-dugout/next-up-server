@@ -85,9 +85,9 @@ class PlateAppearanceRecordServiceImpl(
             }
 
             if (movement.isOut) {
-                game.recordOut()
+                game.gameState.recordOut()
             } else if (!movement.isScored) {
-                game.setRunner(movement.toBase, movement.runnerId)
+                game.gameState.setRunner(movement.toBase, movement.runnerId)
             }
         }
 
@@ -104,9 +104,9 @@ class PlateAppearanceRecordServiceImpl(
                     else -> com.nextup.core.domain.game.Base.FIRST
                 }
 
-            advanceToBase?.let { game.setRunner(it, batter.id) }
+            advanceToBase?.let { game.gameState.setRunner(it, batter.id) }
         } else if (!request.result.isOnBase) {
-            game.recordOut()
+            game.gameState.recordOut()
         }
 
         boxScoreService.updateOnPlateAppearance(
@@ -151,8 +151,8 @@ class PlateAppearanceRecordServiceImpl(
 
         // 경기가 끝내기로 종료된 경우 타순/카운트 진행 불필요
         if (!walkOff) {
-            game.advanceBatter()
-            game.resetCount()
+            game.gameState.advanceBatter(isHomeTeam = !game.isTopInning)
+            game.gameState.resetCount()
         }
 
         val savedGame = gameRepository.save(game)

@@ -49,6 +49,8 @@ info:
     description: NEXT-UP 사회인 야구 기록 서비스 실시간 경기 기록 API
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   websocket:
     allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000}
 

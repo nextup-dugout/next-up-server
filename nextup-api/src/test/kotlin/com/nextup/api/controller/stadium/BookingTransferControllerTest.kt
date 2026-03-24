@@ -3,7 +3,6 @@ package com.nextup.api.controller.stadium
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.nextup.api.dto.stadium.AcceptBookingTransferApiRequest
 import com.nextup.api.dto.stadium.CreateBookingTransferApiRequest
 import com.nextup.api.exception.GlobalExceptionHandler
 import com.nextup.common.exception.BookingTransferForbiddenException
@@ -27,8 +26,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import java.math.BigDecimal
-import java.time.Instant
 
 @DisplayName("BookingTransferController (사용자 API)")
 class BookingTransferControllerTest {
@@ -58,24 +55,21 @@ class BookingTransferControllerTest {
     }
 
     private fun createTransfer(
-        sellerTeamId: Long = 10L,
-        status: TransferStatus = TransferStatus.OPEN,
-        buyerTeamId: Long? = null,
+        fromTeamId: Long = 10L,
+        toTeamId: Long = 20L,
+        status: TransferStatus = TransferStatus.PENDING,
     ): BookingTransfer {
         val transfer =
             BookingTransfer.create(
                 bookingId = 1L,
-                sellerTeamId = sellerTeamId,
-                transferPrice = BigDecimal("50000"),
+                fromTeamId = fromTeamId,
+                toTeamId = toTeamId,
                 message = "양도합니다",
-                expiresAt = Instant.now().plusSeconds(3600),
             )
-        if (status == TransferStatus.ACCEPTED && buyerTeamId != null) {
-            transfer.accept(buyerTeamId)
-        } else if (status == TransferStatus.CANCELLED) {
-            transfer.cancel()
-        } else if (status == TransferStatus.EXPIRED) {
-            transfer.expire()
+        if (status == TransferStatus.ACCEPTED) {
+            transfer.accept()
+        } else if (status == TransferStatus.REJECTED) {
+            transfer.reject()
         }
         return transfer
     }
@@ -90,18 +84,16 @@ class BookingTransferControllerTest {
             val request =
                 CreateBookingTransferApiRequest(
                     bookingId = 1L,
-                    sellerTeamId = 10L,
-                    transferPrice = BigDecimal("50000"),
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = "양도합니다",
-                    expiresAt = null,
                 )
             every {
-                bookingTransferService.createTransfer(
+                bookingTransferService.requestTransfer(
                     bookingId = 1L,
-                    teamId = 10L,
-                    price = BigDecimal("50000"),
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = "양도합니다",
-                    expiresAt = any(),
                     userId = any(),
                 )
             } returns transfer
@@ -114,42 +106,9 @@ class BookingTransferControllerTest {
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.sellerTeamId").value(10))
-                .andExpect(jsonPath("$.data.status").value("OPEN"))
-        }
-
-        @Test
-        fun `should create transfer with custom expiresAt`() {
-            // given
-            val expiresAt = Instant.now().plusSeconds(7200)
-            val transfer = createTransfer()
-            val request =
-                CreateBookingTransferApiRequest(
-                    bookingId = 2L,
-                    sellerTeamId = 10L,
-                    transferPrice = null,
-                    message = null,
-                    expiresAt = expiresAt,
-                )
-            every {
-                bookingTransferService.createTransfer(
-                    bookingId = 2L,
-                    teamId = 10L,
-                    price = null,
-                    message = null,
-                    expiresAt = expiresAt,
-                    userId = any(),
-                )
-            } returns transfer
-
-            // when & then
-            mockMvc
-                .perform(
-                    post("/api/v1/booking-transfers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andExpect(status().isCreated)
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.fromTeamId").value(10))
+                .andExpect(jsonPath("$.data.toTeamId").value(20))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
         }
     }
 
@@ -159,17 +118,10 @@ class BookingTransferControllerTest {
         @Test
         fun `should accept transfer successfully`() {
             // given
-            val transfer =
-                createTransfer(
-                    sellerTeamId = 10L,
-                    status = TransferStatus.ACCEPTED,
-                    buyerTeamId = 20L,
-                )
-            val request = AcceptBookingTransferApiRequest(buyerTeamId = 20L)
+            val transfer = createTransfer(status = TransferStatus.ACCEPTED)
             every {
                 bookingTransferService.acceptTransfer(
                     transferId = 1L,
-                    buyerTeamId = 20L,
                     userId = any(),
                 )
             } returns transfer
@@ -177,23 +129,18 @@ class BookingTransferControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    patch("/api/v1/booking-transfers/1/accept")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
+                    patch("/api/v1/booking-transfers/1/accept"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("ACCEPTED"))
-                .andExpect(jsonPath("$.data.buyerTeamId").value(20))
         }
 
         @Test
         fun `should return 404 when transfer not found`() {
             // given
-            val request = AcceptBookingTransferApiRequest(buyerTeamId = 20L)
             every {
                 bookingTransferService.acceptTransfer(
                     transferId = 999L,
-                    buyerTeamId = 20L,
                     userId = any(),
                 )
             } throws BookingTransferNotFoundException(999L)
@@ -201,9 +148,7 @@ class BookingTransferControllerTest {
             // when & then
             mockMvc
                 .perform(
-                    patch("/api/v1/booking-transfers/999/accept")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
+                    patch("/api/v1/booking-transfers/999/accept"),
                 ).andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.success").value(false))
         }
@@ -215,80 +160,78 @@ class BookingTransferControllerTest {
         @Test
         fun `should reject transfer successfully`() {
             // given
-            val transfer =
-                createTransfer(
-                    sellerTeamId = 10L,
-                    status = TransferStatus.CANCELLED,
-                )
+            val transfer = createTransfer(status = TransferStatus.REJECTED)
             every {
-                bookingTransferService.cancelTransfer(
+                bookingTransferService.rejectTransfer(
                     transferId = 1L,
-                    teamId = 10L,
+                    userId = any(),
                 )
             } returns transfer
 
             // when & then
             mockMvc
                 .perform(
-                    patch("/api/v1/booking-transfers/1/reject")
-                        .param("teamId", "10"),
+                    patch("/api/v1/booking-transfers/1/reject"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.data.status").value("REJECTED"))
         }
 
         @Test
-        fun `should return 403 when team is not the seller`() {
+        fun `should return 403 when user is not a member of target team`() {
             // given
             every {
-                bookingTransferService.cancelTransfer(
+                bookingTransferService.rejectTransfer(
                     transferId = 1L,
-                    teamId = 99L,
+                    userId = any(),
                 )
             } throws
                 BookingTransferForbiddenException(
-                    "Only the seller team can cancel the transfer. transferId=1",
+                    "User 100 is not a member of team 20",
                 )
 
             // when & then
             mockMvc
                 .perform(
-                    patch("/api/v1/booking-transfers/1/reject")
-                        .param("teamId", "99"),
+                    patch("/api/v1/booking-transfers/1/reject"),
                 ).andExpect(status().isForbidden)
                 .andExpect(jsonPath("$.success").value(false))
         }
     }
 
     @Nested
-    @DisplayName("GET /api/v1/booking-transfers/available")
-    inner class GetAvailableTransfers {
+    @DisplayName("GET /api/v1/booking-transfers/sent")
+    inner class GetSentTransfers {
         @Test
-        fun `should return list of available transfers`() {
+        fun `should return list of sent transfers`() {
             // given
-            val transfer1 = createTransfer(sellerTeamId = 10L)
-            val transfer2 = createTransfer(sellerTeamId = 20L)
-            every { bookingTransferService.getAvailableTransfers() } returns
+            val transfer1 = createTransfer(fromTeamId = 10L)
+            val transfer2 = createTransfer(fromTeamId = 10L, toTeamId = 30L)
+            every { bookingTransferService.getSentTransfers(10L) } returns
                 listOf(transfer1, transfer2)
 
             // when & then
             mockMvc
-                .perform(get("/api/v1/booking-transfers/available"))
-                .andExpect(status().isOk)
+                .perform(
+                    get("/api/v1/booking-transfers/sent")
+                        .param("teamId", "10"),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(2))
         }
 
         @Test
-        fun `should return empty list when no available transfers`() {
+        fun `should return empty list when no sent transfers`() {
             // given
-            every { bookingTransferService.getAvailableTransfers() } returns emptyList()
+            every { bookingTransferService.getSentTransfers(99L) } returns emptyList()
 
             // when & then
             mockMvc
-                .perform(get("/api/v1/booking-transfers/available"))
-                .andExpect(status().isOk)
+                .perform(
+                    get("/api/v1/booking-transfers/sent")
+                        .param("teamId", "99"),
+                ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
                 .andExpect(jsonPath("$.data.length()").value(0))
@@ -296,41 +239,34 @@ class BookingTransferControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/booking-transfers/my")
-    inner class GetMyTransfers {
+    @DisplayName("GET /api/v1/booking-transfers/received")
+    inner class GetReceivedTransfers {
         @Test
-        fun `should return transfers for the team`() {
+        fun `should return list of received transfers`() {
             // given
-            val sellerTransfer = createTransfer(sellerTeamId = 10L)
-            val buyerTransfer =
-                createTransfer(
-                    sellerTeamId = 20L,
-                    status = TransferStatus.ACCEPTED,
-                    buyerTeamId = 10L,
-                )
-            every { bookingTransferService.getTransfersByTeamId(10L) } returns
-                listOf(sellerTransfer, buyerTransfer)
+            val transfer = createTransfer(fromTeamId = 30L, toTeamId = 10L)
+            every { bookingTransferService.getReceivedTransfers(10L) } returns listOf(transfer)
 
             // when & then
             mockMvc
                 .perform(
-                    get("/api/v1/booking-transfers/my")
+                    get("/api/v1/booking-transfers/received")
                         .param("teamId", "10"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.length()").value(1))
         }
 
         @Test
-        fun `should return empty list when no transfers for team`() {
+        fun `should return empty list when no received transfers`() {
             // given
-            every { bookingTransferService.getTransfersByTeamId(99L) } returns emptyList()
+            every { bookingTransferService.getReceivedTransfers(99L) } returns emptyList()
 
             // when & then
             mockMvc
                 .perform(
-                    get("/api/v1/booking-transfers/my")
+                    get("/api/v1/booking-transfers/received")
                         .param("teamId", "99"),
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
