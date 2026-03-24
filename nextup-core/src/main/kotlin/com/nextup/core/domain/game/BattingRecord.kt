@@ -95,20 +95,6 @@ class BattingRecord(
     var groundedIntoDoublePlays: Int = 0
         protected set
 
-    @Column(name = "triple_plays", nullable = false)
-    var triplePlays: Int = 0
-        protected set
-
-    /** L-2: 타격방해 횟수 */
-    @Column(name = "batter_interferences", nullable = false)
-    var batterInterferences: Int = 0
-        protected set
-
-    /** L-2: 주루방해 횟수 */
-    @Column(name = "runner_interferences", nullable = false)
-    var runnerInterferences: Int = 0
-        protected set
-
     // Calculated properties
 
     /**
@@ -271,18 +257,8 @@ class BattingRecord(
                 atBats++
                 groundedIntoDoublePlays++
             }
-            PlateAppearanceResult.TRIPLE_PLAY -> {
-                atBats++
-                triplePlays++
-            }
             PlateAppearanceResult.INTERFERENCE -> {
-                // 기존 INTERFERENCE — 타수에 포함되지 않음 (하위호환)
-            }
-            PlateAppearanceResult.BATTER_INTERFERENCE -> {
-                batterInterferences++
-            }
-            PlateAppearanceResult.RUNNER_INTERFERENCE -> {
-                runnerInterferences++
+                // INTERFERENCE — 타수에 포함되지 않음
             }
         }
 
@@ -405,22 +381,8 @@ class BattingRecord(
                 atBats--
                 groundedIntoDoublePlays--
             }
-            PlateAppearanceResult.TRIPLE_PLAY -> {
-                require(atBats > 0) { "롤백할 타수 기록이 없습니다." }
-                require(triplePlays > 0) { "롤백할 삼중살 기록이 없습니다." }
-                atBats--
-                triplePlays--
-            }
             PlateAppearanceResult.INTERFERENCE -> {
-                // 기존 INTERFERENCE — 타수에 포함되지 않음 (하위호환)
-            }
-            PlateAppearanceResult.BATTER_INTERFERENCE -> {
-                require(batterInterferences > 0) { "롤백할 타격방해 기록이 없습니다." }
-                batterInterferences--
-            }
-            PlateAppearanceResult.RUNNER_INTERFERENCE -> {
-                require(runnerInterferences > 0) { "롤백할 주루방해 기록이 없습니다." }
-                runnerInterferences--
+                // INTERFERENCE — 타수에 포함되지 않음
             }
         }
 
@@ -456,9 +418,6 @@ class BattingRecord(
         require(stolenBases >= 0) { "도루($stolenBases)는 음수일 수 없습니다." }
         require(caughtStealing >= 0) { "도루실패($caughtStealing)는 음수일 수 없습니다." }
         require(groundedIntoDoublePlays >= 0) { "병살타($groundedIntoDoublePlays)는 음수일 수 없습니다." }
-        require(triplePlays >= 0) { "삼중살($triplePlays)은 음수일 수 없습니다." }
-        require(batterInterferences >= 0) { "타격방해($batterInterferences)는 음수일 수 없습니다." }
-        require(runnerInterferences >= 0) { "주루방해($runnerInterferences)는 음수일 수 없습니다." }
         require(hits <= atBats) {
             "안타 수($hits)가 타수($atBats)보다 클 수 없습니다."
         }
@@ -509,9 +468,6 @@ class BattingRecord(
                 "caughtStealing" -> caughtStealing.also { caughtStealing = intValue }
                 "groundedIntoDoublePlays" ->
                     groundedIntoDoublePlays.also { groundedIntoDoublePlays = intValue }
-                "triplePlays" -> triplePlays.also { triplePlays = intValue }
-                "batterInterferences" -> batterInterferences.also { batterInterferences = intValue }
-                "runnerInterferences" -> runnerInterferences.also { runnerInterferences = intValue }
                 else -> throw IllegalArgumentException("유효하지 않은 타격 기록 필드입니다: $fieldName")
             }
 

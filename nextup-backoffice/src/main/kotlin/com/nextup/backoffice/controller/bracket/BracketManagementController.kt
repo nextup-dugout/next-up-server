@@ -6,7 +6,6 @@ import com.nextup.backoffice.dto.bracket.CreateGameFromBracketRequest
 import com.nextup.backoffice.dto.bracket.GenerateBracketRequest
 import com.nextup.backoffice.dto.bracket.toResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.domain.competition.TournamentType
 import com.nextup.core.service.bracket.BracketGeneratorService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -26,13 +25,7 @@ class BracketManagementController(
         @RequestBody @Valid request: GenerateBracketRequest,
     ): ApiResponse<List<BracketEntryResponse>> {
         val entries =
-            when (request.tournamentType) {
-                TournamentType.SINGLE_ELIMINATION ->
-                    bracketGeneratorService.generateSingleElimination(competitionId, request.seededTeamIds)
-
-                TournamentType.DOUBLE_ELIMINATION ->
-                    bracketGeneratorService.generateDoubleElimination(competitionId, request.seededTeamIds)
-            }
+            bracketGeneratorService.generateSingleElimination(competitionId, request.seededTeamIds)
 
         return ApiResponse.success(entries.toResponse())
     }

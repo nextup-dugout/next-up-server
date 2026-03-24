@@ -112,16 +112,6 @@ class CareerBattingStats(
     var groundedIntoDoublePlays: Int = 0
         protected set
 
-    /** L-2: 타격방해 횟수 */
-    @Column(name = "batter_interferences", nullable = false)
-    var batterInterferences: Int = 0
-        protected set
-
-    /** L-2: 주루방해 횟수 */
-    @Column(name = "runner_interferences", nullable = false)
-    var runnerInterferences: Int = 0
-        protected set
-
     // Calculated properties (BattingRecord와 동일한 로직)
 
     /**
@@ -234,8 +224,6 @@ class CareerBattingStats(
         stolenBases += record.stolenBases
         caughtStealing += record.caughtStealing
         groundedIntoDoublePlays += record.groundedIntoDoublePlays
-        batterInterferences += record.batterInterferences
-        runnerInterferences += record.runnerInterferences
     }
 
     /**
@@ -268,8 +256,6 @@ class CareerBattingStats(
         stolenBases = maxOf(0, stolenBases - record.stolenBases)
         caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
         groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays - record.groundedIntoDoublePlays)
-        batterInterferences = maxOf(0, batterInterferences - record.batterInterferences)
-        runnerInterferences = maxOf(0, runnerInterferences - record.runnerInterferences)
     }
 
     /**
@@ -300,8 +286,6 @@ class CareerBattingStats(
             "stolenBases" -> stolenBases = maxOf(0, stolenBases + delta)
             "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
             "groundedIntoDoublePlays" -> groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays + delta)
-            "batterInterferences" -> batterInterferences = maxOf(0, batterInterferences + delta)
-            "runnerInterferences" -> runnerInterferences = maxOf(0, runnerInterferences + delta)
             else -> throw IllegalArgumentException("유효하지 않은 커리어 타격 통계 필드입니다: $fieldName")
         }
         validate()

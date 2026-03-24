@@ -16,14 +16,6 @@ interface BracketGeneratorService {
     ): List<BracketEntry>
 
     /**
-     * 더블 토너먼트 대진표를 생성합니다.
-     */
-    fun generateDoubleElimination(
-        competitionId: Long,
-        seededTeamIds: List<Long>,
-    ): List<BracketEntry>
-
-    /**
      * 대진표를 조회합니다.
      */
     fun getBracket(competitionId: Long): List<BracketEntry>

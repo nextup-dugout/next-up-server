@@ -28,7 +28,6 @@ enum class PlateAppearanceResult(
     FIELDERS_CHOICE("야수 선택", "야수 선택으로 출루", true, false),
     ERROR("실책", "수비 실책으로 출루", true, false),
     DOUBLE_PLAY("병살타", "병살로 아웃", true, false),
-    TRIPLE_PLAY("삼중살", "삼중살로 아웃", true, false),
 
     // 비타수 (No At-Bat) - 타수 X, 안타 X
     WALK("볼넷", "4볼로 출루", false, false),
@@ -37,10 +36,7 @@ enum class PlateAppearanceResult(
     SACRIFICE_BUNT("희생번트", "희생번트로 아웃", false, false),
     SACRIFICE_FLY("희생플라이", "희생플라이로 아웃", false, false),
 
-    /** L-2: 기존 INTERFERENCE를 유지하면서 타격방해/주루방해 세분화 */
     INTERFERENCE("방해", "수비 방해로 출루", false, false),
-    BATTER_INTERFERENCE("타격방해", "타격 방해로 출루", false, false),
-    RUNNER_INTERFERENCE("주루방해", "주루 방해로 아웃", false, false),
     ;
 
     /**
@@ -118,7 +114,6 @@ enum class PlateAppearanceResult(
                     FIELDERS_CHOICE,
                     ERROR,
                     INTERFERENCE,
-                    BATTER_INTERFERENCE,
                     STRIKEOUT_DROPPED_THIRD,
                 )
 

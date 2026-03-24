@@ -326,12 +326,6 @@ class StatsEventListener(
             }
         }
 
-        // L-7: SeasonBattingStats vs BattingRecord 합산값 교차 검증
-        verifyBattingConsistency(battingRecords, year, gameId)
-
-        // L-7: SeasonFieldingStats vs FieldingRecord 합산값 교차 검증
-        verifyFieldingConsistency(fieldingRecords, year, gameId)
-
         logger.info(
             "경기 결과 확정 스탯 집계 완료 (gameId={}, battingRecords={}, pitchingRecords={}, fieldingRecords={})",
             gameId,
@@ -418,94 +412,6 @@ class StatsEventListener(
                 val newStats = SeasonFieldingStats.create(player = player, year = year)
                 seasonFieldingStatsRepository.save(newStats)
             }
-    }
-
-    /**
-     * L-7: SeasonBattingStats와 BattingRecord 합산값의 교차 검증을 수행합니다.
-     *
-     * 해당 시즌 전체 BattingRecord 합산과 실시간 갱신된 SeasonBattingStats를 비교합니다.
-     * 불일치 발견 시 경고 로그를 출력합니다.
-     */
-    private fun verifyBattingConsistency(
-        battingRecords: List<com.nextup.core.domain.game.BattingRecord>,
-        year: Int,
-        gameId: Long,
-    ) {
-        val playerIds = battingRecords.map { it.gamePlayer.player.id }.distinct()
-
-        for (playerId in playerIds) {
-            val seasonStats =
-                seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year) ?: continue
-
-            // 시즌 전체 BattingRecord를 합산하여 교차 검증
-            val allSeasonRecords =
-                battingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
-
-            val totalPlateAppearances = allSeasonRecords.sumOf { it.plateAppearances }
-            val totalHits = allSeasonRecords.sumOf { it.hits }
-            val totalAtBats = allSeasonRecords.sumOf { it.atBats }
-
-            val mismatches =
-                seasonStats.verifyConsistency(
-                    totalPlateAppearances = totalPlateAppearances,
-                    totalHits = totalHits,
-                    totalAtBats = totalAtBats,
-                )
-
-            if (mismatches.isNotEmpty()) {
-                logger.warn(
-                    "L-7 타격 통계 정합성 불일치 발견 (gameId={}, playerId={}, year={}): {}",
-                    gameId,
-                    playerId,
-                    year,
-                    mismatches.joinToString("; "),
-                )
-            }
-        }
-    }
-
-    /**
-     * L-7: SeasonFieldingStats와 FieldingRecord 합산값의 교차 검증을 수행합니다.
-     *
-     * 해당 시즌 전체 FieldingRecord 합산과 실시간 갱신된 SeasonFieldingStats를 비교합니다.
-     * 불일치 발견 시 경고 로그를 출력합니다.
-     */
-    private fun verifyFieldingConsistency(
-        fieldingRecords: List<com.nextup.core.domain.game.FieldingRecord>,
-        year: Int,
-        gameId: Long,
-    ) {
-        val playerIds = fieldingRecords.map { it.gamePlayer.player.id }.distinct()
-
-        for (playerId in playerIds) {
-            val seasonStats =
-                seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year) ?: continue
-
-            // 시즌 전체 FieldingRecord를 합산하여 교차 검증
-            val allSeasonRecords =
-                fieldingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
-
-            val totalPutOuts = allSeasonRecords.sumOf { it.putOuts }
-            val totalAssists = allSeasonRecords.sumOf { it.assists }
-            val totalErrors = allSeasonRecords.sumOf { it.errors }
-
-            val mismatches =
-                seasonStats.verifyConsistency(
-                    totalPutOuts = totalPutOuts,
-                    totalAssists = totalAssists,
-                    totalErrors = totalErrors,
-                )
-
-            if (mismatches.isNotEmpty()) {
-                logger.warn(
-                    "L-7 수비 통계 정합성 불일치 발견 (gameId={}, playerId={}, year={}): {}",
-                    gameId,
-                    playerId,
-                    year,
-                    mismatches.joinToString("; "),
-                )
-            }
-        }
     }
 
     private fun resolveYear(gameId: Long): Int {

@@ -1,6 +1,5 @@
 package com.nextup.core.domain.stats
 
-import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.BattingRecord
@@ -122,21 +121,6 @@ class SeasonBattingStats(
     var groundedIntoDoublePlays: Int = 0
         protected set
 
-    /** L-2: 타격방해 횟수 */
-    @Column(name = "batter_interferences", nullable = false)
-    var batterInterferences: Int = 0
-        protected set
-
-    /** L-2: 주루방해 횟수 */
-    @Column(name = "runner_interferences", nullable = false)
-    var runnerInterferences: Int = 0
-        protected set
-
-    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
-    @Column(name = "is_finalized", nullable = false)
-    var isFinalized: Boolean = false
-        protected set
-
     // Calculated properties (BattingRecord와 동일한 로직)
 
     /**
@@ -231,7 +215,6 @@ class SeasonBattingStats(
      * 경기 타격 기록을 누적합니다.
      */
     fun addGameRecord(record: BattingRecord) {
-        requireNotFinalized()
         gamesPlayed++
         plateAppearances += record.plateAppearances
         atBats += record.atBats
@@ -250,8 +233,6 @@ class SeasonBattingStats(
         stolenBases += record.stolenBases
         caughtStealing += record.caughtStealing
         groundedIntoDoublePlays += record.groundedIntoDoublePlays
-        batterInterferences += record.batterInterferences
-        runnerInterferences += record.runnerInterferences
     }
 
     /**
@@ -260,7 +241,6 @@ class SeasonBattingStats(
      * 이벤트 기반으로 호출되며, 경기 종료 전에도 통계가 반영됩니다.
      */
     fun applyLiveUpdate(result: PlateAppearanceResult) {
-        requireNotFinalized()
         plateAppearances++
 
         if (result.isAtBat) {
@@ -286,8 +266,6 @@ class SeasonBattingStats(
             -> strikeouts++
             PlateAppearanceResult.SACRIFICE_BUNT -> sacrificeBunts++
             PlateAppearanceResult.SACRIFICE_FLY -> sacrificeFlies++
-            PlateAppearanceResult.BATTER_INTERFERENCE -> batterInterferences++
-            PlateAppearanceResult.RUNNER_INTERFERENCE -> runnerInterferences++
             else -> Unit
         }
     }
@@ -298,7 +276,6 @@ class SeasonBattingStats(
      * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
      */
     fun revertLiveUpdate(result: PlateAppearanceResult) {
-        requireNotFinalized()
         if (plateAppearances > 0) plateAppearances--
 
         if (result.isAtBat && atBats > 0) {
@@ -324,8 +301,6 @@ class SeasonBattingStats(
             -> if (strikeouts > 0) strikeouts--
             PlateAppearanceResult.SACRIFICE_BUNT -> if (sacrificeBunts > 0) sacrificeBunts--
             PlateAppearanceResult.SACRIFICE_FLY -> if (sacrificeFlies > 0) sacrificeFlies--
-            PlateAppearanceResult.BATTER_INTERFERENCE -> if (batterInterferences > 0) batterInterferences--
-            PlateAppearanceResult.RUNNER_INTERFERENCE -> if (runnerInterferences > 0) runnerInterferences--
             else -> Unit
         }
     }
@@ -338,7 +313,6 @@ class SeasonBattingStats(
      * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
      */
     fun revertGameRecord(record: BattingRecord) {
-        requireNotFinalized()
         gamesPlayed = maxOf(0, gamesPlayed - 1)
         plateAppearances = maxOf(0, plateAppearances - record.plateAppearances)
         atBats = maxOf(0, atBats - record.atBats)
@@ -357,8 +331,6 @@ class SeasonBattingStats(
         stolenBases = maxOf(0, stolenBases - record.stolenBases)
         caughtStealing = maxOf(0, caughtStealing - record.caughtStealing)
         groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays - record.groundedIntoDoublePlays)
-        batterInterferences = maxOf(0, batterInterferences - record.batterInterferences)
-        runnerInterferences = maxOf(0, runnerInterferences - record.runnerInterferences)
     }
 
     /**
@@ -371,7 +343,6 @@ class SeasonBattingStats(
         fieldName: String,
         delta: Int,
     ) {
-        requireNotFinalized()
         when (fieldName) {
             "plateAppearances" -> plateAppearances = maxOf(0, plateAppearances + delta)
             "atBats" -> atBats = maxOf(0, atBats + delta)
@@ -390,8 +361,6 @@ class SeasonBattingStats(
             "stolenBases" -> stolenBases = maxOf(0, stolenBases + delta)
             "caughtStealing" -> caughtStealing = maxOf(0, caughtStealing + delta)
             "groundedIntoDoublePlays" -> groundedIntoDoublePlays = maxOf(0, groundedIntoDoublePlays + delta)
-            "batterInterferences" -> batterInterferences = maxOf(0, batterInterferences + delta)
-            "runnerInterferences" -> runnerInterferences = maxOf(0, runnerInterferences + delta)
             else -> throw IllegalArgumentException("유효하지 않은 시즌 타격 통계 필드입니다: $fieldName")
         }
         validate()
@@ -412,62 +381,6 @@ class SeasonBattingStats(
         }
         if (atBats > plateAppearances) {
             throw StatsValidationException("타수($atBats)가 타석($plateAppearances)보다 클 수 없습니다.")
-        }
-    }
-
-    /**
-     * L-8: 시즌 통계를 확정합니다.
-     *
-     * 확정된 통계는 추가 갱신이 불가합니다.
-     */
-    fun finalize() {
-        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
-        validate()
-        this.isFinalized = true
-    }
-
-    /**
-     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
-     */
-    fun unfinalize() {
-        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
-        this.isFinalized = false
-    }
-
-    /**
-     * L-7: 경기 종료 시 BoxScore와 교차 검증하여 정합성을 확인합니다.
-     *
-     * 실시간 갱신된 시즌 통계가 경기별 BattingRecord 합산과 일치하는지 검증합니다.
-     *
-     * @param totalPlateAppearances 경기별 BattingRecord에서 합산한 총 타석 수
-     * @param totalHits 경기별 BattingRecord에서 합산한 총 안타 수
-     * @param totalAtBats 경기별 BattingRecord에서 합산한 총 타수
-     * @return 불일치 항목 목록 (비어있으면 정합성 OK)
-     */
-    fun verifyConsistency(
-        totalPlateAppearances: Int,
-        totalHits: Int,
-        totalAtBats: Int,
-    ): List<String> {
-        val mismatches = mutableListOf<String>()
-        if (plateAppearances != totalPlateAppearances) {
-            mismatches.add("타석: 시즌통계=$plateAppearances, BoxScore합산=$totalPlateAppearances")
-        }
-        if (hits != totalHits) {
-            mismatches.add("안타: 시즌통계=$hits, BoxScore합산=$totalHits")
-        }
-        if (atBats != totalAtBats) {
-            mismatches.add("타수: 시즌통계=$atBats, BoxScore합산=$totalAtBats")
-        }
-        return mismatches
-    }
-
-    /**
-     * 확정된 통계의 수정을 방지하는 가드 메서드.
-     */
-    private fun requireNotFinalized() {
-        if (isFinalized) {
-            throw FrozenStatsException()
         }
     }
 

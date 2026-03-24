@@ -1,6 +1,5 @@
 package com.nextup.core.domain.stats
 
-import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.game.PitchingRecord
@@ -128,11 +127,6 @@ class SeasonPitchingStats(
 
     @Column(name = "strikes_thrown")
     var strikesThrown: Int? = null
-        protected set
-
-    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
-    @Column(name = "is_finalized", nullable = false)
-    var isFinalized: Boolean = false
         protected set
 
     // Calculated properties (PitchingRecord와 동일한 로직)
@@ -268,7 +262,6 @@ class SeasonPitchingStats(
      * 경기 취소 후 전체 재집계, 또는 실시간 갱신 없이 경기가 종료된 경우에 해당합니다.
      */
     fun addGameRecord(record: PitchingRecord) {
-        requireNotFinalized()
         addGameSummaryFields(record)
         addLiveTrackingFields(record)
     }
@@ -285,7 +278,6 @@ class SeasonPitchingStats(
      * - 승/패/세이브/홀드/블론세이브
      */
     fun addGameRecordForEndOfGame(record: PitchingRecord) {
-        requireNotFinalized()
         addGameSummaryFields(record)
     }
 
@@ -342,7 +334,6 @@ class SeasonPitchingStats(
      * 음수 방지를 위해 각 항목은 0 미만으로 내려가지 않습니다.
      */
     fun revertGameRecord(record: PitchingRecord) {
-        requireNotFinalized()
         gamesPlayed = maxOf(0, gamesPlayed - 1)
         if (record.isStartingPitcher) {
             gamesStarted = maxOf(0, gamesStarted - 1)
@@ -383,7 +374,6 @@ class SeasonPitchingStats(
      * 대면 타자 수, 피안타, 삼진, 볼넷, 사구, 피홈런을 갱신합니다.
      */
     fun applyLiveUpdate(result: PlateAppearanceResult) {
-        requireNotFinalized()
         battersFaced++
 
         when (result) {
@@ -422,7 +412,6 @@ class SeasonPitchingStats(
      * 이벤트 기반으로 호출되며, applyLiveUpdate의 역연산입니다.
      */
     fun revertLiveUpdate(result: PlateAppearanceResult) {
-        requireNotFinalized()
         if (battersFaced > 0) battersFaced--
 
         when (result) {
@@ -456,25 +445,6 @@ class SeasonPitchingStats(
     }
 
     /**
-     * L-8: 시즌 통계를 확정합니다.
-     *
-     * 확정된 통계는 추가 갱신이 불가합니다.
-     */
-    fun finalize() {
-        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
-        validate()
-        this.isFinalized = true
-    }
-
-    /**
-     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
-     */
-    fun unfinalize() {
-        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
-        this.isFinalized = false
-    }
-
-    /**
      * 기록 정정에 따른 필드별 델타를 적용합니다.
      *
      * @param fieldName 정정된 필드명
@@ -484,7 +454,6 @@ class SeasonPitchingStats(
         fieldName: String,
         delta: Int,
     ) {
-        requireNotFinalized()
         when (fieldName) {
             "inningsPitchedOuts" -> inningsPitchedOuts = maxOf(0, inningsPitchedOuts + delta)
             "earnedRuns" -> earnedRuns = maxOf(0, earnedRuns + delta)
@@ -519,15 +488,6 @@ class SeasonPitchingStats(
         }
         if (pitchesThrown != null && strikesThrown != null && strikesThrown!! > pitchesThrown!!) {
             throw StatsValidationException("스트라이크 수($strikesThrown)가 총 투구 수($pitchesThrown)보다 클 수 없습니다.")
-        }
-    }
-
-    /**
-     * 확정된 통계의 수정을 방지하는 가드 메서드.
-     */
-    private fun requireNotFinalized() {
-        if (isFinalized) {
-            throw FrozenStatsException()
         }
     }
 
