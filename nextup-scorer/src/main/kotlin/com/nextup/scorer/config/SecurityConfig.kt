@@ -36,7 +36,7 @@ class SecurityConfig(
     private val customAccessDeniedHandler: CustomAccessDeniedHandler,
     @Value("\${springdoc.swagger-ui.enabled:true}")
     private val swaggerEnabled: Boolean,
-    @Value("\${app.cors.allowed-origins:\${app.websocket.allowed-origins:http://localhost:3000}}")
+    @Value("\${app.cors.allowed-origins:http://localhost:3000}")
     private val allowedOrigins: String,
 ) {
 
@@ -76,7 +76,8 @@ class SecurityConfig(
                             registry
                         }
                     }
-                    // WebSocket endpoints - HTTP 핸드셰이크 허용 (STOMP CONNECT에서 JWT 검증)
+                    // WebSocket endpoints - HTTP 핸드셰이크 허용
+                    // 인증은 WebSocketHandshakeInterceptor(HTTP) + WebSocketAuthInterceptor(STOMP)에서 이중 검증
                     .requestMatchers("/ws/**").permitAll()
                     // Scorer API endpoints
                     .requestMatchers("/api/v1/scorer/**").hasAnyRole("SCORER", "ADMIN")
@@ -95,7 +96,15 @@ class SecurityConfig(
         val configuration = CorsConfiguration()
         configuration.allowedOrigins = allowedOrigins.split(",").map { it.trim() }
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-        configuration.allowedHeaders = listOf("*")
+        configuration.allowedHeaders =
+            listOf(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With",
+                "Cache-Control",
+            )
+        configuration.exposedHeaders = listOf("Authorization")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 

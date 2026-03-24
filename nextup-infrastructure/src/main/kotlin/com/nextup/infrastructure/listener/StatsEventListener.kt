@@ -2,6 +2,7 @@ package com.nextup.infrastructure.listener
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.PlayerNotFoundException
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.event.FieldingRecordUpdatedEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.PlateAppearanceRecordedEvent
@@ -72,34 +73,38 @@ class StatsEventListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceRecorded(event: PlateAppearanceRecordedEvent) {
-        val year = resolveYear(event.gameId)
+        val (year, competitionType) = resolveGameContext(event.gameId)
 
         retryOnOptimisticLock("onPlateAppearanceRecorded") {
-            val stats = findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId)
+            val stats =
+                findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId, competitionType)
 
             stats.applyLiveUpdate(event.result)
             seasonBattingStatsRepository.save(stats)
 
             logger.debug(
-                "실시간 타격 통계 갱신 완료 (playerId={}, year={}, teamId={}, result={})",
+                "실시간 타격 통계 갱신 완료 (playerId={}, year={}, teamId={}, competitionType={}, result={})",
                 event.playerId,
                 year,
                 event.batterTeamId,
+                competitionType,
                 event.result,
             )
         }
 
         // 투수 통계 실시간 갱신
-        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId)
+        val pitchingStats =
+            findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId, competitionType)
 
         pitchingStats.applyLiveUpdate(event.result)
         seasonPitchingStatsRepository.save(pitchingStats)
 
         logger.debug(
-            "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, teamId={}, result={})",
+            "실시간 투수 통계 갱신 완료 (pitcherId={}, year={}, teamId={}, competitionType={}, result={})",
             event.pitcherId,
             year,
             event.pitcherTeamId,
+            competitionType,
             event.result,
         )
     }
@@ -115,10 +120,10 @@ class StatsEventListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onFieldingRecordUpdated(event: FieldingRecordUpdatedEvent) {
-        val year = resolveYear(event.gameId)
+        val (year, competitionType) = resolveGameContext(event.gameId)
 
         retryOnOptimisticLock("onFieldingRecordUpdated") {
-            val stats = findOrCreateSeasonFieldingStats(event.playerId, year)
+            val stats = findOrCreateSeasonFieldingStats(event.playerId, year, competitionType)
 
             if (event.isRevert) {
                 stats.revertLiveFieldingUpdate(event.type)
@@ -128,10 +133,11 @@ class StatsEventListener(
             seasonFieldingStatsRepository.save(stats)
 
             logger.debug(
-                "실시간 수비 통계 {} 완료 (playerId={}, year={}, type={})",
+                "실시간 수비 통계 {} 완료 (playerId={}, year={}, competitionType={}, type={})",
                 if (event.isRevert) "역산" else "갱신",
                 event.playerId,
                 year,
+                competitionType,
                 event.type,
             )
         }
@@ -147,34 +153,38 @@ class StatsEventListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onPlateAppearanceUndone(event: PlateAppearanceUndoneEvent) {
-        val year = resolveYear(event.gameId)
+        val (year, competitionType) = resolveGameContext(event.gameId)
 
         retryOnOptimisticLock("onPlateAppearanceUndone") {
-            val stats = findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId)
+            val stats =
+                findOrCreateSeasonBattingStats(event.playerId, year, event.batterTeamId, competitionType)
 
             stats.revertLiveUpdate(event.result)
             seasonBattingStatsRepository.save(stats)
 
             logger.debug(
-                "실시간 타격 통계 역산 완료 (playerId={}, year={}, teamId={}, result={})",
+                "실시간 타격 통계 역산 완료 (playerId={}, year={}, teamId={}, competitionType={}, result={})",
                 event.playerId,
                 year,
                 event.batterTeamId,
+                competitionType,
                 event.result,
             )
         }
 
         // 투수 통계 역산
-        val pitchingStats = findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId)
+        val pitchingStats =
+            findOrCreateSeasonPitchingStats(event.pitcherId, year, event.pitcherTeamId, competitionType)
 
         pitchingStats.revertLiveUpdate(event.result)
         seasonPitchingStatsRepository.save(pitchingStats)
 
         logger.debug(
-            "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, teamId={}, result={})",
+            "실시간 투수 통계 역산 완료 (pitcherId={}, year={}, teamId={}, competitionType={}, result={})",
             event.pitcherId,
             year,
             event.pitcherTeamId,
+            competitionType,
             event.result,
         )
     }
@@ -201,9 +211,14 @@ class StatsEventListener(
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onGameResultConfirmed(event: GameResultConfirmedEvent) {
         val gameId = event.gameId
-        val year = resolveYear(gameId)
+        val (year, competitionType) = resolveGameContext(gameId)
 
-        logger.info("경기 결과 확정 스탯 집계 시작 (gameId={}, year={})", gameId, year)
+        logger.info(
+            "경기 결과 확정 스탯 집계 시작 (gameId={}, year={}, competitionType={})",
+            gameId,
+            year,
+            competitionType,
+        )
 
         val battingRecords = battingRecordRepository.findAllByGameId(gameId)
         val pitchingRecords = pitchingRecordRepository.findAllByGameId(gameId)
@@ -217,7 +232,12 @@ class StatsEventListener(
 
             retryOnOptimisticLock("onGameResultConfirmed-pitching(playerId=$playerId)") {
                 val existingSeasonPitching =
-                    seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
+                    seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                        playerId,
+                        year,
+                        teamId,
+                        competitionType,
+                    )
                 val isFirstPitchingSeason = existingSeasonPitching == null
 
                 // SeasonPitchingStats 갱신
@@ -225,7 +245,13 @@ class StatsEventListener(
                 // 경기 종료 시에만 확정되는 필드(이닝, 실점, 자책점, 결정 등)만 추가한다.
                 // 새로 생성된 경우에는 실시간 갱신이 적용되지 않았으므로 전체 기록을 추가한다.
                 val seasonPitchingStats =
-                    existingSeasonPitching ?: SeasonPitchingStats.create(player = player, year = year, teamId = teamId)
+                    existingSeasonPitching
+                        ?: SeasonPitchingStats.create(
+                            player = player,
+                            year = year,
+                            teamId = teamId,
+                            competitionType = competitionType,
+                        )
                 if (existingSeasonPitching != null) {
                     seasonPitchingStats.addGameRecordForEndOfGame(pitchingRecord)
                 } else {
@@ -245,10 +271,11 @@ class StatsEventListener(
                 careerPitchingStatsRepository.save(careerPitchingStats)
 
                 logger.debug(
-                    "투수 통계 갱신 완료 (playerId={}, year={}, teamId={}, isFirstSeason={})",
+                    "투수 통계 갱신 완료 (playerId={}, year={}, teamId={}, competitionType={}, isFirstSeason={})",
                     playerId,
                     year,
                     teamId,
+                    competitionType,
                     isFirstPitchingSeason,
                 )
             }
@@ -256,7 +283,7 @@ class StatsEventListener(
 
         // 커리어 타격 스탯 집계: CareerBattingStats
         // SeasonBattingStats는 PlateAppearanceRecordedEvent로 실시간 갱신되므로
-        // 해당 시즌+팀 통계 존재 여부로 첫 시즌인지 판단합니다.
+        // 해당 시즌+팀+대회유형 통계 존재 여부로 첫 시즌인지 판단합니다.
         for (battingRecord in battingRecords) {
             val player = battingRecord.gamePlayer.player
             val playerId = player.id
@@ -264,7 +291,12 @@ class StatsEventListener(
 
             retryOnOptimisticLock("onGameResultConfirmed-batting(playerId=$playerId)") {
                 val isFirstBattingSeason =
-                    seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId) == null
+                    seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                        playerId,
+                        year,
+                        teamId,
+                        competitionType,
+                    ) == null
 
                 val careerBattingStats =
                     careerBattingStatsRepository.findByPlayerId(playerId)
@@ -277,9 +309,10 @@ class StatsEventListener(
                 careerBattingStatsRepository.save(careerBattingStats)
 
                 logger.debug(
-                    "커리어 타격 통계 갱신 완료 (playerId={}, teamId={}, isFirstSeason={})",
+                    "커리어 타격 통계 갱신 완료 (playerId={}, teamId={}, competitionType={}, isFirstSeason={})",
                     playerId,
                     teamId,
+                    competitionType,
                     isFirstBattingSeason,
                 )
             }
@@ -296,12 +329,22 @@ class StatsEventListener(
 
             retryOnOptimisticLock("onGameResultConfirmed-fielding(playerId=$playerId)") {
                 val existingSeasonFielding =
-                    seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+                    seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                        playerId,
+                        year,
+                        null,
+                        competitionType,
+                    )
                 val isFirstFieldingSeason = existingSeasonFielding == null
 
                 // SeasonFieldingStats 갱신
                 val seasonFieldingStats =
-                    existingSeasonFielding ?: SeasonFieldingStats.create(player = player, year = year)
+                    existingSeasonFielding
+                        ?: SeasonFieldingStats.create(
+                            player = player,
+                            year = year,
+                            competitionType = competitionType,
+                        )
                 seasonFieldingStats.addGameRecords(playerFieldingRecords)
                 seasonFieldingStatsRepository.save(seasonFieldingStats)
 
@@ -317,9 +360,10 @@ class StatsEventListener(
                 careerFieldingStatsRepository.save(careerFieldingStats)
 
                 logger.debug(
-                    "수비 통계 갱신 완료 (playerId={}, year={}, isFirstSeason={}, positionRecords={})",
+                    "수비 통계 갱신 완료 (playerId={}, year={}, competitionType={}, isFirstSeason={}, positionRecords={})",
                     playerId,
                     year,
+                    competitionType,
                     isFirstFieldingSeason,
                     playerFieldingRecords.size,
                 )
@@ -345,25 +389,38 @@ class StatsEventListener(
      * 선수의 팀별 시즌 투수 통계를 조회하거나, 없으면 자동 생성합니다.
      *
      * 첫 시즌 투수의 실시간 통계가 누락되는 문제를 방지합니다.
-     * DB unique constraint (player_id, year, team_id)에 의해 동시성 중복 생성이 방어됩니다.
+     * DB unique constraint (player_id, year, team_id, competition_type)에 의해 동시성 중복 생성이 방어됩니다.
      */
     private fun findOrCreateSeasonPitchingStats(
         pitcherId: Long,
         year: Int,
         teamId: Long,
+        competitionType: CompetitionType,
     ): SeasonPitchingStats {
-        return seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamId(pitcherId, year, teamId)
+        return seasonPitchingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+            pitcherId,
+            year,
+            teamId,
+            competitionType,
+        )
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(pitcherId)
                         ?: throw PlayerNotFoundException(pitcherId)
                 logger.info(
-                    "시즌 투수 통계 자동 생성 (pitcherId={}, year={}, teamId={})",
+                    "시즌 투수 통계 자동 생성 (pitcherId={}, year={}, teamId={}, competitionType={})",
                     pitcherId,
                     year,
                     teamId,
+                    competitionType,
                 )
-                val newStats = SeasonPitchingStats.create(player = player, year = year, teamId = teamId)
+                val newStats =
+                    SeasonPitchingStats.create(
+                        player = player,
+                        year = year,
+                        teamId = teamId,
+                        competitionType = competitionType,
+                    )
                 seasonPitchingStatsRepository.save(newStats)
             }
     }
@@ -372,25 +429,38 @@ class StatsEventListener(
      * 선수의 팀별 시즌 타격 통계를 조회하거나, 없으면 자동 생성합니다.
      *
      * 첫 시즌 선수의 실시간 타격 통계가 누락되는 문제를 방지합니다.
-     * DB unique constraint (player_id, year, team_id)에 의해 동시성 중복 생성이 방어됩니다.
+     * DB unique constraint (player_id, year, team_id, competition_type)에 의해 동시성 중복 생성이 방어됩니다.
      */
     private fun findOrCreateSeasonBattingStats(
         playerId: Long,
         year: Int,
         teamId: Long,
+        competitionType: CompetitionType,
     ): SeasonBattingStats {
-        return seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(playerId, year, teamId)
+        return seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+            playerId,
+            year,
+            teamId,
+            competitionType,
+        )
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(playerId)
                         ?: throw PlayerNotFoundException(playerId)
                 logger.info(
-                    "시즌 타격 통계 자동 생성 (playerId={}, year={}, teamId={})",
+                    "시즌 타격 통계 자동 생성 (playerId={}, year={}, teamId={}, competitionType={})",
                     playerId,
                     year,
                     teamId,
+                    competitionType,
                 )
-                val newStats = SeasonBattingStats.create(player = player, year = year, teamId = teamId)
+                val newStats =
+                    SeasonBattingStats.create(
+                        player = player,
+                        year = year,
+                        teamId = teamId,
+                        competitionType = competitionType,
+                    )
                 seasonBattingStatsRepository.save(newStats)
             }
     }
@@ -399,23 +469,35 @@ class StatsEventListener(
      * 선수의 시즌 수비 통계를 조회하거나, 없으면 자동 생성합니다.
      *
      * L-6: 첫 시즌 선수의 실시간 수비 통계가 누락되는 문제를 방지합니다.
-     * DB unique constraint (player_id, year)에 의해 동시성 중복 생성이 방어됩니다.
+     * DB unique constraint (player_id, year, team_id, competition_type)에 의해 동시성 중복 생성이 방어됩니다.
      */
     private fun findOrCreateSeasonFieldingStats(
         playerId: Long,
         year: Int,
+        competitionType: CompetitionType,
     ): SeasonFieldingStats {
-        return seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year)
+        return seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+            playerId,
+            year,
+            null,
+            competitionType,
+        )
             ?: run {
                 val player =
                     playerRepository.findByIdOrNull(playerId)
                         ?: throw PlayerNotFoundException(playerId)
                 logger.info(
-                    "시즌 수비 통계 자동 생성 (playerId={}, year={})",
+                    "시즌 수비 통계 자동 생성 (playerId={}, year={}, competitionType={})",
                     playerId,
                     year,
+                    competitionType,
                 )
-                val newStats = SeasonFieldingStats.create(player = player, year = year)
+                val newStats =
+                    SeasonFieldingStats.create(
+                        player = player,
+                        year = year,
+                        competitionType = competitionType,
+                    )
                 seasonFieldingStatsRepository.save(newStats)
             }
     }
@@ -508,11 +590,16 @@ class StatsEventListener(
         }
     }
 
-    private fun resolveYear(gameId: Long): Int {
+    /**
+     * 경기 ID로부터 연도와 대회 유형을 조회합니다.
+     *
+     * @return Pair(연도, 대회유형)
+     */
+    private fun resolveGameContext(gameId: Long): Pair<Int, CompetitionType> {
         val game =
             gameRepository.findByIdOrNull(gameId)
                 ?: throw GameNotFoundException(gameId)
-        return game.scheduledAt.year
+        return Pair(game.scheduledAt.year, game.competition.type)
     }
 
     companion object {

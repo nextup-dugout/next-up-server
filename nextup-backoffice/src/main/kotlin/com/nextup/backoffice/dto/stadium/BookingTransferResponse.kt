@@ -2,22 +2,18 @@ package com.nextup.backoffice.dto.stadium
 
 import com.nextup.core.domain.stadium.BookingTransfer
 import com.nextup.core.domain.stadium.TransferStatus
-import java.math.BigDecimal
 import java.time.Instant
 
 /**
- * 예약 양도 응답 DTO
+ * 예약 양도 응답 DTO (관리자용)
  */
 data class BookingTransferResponse(
     val id: Long,
     val bookingId: Long,
-    val sellerTeamId: Long,
-    val transferPrice: BigDecimal?,
+    val fromTeamId: Long,
+    val toTeamId: Long,
     val message: String?,
     val status: TransferStatus,
-    val buyerTeamId: Long?,
-    val expiresAt: Instant,
-    val acceptedAt: Instant?,
     val createdAt: Instant,
 ) {
     companion object {
@@ -25,13 +21,10 @@ data class BookingTransferResponse(
             BookingTransferResponse(
                 id = transfer.id,
                 bookingId = transfer.bookingId,
-                sellerTeamId = transfer.sellerTeamId,
-                transferPrice = transfer.transferPrice,
+                fromTeamId = transfer.fromTeamId,
+                toTeamId = transfer.toTeamId,
                 message = transfer.message,
                 status = transfer.status,
-                buyerTeamId = transfer.buyerTeamId,
-                expiresAt = transfer.expiresAt,
-                acceptedAt = transfer.acceptedAt,
                 createdAt = transfer.createdAt,
             )
     }
