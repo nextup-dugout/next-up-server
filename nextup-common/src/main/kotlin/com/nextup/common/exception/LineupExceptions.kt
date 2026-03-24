@@ -90,17 +90,6 @@ class LineupExchangeNotAuthorizedException(
     )
 
 /**
- * L-3: 용병 쿼터 초과 시 발생하는 예외
- */
-class MercenaryQuotaExceededException(
-    mercenaryCount: Int,
-    maxAllowed: Int,
-) : LineupValidationException(
-        "MERCENARY_QUOTA_EXCEEDED",
-        "용병 쿼터를 초과했습니다. 현재 용병 수: $mercenaryCount, 최대 허용: $maxAllowed",
-    )
-
-/**
  * 대진표를 찾을 수 없을 때 발생하는 예외
  */
 class ScheduleNotFoundException(

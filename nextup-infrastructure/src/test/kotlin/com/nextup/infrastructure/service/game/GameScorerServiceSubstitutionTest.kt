@@ -22,7 +22,6 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.dto.SubstitutionRequest
 import io.mockk.every
@@ -45,7 +44,6 @@ class GameScorerServiceSubstitutionTest {
     private lateinit var gameEventRepository: GameEventRepositoryPort
     private lateinit var battingRecordRepository: BattingRecordRepositoryPort
     private lateinit var pitchingRecordRepository: PitchingRecordRepositoryPort
-    private lateinit var mercenaryParticipationRepository: MercenaryParticipationRepositoryPort
     private val eventPublisher: ApplicationEventPublisher = mockk(relaxed = true)
     private lateinit var gameSubstitutionService: GameSubstitutionServiceImpl
 
@@ -56,7 +54,6 @@ class GameScorerServiceSubstitutionTest {
         gameEventRepository = mockk()
         battingRecordRepository = mockk()
         pitchingRecordRepository = mockk()
-        mercenaryParticipationRepository = mockk()
 
         // M-10/M-11: 기본 stub - 기록 없음으로 설정
         every { pitchingRecordRepository.findByGamePlayerId(any()) } returns null
@@ -71,7 +68,6 @@ class GameScorerServiceSubstitutionTest {
                 gameEventRepository,
                 battingRecordRepository,
                 pitchingRecordRepository,
-                mercenaryParticipationRepository,
                 eventPublisher,
             )
     }
