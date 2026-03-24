@@ -1,6 +1,5 @@
 package com.nextup.backoffice.dto.player
 
-import com.nextup.core.domain.player.ContractType
 import com.nextup.core.domain.player.PlayerTeamStatus
 import com.nextup.core.domain.player.Position
 import java.time.Instant
@@ -25,7 +24,6 @@ data class PlayerTeamResponse(
     val endDate: LocalDate?,
     val uniformNumber: Int?,
     val position: Position,
-    val contractType: ContractType,
     val status: PlayerTeamStatus,
     val isCurrentAffiliation: Boolean,
     val durationInDays: Long?,

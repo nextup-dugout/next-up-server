@@ -33,13 +33,12 @@ class PlayerTeamAdminController(
                 startDate = request.startDate,
                 position = request.position,
                 uniformNumber = request.uniformNumber,
-                contractType = request.contractType,
             )
         return ApiResponse.success(affiliation.toResponse())
     }
 
     /**
-     * 선수의 소속을 종료합니다.
+     * 선수의 소속을 종료합니다 (탈퇴 처리).
      */
     @PutMapping("/{id}/end")
     fun endAffiliation(
@@ -50,26 +49,6 @@ class PlayerTeamAdminController(
             playerTeamService.endAffiliation(
                 affiliationId = id,
                 endDate = request.endDate,
-            )
-        return ApiResponse.success(affiliation.toResponse())
-    }
-
-    /**
-     * 선수를 이적시킵니다.
-     */
-    @PostMapping("/transfer")
-    fun transferPlayer(
-        @Valid @RequestBody request: TransferPlayerRequest,
-    ): ApiResponse<PlayerTeamResponse> {
-        val affiliation =
-            playerTeamService.transferPlayer(
-                playerId = request.playerId,
-                fromTeamId = request.fromTeamId,
-                toTeamId = request.toTeamId,
-                transferDate = request.transferDate,
-                newPosition = request.newPosition,
-                newUniformNumber = request.newUniformNumber,
-                newContractType = request.newContractType,
             )
         return ApiResponse.success(affiliation.toResponse())
     }

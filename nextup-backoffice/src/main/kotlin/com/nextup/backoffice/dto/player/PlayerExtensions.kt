@@ -33,7 +33,6 @@ fun PlayerTeamHistory.toResponse(): PlayerTeamResponse =
         endDate = this.endDate,
         uniformNumber = this.uniformNumber,
         position = this.position,
-        contractType = this.contractType,
         status = this.status,
         isCurrentAffiliation = this.isCurrentAffiliation,
         durationInDays = this.durationInDays,

@@ -1,6 +1,5 @@
 package com.nextup.core.domain.stadium
 
-import com.nextup.common.exception.BookingTransferForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.core.common.BaseTimeEntity
 import jakarta.persistence.*
@@ -77,7 +76,8 @@ class StadiumBooking private constructor(
      */
     fun transferTo(newTeamId: Long) {
         if (status != BookingStatus.CONFIRMED) {
-            throw BookingTransferForbiddenException(
+            throw InvalidStateException(
+                "BOOKING_CANNOT_BE_TRANSFERRED",
                 "Booking cannot be transferred. Current status: $status",
             )
         }

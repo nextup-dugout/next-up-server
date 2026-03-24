@@ -34,8 +34,8 @@ class ScorerLockExpirationScheduler(
             logger.info(
                 "기록원 잠금 자동 만료: gameId={}, scorerId={}, lockedAt={}",
                 game.id,
-                game.scorerId,
-                game.lockedAt,
+                game.scorerLock.scorerId,
+                game.scorerLock.lockedAt,
             )
             game.expireLock()
             gameRepository.save(game)

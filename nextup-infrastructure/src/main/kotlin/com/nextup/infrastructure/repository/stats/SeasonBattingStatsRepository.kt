@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.repository.stats
 
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.stats.SeasonBattingStats
 import com.nextup.core.port.repository.SeasonBattingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
@@ -35,6 +36,24 @@ interface SeasonBattingStatsRepository :
     ): SeasonBattingStats?
 
     /**
+     * 선수 ID, 연도, 팀 ID, 대회 유형으로 시즌 타격 통계를 조회합니다.
+     */
+    @Query(
+        """
+        SELECT s FROM SeasonBattingStats s
+        WHERE s.player.id = :playerId AND s.year = :year
+        AND (s.teamId = :teamId OR (s.teamId IS NULL AND :teamId IS NULL))
+        AND s.competitionType = :competitionType
+    """,
+    )
+    override fun findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+        @Param("teamId") teamId: Long?,
+        @Param("competitionType") competitionType: CompetitionType,
+    ): SeasonBattingStats?
+
+    /**
      * 선수 ID와 연도로 모든 팀별 시즌 타격 통계를 조회합니다 (이적 시 팀별 기록).
      */
     @Query(
@@ -66,13 +85,14 @@ interface SeasonBattingStatsRepository :
     ): List<SeasonBattingStats>
 
     /**
-     * 타율 상위 N명을 조회합니다 (최소 타수 조건).
+     * 타율 상위 N명을 조회합니다 (최소 타수 조건, FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         AND s.atBats >= :minAtBats
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (CAST(s.hits AS double) / CAST(s.atBats AS double)) DESC
         LIMIT :limit
     """,
@@ -84,12 +104,13 @@ interface SeasonBattingStatsRepository :
     ): List<SeasonBattingStats>
 
     /**
-     * 홈런 상위 N명을 조회합니다.
+     * 홈런 상위 N명을 조회합니다 (FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.homeRuns DESC
         LIMIT :limit
     """,
@@ -100,12 +121,13 @@ interface SeasonBattingStatsRepository :
     ): List<SeasonBattingStats>
 
     /**
-     * 타점 상위 N명을 조회합니다.
+     * 타점 상위 N명을 조회합니다 (FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.runsBattedIn DESC
         LIMIT :limit
     """,
@@ -116,13 +138,14 @@ interface SeasonBattingStatsRepository :
     ): List<SeasonBattingStats>
 
     /**
-     * OPS 상위 N명을 조회합니다 (최소 타석 조건).
+     * OPS 상위 N명을 조회합니다 (최소 타석 조건, FRIENDLY 제외).
      */
     @Query(
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         AND s.plateAppearances >= :minPlateAppearances
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (
             (CAST(s.hits + s.walks + s.intentionalWalks + s.hitByPitch AS double) /
              CAST(s.atBats + s.walks + s.intentionalWalks + s.hitByPitch + s.sacrificeFlies AS double)) +
@@ -143,6 +166,7 @@ interface SeasonBattingStatsRepository :
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.hits DESC
         LIMIT :limit
     """,
@@ -156,6 +180,7 @@ interface SeasonBattingStatsRepository :
         """
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY s.stolenBases DESC
         LIMIT :limit
     """,
@@ -170,6 +195,7 @@ interface SeasonBattingStatsRepository :
         SELECT s FROM SeasonBattingStats s
         WHERE s.year = :year
         AND s.plateAppearances >= :minPlateAppearances
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (
             CAST(s.hits + s.walks + s.intentionalWalks + s.hitByPitch AS double) /
             CAST(s.atBats + s.walks + s.intentionalWalks + s.hitByPitch + s.sacrificeFlies AS double)
@@ -189,6 +215,7 @@ interface SeasonBattingStatsRepository :
         WHERE s.year = :year
         AND s.plateAppearances >= :minPlateAppearances
         AND s.atBats > 0
+        AND s.competitionType <> 'FRIENDLY'
         ORDER BY (
             CAST(s.hits - s.doubles - s.triples - s.homeRuns +
                  (2 * s.doubles) + (3 * s.triples) + (4 * s.homeRuns) AS double) /
@@ -220,6 +247,6 @@ interface SeasonBattingStatsRepository :
     """,
     )
     override fun findAllByGameId(
-        @Param("gameId") gameId: Long
+        @Param("gameId") gameId: Long,
     ): List<SeasonBattingStats>
 }

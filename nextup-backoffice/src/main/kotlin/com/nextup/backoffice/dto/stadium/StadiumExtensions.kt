@@ -47,13 +47,10 @@ fun BookingTransfer.toResponse(): BookingTransferResponse =
     BookingTransferResponse(
         id = this.id,
         bookingId = this.bookingId,
-        sellerTeamId = this.sellerTeamId,
-        transferPrice = this.transferPrice,
+        fromTeamId = this.fromTeamId,
+        toTeamId = this.toTeamId,
         message = this.message,
         status = this.status,
-        buyerTeamId = this.buyerTeamId,
-        expiresAt = this.expiresAt,
-        acceptedAt = this.acceptedAt,
         createdAt = this.createdAt,
     )
 
