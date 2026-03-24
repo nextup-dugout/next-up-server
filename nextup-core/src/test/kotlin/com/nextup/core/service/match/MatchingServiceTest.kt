@@ -1,5 +1,6 @@
 package com.nextup.core.service.match
 
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.MatchRequestNotFoundException
 import com.nextup.common.exception.MatchResponseNotFoundException
@@ -1037,5 +1038,233 @@ class MatchingServiceTest {
 
         verify { teamRepository.findByIdOrNull(2L) }
         verify { matchResponseRepository.findByRespondTeamId(2L) }
+    }
+
+    // ========== verifyMatchRequestOwnership 테스트 (acceptResponse 경유) ==========
+
+    @Test
+    fun `팀 멤버가 아닌 사용자가 매칭 응답 수락 시 ForbiddenException 발생`() {
+        // given
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = LocalDate.now().plusDays(7),
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) } returns null
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 999L)
+            }
+
+        assertThat(exception.message).contains("매칭 요청에 대한 권한이 없습니다")
+        verify { matchRequestRepository.findByIdOrNull(1L) }
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) }
+    }
+
+    @Test
+    fun `MEMBER 역할의 사용자가 매칭 응답 수락 시 ForbiddenException 발생`() {
+        // given
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = LocalDate.now().plusDays(7),
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val memberUser = mockk<User>(relaxed = true)
+        every { memberUser.id } returns 200L
+        val memberPlayer = Player(name = "일반멤버", primaryPosition = Position.STARTING_PITCHER)
+        val regularMember =
+            TeamMember.create(
+                team = teamA,
+                user = memberUser,
+                player = memberPlayer,
+                uniformNumber = 10,
+                role = TeamMemberRole.MEMBER,
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 200L) } returns regularMember
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 200L)
+            }
+
+        assertThat(exception.message).contains("매칭 요청에 대한 권한이 없습니다")
+        verify { matchRequestRepository.findByIdOrNull(1L) }
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 200L) }
+    }
+
+    @Test
+    fun `MANAGER 역할의 사용자가 매칭 응답을 수락할 수 있다`() {
+        // given
+        val preferredDate = LocalDate.now().plusDays(7)
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = preferredDate,
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val matchResponse =
+            MatchResponse.create(
+                matchRequest = matchRequest,
+                respondTeam = teamB,
+                message = null,
+            )
+
+        val managerUser = mockk<User>(relaxed = true)
+        every { managerUser.id } returns 300L
+        val managerPlayer = Player(name = "매니저", primaryPosition = Position.STARTING_PITCHER)
+        val managerMember =
+            TeamMember.create(
+                team = teamA,
+                user = managerUser,
+                player = managerPlayer,
+                uniformNumber = 5,
+                role = TeamMemberRole.MANAGER,
+            )
+
+        val competition =
+            Competition(
+                league = league,
+                name = "${preferredDate.year}년 친선 경기",
+                year = preferredDate.year,
+                type = CompetitionType.FRIENDLY,
+                startDate = LocalDate.of(preferredDate.year, 1, 1),
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 300L) } returns managerMember
+        every { matchResponseRepository.findByIdOrNull(2L) } returns matchResponse
+        every { competitionRepository.findByLeagueId(league.id) } returns listOf(competition)
+        every { gameRepository.save(any()) } answers { firstArg() }
+
+        // when
+        val result = matchingService.acceptResponse(requestId = 1L, responseId = 2L, userId = 300L)
+
+        // then
+        assertThat(result.status).isEqualTo(MatchRequestStatus.MATCHED)
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 300L) }
+    }
+
+    // ========== verifyMatchRequestOwnership 테스트 (cancelRequest 경유) ==========
+
+    @Test
+    fun `팀 멤버가 아닌 사용자가 매칭 요청 취소 시 ForbiddenException 발생`() {
+        // given
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = LocalDate.now().plusDays(7),
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) } returns null
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                matchingService.cancelRequest(requestId = 1L, userId = 999L)
+            }
+
+        assertThat(exception.message).contains("매칭 요청에 대한 권한이 없습니다")
+        verify { matchRequestRepository.findByIdOrNull(1L) }
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) }
+    }
+
+    @Test
+    fun `MEMBER 역할의 사용자가 매칭 요청 취소 시 ForbiddenException 발생`() {
+        // given
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = LocalDate.now().plusDays(7),
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val memberUser = mockk<User>(relaxed = true)
+        every { memberUser.id } returns 200L
+        val memberPlayer = Player(name = "일반멤버", primaryPosition = Position.STARTING_PITCHER)
+        val regularMember =
+            TeamMember.create(
+                team = teamA,
+                user = memberUser,
+                player = memberPlayer,
+                uniformNumber = 10,
+                role = TeamMemberRole.MEMBER,
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 200L) } returns regularMember
+
+        // when & then
+        val exception =
+            assertThrows<ForbiddenException> {
+                matchingService.cancelRequest(requestId = 1L, userId = 200L)
+            }
+
+        assertThat(exception.message).contains("매칭 요청에 대한 권한이 없습니다")
+        verify { matchRequestRepository.findByIdOrNull(1L) }
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 200L) }
+    }
+
+    @Test
+    fun `MANAGER 역할의 사용자가 매칭 요청을 취소할 수 있다`() {
+        // given
+        val matchRequest =
+            MatchRequest.create(
+                team = teamA,
+                preferredDate = LocalDate.now().plusDays(7),
+                preferredTime = null,
+                preferredLocation = null,
+                message = null,
+                skillLevel = SkillLevel.INTERMEDIATE,
+            )
+
+        val managerUser = mockk<User>(relaxed = true)
+        every { managerUser.id } returns 300L
+        val managerPlayer = Player(name = "매니저", primaryPosition = Position.STARTING_PITCHER)
+        val managerMember =
+            TeamMember.create(
+                team = teamA,
+                user = managerUser,
+                player = managerPlayer,
+                uniformNumber = 5,
+                role = TeamMemberRole.MANAGER,
+            )
+
+        every { matchRequestRepository.findByIdOrNull(1L) } returns matchRequest
+        every { teamMemberRepository.findByTeamIdAndUserId(1L, 300L) } returns managerMember
+
+        // when
+        val result = matchingService.cancelRequest(requestId = 1L, userId = 300L)
+
+        // then
+        assertThat(result.status).isEqualTo(MatchRequestStatus.CANCELLED)
+        verify { teamMemberRepository.findByTeamIdAndUserId(1L, 300L) }
     }
 }
