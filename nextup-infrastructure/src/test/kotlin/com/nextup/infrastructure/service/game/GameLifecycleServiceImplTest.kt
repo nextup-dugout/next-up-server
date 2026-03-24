@@ -15,6 +15,7 @@ import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.PitchingDecisionService
+import com.nextup.core.service.game.dto.GameEndReason
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -547,6 +548,54 @@ class GameLifecycleServiceImplTest {
             assertThat(eventSlot.captured.awayTeamId).isEqualTo(20L)
             assertThat(eventSlot.captured.homeScore).isEqualTo(7)
             assertThat(eventSlot.captured.awayScore).isEqualTo(2)
+        }
+    }
+
+    @Nested
+    @DisplayName("endGame - TIME_LIMIT")
+    inner class EndGameTimeLimitTest {
+        @Test
+        @DisplayName("TIME_LIMIT 사유로 경기를 종료하면 finishByTimeLimit이 호출된다")
+        fun endGameWithTimeLimitCallsFinishByTimeLimit() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, status = GameStatus.IN_PROGRESS)
+            val homeTeam = createGameTeam(gameId, teamId = 10L, homeAway = HomeAway.HOME)
+            val awayTeam = createGameTeam(gameId, teamId = 20L, homeAway = HomeAway.AWAY)
+            val gameTeams = listOf(homeTeam, awayTeam)
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+            every { gameTeamRepository.findAllByGameId(gameId) } returns gameTeams
+            every { gameRepository.save(game) } returns game
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { homeTeam.totalScore } returns 3
+            every { awayTeam.totalScore } returns 1
+
+            // when
+            val result = service.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId)
+
+            // then
+            assertThat(result).isEqualTo(game)
+            verify(exactly = 1) { game.finishByTimeLimit(gameTeams = gameTeams) }
+            verify(exactly = 1) { gameRepository.save(game) }
+            verify { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
+        }
+
+        @Test
+        @DisplayName("진행 중이 아닌 경기는 TIME_LIMIT 종료할 수 없다")
+        fun cannotEndFinishedGameWithTimeLimit() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, status = GameStatus.FINISHED)
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+
+            // when & then
+            assertThatThrownBy { service.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId) }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("진행 중인 경기만 종료할 수 있습니다")
         }
     }
 

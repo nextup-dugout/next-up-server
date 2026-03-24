@@ -437,6 +437,34 @@ class GameScorerControllerTest {
 
             verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT, scorerId) }
         }
+
+        @Test
+        fun `should end game with time limit`() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val request = GameEndRequestDto(reason = GameEndReason.TIME_LIMIT)
+            val game =
+                createGame(gameId, GameStatus.FINISHED).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+            every { gameLifecycleService.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/v1/scorer/games/$gameId/end")
+                    .param("scorerId", scorerId.toString())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+                .andExpect(jsonPath("$.data.status").value("FINISHED"))
+
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId) }
+        }
     }
 
     @Nested

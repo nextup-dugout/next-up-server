@@ -114,6 +114,8 @@ class GameLifecycleServiceImpl(
                 game.callGame(reason = "콜드게임 (점수차)", gameTeams = gameTeams)
             GameEndReason.WEATHER ->
                 game.callGame(reason = "콜드게임 (기상 조건)", gameTeams = gameTeams)
+            GameEndReason.TIME_LIMIT ->
+                game.finishByTimeLimit(gameTeams = gameTeams)
             GameEndReason.FORFEIT -> throw InvalidGameStateException(
                 "몰수 처리는 전용 API를 사용해주세요.",
             )

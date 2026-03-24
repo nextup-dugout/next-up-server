@@ -414,6 +414,28 @@ class Game private constructor(
     }
 
     /**
+     * 시간 제한으로 경기를 종료합니다.
+     *
+     * 대회 규칙에 시간 제한(timeLimitMinutes)이 설정된 경우,
+     * 기록원이 시간 제한 도달을 확인하고 경기를 종료할 때 사용합니다.
+     * 양 팀의 점수를 비교하여 WIN/LOSS/DRAW 결과를 자동으로 설정합니다.
+     *
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
+     */
+    fun finishByTimeLimit(gameTeams: List<GameTeam>) {
+        require(status.isOngoing()) { "진행 중인 경기만 시간 제한 종료할 수 있습니다." }
+        require(competition.gameRules.timeLimitMinutes != null) {
+            "시간 제한이 설정되지 않은 대회에서는 시간 제한 종료를 사용할 수 없습니다."
+        }
+
+        status = GameStatus.FINISHED
+        endedAt = LocalDateTime.now()
+        note = (note?.let { "$it\n" } ?: "") + "시간 제한 종료"
+        determineResults(gameTeams)
+        forceUnlockScorer()
+    }
+
+    /**
      * 경기를 중단합니다.
      *
      * 진행 중인 경기를 우천/조명 고장 등의 사유로 중단합니다.

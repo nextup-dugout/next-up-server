@@ -2525,4 +2525,128 @@ class GameTest {
             assertThat(result).isFalse()
         }
     }
+
+    @Nested
+    @DisplayName("시간 제한 종료")
+    inner class FinishByTimeLimit {
+        private fun createCompetitionWithTimeLimit(timeLimitMinutes: Int): Competition =
+            Competition(
+                league = league,
+                name = "시간 제한 대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                status = CompetitionStatus.IN_PROGRESS,
+                gameRules = GameRules(timeLimitMinutes = timeLimitMinutes),
+            )
+
+        private fun createGameWithTimeLimit(
+            status: GameStatus = GameStatus.IN_PROGRESS,
+            timeLimitMinutes: Int = 120,
+        ): Game {
+            val comp = createCompetitionWithTimeLimit(timeLimitMinutes)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            return Game.createForTest(
+                competition = comp,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                status = status,
+                currentInning = 5,
+                isTopInning = true,
+                totalInnings = 9,
+            )
+        }
+
+        @Test
+        fun `시간 제한 설정된 대회에서 진행 중인 경기를 시간 제한 종료할 수 있다`() {
+            // given
+            val game = createGameWithTimeLimit()
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(1)
+
+            // when
+            game.finishByTimeLimit(gameTeams)
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+            assertThat(game.endedAt).isNotNull()
+            assertThat(game.note).contains("시간 제한 종료")
+            assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                .isEqualTo(GameResult.WIN)
+            assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                .isEqualTo(GameResult.LOSS)
+        }
+
+        @Test
+        fun `동점인 경우 양 팀 모두 DRAW 결과를 받는다`() {
+            // given
+            val game = createGameWithTimeLimit()
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(2)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(2)
+
+            // when
+            game.finishByTimeLimit(gameTeams)
+
+            // then
+            assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+            assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                .isEqualTo(GameResult.DRAW)
+            assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                .isEqualTo(GameResult.DRAW)
+        }
+
+        @Test
+        fun `진행 중이 아닌 경기는 시간 제한 종료할 수 없다`() {
+            // given
+            val comp = createCompetitionWithTimeLimit(120)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            val game =
+                Game.createForTest(
+                    competition = comp,
+                    homeTeam = homeTeam,
+                    awayTeam = awayTeam,
+                    scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                    status = GameStatus.SCHEDULED,
+                )
+
+            // when & then
+            assertThatThrownBy { game.finishByTimeLimit(game.gameTeams) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("진행 중인 경기만")
+        }
+
+        @Test
+        fun `시간 제한이 설정되지 않은 대회에서는 시간 제한 종료를 사용할 수 없다`() {
+            // given - 시간 제한 없는 기본 대회
+            val game = createGame(status = GameStatus.IN_PROGRESS)
+
+            // when & then
+            assertThatThrownBy { game.finishByTimeLimit(game.gameTeams) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("시간 제한이 설정되지 않은")
+        }
+
+        @Test
+        fun `시간 제한 종료 후 기록원 잠금이 해제된다`() {
+            // given
+            val game = createGameWithTimeLimit()
+            game.lockForScorer(100L)
+            val gameTeams = game.gameTeams
+            gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+            gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+            // when
+            game.finishByTimeLimit(gameTeams)
+
+            // then
+            assertThat(game.scorerId).isNull()
+            assertThat(game.lockedAt).isNull()
+        }
+    }
 }
