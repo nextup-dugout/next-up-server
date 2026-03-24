@@ -142,7 +142,7 @@ class PlayerStatsService(
                 ?: SeasonBattingStats.create(player, year)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
-        resetSeasonBattingStats(seasonStats)
+        seasonStats.reset()
 
         // 해당 시즌의 모든 타격 기록 조회
         val battingRecords = battingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
@@ -177,7 +177,7 @@ class PlayerStatsService(
                 ?: SeasonPitchingStats.create(player, year)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
-        resetSeasonPitchingStats(seasonStats)
+        seasonStats.reset()
 
         // 해당 시즌의 모든 투수 기록 조회
         val pitchingRecords = pitchingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
@@ -209,7 +209,7 @@ class PlayerStatsService(
                 ?: CareerBattingStats.create(player)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
-        resetCareerBattingStats(careerStats)
+        careerStats.reset()
 
         // 모든 타격 기록 조회 (FETCH JOIN으로 N+1 방지)
         val battingRecords = battingRecordRepository.findAllByPlayerIdWithGameInfo(playerId)
@@ -253,7 +253,7 @@ class PlayerStatsService(
                 ?: CareerPitchingStats.create(player)
 
         // 기존 통계 초기화 (새로 계산하기 위해)
-        resetCareerPitchingStats(careerStats)
+        careerStats.reset()
 
         // 모든 투수 기록 조회 (FETCH JOIN으로 N+1 방지)
         val pitchingRecords = pitchingRecordRepository.findAllByPlayerIdWithGameInfo(playerId)
@@ -515,150 +515,6 @@ class PlayerStatsService(
     private fun findPlayer(playerId: Long): Player =
         playerRepository.findByIdOrNull(playerId)
             ?: throw IllegalArgumentException("선수 ID $playerId 를 찾을 수 없습니다.")
-
-    /**
-     * 시즌 타격 통계를 초기화합니다 (Reflection 사용하여 protected setter 접근).
-     */
-    private fun resetSeasonBattingStats(stats: SeasonBattingStats) {
-        val clazz = SeasonBattingStats::class.java
-
-        listOf(
-            "gamesPlayed",
-            "plateAppearances",
-            "atBats",
-            "hits",
-            "doubles",
-            "triples",
-            "homeRuns",
-            "runs",
-            "runsBattedIn",
-            "walks",
-            "intentionalWalks",
-            "hitByPitch",
-            "strikeouts",
-            "sacrificeBunts",
-            "sacrificeFlies",
-            "stolenBases",
-            "caughtStealing",
-            "groundedIntoDoublePlays",
-        ).forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, 0)
-        }
-    }
-
-    /**
-     * 시즌 투수 통계를 초기화합니다 (Reflection 사용하여 protected setter 접근).
-     */
-    private fun resetSeasonPitchingStats(stats: SeasonPitchingStats) {
-        val clazz = SeasonPitchingStats::class.java
-
-        listOf(
-            "gamesPlayed",
-            "gamesStarted",
-            "inningsPitchedOuts",
-            "wins",
-            "losses",
-            "saves",
-            "holds",
-            "blownSaves",
-            "earnedRuns",
-            "runsAllowed",
-            "hitsAllowed",
-            "walksAllowed",
-            "strikeouts",
-            "homeRunsAllowed",
-            "hitBatsmen",
-            "wildPitches",
-            "balks",
-            "battersFaced",
-        ).forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, 0)
-        }
-
-        // nullable 필드 처리
-        listOf("pitchesThrown", "strikesThrown").forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, null)
-        }
-    }
-
-    /**
-     * 통산 타격 통계를 초기화합니다 (Reflection 사용하여 protected setter 접근).
-     */
-    private fun resetCareerBattingStats(stats: CareerBattingStats) {
-        val clazz = CareerBattingStats::class.java
-
-        listOf(
-            "seasonsPlayed",
-            "gamesPlayed",
-            "plateAppearances",
-            "atBats",
-            "hits",
-            "doubles",
-            "triples",
-            "homeRuns",
-            "runs",
-            "runsBattedIn",
-            "walks",
-            "intentionalWalks",
-            "hitByPitch",
-            "strikeouts",
-            "sacrificeBunts",
-            "sacrificeFlies",
-            "stolenBases",
-            "caughtStealing",
-            "groundedIntoDoublePlays",
-        ).forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, 0)
-        }
-    }
-
-    /**
-     * 통산 투수 통계를 초기화합니다 (Reflection 사용하여 protected setter 접근).
-     */
-    private fun resetCareerPitchingStats(stats: CareerPitchingStats) {
-        val clazz = CareerPitchingStats::class.java
-
-        listOf(
-            "seasonsPlayed",
-            "gamesPlayed",
-            "gamesStarted",
-            "inningsPitchedOuts",
-            "wins",
-            "losses",
-            "saves",
-            "holds",
-            "blownSaves",
-            "earnedRuns",
-            "runsAllowed",
-            "hitsAllowed",
-            "walksAllowed",
-            "strikeouts",
-            "homeRunsAllowed",
-            "hitBatsmen",
-            "wildPitches",
-            "balks",
-            "battersFaced",
-        ).forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, 0)
-        }
-
-        // nullable 필드 처리
-        listOf("pitchesThrown", "strikesThrown").forEach { fieldName ->
-            val field = clazz.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(stats, null)
-        }
-    }
 }
 
 /**

@@ -49,7 +49,21 @@ class RecruitmentApplicationControllerTest {
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
-                .build()
+                .setCustomArgumentResolvers(
+                    object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+                        override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+                            parameter.hasParameterAnnotation(
+                                org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+                            )
+
+                        override fun resolveArgument(
+                            parameter: org.springframework.core.MethodParameter,
+                            mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+                            webRequest: org.springframework.web.context.request.NativeWebRequest,
+                            binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+                        ): Any = 10L
+                    },
+                ).build()
 
         every { mockRecruitment.id } returns 1L
         every { mockRecruitment.title } returns "투수 모집"
@@ -82,7 +96,6 @@ class RecruitmentApplicationControllerTest {
         mockMvc
             .perform(
                 post("/api/v1/recruitments/1/apply")
-                    .param("applicantId", "10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -108,7 +121,6 @@ class RecruitmentApplicationControllerTest {
         mockMvc
             .perform(
                 post("/api/v1/recruitments/1/apply")
-                    .param("applicantId", "10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(invalidRequest)),
             )
@@ -133,7 +145,6 @@ class RecruitmentApplicationControllerTest {
         mockMvc
             .perform(
                 post("/api/v1/recruitments/1/apply")
-                    .param("applicantId", "10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -156,7 +167,6 @@ class RecruitmentApplicationControllerTest {
         mockMvc
             .perform(
                 post("/api/v1/recruitments/1/apply")
-                    .param("applicantId", "10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             )
@@ -172,8 +182,7 @@ class RecruitmentApplicationControllerTest {
         // when & then
         mockMvc
             .perform(
-                get("/api/v1/me/applications")
-                    .param("applicantId", "10"),
+                get("/api/v1/me/applications"),
             )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -191,8 +200,7 @@ class RecruitmentApplicationControllerTest {
         // when & then
         mockMvc
             .perform(
-                get("/api/v1/me/applications")
-                    .param("applicantId", "10"),
+                get("/api/v1/me/applications"),
             )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
@@ -208,8 +216,7 @@ class RecruitmentApplicationControllerTest {
         // when & then
         mockMvc
             .perform(
-                delete("/api/v1/me/applications/1")
-                    .param("applicantId", "10"),
+                delete("/api/v1/me/applications/1"),
             )
             .andExpect(status().isNoContent)
             .andExpect(jsonPath("$.success").value(true))
@@ -227,8 +234,7 @@ class RecruitmentApplicationControllerTest {
         // when & then
         mockMvc
             .perform(
-                delete("/api/v1/me/applications/999")
-                    .param("applicantId", "10"),
+                delete("/api/v1/me/applications/999"),
             )
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.success").value(false))
@@ -262,24 +268,23 @@ class RecruitmentApplicationControllerTest {
         every { acceptedApp.status } returns ApplicationStatus.ACCEPTED
         every { acceptedApp.appliedAt } returns Instant.now()
         every { acceptedApp.processedAt } returns Instant.now()
-        every { acceptedApp.processedBy } returns 100L
+        every { acceptedApp.processedBy } returns 10L
         every { acceptedApp.createdAt } returns Instant.now()
         every { acceptedApp.updatedAt } returns Instant.now()
 
-        every { applicationService.acceptApplication(1L, 100L) } returns acceptedApp
+        every { applicationService.acceptApplication(1L, 10L) } returns acceptedApp
 
         // when & then
         mockMvc
             .perform(
-                patch("/api/v1/recruitments/1/applications/1/accept")
-                    .param("processorId", "100"),
+                patch("/api/v1/recruitments/1/applications/1/accept"),
             )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.status").value("ACCEPTED"))
-            .andExpect(jsonPath("$.data.processedBy").value(100))
+            .andExpect(jsonPath("$.data.processedBy").value(10))
 
-        verify(exactly = 1) { applicationService.acceptApplication(1L, 100L) }
+        verify(exactly = 1) { applicationService.acceptApplication(1L, 10L) }
     }
 
     @Test
@@ -294,37 +299,35 @@ class RecruitmentApplicationControllerTest {
         every { rejectedApp.status } returns ApplicationStatus.REJECTED
         every { rejectedApp.appliedAt } returns Instant.now()
         every { rejectedApp.processedAt } returns Instant.now()
-        every { rejectedApp.processedBy } returns 100L
+        every { rejectedApp.processedBy } returns 10L
         every { rejectedApp.createdAt } returns Instant.now()
         every { rejectedApp.updatedAt } returns Instant.now()
 
-        every { applicationService.rejectApplication(1L, 100L) } returns rejectedApp
+        every { applicationService.rejectApplication(1L, 10L) } returns rejectedApp
 
         // when & then
         mockMvc
             .perform(
-                patch("/api/v1/recruitments/1/applications/1/reject")
-                    .param("processorId", "100"),
+                patch("/api/v1/recruitments/1/applications/1/reject"),
             )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.status").value("REJECTED"))
 
-        verify(exactly = 1) { applicationService.rejectApplication(1L, 100L) }
+        verify(exactly = 1) { applicationService.rejectApplication(1L, 10L) }
     }
 
     @Test
     fun `should return 404 when accepting non-existent application`() {
         // given
         every {
-            applicationService.acceptApplication(999L, 100L)
+            applicationService.acceptApplication(999L, 10L)
         } throws RecruitmentApplicationNotFoundException(999L)
 
         // when & then
         mockMvc
             .perform(
-                patch("/api/v1/recruitments/1/applications/999/accept")
-                    .param("processorId", "100"),
+                patch("/api/v1/recruitments/1/applications/999/accept"),
             )
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.success").value(false))

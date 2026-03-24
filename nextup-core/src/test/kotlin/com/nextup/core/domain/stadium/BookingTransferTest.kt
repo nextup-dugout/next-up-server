@@ -6,24 +6,20 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.math.BigDecimal
-import java.time.Instant
 
 @DisplayName("BookingTransfer")
 class BookingTransferTest {
-    private fun createOpenTransfer(
+    private fun createPendingTransfer(
         bookingId: Long = 1L,
-        sellerTeamId: Long = 10L,
-        transferPrice: BigDecimal? = BigDecimal("50000"),
-        message: String? = "긴급 양도합니다",
-        expiresAt: Instant = Instant.now().plusSeconds(3600),
+        fromTeamId: Long = 10L,
+        toTeamId: Long = 20L,
+        message: String? = "양도합니다",
     ): BookingTransfer =
         BookingTransfer.create(
             bookingId = bookingId,
-            sellerTeamId = sellerTeamId,
-            transferPrice = transferPrice,
+            fromTeamId = fromTeamId,
+            toTeamId = toTeamId,
             message = message,
-            expiresAt = expiresAt,
         )
 
     @Nested
@@ -32,58 +28,56 @@ class BookingTransferTest {
         @Test
         fun `should create transfer successfully`() {
             // when
-            val transfer = createOpenTransfer()
+            val transfer = createPendingTransfer()
 
             // then
             assertThat(transfer.bookingId).isEqualTo(1L)
-            assertThat(transfer.sellerTeamId).isEqualTo(10L)
-            assertThat(transfer.transferPrice).isEqualByComparingTo(BigDecimal("50000"))
-            assertThat(transfer.message).isEqualTo("긴급 양도합니다")
-            assertThat(transfer.status).isEqualTo(TransferStatus.OPEN)
-            assertThat(transfer.buyerTeamId).isNull()
-            assertThat(transfer.acceptedAt).isNull()
+            assertThat(transfer.fromTeamId).isEqualTo(10L)
+            assertThat(transfer.toTeamId).isEqualTo(20L)
+            assertThat(transfer.message).isEqualTo("양도합니다")
+            assertThat(transfer.status).isEqualTo(TransferStatus.PENDING)
         }
 
         @Test
-        fun `should create transfer without price`() {
+        fun `should create transfer without message`() {
             // when
-            val transfer = createOpenTransfer(transferPrice = null)
+            val transfer = createPendingTransfer(message = null)
 
             // then
-            assertThat(transfer.transferPrice).isNull()
-            assertThat(transfer.status).isEqualTo(TransferStatus.OPEN)
+            assertThat(transfer.message).isNull()
+            assertThat(transfer.status).isEqualTo(TransferStatus.PENDING)
         }
 
         @Test
         fun `should throw exception when booking ID is not positive`() {
             assertThatThrownBy {
-                createOpenTransfer(bookingId = 0L)
+                createPendingTransfer(bookingId = 0L)
             }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessage("Booking ID must be positive")
         }
 
         @Test
-        fun `should throw exception when seller team ID is not positive`() {
+        fun `should throw exception when from team ID is not positive`() {
             assertThatThrownBy {
-                createOpenTransfer(sellerTeamId = -1L)
+                createPendingTransfer(fromTeamId = -1L)
             }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessage("Seller team ID must be positive")
+                .hasMessage("From team ID must be positive")
         }
 
         @Test
-        fun `should throw exception when transfer price is negative`() {
+        fun `should throw exception when to team ID is not positive`() {
             assertThatThrownBy {
-                createOpenTransfer(transferPrice = BigDecimal("-1000"))
+                createPendingTransfer(toTeamId = 0L)
             }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessage("Transfer price must be non-negative")
+                .hasMessage("To team ID must be positive")
         }
 
         @Test
-        fun `should throw exception when expires at is in the past`() {
+        fun `should throw exception when from and to team are the same`() {
             assertThatThrownBy {
-                createOpenTransfer(expiresAt = Instant.now().minusSeconds(60))
+                createPendingTransfer(fromTeamId = 10L, toTeamId = 10L)
             }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessage("Expiry time must be in the future")
+                .hasMessage("Cannot transfer to the same team")
         }
     }
 
@@ -91,176 +85,83 @@ class BookingTransferTest {
     @DisplayName("accept")
     inner class Accept {
         @Test
-        fun `should accept open transfer successfully`() {
+        fun `should accept pending transfer successfully`() {
             // given
-            val transfer = createOpenTransfer()
+            val transfer = createPendingTransfer()
 
             // when
-            transfer.accept(buyerTeamId = 20L)
+            transfer.accept()
 
             // then
             assertThat(transfer.status).isEqualTo(TransferStatus.ACCEPTED)
-            assertThat(transfer.buyerTeamId).isEqualTo(20L)
-            assertThat(transfer.acceptedAt).isNotNull()
         }
 
         @Test
         fun `should throw exception when accepting already accepted transfer`() {
             // given
-            val transfer = createOpenTransfer()
-            transfer.accept(buyerTeamId = 20L)
+            val transfer = createPendingTransfer()
+            transfer.accept()
 
             // when & then
             assertThatThrownBy {
-                transfer.accept(buyerTeamId = 30L)
+                transfer.accept()
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
                 .hasMessageContaining("cannot be accepted")
         }
 
         @Test
-        fun `should throw exception when accepting cancelled transfer`() {
+        fun `should throw exception when accepting rejected transfer`() {
             // given
-            val transfer = createOpenTransfer()
-            transfer.cancel()
+            val transfer = createPendingTransfer()
+            transfer.reject()
 
             // when & then
             assertThatThrownBy {
-                transfer.accept(buyerTeamId = 20L)
+                transfer.accept()
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
                 .hasMessageContaining("cannot be accepted")
         }
-
-        @Test
-        fun `should throw exception when accepting expired transfer`() {
-            // given
-            val transfer =
-                createOpenTransfer(expiresAt = Instant.now().plusSeconds(1))
-            Thread.sleep(1100)
-
-            // when & then
-            assertThatThrownBy {
-                transfer.accept(buyerTeamId = 20L)
-            }.isInstanceOf(BookingTransferInvalidStateException::class.java)
-                .hasMessageContaining("expired")
-        }
-
-        @Test
-        fun `should throw exception when buyer team is same as seller team`() {
-            // given
-            val transfer = createOpenTransfer(sellerTeamId = 10L)
-
-            // when & then
-            assertThatThrownBy {
-                transfer.accept(buyerTeamId = 10L)
-            }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessage("Buyer team cannot be the same as seller team")
-        }
-
-        @Test
-        fun `should throw exception when buyer team ID is not positive`() {
-            // given
-            val transfer = createOpenTransfer()
-
-            // when & then
-            assertThatThrownBy {
-                transfer.accept(buyerTeamId = 0L)
-            }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessage("Buyer team ID must be positive")
-        }
     }
 
     @Nested
-    @DisplayName("cancel")
-    inner class Cancel {
+    @DisplayName("reject")
+    inner class Reject {
         @Test
-        fun `should cancel open transfer successfully`() {
+        fun `should reject pending transfer successfully`() {
             // given
-            val transfer = createOpenTransfer()
+            val transfer = createPendingTransfer()
 
             // when
-            transfer.cancel()
+            transfer.reject()
 
             // then
-            assertThat(transfer.status).isEqualTo(TransferStatus.CANCELLED)
+            assertThat(transfer.status).isEqualTo(TransferStatus.REJECTED)
         }
 
         @Test
-        fun `should throw exception when cancelling accepted transfer`() {
+        fun `should throw exception when rejecting accepted transfer`() {
             // given
-            val transfer = createOpenTransfer()
-            transfer.accept(buyerTeamId = 20L)
+            val transfer = createPendingTransfer()
+            transfer.accept()
 
             // when & then
             assertThatThrownBy {
-                transfer.cancel()
+                transfer.reject()
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
-                .hasMessageContaining("cannot be cancelled")
+                .hasMessageContaining("cannot be rejected")
         }
 
         @Test
-        fun `should throw exception when cancelling already cancelled transfer`() {
+        fun `should throw exception when rejecting already rejected transfer`() {
             // given
-            val transfer = createOpenTransfer()
-            transfer.cancel()
+            val transfer = createPendingTransfer()
+            transfer.reject()
 
             // when & then
             assertThatThrownBy {
-                transfer.cancel()
+                transfer.reject()
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
-                .hasMessageContaining("cannot be cancelled")
-        }
-    }
-
-    @Nested
-    @DisplayName("isExpired")
-    inner class IsExpired {
-        @Test
-        fun `should return false when transfer is not expired`() {
-            // given
-            val transfer = createOpenTransfer(expiresAt = Instant.now().plusSeconds(3600))
-
-            // when & then
-            assertThat(transfer.isExpired()).isFalse()
-        }
-
-        @Test
-        fun `should return true when transfer is expired`() {
-            // given
-            val transfer =
-                createOpenTransfer(expiresAt = Instant.now().plusSeconds(1))
-            Thread.sleep(1100)
-
-            // when & then
-            assertThat(transfer.isExpired()).isTrue()
-        }
-    }
-
-    @Nested
-    @DisplayName("expire")
-    inner class Expire {
-        @Test
-        fun `should expire open transfer successfully`() {
-            // given
-            val transfer = createOpenTransfer()
-
-            // when
-            transfer.expire()
-
-            // then
-            assertThat(transfer.status).isEqualTo(TransferStatus.EXPIRED)
-        }
-
-        @Test
-        fun `should throw exception when expiring accepted transfer`() {
-            // given
-            val transfer = createOpenTransfer()
-            transfer.accept(buyerTeamId = 20L)
-
-            // when & then
-            assertThatThrownBy {
-                transfer.expire()
-            }.isInstanceOf(BookingTransferInvalidStateException::class.java)
-                .hasMessageContaining("cannot be expired")
+                .hasMessageContaining("cannot be rejected")
         }
     }
 }

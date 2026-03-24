@@ -3,13 +3,15 @@ package com.nextup.core.domain.game
 import com.nextup.core.common.BaseTimeEntity
 import jakarta.persistence.*
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 /**
  * 투수 기록 엔티티
  *
  * 경기 출전 선수(GamePlayer)의 투수 기록을 저장합니다.
  * 한 경기에서 선수당 하나의 투수 기록만 존재합니다.
+ *
+ * 통계 계산은 [PitchingStatCalculator]에 위임합니다.
+ * 관리자 정정은 [PitchingRecordCorrector] + [PitchingCorrectionField]에 위임합니다.
  */
 @Entity
 @Table(
@@ -112,125 +114,40 @@ class PitchingRecord(
     var pickoffs: Int = 0
         protected set
 
-    // Calculated properties
+    // ========== Calculated properties (PitchingStatCalculator에 위임) ==========
 
     /**
-     * 완전한 이닝 수
+     * 현재 기록 기반 통계 계산기를 생성합니다.
      */
-    val completeInnings: Int
-        get() = inningsPitchedOuts / 3
+    val statCalculator: PitchingStatCalculator
+        get() = PitchingStatCalculator.from(this)
 
-    /**
-     * 이닝의 잔여 아웃 수
-     */
-    val remainingOuts: Int
-        get() = inningsPitchedOuts % 3
+    val completeInnings: Int get() = statCalculator.completeInnings
 
-    /**
-     * 이닝 (실수 형태, 계산용)
-     */
-    val inningsPitched: BigDecimal
-        get() = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 2, RoundingMode.HALF_UP)
+    val remainingOuts: Int get() = statCalculator.remainingOuts
 
-    /**
-     * 이닝 표시 문자열 (예: "5.1", "7.0", "6.2")
-     */
-    val inningsPitchedDisplay: String
-        get() = "$completeInnings.$remainingOuts"
+    val inningsPitched: BigDecimal get() = statCalculator.inningsPitched
 
-    /**
-     * 자책점 평균자책점 (ERA) = (자책점 / 이닝) * 9
-     * 이닝이 0이고 자책점이 있으면 null (계산 불가 - 무한대)
-     * 이닝이 0이고 자책점이 없으면 0.00
-     */
-    val earnedRunAverage: BigDecimal?
-        get() =
-            if (inningsPitchedOuts == 0) {
-                if (earnedRuns > 0) null else BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-            } else {
-                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-                BigDecimal(earnedRuns)
-                    .multiply(BigDecimal(9))
-                    .divide(innings, 2, RoundingMode.HALF_UP)
-            }
+    val inningsPitchedDisplay: String get() = statCalculator.inningsPitchedDisplay
 
-    /**
-     * WHIP = (피안타 + 볼넷) / 이닝
-     */
-    val whip: BigDecimal
-        get() =
-            if (inningsPitchedOuts == 0) {
-                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-            } else {
-                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-                BigDecimal(hitsAllowed + walksAllowed).divide(innings, 2, RoundingMode.HALF_UP)
-            }
+    val earnedRunAverage: BigDecimal? get() = statCalculator.earnedRunAverage
 
-    /**
-     * 9이닝당 삼진 (K/9) = (삼진 / 이닝) * 9
-     */
-    val strikeoutsPer9: BigDecimal
-        get() =
-            if (inningsPitchedOuts == 0) {
-                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-            } else {
-                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-                BigDecimal(strikeouts)
-                    .multiply(BigDecimal(9))
-                    .divide(innings, 2, RoundingMode.HALF_UP)
-            }
+    val whip: BigDecimal get() = statCalculator.whip
 
-    /**
-     * 9이닝당 볼넷 (BB/9) = (볼넷 / 이닝) * 9
-     */
-    val walksPer9: BigDecimal
-        get() =
-            if (inningsPitchedOuts == 0) {
-                BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-            } else {
-                val innings = BigDecimal(inningsPitchedOuts).divide(BigDecimal(3), 10, RoundingMode.HALF_UP)
-                BigDecimal(walksAllowed)
-                    .multiply(BigDecimal(9))
-                    .divide(innings, 2, RoundingMode.HALF_UP)
-            }
+    val strikeoutsPer9: BigDecimal get() = statCalculator.strikeoutsPer9
 
-    /**
-     * 삼진/볼넷 비율 (K/BB)
-     */
-    val strikeoutToWalkRatio: BigDecimal
-        get() =
-            if (walksAllowed == 0) {
-                if (strikeouts == 0) BigDecimal.ZERO else BigDecimal(strikeouts)
-            } else {
-                BigDecimal(strikeouts).divide(BigDecimal(walksAllowed), 2, RoundingMode.HALF_UP)
-            }.setScale(2, RoundingMode.HALF_UP)
+    val walksPer9: BigDecimal get() = statCalculator.walksPer9
 
-    /**
-     * 스트라이크 비율 (투구 수 대비 스트라이크)
-     */
-    val strikePercentage: BigDecimal?
-        get() =
-            if (pitchesThrown == null || strikesThrown == null || pitchesThrown == 0) {
-                null
-            } else {
-                BigDecimal(strikesThrown!!)
-                    .divide(BigDecimal(pitchesThrown!!), 3, RoundingMode.HALF_UP)
-            }
+    val strikeoutToWalkRatio: BigDecimal get() = statCalculator.strikeoutToWalkRatio
 
-    /**
-     * 비자책 실점 = 실점 - 자책점
-     */
-    val unearnedRuns: Int
-        get() = runsAllowed - earnedRuns
+    val strikePercentage: BigDecimal? get() = statCalculator.strikePercentage
 
-    /**
-     * 선발 승리 자격이 있는지 확인합니다.
-     * @param starterWinQualificationOuts 선발 승리 자격 최소 아웃 수 (기본 15 = 5이닝)
-     */
+    val unearnedRuns: Int get() = statCalculator.unearnedRuns
+
     fun isQualifiedForWin(starterWinQualificationOuts: Int = 15): Boolean =
-        isStartingPitcher && inningsPitchedOuts >= starterWinQualificationOuts
+        statCalculator.isQualifiedForWin(starterWinQualificationOuts)
 
-    // Business logic
+    // ========== 경기 기록 비즈니스 로직 ==========
 
     /**
      * 아웃을 기록합니다.
@@ -598,6 +515,8 @@ class PitchingRecord(
         runsAllowed -= runs
     }
 
+    // ========== 검증 ==========
+
     /**
      * 기록 유효성을 검증합니다.
      * @param starterWinQualificationOuts 선발 승리 자격 최소 아웃 수 (기본 15 = 5이닝)
@@ -649,141 +568,65 @@ class PitchingRecord(
         }
     }
 
+    // ========== 관리자 정정 (PitchingRecordCorrector에 위임) ==========
+
     /**
      * 관리자 기록 정정: 특정 필드 값을 직접 설정합니다.
      *
-     * 경기 상태와 무관하게 관리자 권한으로 정정 가능합니다.
+     * 내부적으로 [PitchingRecordCorrector]에 위임하여 타입 안전한 정정을 수행합니다.
      * 정정 후 validate()를 호출하여 일관성을 검증합니다.
      *
      * @param fieldName 정정할 필드명
      * @param newValue 새로운 값 (문자열, 파싱하여 적용)
+     * @param starterWinQualificationOuts 선발 승리 자격 최소 아웃 수 (기본 15 = 5이닝)
+     * @return 정정 전 이전 값 (문자열)
      * @throws IllegalArgumentException 유효하지 않은 필드명 또는 값
      */
     fun correctField(
         fieldName: String,
         newValue: String,
         starterWinQualificationOuts: Int = 15,
-    ): String {
-        val oldValue =
-            when (fieldName) {
-                "inningsPitchedOuts" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    inningsPitchedOuts.also { inningsPitchedOuts = intValue }
-                }
-                "earnedRuns" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    earnedRuns.also { earnedRuns = intValue }
-                }
-                "runsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    runsAllowed.also { runsAllowed = intValue }
-                }
-                "hitsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    hitsAllowed.also { hitsAllowed = intValue }
-                }
-                "walksAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    walksAllowed.also { walksAllowed = intValue }
-                }
-                "strikeouts" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    strikeouts.also { strikeouts = intValue }
-                }
-                "homeRunsAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    homeRunsAllowed.also { homeRunsAllowed = intValue }
-                }
-                "hitBatsmen" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    hitBatsmen.also { hitBatsmen = intValue }
-                }
-                "wildPitches" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    wildPitches.also { wildPitches = intValue }
-                }
-                "balks" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    balks.also { balks = intValue }
-                }
-                "battersFaced" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    battersFaced.also { battersFaced = intValue }
-                }
-                "pitchesThrown" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    (pitchesThrown ?: 0).also { pitchesThrown = intValue }
-                }
-                "strikesThrown" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    (strikesThrown ?: 0).also { strikesThrown = intValue }
-                }
-                "stolenBasesAllowed" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    stolenBasesAllowed.also { stolenBasesAllowed = intValue }
-                }
-                "runnersCaughtStealing" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    runnersCaughtStealing.also { runnersCaughtStealing = intValue }
-                }
-                "pickoffs" -> {
-                    val intValue =
-                        newValue.toIntOrNull()
-                            ?: throw IllegalArgumentException("정정 값은 정수여야 합니다: $newValue")
-                    require(intValue >= 0) { "정정 값은 0 이상이어야 합니다: $intValue" }
-                    pickoffs.also { pickoffs = intValue }
-                }
-                else -> throw IllegalArgumentException("유효하지 않은 투수 기록 필드입니다: $fieldName")
-            }
+    ): String = PitchingRecordCorrector.correctField(this, fieldName, newValue, starterWinQualificationOuts)
 
-        validate(starterWinQualificationOuts)
-        return oldValue.toString()
-    }
+    // ========== 정정 내부 메서드 (PitchingCorrectionField에서 호출) ==========
+
+    internal fun applyCorrectionInningsPitchedOuts(newValue: Int): Int =
+        inningsPitchedOuts.also { inningsPitchedOuts = newValue }
+
+    internal fun applyCorrectionEarnedRuns(newValue: Int): Int = earnedRuns.also { earnedRuns = newValue }
+
+    internal fun applyCorrectionRunsAllowed(newValue: Int): Int = runsAllowed.also { runsAllowed = newValue }
+
+    internal fun applyCorrectionHitsAllowed(newValue: Int): Int = hitsAllowed.also { hitsAllowed = newValue }
+
+    internal fun applyCorrectionWalksAllowed(newValue: Int): Int = walksAllowed.also { walksAllowed = newValue }
+
+    internal fun applyCorrectionStrikeouts(newValue: Int): Int = strikeouts.also { strikeouts = newValue }
+
+    internal fun applyCorrectionHomeRunsAllowed(newValue: Int): Int =
+        homeRunsAllowed.also { homeRunsAllowed = newValue }
+
+    internal fun applyCorrectionHitBatsmen(newValue: Int): Int = hitBatsmen.also { hitBatsmen = newValue }
+
+    internal fun applyCorrectionWildPitches(newValue: Int): Int = wildPitches.also { wildPitches = newValue }
+
+    internal fun applyCorrectionBalks(newValue: Int): Int = balks.also { balks = newValue }
+
+    internal fun applyCorrectionBattersFaced(newValue: Int): Int = battersFaced.also { battersFaced = newValue }
+
+    internal fun applyCorrectionPitchesThrown(newValue: Int): Int =
+        (pitchesThrown ?: 0).also { pitchesThrown = newValue }
+
+    internal fun applyCorrectionStrikesThrown(newValue: Int): Int =
+        (strikesThrown ?: 0).also { strikesThrown = newValue }
+
+    internal fun applyCorrectionStolenBasesAllowed(newValue: Int): Int =
+        stolenBasesAllowed.also { stolenBasesAllowed = newValue }
+
+    internal fun applyCorrectionRunnersCaughtStealing(newValue: Int): Int =
+        runnersCaughtStealing.also { runnersCaughtStealing = newValue }
+
+    internal fun applyCorrectionPickoffs(newValue: Int): Int = pickoffs.also { pickoffs = newValue }
 
     companion object {
         /**

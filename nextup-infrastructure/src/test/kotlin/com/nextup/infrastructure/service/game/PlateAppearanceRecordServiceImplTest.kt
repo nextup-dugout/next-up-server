@@ -15,6 +15,7 @@ import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PlateAppearanceResult
+import com.nextup.core.domain.game.ScorerLock
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
@@ -638,7 +639,7 @@ class PlateAppearanceRecordServiceImplTest {
             isTopInning = isTopInning,
             totalInnings = totalInnings,
             gameState = GameState(),
-            scorerId = 999L,
+            scorerLock = ScorerLock(scorerId = 999L),
             id = id,
         )
     }
@@ -705,7 +706,7 @@ class PlateAppearanceRecordServiceImplTest {
             totalInnings = totalInnings,
             startedAt = startedAt,
             gameState = GameState(),
-            scorerId = 999L,
+            scorerLock = ScorerLock(scorerId = 999L),
             id = id,
         )
     }
