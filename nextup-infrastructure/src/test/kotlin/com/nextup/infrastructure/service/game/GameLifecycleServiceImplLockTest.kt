@@ -7,6 +7,7 @@ import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.ScorerLock
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.GameRepositoryPort
@@ -86,7 +87,7 @@ class GameLifecycleServiceImplLockTest {
             val result = service.lockGame(gameId, scorerId)
 
             // then
-            assertThat(result.scorerId).isEqualTo(scorerId)
+            assertThat(result.scorerLock.scorerId).isEqualTo(scorerId)
             verify(exactly = 1) { gameRepository.findByIdForUpdate(gameId) }
             verify(exactly = 1) { gameRepository.save(any()) }
         }
@@ -122,7 +123,7 @@ class GameLifecycleServiceImplLockTest {
             val result = service.unlockGame(gameId, scorerId)
 
             // then
-            assertThat(result.scorerId).isNull()
+            assertThat(result.scorerLock.scorerId).isNull()
             verify(exactly = 1) { gameRepository.findByIdOrNull(gameId) }
             verify(exactly = 1) { gameRepository.save(any()) }
         }
@@ -153,7 +154,7 @@ class GameLifecycleServiceImplLockTest {
             awayTeam = awayTeam,
             scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
             status = status,
-            scorerId = scorerId,
+            scorerLock = if (scorerId != null) ScorerLock(scorerId = scorerId) else ScorerLock(),
             id = id,
         )
     }

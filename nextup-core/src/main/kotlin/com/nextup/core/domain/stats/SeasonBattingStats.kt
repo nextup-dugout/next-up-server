@@ -3,6 +3,7 @@ package com.nextup.core.domain.stats
 import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.player.Player
@@ -21,8 +22,8 @@ import java.math.RoundingMode
     name = "season_batting_stats",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uk_season_batting_stats_player_year_team",
-            columnNames = ["player_id", "year", "team_id"],
+            name = "uk_season_batting_stats_player_year_team_ct",
+            columnNames = ["player_id", "year", "team_id", "competition_type"],
         ),
     ],
     indexes = [
@@ -30,6 +31,7 @@ import java.math.RoundingMode
         Index(name = "idx_season_batting_stats_year", columnList = "year"),
         Index(name = "idx_season_batting_stats_games", columnList = "games_played"),
         Index(name = "idx_season_batting_stats_team", columnList = "team_id"),
+        Index(name = "idx_season_batting_stats_comp_type", columnList = "competition_type"),
     ],
 )
 class SeasonBattingStats(
@@ -40,6 +42,9 @@ class SeasonBattingStats(
     val year: Int,
     @Column(name = "team_id")
     val teamId: Long? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "competition_type", nullable = false, length = 20)
+    val competitionType: CompetitionType = CompetitionType.LEAGUE,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -463,6 +468,36 @@ class SeasonBattingStats(
     }
 
     /**
+     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
+     *
+     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
+     * isFinalized 상태에서는 호출할 수 없습니다.
+     */
+    fun reset() {
+        requireNotFinalized()
+        gamesPlayed = 0
+        plateAppearances = 0
+        atBats = 0
+        hits = 0
+        doubles = 0
+        triples = 0
+        homeRuns = 0
+        runs = 0
+        runsBattedIn = 0
+        walks = 0
+        intentionalWalks = 0
+        hitByPitch = 0
+        strikeouts = 0
+        sacrificeBunts = 0
+        sacrificeFlies = 0
+        stolenBases = 0
+        caughtStealing = 0
+        groundedIntoDoublePlays = 0
+        batterInterferences = 0
+        runnerInterferences = 0
+    }
+
+    /**
      * 확정된 통계의 수정을 방지하는 가드 메서드.
      */
     private fun requireNotFinalized() {
@@ -478,16 +513,23 @@ class SeasonBattingStats(
          * @param player 선수
          * @param year 연도
          * @param teamId 팀 ID (이적 시 팀별 기록 분리 지원, null이면 팀 구분 없음)
+         * @param competitionType 대회 유형 (기본값 LEAGUE, FRIENDLY이면 공식 순위에서 제외)
          */
         fun create(
             player: Player,
             year: Int,
             teamId: Long? = null,
+            competitionType: CompetitionType = CompetitionType.LEAGUE,
         ): SeasonBattingStats {
             if (year <= 0) {
                 throw StatsValidationException("연도는 양수여야 합니다.")
             }
-            return SeasonBattingStats(player = player, year = year, teamId = teamId)
+            return SeasonBattingStats(
+                player = player,
+                year = year,
+                teamId = teamId,
+                competitionType = competitionType,
+            )
         }
     }
 }

@@ -12,15 +12,15 @@ interface BookingTransferJpaRepository : JpaRepository<BookingTransfer, Long> {
     @Query("SELECT t FROM BookingTransfer t WHERE t.bookingId = :bookingId")
     fun findByBookingId(bookingId: Long): List<BookingTransfer>
 
-    @Query("SELECT t FROM BookingTransfer t WHERE t.sellerTeamId = :sellerTeamId")
-    fun findBySellerTeamId(sellerTeamId: Long): List<BookingTransfer>
+    @Query("SELECT t FROM BookingTransfer t WHERE t.fromTeamId = :fromTeamId")
+    fun findByFromTeamId(fromTeamId: Long): List<BookingTransfer>
 
-    @Query("SELECT t FROM BookingTransfer t WHERE t.buyerTeamId = :buyerTeamId")
-    fun findByBuyerTeamId(buyerTeamId: Long): List<BookingTransfer>
+    @Query("SELECT t FROM BookingTransfer t WHERE t.toTeamId = :toTeamId")
+    fun findByToTeamId(toTeamId: Long): List<BookingTransfer>
 
     @Query(
         "SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
-            "FROM BookingTransfer t WHERE t.bookingId = :bookingId AND t.status = 'OPEN'",
+            "FROM BookingTransfer t WHERE t.bookingId = :bookingId AND t.status = 'PENDING'",
     )
-    fun existsOpenTransferForBooking(bookingId: Long): Boolean
+    fun existsPendingTransferForBooking(bookingId: Long): Boolean
 }
