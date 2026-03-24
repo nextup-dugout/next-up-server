@@ -11,8 +11,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.data.repository.findByIdOrNull
-import java.math.BigDecimal
-import java.time.Instant
 
 @DisplayName("BookingTransferRepositoryAdapter")
 class BookingTransferRepositoryAdapterTest {
@@ -27,19 +25,19 @@ class BookingTransferRepositoryAdapterTest {
 
     private fun createTransfer(
         bookingId: Long = 1L,
-        sellerTeamId: Long = 10L,
-        status: TransferStatus = TransferStatus.OPEN,
+        fromTeamId: Long = 10L,
+        toTeamId: Long = 20L,
+        status: TransferStatus = TransferStatus.PENDING,
     ): BookingTransfer {
         val transfer =
             BookingTransfer.create(
                 bookingId = bookingId,
-                sellerTeamId = sellerTeamId,
-                transferPrice = BigDecimal("50000"),
+                fromTeamId = fromTeamId,
+                toTeamId = toTeamId,
                 message = "양도합니다",
-                expiresAt = Instant.now().plusSeconds(3600),
             )
-        if (status == TransferStatus.CANCELLED) transfer.cancel()
-        if (status == TransferStatus.EXPIRED) transfer.expire()
+        if (status == TransferStatus.ACCEPTED) transfer.accept()
+        if (status == TransferStatus.REJECTED) transfer.reject()
         return transfer
     }
 
@@ -98,10 +96,10 @@ class BookingTransferRepositoryAdapterTest {
             // given
             val transfer1 = createTransfer(bookingId = 1L)
             val transfer2 = createTransfer(bookingId = 2L)
-            every { jpaRepository.findByStatus(TransferStatus.OPEN) } returns listOf(transfer1, transfer2)
+            every { jpaRepository.findByStatus(TransferStatus.PENDING) } returns listOf(transfer1, transfer2)
 
             // when
-            val result = adapter.findByStatus(TransferStatus.OPEN)
+            val result = adapter.findByStatus(TransferStatus.PENDING)
 
             // then
             assertThat(result).hasSize(2)
@@ -111,10 +109,10 @@ class BookingTransferRepositoryAdapterTest {
         @Test
         fun `should return empty list when no transfers with given status`() {
             // given
-            every { jpaRepository.findByStatus(TransferStatus.CANCELLED) } returns emptyList()
+            every { jpaRepository.findByStatus(TransferStatus.REJECTED) } returns emptyList()
 
             // when
-            val result = adapter.findByStatus(TransferStatus.CANCELLED)
+            val result = adapter.findByStatus(TransferStatus.REJECTED)
 
             // then
             assertThat(result).isEmpty()
@@ -152,29 +150,29 @@ class BookingTransferRepositoryAdapterTest {
     }
 
     @Nested
-    @DisplayName("findBySellerTeamId")
-    inner class FindBySellerTeamId {
+    @DisplayName("findByFromTeamId")
+    inner class FindByFromTeamId {
         @Test
-        fun `should return transfers for given seller team`() {
+        fun `should return transfers for given from team`() {
             // given
-            val transfer = createTransfer(sellerTeamId = 10L)
-            every { jpaRepository.findBySellerTeamId(10L) } returns listOf(transfer)
+            val transfer = createTransfer(fromTeamId = 10L)
+            every { jpaRepository.findByFromTeamId(10L) } returns listOf(transfer)
 
             // when
-            val result = adapter.findBySellerTeamId(10L)
+            val result = adapter.findByFromTeamId(10L)
 
             // then
             assertThat(result).hasSize(1)
-            assertThat(result[0].sellerTeamId).isEqualTo(10L)
+            assertThat(result[0].fromTeamId).isEqualTo(10L)
         }
 
         @Test
-        fun `should return empty list when no transfers for seller team`() {
+        fun `should return empty list when no transfers for from team`() {
             // given
-            every { jpaRepository.findBySellerTeamId(99L) } returns emptyList()
+            every { jpaRepository.findByFromTeamId(99L) } returns emptyList()
 
             // when
-            val result = adapter.findBySellerTeamId(99L)
+            val result = adapter.findByFromTeamId(99L)
 
             // then
             assertThat(result).isEmpty()
@@ -182,27 +180,57 @@ class BookingTransferRepositoryAdapterTest {
     }
 
     @Nested
-    @DisplayName("existsOpenTransferForBooking")
-    inner class ExistsOpenTransferForBooking {
+    @DisplayName("findByToTeamId")
+    inner class FindByToTeamId {
         @Test
-        fun `should return true when open transfer exists`() {
+        fun `should return transfers for given to team`() {
             // given
-            every { jpaRepository.existsOpenTransferForBooking(1L) } returns true
+            val transfer = createTransfer(toTeamId = 20L)
+            every { jpaRepository.findByToTeamId(20L) } returns listOf(transfer)
 
             // when
-            val result = adapter.existsOpenTransferForBooking(1L)
+            val result = adapter.findByToTeamId(20L)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].toTeamId).isEqualTo(20L)
+        }
+
+        @Test
+        fun `should return empty list when no transfers for to team`() {
+            // given
+            every { jpaRepository.findByToTeamId(99L) } returns emptyList()
+
+            // when
+            val result = adapter.findByToTeamId(99L)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("existsPendingTransferForBooking")
+    inner class ExistsPendingTransferForBooking {
+        @Test
+        fun `should return true when pending transfer exists`() {
+            // given
+            every { jpaRepository.existsPendingTransferForBooking(1L) } returns true
+
+            // when
+            val result = adapter.existsPendingTransferForBooking(1L)
 
             // then
             assertThat(result).isTrue()
         }
 
         @Test
-        fun `should return false when no open transfer exists`() {
+        fun `should return false when no pending transfer exists`() {
             // given
-            every { jpaRepository.existsOpenTransferForBooking(99L) } returns false
+            every { jpaRepository.existsPendingTransferForBooking(99L) } returns false
 
             // when
-            val result = adapter.existsOpenTransferForBooking(99L)
+            val result = adapter.existsPendingTransferForBooking(99L)
 
             // then
             assertThat(result).isFalse()
