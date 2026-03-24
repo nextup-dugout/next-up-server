@@ -728,6 +728,8 @@ class StatsEventListenerTest {
             // 기본적으로 수비 기록 없음 (수비 테스트에서만 오버라이드)
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns emptyList()
             // L-7: 교차 검증용 기본 목 설정 (개별 테스트에서 오버라이드 가능)
+            every { seasonBattingStatsRepository.findByPlayerIdAndYear(any(), any()) } returns null
+            every { seasonFieldingStatsRepository.findByPlayerIdAndYear(any(), any()) } returns null
             every { battingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
             every { fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
         }
@@ -1332,6 +1334,71 @@ class StatsEventListenerTest {
 
             // then
             assertThat(stats.passedBalls).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("L-7: 경기 종료 시 통계 정합성 교차 검증")
+    inner class ConsistencyVerification {
+        @Test
+        fun `경기 종료 시 타격 통계 정합성 검증이 수행됨 - 일치`() {
+            // given
+            val mockTeam = mockk<com.nextup.core.domain.team.Team>()
+            every { mockTeam.id } returns 10L
+            val mockGameTeam = mockk<GameTeam>()
+            every { mockGameTeam.team } returns mockTeam
+            val gamePlayer = mockk<GamePlayer>()
+            every { gamePlayer.player } returns testPlayer
+            every { gamePlayer.gameTeam } returns mockGameTeam
+
+            val battingRecord = mockk<BattingRecord>(relaxed = true)
+            every { battingRecord.gamePlayer } returns gamePlayer
+            every { battingRecord.plateAppearances } returns 4
+            every { battingRecord.hits } returns 2
+            every { battingRecord.atBats } returns 3
+
+            val seasonBattingStats = SeasonBattingStats.create(testPlayer, 2024)
+            // 실시간 갱신으로 4타석, 3타수, 2안타를 시뮬레이션
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.GROUND_OUT)
+            seasonBattingStats.applyLiveUpdate(PlateAppearanceResult.WALK)
+
+            every { battingRecordRepository.findAllByGameId(10L) } returns listOf(battingRecord)
+            every { pitchingRecordRepository.findAllByGameId(10L) } returns emptyList()
+            every { fieldingRecordRepository.findAllByGameId(10L) } returns emptyList()
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(testPlayer.id, 2024, 10L)
+            } returns seasonBattingStats
+            every {
+                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns seasonBattingStats
+            every {
+                seasonFieldingStatsRepository.findByPlayerIdAndYear(any(), any())
+            } returns null
+            every {
+                battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024)
+            } returns listOf(battingRecord)
+            every {
+                fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any())
+            } returns emptyList()
+            every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns null
+            every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
+
+            val event =
+                GameResultConfirmedEvent(
+                    gameId = 10L,
+                    homeTeamId = 1L,
+                    awayTeamId = 2L,
+                    homeScore = 5,
+                    awayScore = 3,
+                )
+
+            // when - 정합성 일치이면 경고 로그 없이 정상 완료
+            listener.onGameResultConfirmed(event)
+
+            // then: 정합성 검증 수행됨 (findAllByPlayerIdAndYear 호출)
+            verify { battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024) }
         }
     }
 }
