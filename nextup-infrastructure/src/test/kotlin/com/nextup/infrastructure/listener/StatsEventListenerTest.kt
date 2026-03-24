@@ -1338,10 +1338,10 @@ class StatsEventListenerTest {
     }
 
     @Nested
-    @DisplayName("L-7: 경기 종료 시 통계 정합성 교차 검증")
+    @DisplayName("L-7: 경기 종료 시 커리어 스탯 집계 검증")
     inner class ConsistencyVerification {
         @Test
-        fun `경기 종료 시 타격 통계 정합성 검증이 수행됨 - 일치`() {
+        fun `경기 종료 시 타격 기록으로 커리어 스탯이 집계됨`() {
             // given
             val mockTeam = mockk<com.nextup.core.domain.team.Team>()
             every { mockTeam.id } returns 10L
@@ -1370,18 +1370,6 @@ class StatsEventListenerTest {
             every {
                 seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamId(testPlayer.id, 2024, 10L)
             } returns seasonBattingStats
-            every {
-                seasonBattingStatsRepository.findByPlayerIdAndYear(testPlayer.id, 2024)
-            } returns seasonBattingStats
-            every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYear(any(), any())
-            } returns null
-            every {
-                battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024)
-            } returns listOf(battingRecord)
-            every {
-                fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any())
-            } returns emptyList()
             every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns null
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
 
@@ -1394,11 +1382,12 @@ class StatsEventListenerTest {
                     awayScore = 3,
                 )
 
-            // when - 정합성 일치이면 경고 로그 없이 정상 완료
+            // when
             listener.onGameResultConfirmed(event)
 
-            // then: 정합성 검증 수행됨 (findAllByPlayerIdAndYear 호출)
-            verify { battingRecordRepository.findAllByPlayerIdAndYear(testPlayer.id, 2024) }
+            // then: 경기 기록 조회 및 커리어 스탯 저장이 수행됨
+            verify { battingRecordRepository.findAllByGameId(10L) }
+            verify { careerBattingStatsRepository.save(any()) }
         }
     }
 }
