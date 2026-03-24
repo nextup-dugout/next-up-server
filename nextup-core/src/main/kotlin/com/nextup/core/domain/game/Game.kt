@@ -72,7 +72,7 @@ class Game private constructor(
     @Version
     var version: Long = 0
 
-    @OneToMany(mappedBy = "game", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToMany(mappedBy = "game", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
     private val _gameTeams: MutableList<GameTeam> = mutableListOf()
     val gameTeams: List<GameTeam> get() = _gameTeams.toList()
 
