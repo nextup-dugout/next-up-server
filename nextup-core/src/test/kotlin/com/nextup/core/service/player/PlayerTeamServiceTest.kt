@@ -68,7 +68,6 @@ class PlayerTeamServiceTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR,
                 )
 
             // then
@@ -203,113 +202,6 @@ class PlayerTeamServiceTest {
             assertThatThrownBy {
                 playerTeamService.endAffiliation(affiliationId, LocalDate.now())
             }.isInstanceOf(PlayerTeamHistoryNotFoundException::class.java)
-        }
-    }
-
-    @Nested
-    @DisplayName("transferPlayer")
-    inner class TransferPlayer {
-        @Test
-        fun `should transfer player within same league successfully`() {
-            // given
-            val playerId = 1L
-            val fromTeamId = 1L
-            val toTeamId = 2L
-            val leagueId = 1L
-            val transferDate = LocalDate.now()
-
-            val player = createPlayer(playerId, "홍길동")
-            val fromTeam = createTeam(fromTeamId, "서울 타이거즈", leagueId)
-            val toTeam = createTeam(toTeamId, "서울 라이온즈", leagueId)
-            val currentAffiliation = createPlayerTeamHistory(1L, player, fromTeam)
-
-            every { playerRepository.findByIdOrNull(playerId) } returns player
-            every { teamRepository.findByIdWithLeague(fromTeamId) } returns fromTeam
-            every { teamRepository.findByIdWithLeague(toTeamId) } returns toTeam
-            every { playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, leagueId) } returns
-                currentAffiliation
-            every { playerTeamHistoryRepository.save(any()) } answers { firstArg() }
-
-            // when
-            val result =
-                playerTeamService.transferPlayer(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = transferDate,
-                    newPosition = Position.LEFT_FIELD,
-                    newUniformNumber = 20,
-                    newContractType = ContractType.REGULAR,
-                )
-
-            // then
-            assertThat(result.player.id).isEqualTo(playerId)
-            assertThat(result.team.id).isEqualTo(toTeamId)
-            assertThat(result.status).isEqualTo(PlayerTeamStatus.ACTIVE)
-            assertThat(result.position).isEqualTo(Position.LEFT_FIELD)
-            assertThat(result.uniformNumber).isEqualTo(20)
-            assertThat(currentAffiliation.status).isEqualTo(PlayerTeamStatus.TRANSFERRED)
-            assertThat(currentAffiliation.endDate).isEqualTo(transferDate)
-            verify(exactly = 1) { playerTeamHistoryRepository.save(any()) }
-        }
-
-        @Test
-        fun `should throw exception when transferring to different league`() {
-            // given
-            val playerId = 1L
-            val fromTeamId = 1L
-            val toTeamId = 2L
-            val fromLeagueId = 1L
-            val toLeagueId = 2L
-
-            val player = createPlayer(playerId, "홍길동")
-            val fromTeam = createTeam(fromTeamId, "서울 타이거즈", fromLeagueId)
-            val toTeam = createTeam(toTeamId, "경기 라이온즈", toLeagueId)
-
-            every { playerRepository.findByIdOrNull(playerId) } returns player
-            every { teamRepository.findByIdWithLeague(fromTeamId) } returns fromTeam
-            every { teamRepository.findByIdWithLeague(toTeamId) } returns toTeam
-
-            // when & then
-            assertThatThrownBy {
-                playerTeamService.transferPlayer(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = LocalDate.now(),
-                    newPosition = Position.LEFT_FIELD,
-                )
-            }.isInstanceOf(PlayerTransferNotAllowedException::class.java)
-                .hasMessageContaining("같은 리그 내에서만 이적")
-        }
-
-        @Test
-        fun `should throw exception when player not in from team`() {
-            // given
-            val playerId = 1L
-            val fromTeamId = 1L
-            val toTeamId = 2L
-            val leagueId = 1L
-
-            val player = createPlayer(playerId, "홍길동")
-            val fromTeam = createTeam(fromTeamId, "서울 타이거즈", leagueId)
-            val toTeam = createTeam(toTeamId, "서울 라이온즈", leagueId)
-
-            every { playerRepository.findByIdOrNull(playerId) } returns player
-            every { teamRepository.findByIdWithLeague(fromTeamId) } returns fromTeam
-            every { teamRepository.findByIdWithLeague(toTeamId) } returns toTeam
-            every { playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, leagueId) } returns null
-
-            // when & then
-            assertThatThrownBy {
-                playerTeamService.transferPlayer(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = LocalDate.now(),
-                    newPosition = Position.LEFT_FIELD,
-                )
-            }.isInstanceOf(PlayerNotInTeamException::class.java)
         }
     }
 
@@ -602,7 +494,6 @@ class PlayerTeamServiceTest {
             team = team,
             startDate = LocalDate.now(),
             position = Position.STARTING_PITCHER,
-            contractType = ContractType.REGULAR,
             status = PlayerTeamStatus.ACTIVE,
         ).apply {
             val idField = PlayerTeamHistory::class.java.getDeclaredField("id")

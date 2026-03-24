@@ -5,22 +5,17 @@ package com.nextup.core.domain.stadium
  */
 enum class TransferStatus {
     /**
-     * 양도 등록 (양수 대기 중)
+     * 양도 요청 대기 중
      */
-    OPEN,
+    PENDING,
 
     /**
-     * 양도 완료 (양수 확정)
+     * 양도 수락 완료
      */
     ACCEPTED,
 
     /**
-     * 양도 취소
+     * 양도 거절
      */
-    CANCELLED,
-
-    /**
-     * 양도 만료 (유효기간 초과)
-     */
-    EXPIRED,
+    REJECTED,
 }
