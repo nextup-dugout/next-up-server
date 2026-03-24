@@ -47,7 +47,21 @@ class FieldingRecordScorerControllerTest {
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
-                .build()
+                .setCustomArgumentResolvers(
+                    object : org.springframework.web.method.support.HandlerMethodArgumentResolver {
+                        override fun supportsParameter(parameter: org.springframework.core.MethodParameter): Boolean =
+                            parameter.hasParameterAnnotation(
+                                org.springframework.security.core.annotation.AuthenticationPrincipal::class.java,
+                            )
+
+                        override fun resolveArgument(
+                            parameter: org.springframework.core.MethodParameter,
+                            mavContainer: org.springframework.web.method.support.ModelAndViewContainer?,
+                            webRequest: org.springframework.web.context.request.NativeWebRequest,
+                            binderFactory: org.springframework.web.bind.support.WebDataBinderFactory?,
+                        ): Any = 1L
+                    },
+                ).build()
     }
 
     @Nested

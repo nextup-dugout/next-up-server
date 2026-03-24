@@ -69,6 +69,14 @@ data class LineupEntryDto(
 }
 
 /**
+ * 라인업 교환 승인 요청 DTO
+ */
+data class ApproveLineupExchangeRequest(
+    @field:NotNull(message = "팀 ID는 필수입니다.")
+    val teamId: Long,
+)
+
+/**
  * 라인업 교환 거부 요청 DTO
  */
 data class RejectLineupExchangeRequest(

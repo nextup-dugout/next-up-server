@@ -28,6 +28,7 @@ import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     private val webSocketAuthInterceptor: WebSocketAuthInterceptor,
+    private val webSocketHandshakeInterceptor: WebSocketHandshakeInterceptor,
     private val sessionRegistry: WebSocketSessionRegistry,
     @Value("\${app.websocket.allowed-origins:http://localhost:3000}")
     private val allowedOrigins: String,
@@ -63,12 +64,15 @@ class WebSocketConfig(
         val origins = allowedOrigins.split(",").map { it.trim() }.toTypedArray()
 
         // WebSocket 연결 엔드포인트 (SockJS 포함)
+        // 핸드셰이크 인터셉터로 HTTP 레벨에서 JWT 검증 (defense-in-depth)
         registry.addEndpoint("/ws/scoreboard")
+            .addInterceptors(webSocketHandshakeInterceptor)
             .setAllowedOrigins(*origins)
             .withSockJS()
 
         // SockJS 없이 순수 WebSocket 연결
         registry.addEndpoint("/ws/scoreboard")
+            .addInterceptors(webSocketHandshakeInterceptor)
             .setAllowedOrigins(*origins)
     }
 

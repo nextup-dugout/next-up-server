@@ -15,6 +15,7 @@ import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameState
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.game.ScorerLock
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
@@ -862,7 +863,7 @@ class GameScorerServiceSubstitutionTest {
             isTopInning = true,
             totalInnings = 9,
             gameState = GameState(),
-            scorerId = 999L,
+            scorerLock = ScorerLock(scorerId = 999L),
             id = id,
         )
     }

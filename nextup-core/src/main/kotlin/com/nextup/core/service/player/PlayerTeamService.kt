@@ -1,7 +1,6 @@
 package com.nextup.core.service.player
 
 import com.nextup.common.exception.*
-import com.nextup.core.domain.player.ContractType
 import com.nextup.core.domain.player.PlayerTeamHistory
 import com.nextup.core.domain.player.PlayerTeamStatus
 import com.nextup.core.domain.player.Position
@@ -16,6 +15,7 @@ import java.time.LocalDate
  * 선수-팀 소속 관계 관리 서비스
  *
  * 비즈니스 로직은 Entity에 위임하고, 서비스는 조율(orchestration)만 수행합니다.
+ * 사회인 야구에서는 "이적" 개념이 없으므로, 팀 변경은 탈퇴 + 새 팀 가입으로 처리합니다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -34,7 +34,6 @@ class PlayerTeamService(
      * @param startDate 소속 시작일
      * @param position 포지션
      * @param uniformNumber 등번호 (선택)
-     * @param contractType 계약 유형
      * @return 생성된 소속 이력
      * @throws PlayerNotFoundException 선수를 찾을 수 없는 경우
      * @throws TeamNotFoundException 팀을 찾을 수 없는 경우
@@ -47,7 +46,6 @@ class PlayerTeamService(
         startDate: LocalDate,
         position: Position,
         uniformNumber: Int? = null,
-        contractType: ContractType = ContractType.REGULAR,
     ): PlayerTeamHistory {
         val player =
             playerRepository.findByIdOrNull(playerId)
@@ -71,7 +69,6 @@ class PlayerTeamService(
                 startDate = startDate,
                 position = position,
                 uniformNumber = uniformNumber,
-                contractType = contractType,
                 status = PlayerTeamStatus.ACTIVE,
             )
 
@@ -81,7 +78,7 @@ class PlayerTeamService(
     // ========== UPDATE ==========
 
     /**
-     * 선수의 소속을 종료합니다.
+     * 선수의 소속을 종료합니다 (탈퇴 처리).
      *
      * @param affiliationId 소속 이력 ID
      * @param endDate 종료일
@@ -96,77 +93,6 @@ class PlayerTeamService(
         val affiliation = findAffiliationById(affiliationId)
         affiliation.deactivate(endDate)
         return affiliation
-    }
-
-    /**
-     * 선수를 다른 팀으로 이적 처리합니다.
-     *
-     * @param playerId 선수 ID
-     * @param fromTeamId 이전 팀 ID
-     * @param toTeamId 새 팀 ID
-     * @param transferDate 이적 날짜
-     * @param newPosition 새 포지션
-     * @param newUniformNumber 새 등번호 (선택)
-     * @param newContractType 새 계약 유형
-     * @return 새로 생성된 소속 이력
-     * @throws PlayerNotFoundException 선수를 찾을 수 없는 경우
-     * @throws TeamNotFoundException 팀을 찾을 수 없는 경우
-     * @throws PlayerTransferNotAllowedException 이적이 허용되지 않는 경우
-     * @throws PlayerNotInTeamException 선수가 해당 팀에 소속되어 있지 않은 경우
-     */
-    @Transactional
-    fun transferPlayer(
-        playerId: Long,
-        fromTeamId: Long,
-        toTeamId: Long,
-        transferDate: LocalDate,
-        newPosition: Position,
-        newUniformNumber: Int? = null,
-        newContractType: ContractType = ContractType.REGULAR,
-    ): PlayerTeamHistory {
-        val player =
-            playerRepository.findByIdOrNull(playerId)
-                ?: throw PlayerNotFoundException(playerId)
-
-        val fromTeam =
-            teamRepository.findByIdWithLeague(fromTeamId)
-                ?: throw TeamNotFoundException(fromTeamId)
-
-        val toTeam =
-            teamRepository.findByIdWithLeague(toTeamId)
-                ?: throw TeamNotFoundException(toTeamId)
-
-        // 같은 리그 내 이적만 허용
-        val fromLeagueId = fromTeam.league.id
-        val toLeagueId = toTeam.league.id
-
-        if (fromLeagueId != toLeagueId) {
-            throw PlayerTransferNotAllowedException(
-                "선수는 같은 리그 내에서만 이적할 수 있습니다. (From: League $fromLeagueId, To: League $toLeagueId)",
-            )
-        }
-
-        // 현재 소속 이력 조회
-        val currentAffiliation =
-            playerTeamHistoryRepository.findActiveByPlayerIdAndLeagueId(playerId, fromLeagueId)
-                ?: throw PlayerNotInTeamException(playerId, fromTeamId)
-
-        // 기존 소속 TRANSFERRED 처리
-        currentAffiliation.transfer(transferDate)
-
-        // 새 팀으로 소속 생성
-        val newAffiliation =
-            PlayerTeamHistory(
-                player = player,
-                team = toTeam,
-                startDate = transferDate,
-                position = newPosition,
-                uniformNumber = newUniformNumber,
-                contractType = newContractType,
-                status = PlayerTeamStatus.ACTIVE,
-            )
-
-        return playerTeamHistoryRepository.save(newAffiliation)
     }
 
     /**
