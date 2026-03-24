@@ -454,6 +454,84 @@ class GameEventTest {
     }
 
     @Nested
+    @DisplayName("createPlayerExit")
+    inner class CreatePlayerExit {
+        @Test
+        fun `선수 퇴장 (교체 없음) 이벤트를 생성한다`() {
+            // given
+            val exitedPlayer = mockk<GamePlayer>(relaxed = true)
+
+            // when
+            val event =
+                GameEvent.createPlayerExit(
+                    game = game,
+                    exitedPlayer = exitedPlayer,
+                    description = "5회초: 홍길동 퇴장 (교체 선수 없음)",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.PLAYER_EXIT)
+            assertThat(event.description).isEqualTo("5회초: 홍길동 퇴장 (교체 선수 없음)")
+            assertThat(event.inning).isEqualTo(game.currentInning)
+            assertThat(event.isTopInning).isEqualTo(game.isTopInning)
+            assertThat(event.outCountBefore).isEqualTo(game.gameState.outs)
+            assertThat(event.outCountAfter).isEqualTo(game.gameState.outs)
+            assertThat(event.batter).isEqualTo(exitedPlayer)
+            assertThat(event.pitcher).isNull()
+            assertThat(event.plateAppearanceResult).isNull()
+            assertThat(event.runsScored).isEqualTo(0)
+        }
+
+        @Test
+        fun `하위 이닝에서 퇴장 이벤트의 이닝 정보가 올바르다`() {
+            // given
+            game.currentInning = 7
+            game.isTopInning = false
+            val exitedPlayer = mockk<GamePlayer>(relaxed = true)
+
+            // when
+            val event =
+                GameEvent.createPlayerExit(
+                    game = game,
+                    exitedPlayer = exitedPlayer,
+                    description = "7회말: 김선수 퇴장 (교체 선수 없음)",
+                )
+
+            // then
+            assertThat(event.inning).isEqualTo(7)
+            assertThat(event.isTopInning).isFalse()
+            assertThat(event.eventType).isEqualTo(GameEventType.PLAYER_EXIT)
+        }
+    }
+
+    @Nested
+    @DisplayName("createEmergencySubstitution")
+    inner class CreateEmergencySubstitution {
+        @Test
+        fun `긴급 교체 이벤트를 생성한다`() {
+            // given
+            val incomingPlayer = mockk<GamePlayer>(relaxed = true)
+            val outgoingPlayer = mockk<GamePlayer>(relaxed = true)
+
+            // when
+            val event =
+                GameEvent.createEmergencySubstitution(
+                    game = game,
+                    incomingPlayer = incomingPlayer,
+                    outgoingPlayer = outgoingPlayer,
+                    reason = EjectionReason.INJURY,
+                    description = "1회초: 부상으로 인한 긴급 교체",
+                )
+
+            // then
+            assertThat(event.eventType).isEqualTo(GameEventType.EMERGENCY_SUBSTITUTION)
+            assertThat(event.description).isEqualTo("1회초: 부상으로 인한 긴급 교체")
+            assertThat(event.batter).isEqualTo(incomingPlayer)
+            assertThat(event.pitcher).isEqualTo(outgoingPlayer)
+        }
+    }
+
+    @Nested
     @DisplayName("createGameStatus")
     inner class CreateGameStatus {
         @Test

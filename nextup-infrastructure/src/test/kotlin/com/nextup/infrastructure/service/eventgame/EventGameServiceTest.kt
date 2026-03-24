@@ -96,6 +96,24 @@ class EventGameServiceTest {
         return game
     }
 
+    /**
+     * CLOSED 상태이고, 확정 참가자 2명에게 팀이 배정된 게임을 생성합니다.
+     * completeTeamAssignment() 호출이 가능한 상태.
+     */
+    private fun createEventGameWithTeamAssigned(): EventGame {
+        val game = createEventGame()
+        val p1 = EventGameParticipant.create(game, 10L)
+        val p2 = EventGameParticipant.create(game, 20L)
+        game.addParticipant(p1)
+        game.addParticipant(p2)
+        p1.confirm()
+        p2.confirm()
+        game.closeRecruitment()
+        p1.assignTeam(com.nextup.core.domain.eventgame.TeamAssignment.TEAM_A)
+        p2.assignTeam(com.nextup.core.domain.eventgame.TeamAssignment.TEAM_B)
+        return game
+    }
+
     @Nested
     @DisplayName("createEventGame")
     inner class CreateEventGameTest {
@@ -197,6 +215,204 @@ class EventGameServiceTest {
             val result = service.getRecruitingEventGames()
 
             assertThat(result).hasSize(2)
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyEventGames")
+    inner class GetMyEventGamesTest {
+        @Test
+        fun `내가 주최한 이벤트 게임 목록 조회`() {
+            val games = listOf(createEventGame())
+            every { eventGameRepository.findByOrganizerId(100L) } returns games
+
+            val result = service.getMyEventGames(100L)
+
+            assertThat(result).hasSize(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelParticipation")
+    inner class CancelParticipationTest {
+        @Test
+        fun `참가 취소 성공`() {
+            val game = createEventGame()
+            val participant = EventGameParticipant.create(game, 10L)
+            participant.confirm()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { participantRepository.findByIdOrNull(any()) } returns participant
+            every { participantRepository.save(any()) } answers { firstArg() }
+
+            val result = service.cancelParticipation(1L, 1L)
+
+            assertThat(result.status).isEqualTo(EventGameParticipantStatus.CANCELLED)
+        }
+    }
+
+    @Nested
+    @DisplayName("closeRecruitment")
+    inner class CloseRecruitmentTest {
+        @Test
+        fun `모집 마감 성공`() {
+            val game = createEventGame()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+
+            val result = service.closeRecruitment(1L)
+
+            assertThat(result.status).isEqualTo(EventGameStatus.CLOSED)
+        }
+    }
+
+    @Nested
+    @DisplayName("assignTeam")
+    inner class AssignTeamTest {
+        @Test
+        fun `팀 배정 성공`() {
+            val game = createEventGame()
+            val participant = EventGameParticipant.create(game, 10L)
+            participant.confirm()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { participantRepository.findByIdOrNull(any()) } returns participant
+            every { participantRepository.save(any()) } answers { firstArg() }
+
+            val result =
+                service.assignTeam(1L, 1L, com.nextup.core.domain.eventgame.TeamAssignment.TEAM_A)
+
+            assertThat(result.teamAssignment)
+                .isEqualTo(com.nextup.core.domain.eventgame.TeamAssignment.TEAM_A)
+        }
+    }
+
+    @Nested
+    @DisplayName("completeTeamAssignment")
+    inner class CompleteTeamAssignmentTest {
+        @Test
+        fun `팀 배정 완료 성공`() {
+            val game = createEventGameWithTeamAssigned()
+            // status = CLOSED (team assigned 직전 상태)
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+
+            val result = service.completeTeamAssignment(1L)
+
+            assertThat(result.status).isEqualTo(EventGameStatus.TEAM_ASSIGNED)
+        }
+    }
+
+    @Nested
+    @DisplayName("startGame")
+    inner class StartGameTest {
+        @Test
+        fun `경기 시작 성공`() {
+            val game = createEventGameWithTeamAssigned()
+            game.completeTeamAssignment()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+
+            val result = service.startGame(1L)
+
+            assertThat(result.status).isEqualTo(EventGameStatus.IN_PROGRESS)
+        }
+    }
+
+    @Nested
+    @DisplayName("finishGame")
+    inner class FinishGameTest {
+        @Test
+        fun `경기 종료 성공`() {
+            val game = createEventGameWithTeamAssigned()
+            game.completeTeamAssignment()
+            game.start()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+
+            val result = service.finishGame(1L, 5, 3)
+
+            assertThat(result.status).isEqualTo(EventGameStatus.FINISHED)
+            assertThat(result.teamAScore).isEqualTo(5)
+            assertThat(result.teamBScore).isEqualTo(3)
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelGame")
+    inner class CancelGameTest {
+        @Test
+        fun `경기 취소 성공`() {
+            val game = createEventGame()
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+
+            val result = service.cancelGame(1L, "우천으로 취소")
+
+            assertThat(result.status).isEqualTo(EventGameStatus.CANCELLED)
+            assertThat(result.cancelReason).isEqualTo("우천으로 취소")
+        }
+    }
+
+    @Nested
+    @DisplayName("getParticipants")
+    inner class GetParticipantsTest {
+        @Test
+        fun `참가자 목록 조회`() {
+            val game = createEventGame()
+            val participants =
+                listOf(
+                    EventGameParticipant.create(game, 10L),
+                    EventGameParticipant.create(game, 20L),
+                )
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { participantRepository.findByEventGameId(any()) } returns participants
+
+            val result = service.getParticipants(1L)
+
+            assertThat(result).hasSize(2)
+        }
+    }
+
+    @Nested
+    @DisplayName("getPlayerHistory")
+    inner class GetPlayerHistoryTest {
+        @Test
+        fun `선수 참가 이력 조회`() {
+            val game = createEventGame()
+            val participations = listOf(EventGameParticipant.create(game, 10L))
+            every { participantRepository.findByPlayerId(10L) } returns participations
+
+            val result = service.getPlayerHistory(10L)
+
+            assertThat(result).hasSize(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("autoAssignTeams")
+    inner class AutoAssignTeamsTest {
+        @Test
+        fun `자동 팀 배정 성공`() {
+            val game = createEventGame()
+            // 참가자는 모집 중일 때 추가
+            val p1 = EventGameParticipant.create(game, 10L)
+            val p2 = EventGameParticipant.create(game, 20L)
+            game.addParticipant(p1)
+            game.addParticipant(p2)
+            p1.confirm()
+            p2.confirm()
+            // 모집 마감
+            game.closeRecruitment()
+
+            every { eventGameRepository.findByIdOrNull(any()) } returns game
+            every { eventGameRepository.save(any()) } answers { firstArg() }
+            every { participantRepository.save(any()) } answers { firstArg() }
+
+            val result = service.autoAssignTeams(1L)
+
+            assertThat(result).isNotNull()
+            val assignedParticipants =
+                result.participants.filter { it.teamAssignment != null }
+            assertThat(assignedParticipants).hasSize(2)
         }
     }
 }
