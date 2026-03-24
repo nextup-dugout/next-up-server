@@ -48,7 +48,7 @@ class User private constructor(
 
     @OneToMany(
         mappedBy = "user",
-        cascade = [CascadeType.ALL],
+        cascade = [CascadeType.PERSIST, CascadeType.MERGE],
         orphanRemoval = true,
         fetch = FetchType.LAZY,
     )
