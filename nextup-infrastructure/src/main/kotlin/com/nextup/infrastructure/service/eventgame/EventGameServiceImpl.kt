@@ -2,6 +2,8 @@ package com.nextup.infrastructure.service.eventgame
 
 import com.nextup.common.exception.EventGameNotFoundException
 import com.nextup.common.exception.EventGameParticipantNotFoundException
+import com.nextup.common.exception.PlayerNotLinkedException
+import com.nextup.common.exception.UserNotFoundException
 import com.nextup.core.domain.eventgame.EventGame
 import com.nextup.core.domain.eventgame.EventGameParticipant
 import com.nextup.core.domain.eventgame.EventGameParticipantStatus
@@ -9,6 +11,7 @@ import com.nextup.core.domain.eventgame.EventGameStatus
 import com.nextup.core.domain.eventgame.TeamAssignment
 import com.nextup.core.port.repository.EventGameParticipantRepositoryPort
 import com.nextup.core.port.repository.EventGameRepositoryPort
+import com.nextup.core.port.repository.UserRepositoryPort
 import com.nextup.core.service.eventgame.CreateEventGameCommand
 import com.nextup.core.service.eventgame.EventGameService
 import org.springframework.stereotype.Service
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional
 class EventGameServiceImpl(
     private val eventGameRepository: EventGameRepositoryPort,
     private val participantRepository: EventGameParticipantRepositoryPort,
+    private val userRepository: UserRepositoryPort,
 ) : EventGameService {
     @Transactional
     override fun createEventGame(command: CreateEventGameCommand): EventGame {
@@ -54,14 +58,21 @@ class EventGameServiceImpl(
     @Transactional
     override fun joinEventGame(
         eventGameId: Long,
-        playerId: Long,
+        userId: Long,
         message: String?,
     ): EventGameParticipant {
+        val user =
+            userRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
+        val player =
+            user.player
+                ?: throw PlayerNotLinkedException(userId)
+
         val eventGame = getEventGame(eventGameId)
         val participant =
             EventGameParticipant.create(
                 eventGame = eventGame,
-                playerId = playerId,
+                playerId = player.id,
                 message = message,
             )
         eventGame.addParticipant(participant)
@@ -167,8 +178,9 @@ class EventGameServiceImpl(
         return participantRepository.findByEventGameId(eventGameId)
     }
 
-    override fun getPlayerHistory(playerId: Long): List<EventGameParticipant> =
-        participantRepository.findByPlayerId(playerId)
+    override fun getPlayerHistory(playerId: Long): List<EventGameParticipant> {
+        return participantRepository.findByPlayerId(playerId)
+    }
 
     private fun findParticipant(participantId: Long): EventGameParticipant =
         participantRepository.findByIdOrNull(participantId)

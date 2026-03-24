@@ -18,9 +18,20 @@ interface EventGameService {
 
     fun getMyEventGames(organizerId: Long): List<EventGame>
 
+    /**
+     * 이벤트 게임에 참가 신청합니다.
+     *
+     * userId를 받아 연결된 Player를 조회하여 참가합니다.
+     * 무소속 선수도 Player 프로필이 있으면 참가 가능합니다.
+     *
+     * @param eventGameId 이벤트 게임 ID
+     * @param userId 참가 신청하는 사용자 ID
+     * @param message 참가 메시지 (선택)
+     * @return 생성된 참가자
+     */
     fun joinEventGame(
         eventGameId: Long,
-        playerId: Long,
+        userId: Long,
         message: String? = null,
     ): EventGameParticipant
 

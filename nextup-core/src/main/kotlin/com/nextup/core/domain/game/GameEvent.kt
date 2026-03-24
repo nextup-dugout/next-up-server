@@ -317,5 +317,31 @@ class GameEvent(
                 batter = incomingPlayer,
                 pitcher = outgoingPlayer,
             )
+
+        /**
+         * 선수 퇴장 (교체 없음) 이벤트를 생성합니다.
+         *
+         * 교체 선수 없이 선수가 경기에서 빠지는 경우를 기록합니다.
+         * 인원 부족으로 이어질 수 있으며, 몰수패 판단의 근거가 됩니다.
+         *
+         * @param game 경기
+         * @param exitedPlayer 퇴장 선수
+         * @param description 퇴장 설명
+         */
+        fun createPlayerExit(
+            game: Game,
+            exitedPlayer: GamePlayer,
+            description: String,
+        ): GameEvent =
+            GameEvent(
+                game = game,
+                inning = game.currentInning,
+                isTopInning = game.isTopInning,
+                outCountBefore = game.gameState.outs,
+                outCountAfter = game.gameState.outs,
+                eventType = GameEventType.PLAYER_EXIT,
+                description = description,
+                batter = exitedPlayer,
+            )
     }
 }

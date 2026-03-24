@@ -1,5 +1,6 @@
 package com.nextup.api.controller.player
 
+import com.nextup.api.dto.player.CreateUnaffiliatedPlayerApiRequest
 import com.nextup.api.dto.player.PlayerDetailResponse
 import com.nextup.api.dto.player.PlayerSearchResponse
 import com.nextup.api.dto.player.toDetailResponse
@@ -10,13 +11,20 @@ import com.nextup.core.domain.player.Position
 import com.nextup.core.service.player.PlayerService
 import com.nextup.core.service.player.PlayerTeamService
 import com.nextup.infrastructure.common.toPageCommand
+import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
+import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -31,6 +39,36 @@ class PlayerController(
     private val playerService: PlayerService,
     private val playerTeamService: PlayerTeamService,
 ) {
+    /**
+     * 무소속 선수 프로필을 생성합니다.
+     *
+     * POST /api/v1/players/unaffiliated
+     *
+     * 팀에 소속되지 않은 사용자가 이벤트 게임 등에 참가하기 위해
+     * 선수 프로필을 생성합니다.
+     *
+     * @param userId 인증된 사용자 ID
+     * @param request 선수 프로필 생성 요청
+     * @return 생성된 선수 상세 정보
+     */
+    @PostMapping("/unaffiliated")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    fun createUnaffiliatedPlayer(
+        @AuthenticationPrincipal userId: Long,
+        @Valid @RequestBody request: CreateUnaffiliatedPlayerApiRequest,
+    ): ApiResponse<PlayerDetailResponse> {
+        val player =
+            playerService.createUnaffiliatedPlayer(
+                userId = userId,
+                name = request.name,
+                primaryPosition = request.primaryPosition,
+                throwingHand = request.throwingHand,
+                battingHand = request.battingHand,
+            )
+        return ApiResponse.success(player.toDetailResponse(currentHistory = null))
+    }
+
     /**
      * 선수 검색/목록 조회
      *
