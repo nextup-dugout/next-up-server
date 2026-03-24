@@ -1,8 +1,7 @@
 package com.nextup.api.dto.attendance
 
 import com.nextup.core.domain.attendance.AbsenceReason
-import com.nextup.core.domain.game.AttendanceStatus
-import java.time.LocalDateTime
+import com.nextup.core.domain.attendance.VoteType
 
 /**
  * 출석 투표 응답 DTO
@@ -10,19 +9,20 @@ import java.time.LocalDateTime
 data class AttendanceVoteResponse(
     val voteId: Long,
     val gameId: Long,
-    val memberId: Long,
-    val status: AttendanceStatus,
+    val playerId: Long,
+    val playerName: String,
+    val voteType: VoteType,
     val absenceReason: AbsenceReason?,
     val reasonDetail: String?,
-    val respondedAt: LocalDateTime?,
 )
 
 /**
  * 출석 투표 요약 응답 DTO
  */
 data class AttendanceSummaryResponse(
+    val pollId: Long,
     val gameId: Long,
-    val totalMembers: Int,
+    val totalVotes: Int,
     val attending: Int,
     val absent: Int,
     val undecided: Int,
@@ -30,25 +30,11 @@ data class AttendanceSummaryResponse(
 )
 
 /**
- * 멤버별 투표 현황 응답 DTO
+ * 미투표자 응답 DTO
  */
-data class MemberVoteResponse(
-    val voteId: Long,
-    val member: MemberSummary,
-    val status: AttendanceStatus,
-    val absenceReason: AbsenceReason?,
-    val reasonDetail: String?,
-    val respondedAt: LocalDateTime?,
-)
-
-/**
- * 멤버 요약 정보
- */
-data class MemberSummary(
-    val memberId: Long,
-    val nickname: String,
-    val uniformNumber: Int,
-    val position: String,
+data class NonVoterResponse(
+    val playerId: Long,
+    val playerName: String,
 )
 
 /**
@@ -56,7 +42,7 @@ data class MemberSummary(
  */
 data class AttendanceVotesResponse(
     val gameId: Long,
-    val gameDate: LocalDateTime,
-    val votes: List<MemberVoteResponse>,
+    val pollId: Long,
+    val votes: List<AttendanceVoteResponse>,
     val summary: AttendanceSummaryResponse,
 )
