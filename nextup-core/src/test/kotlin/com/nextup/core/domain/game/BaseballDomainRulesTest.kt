@@ -639,6 +639,29 @@ class BaseballDomainRulesTest {
                 .hasMessageContaining("9명")
                 .hasMessageContaining("10명")
         }
+
+        @Test
+        fun `8인 경기 규칙에서 타순에 8명이 배치되면 검증을 통과한다`() {
+            // given
+            val entries = createLineupEntries(8)
+
+            // when & then (minBattingOrderCount=8인 대회에서는 통과)
+            LineupValidator.validate(entries, requiredBattingOrderCount = 8)
+        }
+
+        @Test
+        fun `8인 경기 규칙에서 타순에 7명만 배치되면 예외가 발생한다`() {
+            // given
+            val entries = createLineupEntries(7)
+
+            // when & then
+            assertThatThrownBy {
+                LineupValidator.validate(entries, requiredBattingOrderCount = 8)
+            }
+                .isInstanceOf(InvalidLineupBattingOrderCountException::class.java)
+                .hasMessageContaining("8명")
+                .hasMessageContaining("7명")
+        }
     }
 
     // ── M-8: 투구수 제한 도달 시 교체 권고 알림 ──────────────────

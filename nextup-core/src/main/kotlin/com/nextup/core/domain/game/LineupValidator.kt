@@ -25,6 +25,7 @@ object LineupValidator {
      * @param registeredPlayerIds 대회에 등록된 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param mercenaryPlayerIds L-3: 용병 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param maxMercenaryCount L-3: 용병 쿼터 제한 (nullable, null이면 무제한)
+     * @param requiredBattingOrderCount 타순에 필요한 선수 수 (GameRules.minBattingOrderCount, 기본 9)
      * @throws DuplicatePlayerInLineupException 동일 선수가 중복 등록된 경우
      * @throws NoCatcherInLineupException 포수가 없는 경우
      * @throws InvalidDhRuleException DH 규칙 위반 시
@@ -38,12 +39,13 @@ object LineupValidator {
         registeredPlayerIds: Set<Long>? = null,
         mercenaryPlayerIds: Set<Long>? = null,
         maxMercenaryCount: Int? = null,
+        requiredBattingOrderCount: Int = DEFAULT_BATTING_ORDER_COUNT,
     ) {
         val starters = entries.filter { it.isStarter }
         validateNoDuplicatePlayers(entries)
         validateCatcherExists(starters)
         validateDhRule(starters)
-        validateBattingOrderCount(starters)
+        validateBattingOrderCount(starters, requiredBattingOrderCount)
         if (attendingPlayerIds != null) {
             validateOnlyAttendingPlayers(entries, attendingPlayerIds)
         }
@@ -106,27 +108,33 @@ object LineupValidator {
     }
 
     /**
-     * 타순 인원 수 검증 (M-7: DH 해제 후 타순 인원 검증)
+     * 타순 인원 수 검증
      *
-     * 선발 라인업의 타순에 배치된 선수가 정확히 9명이어야 합니다.
-     * DH가 없는 경우 투수 포함 9명, DH가 있는 경우 투수 제외 DH 포함 9명.
-     * DH 해제 후 타순 인원이 9명이 아닌 경우(8명 등) 예외를 발생시킵니다.
+     * 선발 라인업의 타순에 배치된 선수가 대회 규칙에 맞는 인원이어야 합니다.
+     * 사회인 야구에서는 8인 경기가 빈번하므로 GameRules.minBattingOrderCount를 참조합니다.
      *
      * @param starters 선발 라인업 엔트리 목록
-     * @throws InvalidLineupBattingOrderCountException 타순 인원이 9명이 아닌 경우
+     * @param requiredCount 타순에 필요한 선수 수 (GameRules.minBattingOrderCount)
+     * @throws InvalidLineupBattingOrderCountException 타순 인원이 규칙과 맞지 않는 경우
      */
-    private fun validateBattingOrderCount(starters: List<LineupEntry>) {
+    private fun validateBattingOrderCount(
+        starters: List<LineupEntry>,
+        requiredCount: Int,
+    ) {
         val battersInOrder = starters.filter { it.battingOrder != null }
-        if (battersInOrder.size != REQUIRED_BATTING_ORDER_COUNT) {
+        if (battersInOrder.size != requiredCount) {
             throw InvalidLineupBattingOrderCountException(
-                expected = REQUIRED_BATTING_ORDER_COUNT,
+                expected = requiredCount,
                 actual = battersInOrder.size,
             )
         }
     }
 
-    /** 타순에 필요한 선수 수 */
-    private const val REQUIRED_BATTING_ORDER_COUNT = 9
+    /** 기본 타순 인원 수 (표준 야구 규칙) */
+    const val DEFAULT_BATTING_ORDER_COUNT = 9
+
+    /** DH 해제 후 타순에 필요한 선수 수 (항상 9명) */
+    private const val POST_DH_RELEASE_BATTING_ORDER_COUNT = 9
 
     /**
      * DH 해제 후 현재 출전 중인 선수들의 타순 인원을 검증합니다.
@@ -141,10 +149,10 @@ object LineupValidator {
     fun validatePostDhReleaseBattingOrder(currentlyPlayingPlayers: List<GamePlayer>) {
         val battersInOrder =
             currentlyPlayingPlayers.filter { it.isCurrentlyPlaying && it.battingOrder != null }
-        if (battersInOrder.size != REQUIRED_BATTING_ORDER_COUNT) {
+        if (battersInOrder.size != POST_DH_RELEASE_BATTING_ORDER_COUNT) {
             throw InvalidGameStateException(
                 "DH 해제 후 타순 인원이 올바르지 않습니다. " +
-                    "예상: ${REQUIRED_BATTING_ORDER_COUNT}명, 현재: ${battersInOrder.size}명",
+                    "예상: ${POST_DH_RELEASE_BATTING_ORDER_COUNT}명, 현재: ${battersInOrder.size}명",
             )
         }
     }

@@ -25,6 +25,7 @@ class GameRulesTest {
             assertThat(rules.qualificationIPMultiplier).isEqualTo(1.0)
             assertThat(rules.timeLimitMinutes).isNull()
             assertThat(rules.maxExtraInnings).isNull()
+            assertThat(rules.minBattingOrderCount).isEqualTo(9)
         }
     }
 
@@ -350,6 +351,42 @@ class GameRulesTest {
 
             assertThat(rules.timeLimitMinutes).isEqualTo(100)
             assertThat(rules.maxExtraInnings).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("최소 타순 인원 검증")
+    inner class MinBattingOrderCountValidation {
+        @Test
+        fun `기본값은 9이다`() {
+            val rules = GameRules()
+            assertThat(rules.minBattingOrderCount).isEqualTo(9)
+        }
+
+        @Test
+        fun `8인 경기를 설정할 수 있다`() {
+            val rules = GameRules(minBattingOrderCount = 8)
+            assertThat(rules.minBattingOrderCount).isEqualTo(8)
+        }
+
+        @Test
+        fun `9인 경기를 명시적으로 설정할 수 있다`() {
+            val rules = GameRules(minBattingOrderCount = 9)
+            assertThat(rules.minBattingOrderCount).isEqualTo(9)
+        }
+
+        @Test
+        fun `7인 경기는 유효하지 않다`() {
+            assertThatThrownBy { GameRules(minBattingOrderCount = 7) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 타순 인원은 8~9 사이여야 합니다")
+        }
+
+        @Test
+        fun `10인 경기는 유효하지 않다`() {
+            assertThatThrownBy { GameRules(minBattingOrderCount = 10) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("최소 타순 인원은 8~9 사이여야 합니다")
         }
     }
 

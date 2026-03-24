@@ -209,10 +209,13 @@ class LineupService(
     fun submitLineup(submissionId: Long): LineupSubmission {
         val submission = getLineupSubmission(submissionId)
 
-        // 최소 인원 검증 (9명 이상)
+        val gameRules = submission.game.competition.gameRules
+        val minBattingOrderCount = gameRules.minBattingOrderCount
+
+        // 최소 인원 검증 (GameRules.minBattingOrderCount 이상)
         val starters = submission.entries.filter { it.isStarter }
-        require(starters.size >= 9) {
-            "선발 라인업은 최소 9명이 필요합니다. (현재: ${starters.size}명)"
+        require(starters.size >= minBattingOrderCount) {
+            "선발 라인업은 최소 ${minBattingOrderCount}명이 필요합니다. (현재: ${starters.size}명)"
         }
 
         // 참석(ATTENDING) 선수 ID 목록 조회
@@ -221,14 +224,14 @@ class LineupService(
         // L-3: 용병 쿼터 검증을 위한 데이터 조회
         val mercenaryPlayerIds =
             getMercenaryPlayerIds(submission.game.id, submission.team.id)
-        val maxMercenaryCount =
-            submission.game.competition.gameRules.maxMercenaryCount
+        val maxMercenaryCount = gameRules.maxMercenaryCount
 
-        // 필수 포지션 + 중복 선수 + DH 규칙 + 참석자만 등록 + 용병 쿼터 검증은 submit() 내부에서 수행
+        // 필수 포지션 + 중복 선수 + DH 규칙 + 참석자만 등록 + 용병 쿼터 + 타순 인원 검증은 submit() 내부에서 수행
         submission.submit(
             attendingPlayerIds = attendingPlayerIds,
             mercenaryPlayerIds = mercenaryPlayerIds,
             maxMercenaryCount = maxMercenaryCount,
+            requiredBattingOrderCount = minBattingOrderCount,
         )
         lineupSubmissionRepository.save(submission)
 

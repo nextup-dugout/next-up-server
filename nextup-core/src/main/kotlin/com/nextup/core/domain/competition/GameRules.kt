@@ -65,6 +65,9 @@ data class GameRules(
     /** L-13: 순위 동률 타이브레이커 기준 순서 (쉼표 구분, 기본: 상대전적→득실점차→다득점) */
     @Column(name = "standings_tiebreaker_order")
     val standingsTiebreakerOrder: String = "HEAD_TO_HEAD,RUN_DIFFERENTIAL,RUNS_SCORED",
+    /** 최소 타순 인원 수 (8~9, 사회인 야구에서 8인 경기 허용) */
+    @Column(name = "min_batting_order_count")
+    val minBattingOrderCount: Int = 9,
 ) {
     init {
         require(defaultInnings in 3..12) { "기본 이닝은 3~12 사이여야 합니다." }
@@ -103,6 +106,10 @@ data class GameRules(
 
         maxMercenaryCount?.let {
             require(it >= 0) { "용병 쿼터 제한은 0 이상이어야 합니다." }
+        }
+
+        require(minBattingOrderCount in 8..9) {
+            "최소 타순 인원은 8~9 사이여야 합니다."
         }
 
         require(standingsTiebreakerOrder.isNotBlank()) {

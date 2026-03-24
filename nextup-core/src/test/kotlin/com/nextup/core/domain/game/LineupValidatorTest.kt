@@ -652,7 +652,75 @@ class LineupValidatorTest {
         }.doesNotThrowAnyException()
     }
 
+    // ========== 8인 라인업 테스트 (사회인 야구 minBattingOrderCount=8) ==========
+
+    @Test
+    fun `should pass validation with 8-person lineup when requiredBattingOrderCount is 8`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValid8PersonLineup(submission)
+
+        // when & then
+        assertThatCode {
+            LineupValidator.validate(entries, requiredBattingOrderCount = 8)
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `should fail validation with 8-person lineup when requiredBattingOrderCount is 9`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValid8PersonLineup(submission)
+
+        // when & then
+        assertThrows<com.nextup.common.exception.InvalidLineupBattingOrderCountException> {
+            LineupValidator.validate(entries, requiredBattingOrderCount = 9)
+        }
+    }
+
+    @Test
+    fun `should fail validation with 9-person lineup when requiredBattingOrderCount is 8`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+
+        // when & then
+        assertThrows<com.nextup.common.exception.InvalidLineupBattingOrderCountException> {
+            LineupValidator.validate(entries, requiredBattingOrderCount = 8)
+        }
+    }
+
+    @Test
+    fun `should pass validation with 9-person lineup when default requiredBattingOrderCount`() {
+        // given
+        val submission = createLineupSubmission()
+        val entries = createValidLineup(submission)
+
+        // when & then - default is 9
+        assertThatCode {
+            LineupValidator.validate(entries)
+        }.doesNotThrowAnyException()
+    }
+
     // ========== Helper Methods ==========
+
+    private fun createValid8PersonLineup(submission: LineupSubmission): List<LineupEntry> =
+        listOf(
+            createEntry(
+                submission,
+                createPlayer("투수", Position.STARTING_PITCHER, 1L),
+                Position.STARTING_PITCHER,
+                1,
+                true,
+            ),
+            createEntry(submission, createPlayer("포수", Position.CATCHER, 2L), Position.CATCHER, 2, true),
+            createEntry(submission, createPlayer("1루수", Position.FIRST_BASE, 3L), Position.FIRST_BASE, 3, true),
+            createEntry(submission, createPlayer("2루수", Position.SECOND_BASE, 4L), Position.SECOND_BASE, 4, true),
+            createEntry(submission, createPlayer("3루수", Position.THIRD_BASE, 5L), Position.THIRD_BASE, 5, true),
+            createEntry(submission, createPlayer("유격수", Position.SHORTSTOP, 6L), Position.SHORTSTOP, 6, true),
+            createEntry(submission, createPlayer("좌익수", Position.LEFT_FIELD, 7L), Position.LEFT_FIELD, 7, true),
+            createEntry(submission, createPlayer("중견수", Position.CENTER_FIELD, 8L), Position.CENTER_FIELD, 8, true),
+        )
 
     private fun createValidLineup(submission: LineupSubmission): List<LineupEntry> =
         listOf(

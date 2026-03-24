@@ -110,6 +110,7 @@ class LineupSubmission private constructor(
      * @param registeredPlayerIds 대회에 등록된 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param mercenaryPlayerIds L-3: 용병 선수 ID 목록 (nullable, null이면 검증 생략)
      * @param maxMercenaryCount L-3: 용병 쿼터 제한 (nullable, null이면 무제한)
+     * @param requiredBattingOrderCount 타순에 필요한 선수 수 (GameRules.minBattingOrderCount, 기본 9)
      * @throws com.nextup.common.exception.DuplicatePlayerInLineupException 동일 선수 중복 시
      * @throws com.nextup.common.exception.NoCatcherInLineupException 포수 미지정 시
      * @throws com.nextup.common.exception.InvalidDhRuleException DH 규칙 위반 시
@@ -121,6 +122,7 @@ class LineupSubmission private constructor(
         registeredPlayerIds: Set<Long>? = null,
         mercenaryPlayerIds: Set<Long>? = null,
         maxMercenaryCount: Int? = null,
+        requiredBattingOrderCount: Int = LineupValidator.DEFAULT_BATTING_ORDER_COUNT,
     ) {
         require(status.canSubmit()) {
             "제출 가능한 상태가 아닙니다. 현재 상태: ${status.displayName}"
@@ -132,6 +134,7 @@ class LineupSubmission private constructor(
             registeredPlayerIds,
             mercenaryPlayerIds,
             maxMercenaryCount,
+            requiredBattingOrderCount,
         )
         this.status = LineupSubmissionStatus.SUBMITTED
         this.submittedAt = Instant.now()
