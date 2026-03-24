@@ -81,7 +81,7 @@ class BaseRunningRecordServiceImpl(
             BaseRunningResult.PICKED_OFF,
             -> {
                 game.gameState.setRunner(request.fromBase, null)
-                game.recordOut()
+                game.gameState.recordOut()
                 if (request.result == BaseRunningResult.CAUGHT_STEALING) {
                     val battingRecord =
                         battingRecordRepository.findByGamePlayer(runner)
