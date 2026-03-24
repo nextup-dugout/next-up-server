@@ -22,8 +22,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.math.BigDecimal
-import java.time.Instant
 
 @DisplayName("BookingTransferService")
 class BookingTransferServiceTest {
@@ -52,16 +50,16 @@ class BookingTransferServiceTest {
     private fun createMockTransfer(
         id: Long = 1L,
         bookingId: Long = 1L,
-        sellerTeamId: Long = 10L,
-        status: TransferStatus = TransferStatus.OPEN,
+        fromTeamId: Long = 10L,
+        toTeamId: Long = 20L,
+        status: TransferStatus = TransferStatus.PENDING,
     ): BookingTransfer {
         val transfer =
             BookingTransfer.create(
                 bookingId = bookingId,
-                sellerTeamId = sellerTeamId,
-                transferPrice = BigDecimal("50000"),
+                fromTeamId = fromTeamId,
+                toTeamId = toTeamId,
                 message = "양도합니다",
-                expiresAt = Instant.now().plusSeconds(3600),
             )
         val idField = BookingTransfer::class.java.getDeclaredField("id")
         idField.isAccessible = true
@@ -70,10 +68,10 @@ class BookingTransferServiceTest {
     }
 
     @Nested
-    @DisplayName("createTransfer")
-    inner class CreateTransfer {
+    @DisplayName("requestTransfer")
+    inner class RequestTransfer {
         @Test
-        fun `should create transfer successfully`() {
+        fun `should request transfer successfully`() {
             // given
             val booking = createMockBooking(id = 1L, teamId = 10L)
             val transfer = createMockTransfer()
@@ -81,15 +79,15 @@ class BookingTransferServiceTest {
 
             every { teamMemberRepository.findByTeamIdAndUserId(10L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(1L) } returns booking
-            every { bookingTransferRepository.existsOpenTransferForBooking(1L) } returns false
+            every { bookingTransferRepository.existsPendingTransferForBooking(1L) } returns false
             every { bookingTransferRepository.save(any()) } returns transfer
 
             // when
             val result =
-                service.createTransfer(
+                service.requestTransfer(
                     bookingId = 1L,
-                    teamId = 10L,
-                    price = BigDecimal("50000"),
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = "양도합니다",
                     userId = 100L,
                 )
@@ -106,10 +104,10 @@ class BookingTransferServiceTest {
 
             // when & then
             assertThatThrownBy {
-                service.createTransfer(
+                service.requestTransfer(
                     bookingId = 1L,
-                    teamId = 10L,
-                    price = null,
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = null,
                     userId = 999L,
                 )
@@ -125,10 +123,10 @@ class BookingTransferServiceTest {
 
             // when & then
             assertThatThrownBy {
-                service.createTransfer(
+                service.requestTransfer(
                     bookingId = 99L,
-                    teamId = 10L,
-                    price = null,
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = null,
                     userId = 100L,
                 )
@@ -145,10 +143,10 @@ class BookingTransferServiceTest {
 
             // when & then
             assertThatThrownBy {
-                service.createTransfer(
+                service.requestTransfer(
                     bookingId = 1L,
-                    teamId = 99L,
-                    price = null,
+                    fromTeamId = 99L,
+                    toTeamId = 20L,
                     message = null,
                     userId = 100L,
                 )
@@ -156,25 +154,25 @@ class BookingTransferServiceTest {
         }
 
         @Test
-        fun `should throw exception when open transfer already exists`() {
+        fun `should throw exception when pending transfer already exists`() {
             // given
             val booking = createMockBooking(teamId = 10L)
             val mockMember = mockk<TeamMember>(relaxed = true)
             every { teamMemberRepository.findByTeamIdAndUserId(10L, 100L) } returns mockMember
             every { bookingRepository.findByIdOrNull(1L) } returns booking
-            every { bookingTransferRepository.existsOpenTransferForBooking(1L) } returns true
+            every { bookingTransferRepository.existsPendingTransferForBooking(1L) } returns true
 
             // when & then
             assertThatThrownBy {
-                service.createTransfer(
+                service.requestTransfer(
                     bookingId = 1L,
-                    teamId = 10L,
-                    price = null,
+                    fromTeamId = 10L,
+                    toTeamId = 20L,
                     message = null,
                     userId = 100L,
                 )
             }.isInstanceOf(BookingTransferInvalidStateException::class.java)
-                .hasMessageContaining("open transfer already exists")
+                .hasMessageContaining("pending transfer already exists")
         }
     }
 
@@ -184,81 +182,82 @@ class BookingTransferServiceTest {
         @Test
         fun `should accept transfer successfully`() {
             // given
-            val transfer = createMockTransfer(sellerTeamId = 10L)
+            val transfer = createMockTransfer(fromTeamId = 10L, toTeamId = 20L)
             val booking = createMockBooking(teamId = 10L)
             val mockMember = mockk<TeamMember>(relaxed = true)
 
-            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingRepository.findByIdOrNull(transfer.bookingId) } returns booking
             every { bookingTransferRepository.save(any()) } returns transfer
             every { bookingRepository.save(any()) } returns booking
 
             // when
-            val result = service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 200L)
+            val result = service.acceptTransfer(transferId = 1L, userId = 200L)
 
             // then
             assertThat(result.status).isEqualTo(TransferStatus.ACCEPTED)
-            assertThat(result.buyerTeamId).isEqualTo(20L)
             verify { bookingTransferRepository.save(any()) }
             verify { bookingRepository.save(any()) }
         }
 
         @Test
-        fun `should throw exception when user is not a buyer team member`() {
+        fun `should throw exception when user is not a toTeam member`() {
             // given
+            val transfer = createMockTransfer(toTeamId = 20L)
+            every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
             every { teamMemberRepository.findByTeamIdAndUserId(20L, 999L) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 999L)
+                service.acceptTransfer(transferId = 1L, userId = 999L)
             }.isInstanceOf(BookingTransferForbiddenException::class.java)
         }
 
         @Test
         fun `should throw exception when transfer not found`() {
             // given
-            val mockMember = mockk<TeamMember>(relaxed = true)
-            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(99L) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.acceptTransfer(transferId = 99L, buyerTeamId = 20L, userId = 200L)
+                service.acceptTransfer(transferId = 99L, userId = 200L)
             }.isInstanceOf(BookingTransferNotFoundException::class.java)
         }
 
         @Test
         fun `should throw exception when booking not found during accept`() {
             // given
-            val transfer = createMockTransfer()
+            val transfer = createMockTransfer(toTeamId = 20L)
             val mockMember = mockk<TeamMember>(relaxed = true)
-            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingRepository.findByIdOrNull(transfer.bookingId) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.acceptTransfer(transferId = 1L, buyerTeamId = 20L, userId = 200L)
+                service.acceptTransfer(transferId = 1L, userId = 200L)
             }.isInstanceOf(BookingNotFoundException::class.java)
         }
     }
 
     @Nested
-    @DisplayName("cancelTransfer")
-    inner class CancelTransfer {
+    @DisplayName("rejectTransfer")
+    inner class RejectTransfer {
         @Test
-        fun `should cancel transfer successfully`() {
+        fun `should reject transfer successfully`() {
             // given
-            val transfer = createMockTransfer(sellerTeamId = 10L)
+            val transfer = createMockTransfer(toTeamId = 20L)
+            val mockMember = mockk<TeamMember>(relaxed = true)
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 200L) } returns mockMember
             every { bookingTransferRepository.save(any()) } returns transfer
 
             // when
-            val result = service.cancelTransfer(transferId = 1L, teamId = 10L)
+            val result = service.rejectTransfer(transferId = 1L, userId = 200L)
 
             // then
-            assertThat(result.status).isEqualTo(TransferStatus.CANCELLED)
+            assertThat(result.status).isEqualTo(TransferStatus.REJECTED)
             verify { bookingTransferRepository.save(any()) }
         }
 
@@ -269,58 +268,48 @@ class BookingTransferServiceTest {
 
             // when & then
             assertThatThrownBy {
-                service.cancelTransfer(transferId = 99L, teamId = 10L)
+                service.rejectTransfer(transferId = 99L, userId = 200L)
             }.isInstanceOf(BookingTransferNotFoundException::class.java)
         }
 
         @Test
-        fun `should throw exception when team is not the seller`() {
+        fun `should throw exception when user is not a toTeam member`() {
             // given
-            val transfer = createMockTransfer(sellerTeamId = 10L)
+            val transfer = createMockTransfer(toTeamId = 20L)
             every { bookingTransferRepository.findByIdOrNull(1L) } returns transfer
+            every { teamMemberRepository.findByTeamIdAndUserId(20L, 999L) } returns null
 
             // when & then
             assertThatThrownBy {
-                service.cancelTransfer(transferId = 1L, teamId = 99L)
+                service.rejectTransfer(transferId = 1L, userId = 999L)
             }.isInstanceOf(BookingTransferForbiddenException::class.java)
         }
     }
 
     @Nested
-    @DisplayName("getAvailableTransfers")
-    inner class GetAvailableTransfers {
+    @DisplayName("getSentTransfers")
+    inner class GetSentTransfers {
         @Test
-        fun `should return only non-expired open transfers`() {
+        fun `should return sent transfers for team`() {
             // given
-            val validTransfer = createMockTransfer()
-            val expiredTransfer =
-                BookingTransfer.create(
-                    bookingId = 2L,
-                    sellerTeamId = 20L,
-                    transferPrice = null,
-                    message = null,
-                    expiresAt = Instant.now().plusSeconds(1),
-                )
-            Thread.sleep(1100)
-
-            every { bookingTransferRepository.findByStatus(TransferStatus.OPEN) } returns
-                listOf(validTransfer, expiredTransfer)
+            val transfer = createMockTransfer(fromTeamId = 10L)
+            every { bookingTransferRepository.findByFromTeamId(10L) } returns listOf(transfer)
 
             // when
-            val result = service.getAvailableTransfers()
+            val result = service.getSentTransfers(10L)
 
             // then
             assertThat(result).hasSize(1)
-            assertThat(result[0]).isEqualTo(validTransfer)
+            assertThat(result[0].fromTeamId).isEqualTo(10L)
         }
 
         @Test
-        fun `should return empty list when no open transfers exist`() {
+        fun `should return empty list when no sent transfers`() {
             // given
-            every { bookingTransferRepository.findByStatus(TransferStatus.OPEN) } returns emptyList()
+            every { bookingTransferRepository.findByFromTeamId(99L) } returns emptyList()
 
             // when
-            val result = service.getAvailableTransfers()
+            val result = service.getSentTransfers(99L)
 
             // then
             assertThat(result).isEmpty()
@@ -328,65 +317,29 @@ class BookingTransferServiceTest {
     }
 
     @Nested
-    @DisplayName("getTransfersByTeamId")
-    inner class GetTransfersByTeamId {
+    @DisplayName("getReceivedTransfers")
+    inner class GetReceivedTransfers {
         @Test
-        fun `should return transfers where team is seller`() {
+        fun `should return received transfers for team`() {
             // given
-            val transfer = createMockTransfer(sellerTeamId = 10L)
-            every { bookingTransferRepository.findBySellerTeamId(10L) } returns listOf(transfer)
-            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns emptyList()
+            val transfer = createMockTransfer(fromTeamId = 30L, toTeamId = 10L)
+            every { bookingTransferRepository.findByToTeamId(10L) } returns listOf(transfer)
 
             // when
-            val result = service.getTransfersByTeamId(10L)
+            val result = service.getReceivedTransfers(10L)
 
             // then
             assertThat(result).hasSize(1)
-            assertThat(result[0].sellerTeamId).isEqualTo(10L)
+            assertThat(result[0].toTeamId).isEqualTo(10L)
         }
 
         @Test
-        fun `should return transfers where team is buyer`() {
+        fun `should return empty list when no received transfers`() {
             // given
-            val transfer =
-                createMockTransfer(id = 3L, sellerTeamId = 20L).also {
-                    it.accept(10L)
-                }
-            every { bookingTransferRepository.findBySellerTeamId(10L) } returns emptyList()
-            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns listOf(transfer)
+            every { bookingTransferRepository.findByToTeamId(99L) } returns emptyList()
 
             // when
-            val result = service.getTransfersByTeamId(10L)
-
-            // then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].buyerTeamId).isEqualTo(10L)
-        }
-
-        @Test
-        fun `should deduplicate transfers and sort by createdAt descending`() {
-            // given
-            val transfer1 = createMockTransfer(id = 1L, sellerTeamId = 10L, bookingId = 1L)
-            val transfer2 = createMockTransfer(id = 2L, sellerTeamId = 10L, bookingId = 2L)
-            every { bookingTransferRepository.findBySellerTeamId(10L) } returns
-                listOf(transfer1, transfer2)
-            every { bookingTransferRepository.findByBuyerTeamId(10L) } returns emptyList()
-
-            // when
-            val result = service.getTransfersByTeamId(10L)
-
-            // then
-            assertThat(result).hasSize(2)
-        }
-
-        @Test
-        fun `should return empty list when team has no transfers`() {
-            // given
-            every { bookingTransferRepository.findBySellerTeamId(99L) } returns emptyList()
-            every { bookingTransferRepository.findByBuyerTeamId(99L) } returns emptyList()
-
-            // when
-            val result = service.getTransfersByTeamId(99L)
+            val result = service.getReceivedTransfers(99L)
 
             // then
             assertThat(result).isEmpty()
