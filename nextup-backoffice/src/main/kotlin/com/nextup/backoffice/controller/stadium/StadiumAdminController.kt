@@ -5,6 +5,7 @@ import com.nextup.backoffice.dto.stadium.CreateStadiumRequest
 import com.nextup.backoffice.dto.stadium.StadiumResponse
 import com.nextup.backoffice.dto.stadium.StadiumSlotResponse
 import com.nextup.backoffice.dto.stadium.UpdateStadiumRequest
+import com.nextup.backoffice.dto.stadium.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.StadiumAdminService
 import jakarta.validation.Valid
@@ -40,7 +41,7 @@ class StadiumAdminController(
                     imageUrls = request.imageUrls,
                 ),
             )
-        return ApiResponse.success(StadiumResponse.from(stadium))
+        return ApiResponse.success(stadium.toResponse())
     }
 
     /**
@@ -62,7 +63,7 @@ class StadiumAdminController(
                 contactInfo = request.contactInfo,
                 imageUrls = request.imageUrls,
             )
-        return ApiResponse.success(StadiumResponse.from(stadium))
+        return ApiResponse.success(stadium.toResponse())
     }
 
     /**
@@ -83,7 +84,7 @@ class StadiumAdminController(
                 )
             }
         val slots = stadiumAdminService.createSlots(coreRequests)
-        return ApiResponse.success(slots.map { StadiumSlotResponse.from(it) })
+        return ApiResponse.success(slots.map { it.toResponse() })
     }
 
     /**
@@ -94,7 +95,7 @@ class StadiumAdminController(
         @PathVariable id: Long,
     ): ApiResponse<StadiumResponse> {
         val stadium = stadiumAdminService.deactivateStadium(id)
-        return ApiResponse.success(StadiumResponse.from(stadium))
+        return ApiResponse.success(stadium.toResponse())
     }
 
     /**
@@ -105,6 +106,6 @@ class StadiumAdminController(
         @PathVariable id: Long,
     ): ApiResponse<StadiumResponse> {
         val stadium = stadiumAdminService.activateStadium(id)
-        return ApiResponse.success(StadiumResponse.from(stadium))
+        return ApiResponse.success(stadium.toResponse())
     }
 }

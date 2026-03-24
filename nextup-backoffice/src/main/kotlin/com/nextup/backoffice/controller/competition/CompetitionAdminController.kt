@@ -5,6 +5,7 @@ import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.PrepareNextSeasonRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
 import com.nextup.backoffice.dto.competition.WithdrawTeamRequest
+import com.nextup.backoffice.dto.competition.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
@@ -54,7 +55,7 @@ class CompetitionAdminController(
                 competitionService.getAll()
             }
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) },
+            competitions.map { it.toAdminResponse() },
         )
     }
 
@@ -66,7 +67,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.getByIdWithLeague(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -78,7 +79,7 @@ class CompetitionAdminController(
     ): ApiResponse<List<CompetitionAdminResponse>> {
         val competitions = competitionService.getByLeagueId(leagueId)
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) },
+            competitions.map { it.toAdminResponse() },
         )
     }
 
@@ -102,7 +103,7 @@ class CompetitionAdminController(
                 description = request.description,
                 maxTeams = request.maxTeams,
             )
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -119,7 +120,7 @@ class CompetitionAdminController(
                 description = request.description,
                 endDate = request.endDate,
             )
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -130,7 +131,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.start(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -142,7 +143,7 @@ class CompetitionAdminController(
         @RequestBody(required = false) endDate: LocalDate?,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.complete(id, endDate ?: LocalDate.now())
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -153,7 +154,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.cancel(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -164,7 +165,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.postpone(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**

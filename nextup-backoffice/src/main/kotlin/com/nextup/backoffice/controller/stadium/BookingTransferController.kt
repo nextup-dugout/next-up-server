@@ -4,6 +4,7 @@ import com.nextup.backoffice.dto.stadium.AcceptBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.BookingTransferResponse
 import com.nextup.backoffice.dto.stadium.CancelBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.CreateBookingTransferRequest
+import com.nextup.backoffice.dto.stadium.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
@@ -55,7 +56,7 @@ class BookingTransferController(
             )
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(BookingTransferResponse.from(transfer)))
+            .body(ApiResponse.success(transfer.toResponse()))
     }
 
     /**
@@ -66,7 +67,7 @@ class BookingTransferController(
     @GetMapping("/transfers/available")
     fun getAvailableTransfers(): ApiResponse<List<BookingTransferResponse>> {
         val transfers = bookingTransferService.getAvailableTransfers()
-        return ApiResponse.success(transfers.map { BookingTransferResponse.from(it) })
+        return ApiResponse.success(transfers.map { it.toResponse() })
     }
 
     /**
@@ -86,7 +87,7 @@ class BookingTransferController(
                 buyerTeamId = request.buyerTeamId,
                 userId = userId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
     }
 
     /**
@@ -104,6 +105,6 @@ class BookingTransferController(
                 transferId = transferId,
                 teamId = request.teamId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
     }
 }
