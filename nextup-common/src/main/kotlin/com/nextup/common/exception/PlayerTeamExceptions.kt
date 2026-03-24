@@ -41,13 +41,3 @@ class InvalidPlayerTeamStatusException(
         "INVALID_PLAYER_TEAM_STATUS",
         message,
     )
-
-/**
- * 선수 이적이 불가능할 때 발생하는 예외
- */
-class PlayerTransferNotAllowedException(
-    message: String,
-) : BusinessException(
-        "PLAYER_TRANSFER_NOT_ALLOWED",
-        message,
-    )
