@@ -60,7 +60,6 @@ class PlayerTeamAdminControllerTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR,
                 )
 
             every {
@@ -70,7 +69,6 @@ class PlayerTeamAdminControllerTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR,
                 )
             } returns affiliation
 
@@ -95,7 +93,6 @@ class PlayerTeamAdminControllerTest {
                     startDate = startDate,
                     position = position,
                     uniformNumber = uniformNumber,
-                    contractType = ContractType.REGULAR,
                 )
             }
         }
@@ -135,77 +132,6 @@ class PlayerTeamAdminControllerTest {
 
             verify(exactly = 1) {
                 playerTeamService.endAffiliation(affiliationId, endDate)
-            }
-        }
-    }
-
-    @Nested
-    @DisplayName("POST /api/backoffice/player-teams/transfer")
-    inner class TransferPlayer {
-        @Test
-        fun `선수를 이적시킬 수 있다`() {
-            // given
-            val playerId = 1L
-            val fromTeamId = 1L
-            val toTeamId = 2L
-            val transferDate = LocalDate.of(2024, 6, 1)
-            val newPosition = Position.LEFT_FIELD
-            val newUniformNumber = 20
-
-            val player = createPlayer(playerId, "홍길동")
-            val toTeam = createTeam(toTeamId, "서울 라이온즈", 1L)
-            val newAffiliation =
-                createPlayerTeamHistory(2L, player, toTeam).apply {
-                    changePosition(newPosition)
-                    changeUniformNumber(newUniformNumber)
-                }
-
-            val request =
-                TransferPlayerRequest(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = transferDate,
-                    newPosition = newPosition,
-                    newUniformNumber = newUniformNumber,
-                    newContractType = ContractType.REGULAR,
-                )
-
-            every {
-                playerTeamService.transferPlayer(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = transferDate,
-                    newPosition = newPosition,
-                    newUniformNumber = newUniformNumber,
-                    newContractType = ContractType.REGULAR,
-                )
-            } returns newAffiliation
-
-            // when & then
-            mockMvc
-                .perform(
-                    post("/api/backoffice/player-teams/transfer")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)),
-                ).andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.playerId").value(playerId))
-                .andExpect(jsonPath("$.data.teamId").value(toTeamId))
-                .andExpect(jsonPath("$.data.position").value("LEFT_FIELD"))
-                .andExpect(jsonPath("$.data.uniformNumber").value(newUniformNumber))
-
-            verify(exactly = 1) {
-                playerTeamService.transferPlayer(
-                    playerId = playerId,
-                    fromTeamId = fromTeamId,
-                    toTeamId = toTeamId,
-                    transferDate = transferDate,
-                    newPosition = newPosition,
-                    newUniformNumber = newUniformNumber,
-                    newContractType = ContractType.REGULAR,
-                )
             }
         }
     }
@@ -450,7 +376,6 @@ class PlayerTeamAdminControllerTest {
                 startDate = LocalDate.of(2024, 1, 1),
                 position = Position.STARTING_PITCHER,
                 uniformNumber = 10,
-                contractType = ContractType.REGULAR,
                 status = PlayerTeamStatus.ACTIVE,
             )
         setEntityId(history, id)

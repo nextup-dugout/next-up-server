@@ -334,7 +334,7 @@ class EmergencySubstitutionServiceImplTest {
         every { game.gameState } returns gameState
         every { game.currentInning } returns 3
         every { game.isTopInning } returns true
-        every { game.scorerId } returns scorerId
+        every { game.scorerLock.scorerId } returns scorerId
         every { game.validateScorer(scorerId) } returns Unit
         return game
     }

@@ -1,9 +1,5 @@
 package com.nextup.core.domain.game
 
-import com.nextup.common.exception.GameAlreadyLockedException
-import com.nextup.common.exception.GameNotLockedByCurrentScorerException
-import com.nextup.common.exception.GameNotLockedForRecordingException
-import com.nextup.common.exception.ScorerMismatchException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.team.Team
@@ -61,10 +57,8 @@ class Game private constructor(
     var forfeitReason: String? = null,
     @Embedded
     var gameState: GameState = GameState(),
-    @Column(name = "scorer_id")
-    var scorerId: Long? = null,
-    @Column(name = "locked_at")
-    var lockedAt: LocalDateTime? = null,
+    @Embedded
+    var scorerLock: ScorerLock = ScorerLock(),
     /**
      * 시간 제한 도달 플래그.
      *
@@ -101,93 +95,48 @@ class Game private constructor(
 
     /**
      * 기록원이 경기를 독점 잠금합니다.
-     *
-     * 이미 다른 기록원이 잠금한 경우 [GameAlreadyLockedException]이 발생합니다.
-     * 동일 기록원이 중복 잠금 시도하면 멱등하게 무시합니다.
-     *
-     * @param scorerId 잠금을 요청하는 기록원 ID
-     * @throws GameAlreadyLockedException 다른 기록원이 이미 잠금한 경우
+     * @see ScorerLock.lock
      */
-    fun lockForScorer(scorerId: Long) {
-        if (this.scorerId != null && this.scorerId != scorerId) {
-            throw GameAlreadyLockedException(id, this.scorerId!!)
-        }
-        this.scorerId = scorerId
-        this.lockedAt = LocalDateTime.now()
-    }
+    fun lockForScorer(scorerId: Long) = scorerLock.lock(id, scorerId)
 
     /**
      * 기록원의 경기 잠금을 해제합니다.
-     *
-     * 잠금한 기록원 본인만 해제할 수 있습니다.
-     *
-     * @param scorerId 잠금 해제를 요청하는 기록원 ID
-     * @throws GameNotLockedByCurrentScorerException 해당 기록원이 잠금하지 않은 경우
+     * @see ScorerLock.unlock
      */
-    fun unlockScorer(scorerId: Long) {
-        if (this.scorerId == null || this.scorerId != scorerId) {
-            throw GameNotLockedByCurrentScorerException(id, scorerId)
-        }
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun unlockScorer(scorerId: Long) = scorerLock.unlock(id, scorerId)
 
     /**
      * 강제로 기록원 잠금을 해제합니다 (관리자용).
      */
-    fun forceUnlockScorer() {
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun forceUnlockScorer() = scorerLock.forceUnlock()
 
     /**
      * 잠금이 만료되었는지 확인합니다.
-     *
-     * @param timeoutMinutes 타임아웃 시간 (분, 기본값 30분)
-     * @return 잠금이 만료되었으면 true
      */
-    fun isLockExpired(timeoutMinutes: Long = DEFAULT_LOCK_TIMEOUT_MINUTES): Boolean {
-        val lockedTime = lockedAt ?: return false
-        return lockedTime.plusMinutes(timeoutMinutes).isBefore(LocalDateTime.now())
-    }
+    fun isLockExpired(timeoutMinutes: Long = DEFAULT_LOCK_TIMEOUT_MINUTES): Boolean =
+        scorerLock.isExpired(timeoutMinutes)
 
     /**
      * 만료된 잠금을 자동 해제합니다 (스케줄러용).
      */
-    fun expireLock() {
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun expireLock() = scorerLock.expire()
 
     /**
      * 현재 기록원이 경기를 잠금하고 있는지 확인합니다.
      */
-    fun isLockedByScorer(scorerId: Long): Boolean = this.scorerId == scorerId
+    fun isLockedByScorer(scorerId: Long): Boolean = scorerLock.isLockedBy(scorerId)
 
     /**
      * 경기가 잠금 상태인지 확인합니다.
      */
     val isLocked: Boolean
-        get() = scorerId != null
+        get() = scorerLock.isLocked
 
     /**
      * 기록 API 호출 시 기록원 잠금 검증을 수행합니다.
-     *
-     * 경기가 잠금되지 않은 상태이면 [GameNotLockedForRecordingException]을 발생시키고,
-     * 잠금한 기록원과 요청 기록원이 다르면 [ScorerMismatchException]을 발생시킵니다.
-     *
-     * @param requestScorerId 기록을 요청하는 기록원 ID
-     * @throws GameNotLockedForRecordingException 경기가 잠금되지 않은 경우
-     * @throws ScorerMismatchException 잠금한 기록원과 요청 기록원이 다른 경우
+     * @see ScorerLock.validate
      */
-    fun validateScorer(requestScorerId: Long) {
-        if (this.scorerId == null) {
-            throw GameNotLockedForRecordingException(id)
-        }
-        if (this.scorerId != requestScorerId) {
-            throw ScorerMismatchException(id, requestScorerId, this.scorerId!!)
-        }
-    }
+    fun validateScorer(requestScorerId: Long) = scorerLock.validate(id, requestScorerId)
 
     /**
      * 다음 이닝으로 진행합니다.
@@ -715,8 +664,7 @@ class Game private constructor(
             note: String? = null,
             forfeitReason: String? = null,
             gameState: GameState = GameState(),
-            scorerId: Long? = null,
-            lockedAt: LocalDateTime? = null,
+            scorerLock: ScorerLock = ScorerLock(),
             timeLimitReached: Boolean = false,
             id: Long = 0L,
         ): Game {
@@ -737,8 +685,7 @@ class Game private constructor(
                     note = note,
                     forfeitReason = forfeitReason,
                     gameState = gameState,
-                    scorerId = scorerId,
-                    lockedAt = lockedAt,
+                    scorerLock = scorerLock,
                     timeLimitReached = timeLimitReached,
                     id = id,
                 )
@@ -859,67 +806,5 @@ class Game private constructor(
         }
         status = GameStatus.CANCELLED
         note = (note?.let { "$it\n" } ?: "") + "타임아웃으로 자동 취소됨"
-    }
-
-    /**
-     * 아웃을 기록합니다.
-     * @return 3아웃으로 이닝이 종료되었는지 여부
-     */
-    fun recordOut(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 아웃을 기록할 수 있습니다." }
-        return gameState.recordOut()
-    }
-
-    /**
-     * 다음 타자로 타순을 진행합니다.
-     */
-    fun advanceBatter() {
-        require(status.isOngoing()) { "진행 중인 경기만 타순을 진행할 수 있습니다." }
-        gameState.advanceBatter(isHomeTeam = !isTopInning)
-    }
-
-    /**
-     * 주자를 설정합니다.
-     */
-    fun setRunner(
-        base: Base,
-        playerId: Long?,
-    ) {
-        require(status.isOngoing()) { "진행 중인 경기만 주자를 설정할 수 있습니다." }
-        gameState.setRunner(base, playerId)
-    }
-
-    /**
-     * 모든 베이스를 클리어합니다.
-     */
-    fun clearBases() {
-        require(status.isOngoing()) { "진행 중인 경기만 베이스를 클리어할 수 있습니다." }
-        gameState.clearBases()
-    }
-
-    /**
-     * 볼카운트를 리셋합니다.
-     */
-    fun resetCount() {
-        require(status.isOngoing()) { "진행 중인 경기만 볼카운트를 리셋할 수 있습니다." }
-        gameState.resetCount()
-    }
-
-    /**
-     * 볼을 추가합니다.
-     * @return 4볼로 볼넷 여부
-     */
-    fun addBall(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 볼을 추가할 수 있습니다." }
-        return gameState.addBall()
-    }
-
-    /**
-     * 스트라이크를 추가합니다.
-     * @return 3스트라이크로 삼진 여부
-     */
-    fun addStrike(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 스트라이크를 추가할 수 있습니다." }
-        return gameState.addStrike()
     }
 }
