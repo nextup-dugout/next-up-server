@@ -1,6 +1,5 @@
 package com.nextup.core.domain.stats
 
-import com.nextup.common.exception.FrozenStatsException
 import com.nextup.common.exception.StatsValidationException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.CompetitionType
@@ -103,11 +102,6 @@ class SeasonFieldingStats(
     var stolenBasesAllowed: Int = 0
         protected set
 
-    /** L-8: 시즌 통계 확정 여부 (확정 후에는 수정 불가) */
-    @Column(name = "is_finalized", nullable = false)
-    var isFinalized: Boolean = false
-        protected set
-
     // Calculated properties
 
     /**
@@ -134,7 +128,6 @@ class SeasonFieldingStats(
      * 경기 수비 기록을 누적합니다.
      */
     fun addGameRecord(record: FieldingRecord) {
-        requireNotFinalized()
         gamesPlayed++
         putOuts += record.putOuts
         assists += record.assists
@@ -153,7 +146,6 @@ class SeasonFieldingStats(
      * 같은 선수가 여러 포지션을 소화한 경우 사용합니다.
      */
     fun addGameRecords(records: List<FieldingRecord>) {
-        requireNotFinalized()
         require(records.isNotEmpty()) { "수비 기록 목록이 비어있습니다." }
         gamesPlayed++
         for (record in records) {
@@ -172,7 +164,6 @@ class SeasonFieldingStats(
      * 경기 수비 기록을 롤백합니다 (경기 취소 시).
      */
     fun revertGameRecord(record: FieldingRecord) {
-        requireNotFinalized()
         gamesPlayed--
         putOuts -= record.putOuts
         assists -= record.assists
@@ -194,7 +185,6 @@ class SeasonFieldingStats(
      * @param type 수비 기록 유형
      */
     fun applyLiveFieldingUpdate(type: FieldingEventType) {
-        requireNotFinalized()
         when (type) {
             FieldingEventType.PUT_OUT -> putOuts++
             FieldingEventType.ASSIST -> assists++
@@ -215,7 +205,6 @@ class SeasonFieldingStats(
      * @param type 수비 기록 유형
      */
     fun revertLiveFieldingUpdate(type: FieldingEventType) {
-        requireNotFinalized()
         when (type) {
             FieldingEventType.PUT_OUT -> putOuts = maxOf(0, putOuts - 1)
             FieldingEventType.ASSIST -> assists = maxOf(0, assists - 1)
@@ -229,34 +218,6 @@ class SeasonFieldingStats(
     }
 
     /**
-     * L-7: 경기 종료 시 BoxScore와 교차 검증하여 정합성을 확인합니다.
-     *
-     * 실시간 갱신된 시즌 통계가 경기별 FieldingRecord 합산과 일치하는지 검증합니다.
-     *
-     * @param totalPutOuts 경기별 FieldingRecord에서 합산한 총 자살 수
-     * @param totalAssists 경기별 FieldingRecord에서 합산한 총 보살 수
-     * @param totalErrors 경기별 FieldingRecord에서 합산한 총 실책 수
-     * @return 불일치 항목 목록 (비어있으면 정합성 OK)
-     */
-    fun verifyConsistency(
-        totalPutOuts: Int,
-        totalAssists: Int,
-        totalErrors: Int,
-    ): List<String> {
-        val mismatches = mutableListOf<String>()
-        if (putOuts != totalPutOuts) {
-            mismatches.add("자살: 시즌통계=$putOuts, FieldingRecord합산=$totalPutOuts")
-        }
-        if (assists != totalAssists) {
-            mismatches.add("보살: 시즌통계=$assists, FieldingRecord합산=$totalAssists")
-        }
-        if (errors != totalErrors) {
-            mismatches.add("실책: 시즌통계=$errors, FieldingRecord합산=$totalErrors")
-        }
-        return mismatches
-    }
-
-    /**
      * 기록 정정 시 델타를 적용합니다.
      *
      * @param fieldName 정정할 필드명
@@ -266,7 +227,6 @@ class SeasonFieldingStats(
         fieldName: String,
         delta: Int,
     ) {
-        requireNotFinalized()
         when (fieldName) {
             "putOuts" -> putOuts = maxOf(0, putOuts + delta)
             "assists" -> assists = maxOf(0, assists + delta)
@@ -322,53 +282,6 @@ class SeasonFieldingStats(
      */
     fun addGamePlayedOnly() {
         gamesPlayed++
-    }
-
-    /**
-     * L-8: 시즌 통계를 확정합니다.
-     *
-     * 확정된 통계는 추가 갱신이 불가합니다.
-     */
-    fun finalize() {
-        require(!isFinalized) { "이미 확정된 시즌 통계입니다." }
-        validate()
-        this.isFinalized = true
-    }
-
-    /**
-     * L-8: 시즌 통계 확정을 해제합니다 (관리자용).
-     */
-    fun unfinalize() {
-        require(isFinalized) { "확정되지 않은 시즌 통계입니다." }
-        this.isFinalized = false
-    }
-
-    /**
-     * 모든 통계 필드를 0으로 초기화합니다 (재계산을 위한 리셋).
-     *
-     * 시즌 통계를 처음부터 다시 집계할 때 사용합니다.
-     * isFinalized 상태에서는 호출할 수 없습니다.
-     */
-    fun reset() {
-        requireNotFinalized()
-        gamesPlayed = 0
-        putOuts = 0
-        assists = 0
-        errors = 0
-        doublePlays = 0
-        passedBalls = 0
-        triplePlays = 0
-        caughtStealing = 0
-        stolenBasesAllowed = 0
-    }
-
-    /**
-     * 확정된 통계의 수정을 방지하는 가드 메서드.
-     */
-    private fun requireNotFinalized() {
-        if (isFinalized) {
-            throw FrozenStatsException()
-        }
     }
 
     companion object {

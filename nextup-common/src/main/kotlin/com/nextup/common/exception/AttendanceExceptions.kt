@@ -21,11 +21,3 @@ class AlreadyVotedException(
     pollId: Long,
     playerId: Long,
 ) : InvalidStateException("ALREADY_VOTED", "이미 투표했습니다 - pollId: $pollId, playerId: $playerId")
-
-/**
- * 활동 점수를 찾을 수 없을 때 발생하는 예외
- */
-class ActivityScoreNotFoundException(
-    teamId: Long,
-    memberId: Long,
-) : NotFoundException("ACTIVITY_SCORE_NOT_FOUND", "활동 점수를 찾을 수 없습니다 - teamId: $teamId, memberId: $memberId")

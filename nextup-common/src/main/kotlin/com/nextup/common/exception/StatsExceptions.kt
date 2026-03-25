@@ -58,10 +58,3 @@ class PlayerNotFoundException(
 class StatsValidationException(
     message: String,
 ) : InvalidStateException("STATS_VALIDATION_ERROR", message)
-
-/**
- * 확정(frozen)된 시즌 통계를 수정하려 할 때 발생하는 예외
- */
-class FrozenStatsException(
-    message: String = "확정된 시즌 통계는 수정할 수 없습니다.",
-) : InvalidStateException("FROZEN_STATS", message)
