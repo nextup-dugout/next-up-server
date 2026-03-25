@@ -59,9 +59,6 @@ data class GameRules(
     /** L-4: 더블헤더 경기 이닝 수 (기본값: 7이닝) */
     @Column(name = "doubleheader_innings")
     val doubleheaderInnings: Int = 7,
-    /** L-3: 용병(머서너리) 쿼터 제한 (null이면 무제한) */
-    @Column(name = "max_mercenary_count")
-    val maxMercenaryCount: Int? = null,
     /** L-13: 순위 동률 타이브레이커 기준 순서 (쉼표 구분, 기본: 상대전적→득실점차→다득점) */
     @Column(name = "standings_tiebreaker_order")
     val standingsTiebreakerOrder: String = "HEAD_TO_HEAD,RUN_DIFFERENTIAL,RUNS_SCORED",
@@ -100,10 +97,6 @@ data class GameRules(
         }
 
         require(pitchCountWarningThreshold > 0) { "투구 수 경고 임박 기준은 양수여야 합니다." }
-
-        maxMercenaryCount?.let {
-            require(it >= 0) { "용병 쿼터 제한은 0 이상이어야 합니다." }
-        }
 
         require(standingsTiebreakerOrder.isNotBlank()) {
             "타이브레이커 기준 순서는 비어있을 수 없습니다."
