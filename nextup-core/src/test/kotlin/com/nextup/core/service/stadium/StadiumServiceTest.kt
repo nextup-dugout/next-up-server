@@ -1,6 +1,7 @@
 package com.nextup.core.service.stadium
 
 import com.nextup.common.exception.BookingNotFoundException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.SlotNotFoundException
 import com.nextup.common.exception.StadiumNotFoundException
@@ -271,7 +272,7 @@ class StadiumServiceTest {
             every { bookingRepository.findByIdOrNull(1L) } returns booking
 
             // when
-            val result = stadiumService.cancelBooking(1L)
+            val result = stadiumService.cancelBooking(1L, 200L)
 
             // then
             assertThat(result.status).isEqualTo(BookingStatus.CANCELLED)
@@ -285,8 +286,22 @@ class StadiumServiceTest {
 
             // when & then
             assertThatThrownBy {
-                stadiumService.cancelBooking(999L)
+                stadiumService.cancelBooking(999L, 200L)
             }.isInstanceOf(BookingNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw ForbiddenException when user is not booking owner`() {
+            // given
+            val stadium = createStadium(1L, "잠실 야구장", 37.5121, 127.0717)
+            val slot = createSlot(1L, stadium, LocalDate.of(2024, 12, 25)).apply { book() }
+            val booking = createBooking(1L, slot, 100L, 200L)
+            every { bookingRepository.findByIdOrNull(1L) } returns booking
+
+            // when & then
+            assertThatThrownBy {
+                stadiumService.cancelBooking(1L, 999L)
+            }.isInstanceOf(ForbiddenException::class.java)
         }
     }
 
@@ -302,10 +317,24 @@ class StadiumServiceTest {
             every { bookingRepository.findByIdOrNull(1L) } returns booking
 
             // when
-            val result = stadiumService.completeBooking(1L)
+            val result = stadiumService.completeBooking(1L, 200L)
 
             // then
             assertThat(result.status).isEqualTo(BookingStatus.COMPLETED)
+        }
+
+        @Test
+        fun `should throw ForbiddenException when user is not booking owner`() {
+            // given
+            val stadium = createStadium(1L, "잠실 야구장", 37.5121, 127.0717)
+            val slot = createSlot(1L, stadium, LocalDate.of(2024, 12, 25))
+            val booking = createBooking(1L, slot, 100L, 200L)
+            every { bookingRepository.findByIdOrNull(1L) } returns booking
+
+            // when & then
+            assertThatThrownBy {
+                stadiumService.completeBooking(1L, 999L)
+            }.isInstanceOf(ForbiddenException::class.java)
         }
     }
 

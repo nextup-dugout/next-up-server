@@ -42,6 +42,7 @@ class BookingController(
 
     /**
      * 예약을 취소합니다.
+     * 예약 생성자만 취소할 수 있습니다 (소유권 검증).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -49,12 +50,13 @@ class BookingController(
         @PathVariable id: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingResponse> {
-        val booking = stadiumService.cancelBooking(id)
+        val booking = stadiumService.cancelBooking(id, userId)
         return ApiResponse.success(BookingResponse.from(booking))
     }
 
     /**
      * 예약을 완료 처리합니다.
+     * 예약 생성자만 완료 처리할 수 있습니다 (소유권 검증).
      */
     @PutMapping("/{id}/complete")
     @PreAuthorize("isAuthenticated()")
@@ -62,7 +64,7 @@ class BookingController(
         @PathVariable id: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingResponse> {
-        val booking = stadiumService.completeBooking(id)
+        val booking = stadiumService.completeBooking(id, userId)
         return ApiResponse.success(BookingResponse.from(booking))
     }
 }

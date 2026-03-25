@@ -8,6 +8,8 @@ import com.nextup.backoffice.dto.schedule.ScheduleAdminResponse
 import com.nextup.backoffice.dto.schedule.ScheduleConflictResponse
 import com.nextup.backoffice.dto.schedule.ScheduleGenerateRequest
 import com.nextup.backoffice.dto.schedule.UpdateScheduleRequest
+import com.nextup.backoffice.dto.schedule.toAdminResponse
+import com.nextup.backoffice.dto.schedule.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.schedule.LeagueScheduleService
 import jakarta.validation.Valid
@@ -42,7 +44,7 @@ class ScheduleAdminController(
         @PathVariable competitionId: Long,
     ): ApiResponse<List<ScheduleAdminResponse>> {
         val schedules = scheduleService.getSchedulesByCompetition(competitionId)
-        return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+        return ApiResponse.success(schedules.map { it.toAdminResponse() })
     }
 
     /**
@@ -65,7 +67,7 @@ class ScheduleAdminController(
                 scheduledTime = request.scheduledTime,
                 venue = request.venue,
             )
-        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
+        return ApiResponse.success(schedule.toAdminResponse())
     }
 
     /**
@@ -84,7 +86,7 @@ class ScheduleAdminController(
                 scheduledTime = request.scheduledTime,
                 venue = request.venue,
             )
-        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
+        return ApiResponse.success(schedule.toAdminResponse())
     }
 
     /**
@@ -120,7 +122,7 @@ class ScheduleAdminController(
                 scheduledTime = request.scheduledTime,
                 venue = request.venue,
             )
-        return ApiResponse.success(conflicts.map { ScheduleConflictResponse.from(it) })
+        return ApiResponse.success(conflicts.map { it.toResponse() })
     }
 
     /**
@@ -138,7 +140,7 @@ class ScheduleAdminController(
                 teamIds = request.teamIds,
                 doubleRoundRobin = request.doubleRoundRobin,
             )
-        return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+        return ApiResponse.success(schedules.map { it.toAdminResponse() })
     }
 
     /**
@@ -155,7 +157,7 @@ class ScheduleAdminController(
                 date = request.date,
                 reason = request.reason,
             )
-        return ApiResponse.success(schedules.map { ScheduleAdminResponse.from(it) })
+        return ApiResponse.success(schedules.map { it.toAdminResponse() })
     }
 
     /**
@@ -176,7 +178,7 @@ class ScheduleAdminController(
                 location = request?.location,
                 fieldName = request?.fieldName,
             )
-        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
+        return ApiResponse.success(schedule.toAdminResponse())
     }
 
     /**
@@ -194,6 +196,6 @@ class ScheduleAdminController(
                 newDate = request.newDate,
                 newVenue = request.newVenue,
             )
-        return ApiResponse.success(ScheduleAdminResponse.from(schedule))
+        return ApiResponse.success(schedule.toAdminResponse())
     }
 }

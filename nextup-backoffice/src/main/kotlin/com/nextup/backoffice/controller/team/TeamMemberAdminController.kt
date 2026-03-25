@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.team
 
 import com.nextup.backoffice.dto.team.TeamMemberAdminResponse
 import com.nextup.backoffice.dto.team.UpdateMemberStatusRequest
+import com.nextup.backoffice.dto.team.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.common.PageResult
 import com.nextup.core.domain.team.TeamMemberStatus
@@ -38,7 +39,7 @@ class TeamMemberAdminController(
     ): ApiResponse<PageResult<TeamMemberAdminResponse>> {
         val pageCommand = pageable.toPageCommand()
         val members = teamMembershipService.getMembersByTeamIdPaged(teamId, status, pageCommand)
-        return ApiResponse.success(members.map { TeamMemberAdminResponse.from(it) })
+        return ApiResponse.success(members.map { it.toAdminResponse() })
     }
 
     @PatchMapping("/{memberId}/status")
@@ -61,7 +62,7 @@ class TeamMemberAdminController(
             targetId = memberId,
             details = "{\"teamId\":$teamId,\"status\":\"${request.status}\"}",
         )
-        return ApiResponse.success(TeamMemberAdminResponse.from(updated))
+        return ApiResponse.success(updated.toAdminResponse())
     }
 
     @DeleteMapping("/{memberId}")

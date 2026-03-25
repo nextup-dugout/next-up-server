@@ -1,10 +1,11 @@
 package com.nextup.backoffice.dto.stadium
 
-import com.nextup.core.domain.stadium.Stadium
 import java.time.Instant
 
 /**
  * 구장 응답 DTO (백오피스용)
+ *
+ * 변환 로직은 StadiumExtensions.kt의 Extension Function을 사용합니다.
  */
 data class StadiumResponse(
     val id: Long,
@@ -19,22 +20,4 @@ data class StadiumResponse(
     val isActive: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
-) {
-    companion object {
-        fun from(stadium: Stadium): StadiumResponse =
-            StadiumResponse(
-                id = stadium.id,
-                name = stadium.name,
-                address = stadium.address,
-                latitude = stadium.latitude,
-                longitude = stadium.longitude,
-                capacity = stadium.capacity,
-                facilities = stadium.facilities,
-                contactInfo = stadium.contactInfo,
-                imageUrls = stadium.imageUrls,
-                isActive = stadium.isActive,
-                createdAt = stadium.createdAt,
-                updatedAt = stadium.updatedAt,
-            )
-    }
-}
+)
