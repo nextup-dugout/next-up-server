@@ -149,9 +149,6 @@ class FieldingStatsEventListener(
             }
         }
 
-        // L-7: SeasonFieldingStats vs FieldingRecord 합산값 교차 검증
-        verifyFieldingConsistency(fieldingRecords, year, gameId)
-
         logger.info("수비 스탯 집계 완료 (gameId={}, records={})", gameId, fieldingRecords.size)
     }
 
@@ -187,46 +184,6 @@ class FieldingStatsEventListener(
                     )
                 seasonFieldingStatsRepository.save(newStats)
             }
-    }
-
-    /**
-     * L-7: SeasonFieldingStats와 FieldingRecord 합산값의 교차 검증을 수행합니다.
-     */
-    private fun verifyFieldingConsistency(
-        fieldingRecords: List<com.nextup.core.domain.game.FieldingRecord>,
-        year: Int,
-        gameId: Long,
-    ) {
-        val playerIds = fieldingRecords.map { it.gamePlayer.player.id }.distinct()
-
-        for (playerId in playerIds) {
-            val seasonStats =
-                seasonFieldingStatsRepository.findByPlayerIdAndYear(playerId, year) ?: continue
-
-            val allSeasonRecords =
-                fieldingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
-
-            val totalPutOuts = allSeasonRecords.sumOf { it.putOuts }
-            val totalAssists = allSeasonRecords.sumOf { it.assists }
-            val totalErrors = allSeasonRecords.sumOf { it.errors }
-
-            val mismatches =
-                seasonStats.verifyConsistency(
-                    totalPutOuts = totalPutOuts,
-                    totalAssists = totalAssists,
-                    totalErrors = totalErrors,
-                )
-
-            if (mismatches.isNotEmpty()) {
-                logger.warn(
-                    "L-7 수비 통계 정합성 불일치 발견 (gameId={}, playerId={}, year={}): {}",
-                    gameId,
-                    playerId,
-                    year,
-                    mismatches.joinToString("; "),
-                )
-            }
-        }
     }
 
     private fun resolveGameContext(gameId: Long): Pair<Int, CompetitionType> {

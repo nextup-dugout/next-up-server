@@ -275,8 +275,6 @@ class FieldingStatsEventListenerTest {
         fun setUpRecords() {
             every { mockFieldingRecord.gamePlayer } returns mockFielderGamePlayer
             every { mockFielderGamePlayer.player } returns testPlayer
-            // L-7: 교차 검증용 기본 목 설정
-            every { fieldingRecordRepository.findAllByPlayerIdAndYear(any(), any()) } returns emptyList()
         }
 
         @Test
