@@ -80,7 +80,12 @@ class BattingStatsEventListenerTest {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -109,7 +114,12 @@ class BattingStatsEventListenerTest {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -136,7 +146,12 @@ class BattingStatsEventListenerTest {
             // given
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -163,7 +178,12 @@ class BattingStatsEventListenerTest {
         fun `시즌 통계가 없는 경우 자동 생성 후 타석 결과 반영`() {
             // given
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -191,7 +211,12 @@ class BattingStatsEventListenerTest {
             // given
             val savedStats = mutableListOf<SeasonBattingStats>()
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(capture(savedStats)) } answers { firstArg() }
@@ -270,7 +295,12 @@ class BattingStatsEventListenerTest {
             every { mockGame.scheduledAt } returns LocalDateTime.of(2023, 9, 1, 14, 0)
             val stats = SeasonBattingStats.create(testPlayer, 2023)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2023, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2023,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -288,7 +318,14 @@ class BattingStatsEventListenerTest {
             listener.onPlateAppearanceRecorded(event)
 
             // then
-            verify { seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2023, 10L, any()) }
+            verify {
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2023,
+                    10L,
+                    any()
+                )
+            }
             assertThat(stats.doubles).isEqualTo(1)
         }
     }
@@ -303,7 +340,12 @@ class BattingStatsEventListenerTest {
             stats.applyLiveUpdate(PlateAppearanceResult.SINGLE)
 
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -334,7 +376,12 @@ class BattingStatsEventListenerTest {
             stats.applyLiveUpdate(PlateAppearanceResult.HOME_RUN)
 
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } returns stats
 
@@ -360,7 +407,12 @@ class BattingStatsEventListenerTest {
         fun `시즌 통계가 없는 경우 자동 생성 후 역산 처리`() {
             // given
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -437,7 +489,12 @@ class BattingStatsEventListenerTest {
             // given
             every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns null
             every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns null
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -458,7 +515,12 @@ class BattingStatsEventListenerTest {
 
             every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns existingSeason
             every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns careerBatting
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -480,7 +542,12 @@ class BattingStatsEventListenerTest {
 
             every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns null
             every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns careerBatting
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -501,7 +568,12 @@ class BattingStatsEventListenerTest {
 
             every { battingRecordRepository.findAllByGameId(gameId) } returns listOf(mockBattingRecord)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns existingSeason
             every { careerBattingStatsRepository.findByPlayerId(testPlayer.id) } returns careerBatting
             every { careerBattingStatsRepository.save(any()) } answers { firstArg() }
@@ -555,7 +627,12 @@ class BattingStatsEventListenerTest {
         fun `OptimisticLockingFailureException 발생 시 직접 호출에서는 예외 전파됨`() {
             val stats = SeasonBattingStats.create(testPlayer, 2024)
             every {
-                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, 10L, any())
+                seasonBattingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    10L,
+                    any()
+                )
             } returns stats
             every { seasonBattingStatsRepository.save(any()) } throws
                 ObjectOptimisticLockingFailureException("conflict", null)
@@ -576,5 +653,4 @@ class BattingStatsEventListenerTest {
             }
         }
     }
-
 }

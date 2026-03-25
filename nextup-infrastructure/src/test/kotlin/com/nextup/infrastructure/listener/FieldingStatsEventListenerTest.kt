@@ -77,7 +77,12 @@ class FieldingStatsEventListenerTest {
             // given
             val stats = SeasonFieldingStats.create(testPlayer, 2024)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns stats
             every { seasonFieldingStatsRepository.save(any()) } returns stats
 
@@ -101,7 +106,12 @@ class FieldingStatsEventListenerTest {
             // given
             val stats = SeasonFieldingStats.create(testPlayer, 2024)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns stats
             every { seasonFieldingStatsRepository.save(any()) } returns stats
 
@@ -126,7 +136,12 @@ class FieldingStatsEventListenerTest {
             stats.applyLiveFieldingUpdate(FieldingEventType.ASSIST)
 
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns stats
             every { seasonFieldingStatsRepository.save(any()) } returns stats
 
@@ -149,7 +164,12 @@ class FieldingStatsEventListenerTest {
         fun `시즌 수비 통계가 없는 경우 자동 생성 후 갱신`() {
             // given
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns null
             every { playerRepository.findByIdOrNull(testPlayer.id) } returns testPlayer
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
@@ -195,7 +215,12 @@ class FieldingStatsEventListenerTest {
             // given
             val stats = SeasonFieldingStats.create(testPlayer, 2024)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns stats
             every { seasonFieldingStatsRepository.save(any()) } returns stats
 
@@ -218,7 +243,12 @@ class FieldingStatsEventListenerTest {
             // given
             val stats = SeasonFieldingStats.create(testPlayer, 2024)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns stats
             every { seasonFieldingStatsRepository.save(any()) } returns stats
 
@@ -284,7 +314,12 @@ class FieldingStatsEventListenerTest {
 
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns null
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
             every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
@@ -307,7 +342,12 @@ class FieldingStatsEventListenerTest {
 
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns seasonFielding
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
             every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
@@ -330,7 +370,12 @@ class FieldingStatsEventListenerTest {
 
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns null
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
             every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding
@@ -348,7 +393,12 @@ class FieldingStatsEventListenerTest {
             // given
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns null
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
             every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns null
@@ -370,7 +420,12 @@ class FieldingStatsEventListenerTest {
 
             every { fieldingRecordRepository.findAllByGameId(gameId) } returns listOf(mockFieldingRecord)
             every {
-                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(testPlayer.id, 2024, null, any())
+                seasonFieldingStatsRepository.findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+                    testPlayer.id,
+                    2024,
+                    null,
+                    any()
+                )
             } returns existingSeason
             every { seasonFieldingStatsRepository.save(any()) } answers { firstArg() }
             every { careerFieldingStatsRepository.findByPlayerId(testPlayer.id) } returns careerFielding

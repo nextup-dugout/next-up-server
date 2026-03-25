@@ -122,7 +122,13 @@ class PitchingStatsEventListener(
             return
         }
 
-        logger.info("투수 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})", gameId, year, competitionType, pitchingRecords.size)
+        logger.info(
+            "투수 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})",
+            gameId,
+            year,
+            competitionType,
+            pitchingRecords.size,
+        )
 
         for (pitchingRecord in pitchingRecords) {
             val player = pitchingRecord.gamePlayer.player
