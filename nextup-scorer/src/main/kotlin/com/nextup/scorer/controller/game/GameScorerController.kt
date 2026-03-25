@@ -220,6 +220,27 @@ class GameScorerController(
     }
 
     /**
+     * 시간 제한 도달을 선언합니다.
+     *
+     * 야구 규칙에 따라 시간 제한 도달 시 즉시 종료가 아니라
+     * "다음 이닝에 진입하지 않는" 방식으로 동작합니다.
+     * 현재 이닝은 정상 진행되며, 이닝 전환(half-inning) 시점에서 자동으로 경기가 종료됩니다.
+     *
+     * - 초공 종료 시: 원정팀이 리드가 아니면 말공 생략 후 종료
+     * - 초공 종료 시: 원정팀이 리드하면 말공까지 진행 후 종료
+     * - 말공 종료 시: 다음 이닝 진입 차단 후 종료
+     */
+    @PostMapping("/{gameId}/time-limit")
+    @ResponseStatus(HttpStatus.OK)
+    fun activateTimeLimit(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+    ): ApiResponse<GameResponse> {
+        val game = gameLifecycleService.activateTimeLimit(gameId, scorerId)
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
      * 경기를 종료합니다.
      *
      * 경기를 잠금한 기록원만 종료할 수 있습니다.

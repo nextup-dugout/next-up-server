@@ -117,6 +117,7 @@ class MatchRequestController(
 
     /**
      * 매칭 응답을 수락합니다.
+     * 매칭 요청 팀의 OWNER/MANAGER만 수락할 수 있습니다 (소유권 검증).
      */
     @PutMapping("/{id}/accept/{responseId}")
     @PreAuthorize("isAuthenticated()")
@@ -125,12 +126,13 @@ class MatchRequestController(
         @PathVariable responseId: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MatchRequestResponse> {
-        val matchRequest = matchingService.acceptResponse(id, responseId)
+        val matchRequest = matchingService.acceptResponse(id, responseId, userId)
         return ApiResponse.success(MatchRequestResponse.from(matchRequest))
     }
 
     /**
      * 매칭 요청을 취소합니다.
+     * 매칭 요청 팀의 OWNER/MANAGER만 취소할 수 있습니다 (소유권 검증).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -138,7 +140,7 @@ class MatchRequestController(
         @PathVariable id: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<MatchRequestResponse> {
-        val matchRequest = matchingService.cancelRequest(id)
+        val matchRequest = matchingService.cancelRequest(id, userId)
         return ApiResponse.success(MatchRequestResponse.from(matchRequest))
     }
 }

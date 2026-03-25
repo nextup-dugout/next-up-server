@@ -1,6 +1,5 @@
 package com.nextup.backoffice.dto.appeal
 
-import com.nextup.core.domain.appeal.Appeal
 import com.nextup.core.domain.appeal.AppealStatus
 import com.nextup.core.domain.appeal.AppealType
 import java.time.Instant
@@ -10,6 +9,7 @@ import java.time.LocalDateTime
  * 이의 제기 관리자 응답 DTO
  *
  * backoffice 모듈에 독립적으로 존재
+ * 변환 로직은 AppealExtensions.kt의 Extension Function을 사용합니다.
  */
 data class AppealAdminResponse(
     val id: Long,
@@ -25,23 +25,4 @@ data class AppealAdminResponse(
     val reviewedAt: LocalDateTime?,
     val createdAt: Instant,
     val updatedAt: Instant,
-) {
-    companion object {
-        fun from(appeal: Appeal): AppealAdminResponse =
-            AppealAdminResponse(
-                id = appeal.id,
-                gameId = appeal.game.id,
-                appealerId = appeal.appealerId,
-                appealerName = appeal.appealerName,
-                type = appeal.type,
-                title = appeal.title,
-                description = appeal.description,
-                status = appeal.status,
-                reviewerId = appeal.reviewerId,
-                reviewerComment = appeal.reviewerComment,
-                reviewedAt = appeal.reviewedAt,
-                createdAt = appeal.createdAt,
-                updatedAt = appeal.updatedAt,
-            )
-    }
-}
+)

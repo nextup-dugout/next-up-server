@@ -15,4 +15,7 @@ enum class TiebreakerResult {
 
     /** 홈팀 리드로 말 이닝 생략 → 경기 종료 */
     HOME_TEAM_LEADS_SKIP_BOTTOM,
+
+    /** 시간 제한 도달로 인한 경기 종료 */
+    TIME_LIMIT_GAME_ENDED,
 }

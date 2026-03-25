@@ -1,5 +1,6 @@
 package com.nextup.core.service.match
 
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidStateException
 import com.nextup.common.exception.MatchRequestNotFoundException
 import com.nextup.common.exception.MatchResponseNotFoundException
@@ -9,10 +10,12 @@ import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.match.MatchRequest
 import com.nextup.core.domain.match.MatchResponse
+import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.MatchRequestRepositoryPort
 import com.nextup.core.port.repository.MatchResponseRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.match.dto.CreateMatchRequestDto
 import com.nextup.core.service.match.dto.CreateMatchResponseDto
@@ -33,6 +36,7 @@ class MatchingService(
     private val matchRequestRepository: MatchRequestRepositoryPort,
     private val matchResponseRepository: MatchResponseRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val teamMemberRepository: TeamMemberRepositoryPort,
     private val competitionRepository: CompetitionRepositoryPort,
     private val gameRepository: GameRepositoryPort,
 ) {
@@ -112,15 +116,23 @@ class MatchingService(
     /**
      * 매칭 응답을 수락하고 요청을 MATCHED 상태로 변경합니다.
      * 매칭 성사 후 Game과 GameTeam 2개를 자동 생성합니다.
+     *
+     * @param requestId 매칭 요청 ID
+     * @param responseId 매칭 응답 ID
+     * @param userId 요청자 사용자 ID (소유권 검증용)
+     * @throws ForbiddenException 매칭 요청 팀의 OWNER/MANAGER가 아닌 경우
      */
     @Transactional
     fun acceptResponse(
         requestId: Long,
         responseId: Long,
+        userId: Long,
     ): MatchRequest {
         val matchRequest =
             matchRequestRepository.findByIdOrNull(requestId)
                 ?: throw MatchRequestNotFoundException(requestId)
+
+        verifyMatchRequestOwnership(matchRequest, userId)
 
         val matchResponse =
             matchResponseRepository.findByIdOrNull(responseId)
@@ -208,12 +220,21 @@ class MatchingService(
 
     /**
      * 매칭 요청을 취소합니다.
+     *
+     * @param requestId 매칭 요청 ID
+     * @param userId 요청자 사용자 ID (소유권 검증용)
+     * @throws ForbiddenException 매칭 요청 팀의 OWNER/MANAGER가 아닌 경우
      */
     @Transactional
-    fun cancelRequest(requestId: Long): MatchRequest {
+    fun cancelRequest(
+        requestId: Long,
+        userId: Long,
+    ): MatchRequest {
         val matchRequest =
             matchRequestRepository.findByIdOrNull(requestId)
                 ?: throw MatchRequestNotFoundException(requestId)
+
+        verifyMatchRequestOwnership(matchRequest, userId)
 
         try {
             matchRequest.cancel()
@@ -265,5 +286,31 @@ class MatchingService(
             ?: throw TeamNotFoundException(teamId)
 
         return matchResponseRepository.findByRespondTeamId(teamId)
+    }
+
+    /**
+     * 매칭 요청의 소유권을 검증합니다.
+     * 요청자가 매칭 요청 팀의 OWNER 또는 MANAGER인지 확인합니다.
+     *
+     * @throws ForbiddenException 요청자가 해당 팀의 OWNER/MANAGER가 아닌 경우
+     */
+    private fun verifyMatchRequestOwnership(
+        matchRequest: MatchRequest,
+        userId: Long,
+    ) {
+        val teamId = matchRequest.team.id
+        val member =
+            teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                ?: throw ForbiddenException(
+                    "MATCH_REQUEST_ACCESS_DENIED",
+                    "매칭 요청에 대한 권한이 없습니다. matchRequestId=${matchRequest.id}",
+                )
+
+        if (member.role != TeamMemberRole.OWNER && member.role != TeamMemberRole.MANAGER) {
+            throw ForbiddenException(
+                "MATCH_REQUEST_ACCESS_DENIED",
+                "매칭 요청에 대한 권한이 없습니다. matchRequestId=${matchRequest.id}",
+            )
+        }
     }
 }

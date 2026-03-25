@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.discipline
 
 import com.nextup.backoffice.dto.discipline.DisciplineAdminResponse
 import com.nextup.backoffice.dto.discipline.IssueDisciplineRequest
+import com.nextup.backoffice.dto.discipline.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.discipline.DisciplineStatus
 import com.nextup.core.domain.discipline.DisciplineType
@@ -43,7 +44,7 @@ class DisciplineAdminController(
             }
 
         return ApiResponse.success(
-            disciplines.map { DisciplineAdminResponse.from(it) }
+            disciplines.map { it.toAdminResponse() }
         )
     }
 
@@ -55,7 +56,7 @@ class DisciplineAdminController(
         @PathVariable id: Long,
     ): ApiResponse<DisciplineAdminResponse> {
         val discipline = disciplineService.getById(id)
-        return ApiResponse.success(DisciplineAdminResponse.from(discipline))
+        return ApiResponse.success(discipline.toAdminResponse())
     }
 
     /**
@@ -70,7 +71,7 @@ class DisciplineAdminController(
             disciplineService.getActiveDisciplines(playerId, competitionId)
 
         return ApiResponse.success(
-            disciplines.map { DisciplineAdminResponse.from(it) }
+            disciplines.map { it.toAdminResponse() }
         )
     }
 
@@ -127,7 +128,7 @@ class DisciplineAdminController(
                     )
             }
 
-        return ApiResponse.success(DisciplineAdminResponse.from(discipline))
+        return ApiResponse.success(discipline.toAdminResponse())
     }
 
     /**
@@ -138,7 +139,7 @@ class DisciplineAdminController(
         @PathVariable id: Long,
     ): ApiResponse<DisciplineAdminResponse> {
         val discipline = disciplineService.cancelDiscipline(id)
-        return ApiResponse.success(DisciplineAdminResponse.from(discipline))
+        return ApiResponse.success(discipline.toAdminResponse())
     }
 
     /**
@@ -149,6 +150,6 @@ class DisciplineAdminController(
         @PathVariable id: Long,
     ): ApiResponse<DisciplineAdminResponse> {
         val discipline = disciplineService.incrementServedGames(id)
-        return ApiResponse.success(DisciplineAdminResponse.from(discipline))
+        return ApiResponse.success(discipline.toAdminResponse())
     }
 }

@@ -18,6 +18,7 @@ data class GameResponse(
     val startedAt: LocalDateTime?,
     val endedAt: LocalDateTime?,
     val scorerId: Long? = null,
+    val timeLimitReached: Boolean = false,
     val warnings: List<String> = emptyList(),
 )
 
