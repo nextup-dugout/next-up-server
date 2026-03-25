@@ -1,8 +1,12 @@
 package com.nextup.backoffice.dto.audit
 
-import com.nextup.core.domain.audit.AuditLog
 import java.time.Instant
 
+/**
+ * 감사 로그 응답 DTO
+ *
+ * 변환 로직은 AuditExtensions.kt의 Extension Function을 사용합니다.
+ */
 data class AuditLogResponse(
     val id: Long,
     val adminUserId: Long,
@@ -11,17 +15,4 @@ data class AuditLogResponse(
     val targetId: Long?,
     val details: String?,
     val createdAt: Instant,
-) {
-    companion object {
-        fun from(auditLog: AuditLog): AuditLogResponse =
-            AuditLogResponse(
-                id = auditLog.id!!,
-                adminUserId = auditLog.adminUserId,
-                action = auditLog.action,
-                targetEntity = auditLog.targetEntity,
-                targetId = auditLog.targetId,
-                details = auditLog.details,
-                createdAt = auditLog.createdAt,
-            )
-    }
-}
+)

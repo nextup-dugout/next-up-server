@@ -19,7 +19,6 @@ import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
@@ -43,8 +42,8 @@ class LineupServiceTest {
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
-    private lateinit var attendanceVoteRepository: com.nextup.core.port.repository.AttendanceVoteRepositoryPort
-    private lateinit var mercenaryParticipationRepository: MercenaryParticipationRepositoryPort
+    private lateinit var attendancePollRepository: com.nextup.core.port.attendance.AttendancePollRepositoryPort
+    private lateinit var attendanceVoteRepository: com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var lineupService: LineupService
 
@@ -61,8 +60,8 @@ class LineupServiceTest {
         teamRepository = mockk()
         playerRepository = mockk()
         userRepository = mockk()
+        attendancePollRepository = mockk()
         attendanceVoteRepository = mockk()
-        mercenaryParticipationRepository = mockk()
         eventPublisher = mockk(relaxed = true)
 
         lineupService =
@@ -73,8 +72,8 @@ class LineupServiceTest {
                 teamRepository = teamRepository,
                 playerRepository = playerRepository,
                 userRepository = userRepository,
+                attendancePollRepository = attendancePollRepository,
                 attendanceVoteRepository = attendanceVoteRepository,
-                mercenaryParticipationRepository = mercenaryParticipationRepository,
                 eventPublisher = eventPublisher,
             )
 
@@ -382,12 +381,11 @@ class LineupServiceTest {
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
             // Only one team submitted — no exchange yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
@@ -428,12 +426,11 @@ class LineupServiceTest {
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
 
             // when & then
             assertThrows<NoCatcherInLineupException> {
@@ -449,12 +446,11 @@ class LineupServiceTest {
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
 
             // when & then - player 9 is not attending
             assertThrows<NonAttendingPlayerInLineupException> {
@@ -470,12 +466,11 @@ class LineupServiceTest {
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns submission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
             // Only one team submitted — no exchange yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
@@ -695,26 +690,22 @@ class LineupServiceTest {
             // Create attending votes that reference awayTeam (id=2L) so the team filter passes
             val awayAttendingVotes =
                 (1L..9L).map { playerId ->
-                    mockk<com.nextup.core.domain.game.GameParticipation>().apply {
-                        every { member } returns
-                            mockk<com.nextup.core.domain.team.TeamMember>().apply {
-                                every { team } returns awayTeam
-                                every { player } returns
-                                    mockk<Player>().apply {
-                                        every { id } returns playerId
-                                    }
+                    mockk<com.nextup.core.domain.attendance.AttendanceVote>().apply {
+                        every { voteType } returns com.nextup.core.domain.attendance.VoteType.ATTEND
+                        every { player } returns
+                            mockk<Player>().apply {
+                                every { id } returns playerId
                             }
                     }
                 }
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns awaySubmission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns awayAttendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
             // Both submissions present — exchange pending should trigger
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns
                 listOf(homeSubmission, awaySubmission)
@@ -739,12 +730,11 @@ class LineupServiceTest {
 
             every { lineupSubmissionRepository.findByIdOrNull(any()) } returns homeSubmission
             every {
-                attendanceVoteRepository.findByGameIdAndStatus(
-                    any(),
-                    com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
-                )
+                attendancePollRepository.findByGameIdAndTeamId(any(), any())
+            } returns mockk<com.nextup.core.domain.attendance.AttendancePoll>().apply { every { id } returns 999L }
+            every {
+                attendanceVoteRepository.findByPollId(999L)
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
             // Only one submission in the game — opponent hasn't submitted yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(homeSubmission)
 
@@ -1394,16 +1384,13 @@ class LineupServiceTest {
 
     private fun createAttendingVotesForPlayers(
         playerIds: List<Long>,
-    ): List<com.nextup.core.domain.game.GameParticipation> =
+    ): List<com.nextup.core.domain.attendance.AttendanceVote> =
         playerIds.map { playerId ->
-            mockk<com.nextup.core.domain.game.GameParticipation>().apply {
-                every { member } returns
-                    mockk<com.nextup.core.domain.team.TeamMember>().apply {
-                        every { team } returns this@LineupServiceTest.team
-                        every { player } returns
-                            mockk<Player>().apply {
-                                every { id } returns playerId
-                            }
+            mockk<com.nextup.core.domain.attendance.AttendanceVote>().apply {
+                every { voteType } returns com.nextup.core.domain.attendance.VoteType.ATTEND
+                every { player } returns
+                    mockk<Player>().apply {
+                        every { id } returns playerId
                     }
             }
         }

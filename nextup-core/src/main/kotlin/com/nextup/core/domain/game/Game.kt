@@ -1,9 +1,5 @@
 package com.nextup.core.domain.game
 
-import com.nextup.common.exception.GameAlreadyLockedException
-import com.nextup.common.exception.GameNotLockedByCurrentScorerException
-import com.nextup.common.exception.GameNotLockedForRecordingException
-import com.nextup.common.exception.ScorerMismatchException
 import com.nextup.core.common.BaseTimeEntity
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.team.Team
@@ -61,10 +57,19 @@ class Game private constructor(
     var forfeitReason: String? = null,
     @Embedded
     var gameState: GameState = GameState(),
-    @Column(name = "scorer_id")
-    var scorerId: Long? = null,
-    @Column(name = "locked_at")
-    var lockedAt: LocalDateTime? = null,
+    @Embedded
+    var scorerLock: ScorerLock = ScorerLock(),
+    /**
+     * 시간 제한 도달 플래그.
+     *
+     * 기록원이 "시간 제한 도달" 버튼을 누르면 true로 설정됩니다.
+     * 이 플래그가 true이면 이닝 전환 시 다음 규칙이 적용됩니다:
+     * - 초공(원정팀 공격) 종료 시: 초공팀(원정)이 리드가 아니면 → 말공 생략, 경기 종료
+     * - 초공 종료 시: 초공팀(원정)이 리드하면 → 말공까지 진행
+     * - 말공(홈팀 공격) 종료 시: 다음 이닝 진입 차단, 경기 종료
+     */
+    @Column(name = "time_limit_reached", nullable = false)
+    var timeLimitReached: Boolean = false,
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -72,7 +77,7 @@ class Game private constructor(
     @Version
     var version: Long = 0
 
-    @OneToMany(mappedBy = "game", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToMany(mappedBy = "game", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
     private val _gameTeams: MutableList<GameTeam> = mutableListOf()
     val gameTeams: List<GameTeam> get() = _gameTeams.toList()
 
@@ -90,93 +95,48 @@ class Game private constructor(
 
     /**
      * 기록원이 경기를 독점 잠금합니다.
-     *
-     * 이미 다른 기록원이 잠금한 경우 [GameAlreadyLockedException]이 발생합니다.
-     * 동일 기록원이 중복 잠금 시도하면 멱등하게 무시합니다.
-     *
-     * @param scorerId 잠금을 요청하는 기록원 ID
-     * @throws GameAlreadyLockedException 다른 기록원이 이미 잠금한 경우
+     * @see ScorerLock.lock
      */
-    fun lockForScorer(scorerId: Long) {
-        if (this.scorerId != null && this.scorerId != scorerId) {
-            throw GameAlreadyLockedException(id, this.scorerId!!)
-        }
-        this.scorerId = scorerId
-        this.lockedAt = LocalDateTime.now()
-    }
+    fun lockForScorer(scorerId: Long) = scorerLock.lock(id, scorerId)
 
     /**
      * 기록원의 경기 잠금을 해제합니다.
-     *
-     * 잠금한 기록원 본인만 해제할 수 있습니다.
-     *
-     * @param scorerId 잠금 해제를 요청하는 기록원 ID
-     * @throws GameNotLockedByCurrentScorerException 해당 기록원이 잠금하지 않은 경우
+     * @see ScorerLock.unlock
      */
-    fun unlockScorer(scorerId: Long) {
-        if (this.scorerId == null || this.scorerId != scorerId) {
-            throw GameNotLockedByCurrentScorerException(id, scorerId)
-        }
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun unlockScorer(scorerId: Long) = scorerLock.unlock(id, scorerId)
 
     /**
      * 강제로 기록원 잠금을 해제합니다 (관리자용).
      */
-    fun forceUnlockScorer() {
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun forceUnlockScorer() = scorerLock.forceUnlock()
 
     /**
      * 잠금이 만료되었는지 확인합니다.
-     *
-     * @param timeoutMinutes 타임아웃 시간 (분, 기본값 30분)
-     * @return 잠금이 만료되었으면 true
      */
-    fun isLockExpired(timeoutMinutes: Long = DEFAULT_LOCK_TIMEOUT_MINUTES): Boolean {
-        val lockedTime = lockedAt ?: return false
-        return lockedTime.plusMinutes(timeoutMinutes).isBefore(LocalDateTime.now())
-    }
+    fun isLockExpired(timeoutMinutes: Long = DEFAULT_LOCK_TIMEOUT_MINUTES): Boolean =
+        scorerLock.isExpired(timeoutMinutes)
 
     /**
      * 만료된 잠금을 자동 해제합니다 (스케줄러용).
      */
-    fun expireLock() {
-        this.scorerId = null
-        this.lockedAt = null
-    }
+    fun expireLock() = scorerLock.expire()
 
     /**
      * 현재 기록원이 경기를 잠금하고 있는지 확인합니다.
      */
-    fun isLockedByScorer(scorerId: Long): Boolean = this.scorerId == scorerId
+    fun isLockedByScorer(scorerId: Long): Boolean = scorerLock.isLockedBy(scorerId)
 
     /**
      * 경기가 잠금 상태인지 확인합니다.
      */
     val isLocked: Boolean
-        get() = scorerId != null
+        get() = scorerLock.isLocked
 
     /**
      * 기록 API 호출 시 기록원 잠금 검증을 수행합니다.
-     *
-     * 경기가 잠금되지 않은 상태이면 [GameNotLockedForRecordingException]을 발생시키고,
-     * 잠금한 기록원과 요청 기록원이 다르면 [ScorerMismatchException]을 발생시킵니다.
-     *
-     * @param requestScorerId 기록을 요청하는 기록원 ID
-     * @throws GameNotLockedForRecordingException 경기가 잠금되지 않은 경우
-     * @throws ScorerMismatchException 잠금한 기록원과 요청 기록원이 다른 경우
+     * @see ScorerLock.validate
      */
-    fun validateScorer(requestScorerId: Long) {
-        if (this.scorerId == null) {
-            throw GameNotLockedForRecordingException(id)
-        }
-        if (this.scorerId != requestScorerId) {
-            throw ScorerMismatchException(id, requestScorerId, this.scorerId!!)
-        }
-    }
+    fun validateScorer(requestScorerId: Long) = scorerLock.validate(id, requestScorerId)
 
     /**
      * 다음 이닝으로 진행합니다.
@@ -197,6 +157,29 @@ class Game private constructor(
         require(status.isOngoing()) { "진행 중인 경기만 이닝을 진행할 수 있습니다." }
 
         val rules = competition.gameRules
+
+        // ===== 시간 제한 체크 (timeLimitReached 플래그 기반) =====
+        // 야구 규칙: 시간 제한 도달 시 즉시 종료가 아니라 이닝 전환 시점에서 판단
+        if (timeLimitReached && gameTeams.size == 2) {
+            val homeScore =
+                gameTeams.first { it.homeAway == HomeAway.HOME }.totalScore
+            val awayScore =
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.totalScore
+
+            if (isTopInning) {
+                // 초공(원정팀 공격) 종료 시점
+                // 원정팀이 리드가 아니면(홈팀 리드 또는 동점) → 말공 생략, 즉시 경기 종료
+                if (awayScore <= homeScore) {
+                    finishByTimeLimit(gameTeams)
+                    return TiebreakerResult.TIME_LIMIT_GAME_ENDED
+                }
+                // 원정팀이 리드 중이면 → 말공까지 진행 (아래 정상 흐름으로)
+            } else {
+                // 말공(홈팀 공격) 종료 시점 → 다음 이닝 진입 차단, 경기 종료
+                finishByTimeLimit(gameTeams)
+                return TiebreakerResult.TIME_LIMIT_GAME_ENDED
+            }
+        }
 
         // 초(원정팀 공격) 종료 후 말로 넘어가기 전에 홈팀 리드 확인
         // 정규 이닝 이상에서 홈팀이 리드하면 말 이닝 불필요 → 경기 종료
@@ -411,6 +394,47 @@ class Game private constructor(
             elapsedMinutes >= limit - warningThresholdMinutes -> TimeLimitStatus.APPROACHING_LIMIT
             else -> null
         }
+    }
+
+    /**
+     * 시간 제한 도달 플래그를 활성화합니다.
+     *
+     * 야구 규칙에 따라 시간 제한이 도달하면 즉시 종료가 아니라
+     * "다음 이닝에 진입하지 않는" 방식으로 동작합니다:
+     * - 현재 이닝은 정상 진행됩니다.
+     * - 초공(원정팀 공격) 종료 시: 원정팀이 리드가 아니면 말공 생략 후 경기 종료
+     * - 초공 종료 시 원정팀이 리드하면: 말공까지 진행 후 경기 종료
+     * - 말공(홈팀 공격) 종료 시: 다음 이닝 진입 차단, 경기 종료
+     *
+     * 실제 경기 종료는 [nextHalfInning] 호출 시 자동으로 발생합니다.
+     */
+    fun activateTimeLimit() {
+        require(status.isOngoing()) { "진행 중인 경기만 시간 제한을 활성화할 수 있습니다." }
+        require(competition.gameRules.timeLimitMinutes != null) {
+            "시간 제한이 설정되지 않은 대회에서는 시간 제한을 활성화할 수 없습니다."
+        }
+        require(!timeLimitReached) { "이미 시간 제한이 활성화되어 있습니다." }
+
+        timeLimitReached = true
+        note = (note?.let { "$it\n" } ?: "") + "시간 제한 도달"
+    }
+
+    /**
+     * 시간 제한으로 경기를 종료합니다 (내부 전용).
+     *
+     * [nextHalfInning]에서 시간 제한 플래그 확인 후 자동으로 호출됩니다.
+     * 양 팀의 점수를 비교하여 WIN/LOSS/DRAW 결과를 자동으로 설정합니다.
+     *
+     * @param gameTeams 해당 경기에 참여하는 GameTeam 목록 (정확히 2개)
+     */
+    internal fun finishByTimeLimit(gameTeams: List<GameTeam>) {
+        require(status.isOngoing()) { "진행 중인 경기만 시간 제한 종료할 수 있습니다." }
+
+        status = GameStatus.FINISHED
+        endedAt = LocalDateTime.now()
+        note = (note?.let { "$it\n" } ?: "") + "시간 제한 종료"
+        determineResults(gameTeams)
+        forceUnlockScorer()
     }
 
     /**
@@ -640,8 +664,8 @@ class Game private constructor(
             note: String? = null,
             forfeitReason: String? = null,
             gameState: GameState = GameState(),
-            scorerId: Long? = null,
-            lockedAt: LocalDateTime? = null,
+            scorerLock: ScorerLock = ScorerLock(),
+            timeLimitReached: Boolean = false,
             id: Long = 0L,
         ): Game {
             val game =
@@ -661,8 +685,8 @@ class Game private constructor(
                     note = note,
                     forfeitReason = forfeitReason,
                     gameState = gameState,
-                    scorerId = scorerId,
-                    lockedAt = lockedAt,
+                    scorerLock = scorerLock,
+                    timeLimitReached = timeLimitReached,
                     id = id,
                 )
             game._gameTeams.add(GameTeam(game = game, team = homeTeam, homeAway = HomeAway.HOME, id = id * 100 + 1))
@@ -782,67 +806,5 @@ class Game private constructor(
         }
         status = GameStatus.CANCELLED
         note = (note?.let { "$it\n" } ?: "") + "타임아웃으로 자동 취소됨"
-    }
-
-    /**
-     * 아웃을 기록합니다.
-     * @return 3아웃으로 이닝이 종료되었는지 여부
-     */
-    fun recordOut(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 아웃을 기록할 수 있습니다." }
-        return gameState.recordOut()
-    }
-
-    /**
-     * 다음 타자로 타순을 진행합니다.
-     */
-    fun advanceBatter() {
-        require(status.isOngoing()) { "진행 중인 경기만 타순을 진행할 수 있습니다." }
-        gameState.advanceBatter(isHomeTeam = !isTopInning)
-    }
-
-    /**
-     * 주자를 설정합니다.
-     */
-    fun setRunner(
-        base: Base,
-        playerId: Long?,
-    ) {
-        require(status.isOngoing()) { "진행 중인 경기만 주자를 설정할 수 있습니다." }
-        gameState.setRunner(base, playerId)
-    }
-
-    /**
-     * 모든 베이스를 클리어합니다.
-     */
-    fun clearBases() {
-        require(status.isOngoing()) { "진행 중인 경기만 베이스를 클리어할 수 있습니다." }
-        gameState.clearBases()
-    }
-
-    /**
-     * 볼카운트를 리셋합니다.
-     */
-    fun resetCount() {
-        require(status.isOngoing()) { "진행 중인 경기만 볼카운트를 리셋할 수 있습니다." }
-        gameState.resetCount()
-    }
-
-    /**
-     * 볼을 추가합니다.
-     * @return 4볼로 볼넷 여부
-     */
-    fun addBall(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 볼을 추가할 수 있습니다." }
-        return gameState.addBall()
-    }
-
-    /**
-     * 스트라이크를 추가합니다.
-     * @return 3스트라이크로 삼진 여부
-     */
-    fun addStrike(): Boolean {
-        require(status.isOngoing()) { "진행 중인 경기만 스트라이크를 추가할 수 있습니다." }
-        return gameState.addStrike()
     }
 }

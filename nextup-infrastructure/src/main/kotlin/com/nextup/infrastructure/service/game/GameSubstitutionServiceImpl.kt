@@ -3,6 +3,7 @@ package com.nextup.infrastructure.service.game
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.GamePlayerNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.core.domain.event.PlayerShortageDetectedEvent
 import com.nextup.core.domain.event.PlayerSubstitutedEvent
 import com.nextup.core.domain.game.BattingRecord
 import com.nextup.core.domain.game.Game
@@ -10,13 +11,13 @@ import com.nextup.core.domain.game.GameEvent
 import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.LineupValidator
 import com.nextup.core.domain.game.PitchingRecord
+import com.nextup.core.domain.game.PlayerShortageResult
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.player.PositionCategory
 import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.GameSubstitutionService
 import com.nextup.core.service.game.dto.SubstitutionRequest
@@ -39,7 +40,6 @@ class GameSubstitutionServiceImpl(
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
-    private val mercenaryParticipationRepository: MercenaryParticipationRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : GameSubstitutionService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -82,34 +82,6 @@ class GameSubstitutionServiceImpl(
         if (game.gameState.wasDhReleased && request.newPosition == Position.DESIGNATED_HITTER) {
             throw InvalidGameStateException(
                 "DH가 이미 해제되었으므로 재지정할 수 없습니다.",
-            )
-        }
-
-        // L-3: 용병 쿼터 검증 — 교체 들어오는 선수가 용병인 경우 쿼터 확인
-        val maxMercenaryCount = game.competition.gameRules.maxMercenaryCount
-        if (maxMercenaryCount != null) {
-            val mercenaryParticipations =
-                mercenaryParticipationRepository.findByGameId(gameId)
-            val mercenaryPlayerIds =
-                mercenaryParticipations
-                    .filter { it.teamId == outgoingPlayer.gameTeam.team.id }
-                    .map { it.playerId }
-                    .toSet()
-
-            val allTeamPlayers =
-                gamePlayerRepository.findAllByGameId(gameId)
-                    .filter { it.gameTeam.id == outgoingPlayer.gameTeam.id }
-            val currentMercenaryCount =
-                allTeamPlayers.count { it.player.id in mercenaryPlayerIds }
-
-            val isIncomingMercenary = incomingPlayer.player.id in mercenaryPlayerIds
-            val isOutgoingMercenary = outgoingPlayer.player.id in mercenaryPlayerIds
-
-            LineupValidator.validateMercenaryQuotaForSubstitution(
-                currentMercenaryCount = currentMercenaryCount,
-                isIncomingPlayerMercenary = isIncomingMercenary,
-                isOutgoingPlayerMercenary = isOutgoingMercenary,
-                maxMercenaryCount = maxMercenaryCount,
             )
         }
 
@@ -265,6 +237,108 @@ class GameSubstitutionServiceImpl(
                 )
             }
         }
+    }
+
+    @Transactional
+    override fun removePlayerWithoutSubstitution(
+        gameId: Long,
+        gamePlayerId: Long,
+        inning: Int,
+        scorerId: Long,
+    ): PlayerShortageResult {
+        val game = findGame(gameId)
+        game.validateScorer(scorerId)
+
+        if (game.status != GameStatus.IN_PROGRESS) {
+            throw InvalidGameStateException(
+                "진행 중인 경기만 선수 퇴장 처리를 할 수 있습니다. 현재 상태: ${game.status.displayName}",
+            )
+        }
+
+        val gamePlayer =
+            gamePlayerRepository.findByIdOrNull(gamePlayerId)
+                ?: throw GamePlayerNotFoundException(gamePlayerId)
+
+        if (!gamePlayer.isCurrentlyPlaying) {
+            throw InvalidGameStateException(
+                "현재 출전 중인 선수만 퇴장할 수 있습니다. (GamePlayer ID: $gamePlayerId)",
+            )
+        }
+
+        // 투수인 경우 이닝 마감 처리
+        if (gamePlayer.isPitcher) {
+            val pitchingRecord =
+                pitchingRecordRepository.findByGamePlayerId(gamePlayer.id)
+            pitchingRecord?.closeInning(
+                currentInning = game.currentInning,
+                currentOuts = game.gameState.outs,
+            )
+            if (pitchingRecord != null) {
+                pitchingRecordRepository.save(pitchingRecord)
+            }
+        }
+
+        gamePlayer.exitGame(inning)
+        gamePlayerRepository.save(gamePlayer)
+
+        // 퇴장 이벤트 기록
+        val halfInning = if (game.isTopInning) "초" else "말"
+        val description =
+            "${game.currentInning}회$halfInning: ${gamePlayer.player.name} 퇴장 (교체 선수 없음)"
+        val exitEvent =
+            GameEvent.createPlayerExit(
+                game = game,
+                exitedPlayer = gamePlayer,
+                description = description,
+            )
+        gameEventRepository.save(exitEvent)
+
+        log.info(
+            "선수 퇴장 (교체 없음) - gameId={}, gamePlayerId={}, inning={}",
+            gameId,
+            gamePlayerId,
+            inning,
+        )
+
+        // 인원 부족 감지
+        val teamId = gamePlayer.gameTeam.team.id
+        val gameTeamId = gamePlayer.gameTeam.id
+        val activePlayerCount =
+            gamePlayerRepository.findCurrentlyPlayingByGameId(gameId)
+                .count { it.gameTeam.id == gameTeamId }
+
+        val shortageResult =
+            if (activePlayerCount < PlayerShortageResult.DEFAULT_MINIMUM_PLAYERS) {
+                log.warn(
+                    "인원 부족 감지 - gameId={}, teamId={}, activeCount={}, minimum={}",
+                    gameId,
+                    teamId,
+                    activePlayerCount,
+                    PlayerShortageResult.DEFAULT_MINIMUM_PLAYERS,
+                )
+                eventPublisher.publishEvent(
+                    PlayerShortageDetectedEvent(
+                        gameId = gameId,
+                        gameTeamId = gameTeamId,
+                        teamId = teamId,
+                        activePlayerCount = activePlayerCount,
+                        minimumRequired = PlayerShortageResult.DEFAULT_MINIMUM_PLAYERS,
+                    ),
+                )
+                PlayerShortageResult.shortage(
+                    gameTeamId = gameTeamId,
+                    teamId = teamId,
+                    activePlayerCount = activePlayerCount,
+                )
+            } else {
+                PlayerShortageResult.noShortage(
+                    gameTeamId = gameTeamId,
+                    teamId = teamId,
+                    activePlayerCount = activePlayerCount,
+                )
+            }
+
+        return shortageResult
     }
 
     private fun findGame(id: Long): Game =

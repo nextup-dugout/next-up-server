@@ -3,7 +3,6 @@ package com.nextup.infrastructure.service.team
 import com.nextup.common.exception.*
 import com.nextup.core.common.PageCommand
 import com.nextup.core.common.PageResult
-import com.nextup.core.domain.event.OwnerKickedEvent
 import com.nextup.core.domain.event.TeamJoinApprovedEvent
 import com.nextup.core.domain.event.TeamJoinRejectedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -500,7 +499,7 @@ class TeamMembershipServiceImpl(
                 ?: throw TeamMemberNotFoundException(memberId)
 
         // L-10: 강제 강퇴 (OWNER 포함 가능)
-        val wasOwner = member.forceKick(reason)
+        member.forceKick(reason)
         teamMemberRepository.save(member)
 
         // 블랙리스트 추가 옵션
@@ -516,7 +515,7 @@ class TeamMembershipServiceImpl(
             teamBlacklistRepository.save(blacklist)
         }
 
-        // 일반 강퇴 이벤트 발행
+        // 강퇴 이벤트 발행
         eventPublisher.publishEvent(
             TeamMemberKickedEvent(
                 teamId = member.team.id,
@@ -526,16 +525,5 @@ class TeamMembershipServiceImpl(
                 teamName = member.team.name,
             ),
         )
-
-        // L-10: OWNER가 강퇴된 경우 자동 선거 트리거 이벤트 발행
-        if (wasOwner) {
-            eventPublisher.publishEvent(
-                OwnerKickedEvent(
-                    teamId = member.team.id,
-                    kickedPlayerId = member.player.id,
-                    kickedMemberId = member.id,
-                ),
-            )
-        }
     }
 }

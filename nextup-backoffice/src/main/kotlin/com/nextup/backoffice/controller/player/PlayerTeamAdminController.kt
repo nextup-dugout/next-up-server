@@ -1,6 +1,7 @@
 package com.nextup.backoffice.controller.player
 
 import com.nextup.backoffice.dto.player.*
+import com.nextup.backoffice.dto.player.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.player.PlayerTeamService
 import jakarta.validation.Valid
@@ -32,13 +33,12 @@ class PlayerTeamAdminController(
                 startDate = request.startDate,
                 position = request.position,
                 uniformNumber = request.uniformNumber,
-                contractType = request.contractType,
             )
-        return ApiResponse.success(PlayerTeamResponse.from(affiliation))
+        return ApiResponse.success(affiliation.toResponse())
     }
 
     /**
-     * 선수의 소속을 종료합니다.
+     * 선수의 소속을 종료합니다 (탈퇴 처리).
      */
     @PutMapping("/{id}/end")
     fun endAffiliation(
@@ -50,27 +50,7 @@ class PlayerTeamAdminController(
                 affiliationId = id,
                 endDate = request.endDate,
             )
-        return ApiResponse.success(PlayerTeamResponse.from(affiliation))
-    }
-
-    /**
-     * 선수를 이적시킵니다.
-     */
-    @PostMapping("/transfer")
-    fun transferPlayer(
-        @Valid @RequestBody request: TransferPlayerRequest,
-    ): ApiResponse<PlayerTeamResponse> {
-        val affiliation =
-            playerTeamService.transferPlayer(
-                playerId = request.playerId,
-                fromTeamId = request.fromTeamId,
-                toTeamId = request.toTeamId,
-                transferDate = request.transferDate,
-                newPosition = request.newPosition,
-                newUniformNumber = request.newUniformNumber,
-                newContractType = request.newContractType,
-            )
-        return ApiResponse.success(PlayerTeamResponse.from(affiliation))
+        return ApiResponse.success(affiliation.toResponse())
     }
 
     /**
@@ -86,7 +66,7 @@ class PlayerTeamAdminController(
                 affiliationId = id,
                 uniformNumber = request.uniformNumber,
             )
-        return ApiResponse.success(PlayerTeamResponse.from(affiliation))
+        return ApiResponse.success(affiliation.toResponse())
     }
 
     /**
@@ -102,7 +82,7 @@ class PlayerTeamAdminController(
                 affiliationId = id,
                 position = request.position,
             )
-        return ApiResponse.success(PlayerTeamResponse.from(affiliation))
+        return ApiResponse.success(affiliation.toResponse())
     }
 
     /**
@@ -114,7 +94,7 @@ class PlayerTeamAdminController(
     ): ApiResponse<List<PlayerTeamResponse>> {
         val affiliations = playerTeamService.getActiveAffiliationsByPlayer(playerId)
         return ApiResponse.success(
-            affiliations.map { PlayerTeamResponse.from(it) },
+            affiliations.map { it.toResponse() },
         )
     }
 
@@ -127,7 +107,7 @@ class PlayerTeamAdminController(
     ): ApiResponse<List<PlayerTeamResponse>> {
         val roster = playerTeamService.getTeamRoster(teamId)
         return ApiResponse.success(
-            roster.map { PlayerTeamResponse.from(it) },
+            roster.map { it.toResponse() },
         )
     }
 
@@ -140,7 +120,7 @@ class PlayerTeamAdminController(
     ): ApiResponse<List<PlayerTeamResponse>> {
         val history = playerTeamService.getPlayerHistory(playerId)
         return ApiResponse.success(
-            history.map { PlayerTeamResponse.from(it) },
+            history.map { it.toResponse() },
         )
     }
 }

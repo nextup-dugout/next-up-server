@@ -5,6 +5,7 @@ import com.nextup.api.dto.attendance.NudgeResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.NudgeService
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -22,12 +23,14 @@ class NudgeController(
      * 미투표자에게 출석 투표 독려 알림을 전송합니다.
      *
      * @param gameId 경기 ID
+     * @param userId 인증된 사용자 ID
      * @param request 재촉 요청 (선택적 메시지 포함)
      * @return 알림 전송 결과
      */
     @PostMapping("/nudge")
     fun nudgeNonVoters(
         @PathVariable gameId: Long,
+        @AuthenticationPrincipal userId: Long,
         @RequestBody request: NudgeRequest = NudgeRequest(),
     ): ApiResponse<NudgeResponse> {
         val result = nudgeService.nudgeNonVoters(gameId, request.message)

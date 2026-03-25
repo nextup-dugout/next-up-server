@@ -1025,236 +1025,137 @@ class GameTest {
     }
 
     @Nested
-    @DisplayName("아웃 기록")
-    inner class RecordOut {
+    @DisplayName("GameState 위임 (gameState 직접 접근)")
+    inner class GameStateDelegation {
         @Test
-        fun `진행 중인 경기에서 아웃을 기록할 수 있다`() {
+        fun `gameState를 통해 아웃을 기록할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            val isInningOver = game.recordOut()
+            val isInningOver = game.gameState.recordOut()
 
             // then
             assertThat(isInningOver).isFalse()
         }
 
         @Test
-        fun `3아웃이 되면 true를 반환한다`() {
+        fun `gameState를 통해 3아웃이 되면 true를 반환한다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
-            game.recordOut()
-            game.recordOut()
+            game.gameState.recordOut()
+            game.gameState.recordOut()
 
             // when
-            val isInningOver = game.recordOut()
+            val isInningOver = game.gameState.recordOut()
 
             // then
             assertThat(isInningOver).isTrue()
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 아웃을 기록할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.SCHEDULED)
-
-            // when & then
-            assertThatThrownBy { game.recordOut() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("타자 진행")
-    inner class AdvanceBatter {
-        @Test
-        fun `진행 중인 경기에서 타순을 진행할 수 있다`() {
+        fun `gameState를 통해 타순을 진행할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            game.advanceBatter()
+            game.gameState.advanceBatter(isHomeTeam = !game.isTopInning)
 
             // then (예외가 발생하지 않으면 성공)
             assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 타순을 진행할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.FINISHED)
-
-            // when & then
-            assertThatThrownBy { game.advanceBatter() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("주자 설정")
-    inner class SetRunner {
-        @Test
-        fun `진행 중인 경기에서 주자를 설정할 수 있다`() {
+        fun `gameState를 통해 주자를 설정할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            game.setRunner(Base.FIRST, 123L)
+            game.gameState.setRunner(Base.FIRST, 123L)
 
-            // then (예외가 발생하지 않으면 성공)
-            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            // then
+            assertThat(game.gameState.runnerOnFirstId).isEqualTo(123L)
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 주자를 설정할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.SCHEDULED)
-
-            // when & then
-            assertThatThrownBy { game.setRunner(Base.FIRST, 123L) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("베이스 클리어")
-    inner class ClearBases {
-        @Test
-        fun `진행 중인 경기에서 베이스를 클리어할 수 있다`() {
+        fun `gameState를 통해 베이스를 클리어할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
-            game.setRunner(Base.FIRST, 123L)
-            game.setRunner(Base.SECOND, 456L)
+            game.gameState.setRunner(Base.FIRST, 123L)
+            game.gameState.setRunner(Base.SECOND, 456L)
 
             // when
-            game.clearBases()
+            game.gameState.clearBases()
 
-            // then (예외가 발생하지 않으면 성공)
-            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            // then
+            assertThat(game.gameState.runnerOnFirstId).isNull()
+            assertThat(game.gameState.runnerOnSecondId).isNull()
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 베이스를 클리어할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.FINISHED)
-
-            // when & then
-            assertThatThrownBy { game.clearBases() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("볼카운트 리셋")
-    inner class ResetCount {
-        @Test
-        fun `진행 중인 경기에서 볼카운트를 리셋할 수 있다`() {
+        fun `gameState를 통해 볼카운트를 리셋할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            game.resetCount()
+            game.gameState.resetCount()
 
-            // then (예외가 발생하지 않으면 성공)
-            assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+            // then
+            assertThat(game.gameState.balls).isEqualTo(0)
+            assertThat(game.gameState.strikes).isEqualTo(0)
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 볼카운트를 리셋할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.SCHEDULED)
-
-            // when & then
-            assertThatThrownBy { game.resetCount() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("볼 추가")
-    inner class AddBall {
-        @Test
-        fun `진행 중인 경기에서 볼을 추가할 수 있다`() {
+        fun `gameState를 통해 볼을 추가할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            val isWalk = game.addBall()
+            val isWalk = game.gameState.addBall()
 
             // then
             assertThat(isWalk).isFalse()
         }
 
         @Test
-        fun `4볼이 되면 true를 반환한다`() {
+        fun `gameState를 통해 4볼이 되면 true를 반환한다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
-            game.addBall()
-            game.addBall()
-            game.addBall()
+            game.gameState.addBall()
+            game.gameState.addBall()
+            game.gameState.addBall()
 
             // when
-            val isWalk = game.addBall()
+            val isWalk = game.gameState.addBall()
 
             // then
             assertThat(isWalk).isTrue()
         }
 
         @Test
-        fun `진행 중이 아닌 경기에서는 볼을 추가할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.CANCELLED)
-
-            // when & then
-            assertThatThrownBy { game.addBall() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
-        }
-    }
-
-    @Nested
-    @DisplayName("스트라이크 추가")
-    inner class AddStrike {
-        @Test
-        fun `진행 중인 경기에서 스트라이크를 추가할 수 있다`() {
+        fun `gameState를 통해 스트라이크를 추가할 수 있다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
 
             // when
-            val isStrikeout = game.addStrike()
+            val isStrikeout = game.gameState.addStrike()
 
             // then
             assertThat(isStrikeout).isFalse()
         }
 
         @Test
-        fun `3스트라이크가 되면 true를 반환한다`() {
+        fun `gameState를 통해 3스트라이크가 되면 true를 반환한다`() {
             // given
             val game = createGame(status = GameStatus.IN_PROGRESS)
-            game.addStrike()
-            game.addStrike()
+            game.gameState.addStrike()
+            game.gameState.addStrike()
 
             // when
-            val isStrikeout = game.addStrike()
+            val isStrikeout = game.gameState.addStrike()
 
             // then
             assertThat(isStrikeout).isTrue()
-        }
-
-        @Test
-        fun `진행 중이 아닌 경기에서는 스트라이크를 추가할 수 없다`() {
-            // given
-            val game = createGame(status = GameStatus.POSTPONED)
-
-            // when & then
-            assertThatThrownBy { game.addStrike() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("진행 중인 경기만")
         }
     }
 
@@ -1805,7 +1706,7 @@ class GameTest {
             game.lockForScorer(100L)
 
             // then
-            assertThat(game.scorerId).isEqualTo(100L)
+            assertThat(game.scorerLock.scorerId).isEqualTo(100L)
             assertThat(game.isLocked).isTrue()
             assertThat(game.isLockedByScorer(100L)).isTrue()
         }
@@ -1820,7 +1721,7 @@ class GameTest {
             game.lockForScorer(100L)
 
             // then
-            assertThat(game.scorerId).isEqualTo(100L)
+            assertThat(game.scorerLock.scorerId).isEqualTo(100L)
         }
 
         @Test
@@ -1845,7 +1746,7 @@ class GameTest {
             game.unlockScorer(100L)
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -1881,7 +1782,7 @@ class GameTest {
             game.forceUnlockScorer()
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -1906,11 +1807,11 @@ class GameTest {
                     competition = competition,
                     homeTeam = homeTeam,
                     awayTeam = awayTeam,
-                    scorerId = 100L,
+                    scorerLock = ScorerLock(scorerId = 100L, lockedAt = LocalDateTime.now()),
                 )
 
             // then
-            assertThat(game.scorerId).isEqualTo(100L)
+            assertThat(game.scorerLock.scorerId).isEqualTo(100L)
             assertThat(game.isLocked).isTrue()
         }
 
@@ -1958,7 +1859,7 @@ class GameTest {
             game.finish(game.gameTeams)
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -1971,7 +1872,7 @@ class GameTest {
             game.lockForScorer(100L)
 
             // then
-            assertThat(game.lockedAt).isNotNull()
+            assertThat(game.scorerLock.lockedAt).isNotNull()
         }
 
         @Test
@@ -1984,7 +1885,7 @@ class GameTest {
             game.cancel("테스트 취소")
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -1998,7 +1899,7 @@ class GameTest {
             game.unlockScorer(100L)
 
             // then
-            assertThat(game.lockedAt).isNull()
+            assertThat(game.scorerLock.lockedAt).isNull()
         }
 
         @Test
@@ -2011,7 +1912,7 @@ class GameTest {
             game.forceUnlockScorer()
 
             // then
-            assertThat(game.lockedAt).isNull()
+            assertThat(game.scorerLock.lockedAt).isNull()
         }
 
         @Test
@@ -2040,7 +1941,7 @@ class GameTest {
             )
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -2058,7 +1959,7 @@ class GameTest {
             )
 
             // then
-            assertThat(game.scorerId).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
             assertThat(game.isLocked).isFalse()
         }
 
@@ -2072,8 +1973,7 @@ class GameTest {
                     competition = competition,
                     homeTeam = homeTeam,
                     awayTeam = awayTeam,
-                    scorerId = 100L,
-                    lockedAt = LocalDateTime.now().minusMinutes(31),
+                    scorerLock = ScorerLock(scorerId = 100L, lockedAt = LocalDateTime.now().minusMinutes(31)),
                 )
 
             // then
@@ -2090,8 +1990,7 @@ class GameTest {
                     competition = competition,
                     homeTeam = homeTeam,
                     awayTeam = awayTeam,
-                    scorerId = 100L,
-                    lockedAt = LocalDateTime.now().minusMinutes(10),
+                    scorerLock = ScorerLock(scorerId = 100L, lockedAt = LocalDateTime.now().minusMinutes(10)),
                 )
 
             // then
@@ -2117,16 +2016,15 @@ class GameTest {
                     competition = competition,
                     homeTeam = homeTeam,
                     awayTeam = awayTeam,
-                    scorerId = 100L,
-                    lockedAt = LocalDateTime.now().minusMinutes(31),
+                    scorerLock = ScorerLock(scorerId = 100L, lockedAt = LocalDateTime.now().minusMinutes(31)),
                 )
 
             // when
             game.expireLock()
 
             // then
-            assertThat(game.scorerId).isNull()
-            assertThat(game.lockedAt).isNull()
+            assertThat(game.scorerLock.scorerId).isNull()
+            assertThat(game.scorerLock.lockedAt).isNull()
             assertThat(game.isLocked).isFalse()
         }
     }
@@ -2523,6 +2421,246 @@ class GameTest {
 
             // then
             assertThat(result).isFalse()
+        }
+    }
+
+    @Nested
+    @DisplayName("시간 제한 (플래그 기반)")
+    inner class TimeLimitTests {
+        private fun createCompetitionWithTimeLimit(timeLimitMinutes: Int): Competition =
+            Competition(
+                league = league,
+                name = "시간 제한 대회",
+                year = 2025,
+                season = 1,
+                type = CompetitionType.LEAGUE,
+                startDate = LocalDate.of(2025, 3, 1),
+                status = CompetitionStatus.IN_PROGRESS,
+                gameRules = GameRules(timeLimitMinutes = timeLimitMinutes),
+            )
+
+        private fun createGameWithTimeLimit(
+            status: GameStatus = GameStatus.IN_PROGRESS,
+            timeLimitMinutes: Int = 120,
+            currentInning: Int = 5,
+            isTopInning: Boolean = true,
+            timeLimitReached: Boolean = false,
+        ): Game {
+            val comp = createCompetitionWithTimeLimit(timeLimitMinutes)
+            val homeTeam = createTeam("홈팀", id = 1L)
+            val awayTeam = createTeam("원정팀", city = "부산", id = 2L)
+            return Game.createForTest(
+                competition = comp,
+                homeTeam = homeTeam,
+                awayTeam = awayTeam,
+                scheduledAt = LocalDateTime.of(2025, 4, 15, 14, 0),
+                status = status,
+                currentInning = currentInning,
+                isTopInning = isTopInning,
+                totalInnings = 9,
+                timeLimitReached = timeLimitReached,
+            )
+        }
+
+        @Nested
+        @DisplayName("activateTimeLimit - 시간 제한 플래그 활성화")
+        inner class ActivateTimeLimit {
+            @Test
+            fun `진행 중인 경기에서 시간 제한 플래그를 활성화할 수 있다`() {
+                // given
+                val game = createGameWithTimeLimit()
+
+                // when
+                game.activateTimeLimit()
+
+                // then
+                assertThat(game.timeLimitReached).isTrue()
+                assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS) // 즉시 종료 아님
+                assertThat(game.endedAt).isNull()
+                assertThat(game.note).contains("시간 제한 도달")
+            }
+
+            @Test
+            fun `진행 중이 아닌 경기는 시간 제한을 활성화할 수 없다`() {
+                // given
+                val game = createGameWithTimeLimit(status = GameStatus.SCHEDULED)
+
+                // when & then
+                assertThatThrownBy { game.activateTimeLimit() }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+                    .hasMessageContaining("진행 중인 경기만")
+            }
+
+            @Test
+            fun `시간 제한이 설정되지 않은 대회에서는 활성화할 수 없다`() {
+                // given - 시간 제한 없는 기본 대회
+                val game = createGame(status = GameStatus.IN_PROGRESS)
+
+                // when & then
+                assertThatThrownBy { game.activateTimeLimit() }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+                    .hasMessageContaining("시간 제한이 설정되지 않은")
+            }
+
+            @Test
+            fun `이미 활성화된 상태에서 중복 활성화하면 예외가 발생한다`() {
+                // given
+                val game = createGameWithTimeLimit(timeLimitReached = true)
+
+                // when & then
+                assertThatThrownBy { game.activateTimeLimit() }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+                    .hasMessageContaining("이미 시간 제한이 활성화")
+            }
+        }
+
+        @Nested
+        @DisplayName("nextHalfInning - 시간 제한 이닝 전환 로직")
+        inner class TimeLimitInningTransition {
+            @Test
+            fun `초공 종료 시 홈팀 리드면 말공 생략하고 경기 종료`() {
+                // given: 5회초 종료, 홈팀 리드, 시간 제한 활성화
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = true,
+                        timeLimitReached = true,
+                    )
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(1)
+
+                // when
+                val result = game.nextHalfInning(gameTeams = gameTeams)
+
+                // then
+                assertThat(result).isEqualTo(TiebreakerResult.TIME_LIMIT_GAME_ENDED)
+                assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+                assertThat(game.endedAt).isNotNull()
+                assertThat(game.note).contains("시간 제한 종료")
+                assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                    .isEqualTo(GameResult.WIN)
+                assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                    .isEqualTo(GameResult.LOSS)
+            }
+
+            @Test
+            fun `초공 종료 시 동점이면 말공 생략하고 경기 종료`() {
+                // given: 5회초 종료, 동점, 시간 제한 활성화
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = true,
+                        timeLimitReached = true,
+                    )
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(2)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(2)
+
+                // when
+                val result = game.nextHalfInning(gameTeams = gameTeams)
+
+                // then
+                assertThat(result).isEqualTo(TiebreakerResult.TIME_LIMIT_GAME_ENDED)
+                assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+                assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                    .isEqualTo(GameResult.DRAW)
+                assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                    .isEqualTo(GameResult.DRAW)
+            }
+
+            @Test
+            fun `초공 종료 시 원정팀 리드면 말공까지 진행한다`() {
+                // given: 5회초 종료, 원정팀 리드, 시간 제한 활성화
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = true,
+                        timeLimitReached = true,
+                    )
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(1)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+                // when
+                val result = game.nextHalfInning(gameTeams = gameTeams)
+
+                // then: 경기 종료가 아니라 말 이닝으로 전환
+                assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+                assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+                assertThat(game.isTopInning).isFalse()
+                assertThat(game.currentInning).isEqualTo(5)
+            }
+
+            @Test
+            fun `말공 종료 시 다음 이닝 진입 차단하고 경기 종료`() {
+                // given: 5회말 종료, 시간 제한 활성화
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = false,
+                        timeLimitReached = true,
+                    )
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(4)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+                // when
+                val result = game.nextHalfInning(gameTeams = gameTeams)
+
+                // then
+                assertThat(result).isEqualTo(TiebreakerResult.TIME_LIMIT_GAME_ENDED)
+                assertThat(game.status).isEqualTo(GameStatus.FINISHED)
+                assertThat(game.endedAt).isNotNull()
+                assertThat(gameTeams.first { it.homeAway == HomeAway.HOME }.result)
+                    .isEqualTo(GameResult.WIN)
+                assertThat(gameTeams.first { it.homeAway == HomeAway.AWAY }.result)
+                    .isEqualTo(GameResult.LOSS)
+            }
+
+            @Test
+            fun `시간 제한 미활성화 시 정상 이닝 전환`() {
+                // given: 시간 제한 플래그 비활성화
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = true,
+                        timeLimitReached = false,
+                    )
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(3)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(1)
+
+                // when
+                val result = game.nextHalfInning(gameTeams = gameTeams)
+
+                // then: 정상 이닝 전환 (시간 제한 종료 아님)
+                assertThat(result).isEqualTo(TiebreakerResult.NORMAL)
+                assertThat(game.status).isEqualTo(GameStatus.IN_PROGRESS)
+                assertThat(game.isTopInning).isFalse()
+            }
+
+            @Test
+            fun `시간 제한 종료 후 기록원 잠금이 해제된다`() {
+                // given
+                val game =
+                    createGameWithTimeLimit(
+                        currentInning = 5,
+                        isTopInning = false,
+                        timeLimitReached = true,
+                    )
+                game.lockForScorer(100L)
+                val gameTeams = game.gameTeams
+                gameTeams.first { it.homeAway == HomeAway.HOME }.addScore(5)
+                gameTeams.first { it.homeAway == HomeAway.AWAY }.addScore(3)
+
+                // when
+                game.nextHalfInning(gameTeams = gameTeams)
+
+                // then
+                assertThat(game.scorerLock.scorerId).isNull()
+                assertThat(game.scorerLock.lockedAt).isNull()
+            }
         }
     }
 }

@@ -19,6 +19,8 @@ import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
+import com.nextup.scorer.dto.game.PlayerExitRequestDto
+import com.nextup.scorer.dto.game.PlayerExitResponse
 import com.nextup.scorer.dto.game.PositionChangeRequestDto
 import com.nextup.scorer.dto.game.PositionChangeResponse
 import com.nextup.scorer.dto.game.PositionSwapRequestDto
@@ -214,6 +216,27 @@ class GameScorerController(
         @AuthenticationPrincipal scorerId: Long,
     ): ApiResponse<GameResponse> {
         val game = gameLifecycleService.advanceHalfInning(gameId, scorerId)
+        return ApiResponse.success(game.toResponse())
+    }
+
+    /**
+     * 시간 제한 도달을 선언합니다.
+     *
+     * 야구 규칙에 따라 시간 제한 도달 시 즉시 종료가 아니라
+     * "다음 이닝에 진입하지 않는" 방식으로 동작합니다.
+     * 현재 이닝은 정상 진행되며, 이닝 전환(half-inning) 시점에서 자동으로 경기가 종료됩니다.
+     *
+     * - 초공 종료 시: 원정팀이 리드가 아니면 말공 생략 후 종료
+     * - 초공 종료 시: 원정팀이 리드하면 말공까지 진행 후 종료
+     * - 말공 종료 시: 다음 이닝 진입 차단 후 종료
+     */
+    @PostMapping("/{gameId}/time-limit")
+    @ResponseStatus(HttpStatus.OK)
+    fun activateTimeLimit(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+    ): ApiResponse<GameResponse> {
+        val game = gameLifecycleService.activateTimeLimit(gameId, scorerId)
         return ApiResponse.success(game.toResponse())
     }
 
@@ -424,5 +447,31 @@ class GameScorerController(
         val events =
             gamePositionChangeService.swapPositions(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(events.toPositionSwapResponse())
+    }
+
+    /**
+     * 교체 없이 선수를 퇴장시킵니다 (부상/개인 사유 등).
+     *
+     * 교체 선수가 없는 상황에서 선수가 경기에서 빠져야 할 때 사용합니다.
+     * 퇴장 후 인원 부족이 감지되면 응답에 포함하여 기록원에게 몰수패 판단을 요청합니다.
+     *
+     * @see GameSubstitutionService.removePlayerWithoutSubstitution
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/{gameId}/player-exits")
+    @ResponseStatus(HttpStatus.OK)
+    fun removePlayerWithoutSubstitution(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+        @RequestBody @Valid request: PlayerExitRequestDto,
+    ): ApiResponse<PlayerExitResponse> {
+        val result =
+            gameSubstitutionService.removePlayerWithoutSubstitution(
+                gameId = gameId,
+                gamePlayerId = request.gamePlayerId,
+                inning = request.inning,
+                scorerId = scorerId,
+            )
+        return ApiResponse.success(PlayerExitResponse.from(result))
     }
 }

@@ -1,5 +1,6 @@
 package com.nextup.core.port.repository
 
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.stats.SeasonFieldingStats
 
 /**
@@ -24,6 +25,16 @@ interface SeasonFieldingStatsRepositoryPort {
         playerId: Long,
         year: Int,
         teamId: Long?,
+    ): SeasonFieldingStats?
+
+    /**
+     * 선수 ID, 연도, 팀 ID, 대회 유형으로 시즌 수비 통계를 조회합니다.
+     */
+    fun findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+        playerId: Long,
+        year: Int,
+        teamId: Long?,
+        competitionType: CompetitionType,
     ): SeasonFieldingStats?
 
     /**

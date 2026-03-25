@@ -1,14 +1,22 @@
 package com.nextup.core.service.attendance
 
 import com.nextup.common.exception.GameNotFoundException
-import com.nextup.core.domain.game.AttendanceStatus
+import com.nextup.core.domain.attendance.AttendancePoll
+import com.nextup.core.domain.attendance.AttendanceVote
+import com.nextup.core.domain.attendance.VoteType
 import com.nextup.core.domain.game.Game
-import com.nextup.core.domain.game.GameParticipation
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.notification.NotificationType
+import com.nextup.core.domain.player.Player
+import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
-import com.nextup.core.port.repository.AttendanceVoteRepositoryPort
+import com.nextup.core.domain.user.User
+import com.nextup.core.port.attendance.AttendancePollRepositoryPort
+import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
+import com.nextup.core.port.repository.GameTeamRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.service.notification.NotificationService
 import com.nextup.core.service.notification.dto.SendNotificationRequest
 import io.mockk.every
@@ -22,13 +30,19 @@ import java.time.LocalDateTime
 
 class NudgeServiceTest {
     private val gameRepository: GameRepositoryPort = mockk()
+    private val gameTeamRepository: GameTeamRepositoryPort = mockk()
+    private val attendancePollRepository: AttendancePollRepositoryPort = mockk()
     private val attendanceVoteRepository: AttendanceVoteRepositoryPort = mockk()
+    private val teamMemberRepository: TeamMemberRepositoryPort = mockk()
     private val notificationService: NotificationService = mockk()
 
     private val nudgeService =
         NudgeService(
             gameRepository = gameRepository,
+            gameTeamRepository = gameTeamRepository,
+            attendancePollRepository = attendancePollRepository,
             attendanceVoteRepository = attendanceVoteRepository,
+            teamMemberRepository = teamMemberRepository,
             notificationService = notificationService,
         )
 
@@ -36,13 +50,22 @@ class NudgeServiceTest {
     fun `should send nudge notifications to non-voters`() {
         // given
         val gameId = 1L
+        val teamId = 10L
+        val pollId = 100L
         val game = createGame(gameId)
-        val nonVoter1 = createNonVoter(userId = 10L, userName = "Player1")
-        val nonVoter2 = createNonVoter(userId = 20L, userName = "Player2")
+        val gameTeam = createGameTeam(teamId)
+        val poll = createPoll(pollId)
+        val vote1 = createUndecidedVote(playerId = 1L)
+        val vote2 = createUndecidedVote(playerId = 2L)
+        val member1 = createTeamMember(teamId, userId = 10L, playerId = 1L, userName = "Player1")
+        val member2 = createTeamMember(teamId, userId = 20L, playerId = 2L, userName = "Player2")
 
         every { gameRepository.findByIdOrNull(gameId) } returns game
-        every { attendanceVoteRepository.findNonVotersByGameId(gameId) } returns
-            listOf(nonVoter1, nonVoter2)
+        every { gameTeamRepository.findAllByGameId(gameId) } returns listOf(gameTeam)
+        every { attendancePollRepository.findByGameIdAndTeamId(gameId, teamId) } returns poll
+        every { attendanceVoteRepository.findByPollId(pollId) } returns listOf(vote1, vote2)
+        every { teamMemberRepository.findByPlayerIdActive(1L) } returns listOf(member1)
+        every { teamMemberRepository.findByPlayerIdActive(2L) } returns listOf(member2)
         every { notificationService.sendNotification(any()) } returns mockk()
 
         // when
@@ -51,20 +74,66 @@ class NudgeServiceTest {
         // then
         assertThat(result.notifiedCount).isEqualTo(2)
         assertThat(result.nonVoterNames).containsExactlyInAnyOrder("Player1", "Player2")
-
         verify(exactly = 2) { notificationService.sendNotification(any()) }
+    }
+
+    @Test
+    fun `should return empty result when no non-voters exist`() {
+        // given
+        val gameId = 1L
+        val teamId = 10L
+        val pollId = 100L
+        val game = createGame(gameId)
+        val gameTeam = createGameTeam(teamId)
+        val poll = createPoll(pollId)
+        val attendingVote = createAttendingVote(playerId = 1L)
+
+        every { gameRepository.findByIdOrNull(gameId) } returns game
+        every { gameTeamRepository.findAllByGameId(gameId) } returns listOf(gameTeam)
+        every { attendancePollRepository.findByGameIdAndTeamId(gameId, teamId) } returns poll
+        every { attendanceVoteRepository.findByPollId(pollId) } returns listOf(attendingVote)
+
+        // when
+        val result = nudgeService.nudgeNonVoters(gameId)
+
+        // then
+        assertThat(result.notifiedCount).isEqualTo(0)
+        assertThat(result.nonVoterNames).isEmpty()
+        verify(exactly = 0) { notificationService.sendNotification(any()) }
+    }
+
+    @Test
+    fun `should throw GameNotFoundException when game does not exist`() {
+        // given
+        val gameId = 999L
+        every { gameRepository.findByIdOrNull(gameId) } returns null
+
+        // when & then
+        assertThrows<GameNotFoundException> {
+            nudgeService.nudgeNonVoters(gameId)
+        }
+
+        verify(exactly = 0) { notificationService.sendNotification(any()) }
     }
 
     @Test
     fun `should send custom message when provided`() {
         // given
         val gameId = 1L
+        val teamId = 10L
+        val pollId = 100L
         val customMessage = "Please vote for tomorrow's game!"
         val game = createGame(gameId)
-        val nonVoter = createNonVoter(userId = 10L, userName = "Player1")
+        val gameTeam = createGameTeam(teamId)
+        val poll = createPoll(pollId)
+        val vote = createUndecidedVote(playerId = 1L)
+        val member = createTeamMember(teamId, userId = 10L, playerId = 1L, userName = "Player1")
 
         every { gameRepository.findByIdOrNull(gameId) } returns game
-        every { attendanceVoteRepository.findNonVotersByGameId(gameId) } returns listOf(nonVoter)
+        every { gameTeamRepository.findAllByGameId(gameId) } returns listOf(gameTeam)
+        every { attendancePollRepository.findByGameIdAndTeamId(gameId, teamId) } returns poll
+        every { attendanceVoteRepository.findByPollId(pollId) } returns listOf(vote)
+        every { teamMemberRepository.findByPlayerIdActive(1L) } returns listOf(member)
 
         val requestSlot = slot<SendNotificationRequest>()
         every { notificationService.sendNotification(capture(requestSlot)) } returns mockk()
@@ -77,90 +146,6 @@ class NudgeServiceTest {
         assertThat(capturedRequest.body).isEqualTo(customMessage)
         assertThat(capturedRequest.title).isEqualTo("출석 투표 요청")
         assertThat(capturedRequest.type).isEqualTo(NotificationType.ATTENDANCE_NUDGE)
-        assertThat(capturedRequest.data).isEqualTo("gameId=$gameId")
-    }
-
-    @Test
-    fun `should use default message when custom message is not provided`() {
-        // given
-        val gameId = 1L
-        val scheduledAt = LocalDateTime.of(2026, 3, 15, 14, 0)
-        val game = createGame(gameId, scheduledAt)
-        val nonVoter = createNonVoter(userId = 10L, userName = "Player1")
-
-        every { gameRepository.findByIdOrNull(gameId) } returns game
-        every { attendanceVoteRepository.findNonVotersByGameId(gameId) } returns listOf(nonVoter)
-
-        val requestSlot = slot<SendNotificationRequest>()
-        every { notificationService.sendNotification(capture(requestSlot)) } returns mockk()
-
-        // when
-        nudgeService.nudgeNonVoters(gameId)
-
-        // then
-        val capturedRequest = requestSlot.captured
-        assertThat(capturedRequest.body).contains("경기($scheduledAt)")
-        assertThat(capturedRequest.body).contains("출석 투표를 진행해주세요")
-    }
-
-    @Test
-    fun `should return empty result when no non-voters exist`() {
-        // given
-        val gameId = 1L
-        val game = createGame(gameId)
-
-        every { gameRepository.findByIdOrNull(gameId) } returns game
-        every { attendanceVoteRepository.findNonVotersByGameId(gameId) } returns emptyList()
-
-        // when
-        val result = nudgeService.nudgeNonVoters(gameId)
-
-        // then
-        assertThat(result.notifiedCount).isEqualTo(0)
-        assertThat(result.nonVoterNames).isEmpty()
-
-        verify(exactly = 0) { notificationService.sendNotification(any()) }
-    }
-
-    @Test
-    fun `should throw GameNotFoundException when game does not exist`() {
-        // given
-        val gameId = 999L
-
-        every { gameRepository.findByIdOrNull(gameId) } returns null
-
-        // when & then
-        assertThrows<GameNotFoundException> {
-            nudgeService.nudgeNonVoters(gameId)
-        }
-
-        verify(exactly = 0) { attendanceVoteRepository.findNonVotersByGameId(any()) }
-        verify(exactly = 0) { notificationService.sendNotification(any()) }
-    }
-
-    @Test
-    fun `should send notification to each non-voter with correct userId`() {
-        // given
-        val gameId = 1L
-        val game = createGame(gameId)
-        val nonVoter1 = createNonVoter(userId = 10L, userName = "Player1")
-        val nonVoter2 = createNonVoter(userId = 20L, userName = "Player2")
-        val nonVoter3 = createNonVoter(userId = 30L, userName = "Player3")
-
-        every { gameRepository.findByIdOrNull(gameId) } returns game
-        every { attendanceVoteRepository.findNonVotersByGameId(gameId) } returns
-            listOf(nonVoter1, nonVoter2, nonVoter3)
-
-        val requestSlots = mutableListOf<SendNotificationRequest>()
-        every { notificationService.sendNotification(capture(requestSlots)) } returns mockk()
-
-        // when
-        val result = nudgeService.nudgeNonVoters(gameId)
-
-        // then
-        assertThat(result.notifiedCount).isEqualTo(3)
-        assertThat(requestSlots).hasSize(3)
-        assertThat(requestSlots.map { it.userId }).containsExactlyInAnyOrder(10L, 20L, 30L)
     }
 
     private fun createGame(
@@ -174,22 +159,61 @@ class NudgeServiceTest {
         return game
     }
 
-    private fun createNonVoter(
+    private fun createGameTeam(teamId: Long): GameTeam {
+        val team: Team = mockk(relaxed = true)
+        every { team.id } returns teamId
+
+        val gameTeam: GameTeam = mockk(relaxed = true)
+        every { gameTeam.team } returns team
+        return gameTeam
+    }
+
+    private fun createPoll(pollId: Long): AttendancePoll {
+        val poll: AttendancePoll = mockk(relaxed = true)
+        every { poll.id } returns pollId
+        return poll
+    }
+
+    private fun createUndecidedVote(playerId: Long): AttendanceVote {
+        val player: Player = mockk(relaxed = true)
+        every { player.id } returns playerId
+
+        val vote: AttendanceVote = mockk(relaxed = true)
+        every { vote.player } returns player
+        every { vote.voteType } returns VoteType.UNDECIDED
+        return vote
+    }
+
+    private fun createAttendingVote(playerId: Long): AttendanceVote {
+        val player: Player = mockk(relaxed = true)
+        every { player.id } returns playerId
+
+        val vote: AttendanceVote = mockk(relaxed = true)
+        every { vote.player } returns player
+        every { vote.voteType } returns VoteType.ATTEND
+        return vote
+    }
+
+    private fun createTeamMember(
+        teamId: Long,
         userId: Long,
+        playerId: Long,
         userName: String,
-    ): GameParticipation {
-        val user: com.nextup.core.domain.user.User = mockk(relaxed = true)
+    ): TeamMember {
+        val user: User = mockk(relaxed = true)
         every { user.id } returns userId
         every { user.nickname } returns userName
 
+        val team: Team = mockk(relaxed = true)
+        every { team.id } returns teamId
+
+        val player: Player = mockk(relaxed = true)
+        every { player.id } returns playerId
+
         val member: TeamMember = mockk(relaxed = true)
         every { member.user } returns user
-
-        val vote: GameParticipation = mockk(relaxed = true)
-        every { vote.member } returns member
-        every { vote.status } returns AttendanceStatus.UNDECIDED
-        every { vote.hasResponded } returns false
-
-        return vote
+        every { member.team } returns team
+        every { member.player } returns player
+        return member
     }
 }

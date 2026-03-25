@@ -16,6 +16,7 @@ import com.nextup.core.domain.game.GameStatus
 import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.PlateAppearanceResult
+import com.nextup.core.domain.game.PlayerShortageResult
 import com.nextup.core.domain.league.League
 import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
@@ -33,6 +34,7 @@ import com.nextup.core.service.game.dto.PlateAppearanceRecordResult
 import com.nextup.core.service.game.dto.TimelineEventDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
+import com.nextup.scorer.dto.game.PlayerExitRequestDto
 import com.nextup.scorer.dto.game.RunnerMovementDto
 import com.nextup.scorer.dto.game.SubstitutionRequestDto
 import io.mockk.every
@@ -436,6 +438,63 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.status").value("FORFEITED"))
 
             verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.FORFEIT, scorerId) }
+        }
+
+        @Test
+        fun `should reject time limit end reason and guide to dedicated API`() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val request = GameEndRequestDto(reason = GameEndReason.TIME_LIMIT)
+            every {
+                gameLifecycleService.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId)
+            } throws
+                com.nextup.common.exception.InvalidGameStateException(
+                    "시간 제한 종료는 전용 API(/time-limit)를 사용해주세요.",
+                )
+
+            // when & then: standaloneSetup에 ExceptionHandler 미설정으로 ServletException 발생
+            org.junit.jupiter.api.assertThrows<jakarta.servlet.ServletException> {
+                mockMvc.perform(
+                    post("/api/v1/scorer/games/$gameId/end")
+                        .param("scorerId", scorerId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)),
+                )
+            }
+
+            verify(exactly = 1) { gameLifecycleService.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/time-limit")
+    inner class ActivateTimeLimit {
+
+        @Test
+        fun `should activate time limit successfully`() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game =
+                createGame(gameId, GameStatus.IN_PROGRESS).apply {
+                    currentInning = 5
+                    isTopInning = true
+                }
+            every { gameLifecycleService.activateTimeLimit(gameId, scorerId) } returns game
+
+            // when & then
+            mockMvc.perform(
+                post("/api/v1/scorer/games/$gameId/time-limit")
+                    .param("scorerId", scorerId.toString())
+                    .contentType(MediaType.APPLICATION_JSON),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(gameId))
+                .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+
+            verify(exactly = 1) { gameLifecycleService.activateTimeLimit(gameId, scorerId) }
         }
     }
 
@@ -969,6 +1028,96 @@ class GameScorerControllerTest {
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
 
             verify(exactly = 1) { gameLifecycleService.resumeGame(1L, scorerId) }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/scorer/games/{gameId}/player-exits")
+    inner class RemovePlayerWithoutSubstitution {
+        @Test
+        fun `should remove player without substitution and return no shortage`() {
+            // given
+            val scorerId = 100L
+            val result =
+                PlayerShortageResult.noShortage(
+                    gameTeamId = 1L,
+                    teamId = 10L,
+                    activePlayerCount = 9,
+                )
+            every {
+                gameSubstitutionService.removePlayerWithoutSubstitution(
+                    gameId = 1L,
+                    gamePlayerId = 50L,
+                    inning = 5,
+                    scorerId = scorerId,
+                )
+            } returns result
+
+            val request =
+                PlayerExitRequestDto(
+                    gamePlayerId = 50L,
+                    inning = 5,
+                )
+
+            // when & then
+            mockMvc.perform(
+                post("/api/v1/scorer/games/1/player-exits")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isShortage").value(false))
+                .andExpect(jsonPath("$.data.activePlayerCount").value(9))
+                .andExpect(jsonPath("$.data.gameTeamId").value(1))
+                .andExpect(jsonPath("$.data.teamId").value(10))
+
+            verify(exactly = 1) {
+                gameSubstitutionService.removePlayerWithoutSubstitution(1L, 50L, 5, scorerId)
+            }
+        }
+
+        @Test
+        fun `should detect shortage when player count drops below minimum`() {
+            // given
+            val scorerId = 100L
+            val result =
+                PlayerShortageResult.shortage(
+                    gameTeamId = 2L,
+                    teamId = 20L,
+                    activePlayerCount = 8,
+                )
+            every {
+                gameSubstitutionService.removePlayerWithoutSubstitution(
+                    gameId = 1L,
+                    gamePlayerId = 60L,
+                    inning = 3,
+                    scorerId = scorerId,
+                )
+            } returns result
+
+            val request =
+                PlayerExitRequestDto(
+                    gamePlayerId = 60L,
+                    inning = 3,
+                )
+
+            // when & then
+            mockMvc.perform(
+                post("/api/v1/scorer/games/1/player-exits")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isShortage").value(true))
+                .andExpect(jsonPath("$.data.activePlayerCount").value(8))
+                .andExpect(jsonPath("$.data.minimumRequired").value(9))
+                .andExpect(jsonPath("$.data.message").exists())
+
+            verify(exactly = 1) {
+                gameSubstitutionService.removePlayerWithoutSubstitution(1L, 60L, 3, scorerId)
+            }
         }
     }
 

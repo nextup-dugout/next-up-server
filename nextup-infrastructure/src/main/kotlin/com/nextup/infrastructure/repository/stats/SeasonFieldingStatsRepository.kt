@@ -1,5 +1,6 @@
 package com.nextup.infrastructure.repository.stats
 
+import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.stats.SeasonFieldingStats
 import com.nextup.core.port.repository.SeasonFieldingStatsRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
@@ -35,6 +36,24 @@ interface SeasonFieldingStatsRepository :
     ): SeasonFieldingStats?
 
     /**
+     * 선수 ID, 연도, 팀 ID, 대회 유형으로 시즌 수비 통계를 조회합니다.
+     */
+    @Query(
+        """
+        SELECT s FROM SeasonFieldingStats s
+        WHERE s.player.id = :playerId AND s.year = :year
+        AND (s.teamId = :teamId OR (s.teamId IS NULL AND :teamId IS NULL))
+        AND s.competitionType = :competitionType
+    """,
+    )
+    override fun findByPlayerIdAndYearAndTeamIdAndCompetitionType(
+        @Param("playerId") playerId: Long,
+        @Param("year") year: Int,
+        @Param("teamId") teamId: Long?,
+        @Param("competitionType") competitionType: CompetitionType,
+    ): SeasonFieldingStats?
+
+    /**
      * 선수 ID로 모든 시즌 수비 통계를 조회합니다.
      */
     @Query("SELECT s FROM SeasonFieldingStats s WHERE s.player.id = :playerId ORDER BY s.year DESC")
@@ -52,7 +71,7 @@ interface SeasonFieldingStatsRepository :
 
     /**
      * 경기 ID로 해당 경기에 참여한 선수들의 시즌 수비 통계를 조회합니다.
-     * FieldingRecord → GamePlayer → Player → SeasonFieldingStats 조인.
+     * FieldingRecord -> GamePlayer -> Player -> SeasonFieldingStats 조인.
      */
     @Query(
         """

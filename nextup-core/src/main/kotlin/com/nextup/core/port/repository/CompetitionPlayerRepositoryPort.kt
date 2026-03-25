@@ -70,4 +70,13 @@ interface CompetitionPlayerRepositoryPort {
         playerId: Long,
         statuses: List<CompetitionPlayerStatus>,
     ): List<CompetitionPlayer>
+
+    /**
+     * 대회에서 선수의 활성(WITHDRAWN이 아닌) 등록을 조회합니다.
+     * 크로스 등록 방지: 동일 대회 타팀 이중 등록 여부 확인에 사용합니다.
+     */
+    fun findActiveByCompetitionIdAndPlayerId(
+        competitionId: Long,
+        playerId: Long,
+    ): CompetitionPlayer?
 }

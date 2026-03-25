@@ -1,6 +1,7 @@
 package com.nextup.core.service.stadium
 
 import com.nextup.common.exception.BookingNotFoundException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.common.exception.SlotNotFoundException
 import com.nextup.common.exception.StadiumNotFoundException
@@ -122,12 +123,21 @@ class StadiumService(
 
     /**
      * 예약을 취소합니다.
+     *
+     * @param bookingId 예약 ID
+     * @param userId 요청자 사용자 ID (소유권 검증용)
+     * @throws ForbiddenException 예약 소유자가 아닌 경우
      */
     @Transactional
-    fun cancelBooking(bookingId: Long): StadiumBooking {
+    fun cancelBooking(
+        bookingId: Long,
+        userId: Long,
+    ): StadiumBooking {
         val booking =
             bookingRepository.findByIdOrNull(bookingId)
                 ?: throw BookingNotFoundException(bookingId)
+
+        verifyBookingOwnership(booking, userId)
 
         // 예약 취소 (슬롯 상태 복원 포함 - 비즈니스 로직은 Entity에 위임)
         booking.cancel()
@@ -137,17 +147,43 @@ class StadiumService(
 
     /**
      * 예약을 완료 처리합니다.
+     *
+     * @param bookingId 예약 ID
+     * @param userId 요청자 사용자 ID (소유권 검증용)
+     * @throws ForbiddenException 예약 소유자가 아닌 경우
      */
     @Transactional
-    fun completeBooking(bookingId: Long): StadiumBooking {
+    fun completeBooking(
+        bookingId: Long,
+        userId: Long,
+    ): StadiumBooking {
         val booking =
             bookingRepository.findByIdOrNull(bookingId)
                 ?: throw BookingNotFoundException(bookingId)
+
+        verifyBookingOwnership(booking, userId)
 
         // 예약 완료 처리
         booking.complete()
 
         return booking
+    }
+
+    /**
+     * 예약 소유권을 검증합니다.
+     *
+     * @throws ForbiddenException 요청자가 예약 생성자가 아닌 경우
+     */
+    private fun verifyBookingOwnership(
+        booking: StadiumBooking,
+        userId: Long,
+    ) {
+        if (booking.bookedBy != userId) {
+            throw ForbiddenException(
+                "BOOKING_ACCESS_DENIED",
+                "예약에 대한 권한이 없습니다. bookingId=${booking.id}",
+            )
+        }
     }
 
     /**

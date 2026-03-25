@@ -52,4 +52,15 @@ interface CompetitionPlayerJpaRepository : JpaRepository<CompetitionPlayer, Long
         playerId: Long,
         statuses: List<CompetitionPlayerStatus>,
     ): List<CompetitionPlayer>
+
+    @Query(
+        "SELECT cp FROM CompetitionPlayer cp " +
+            "WHERE cp.competition.id = :competitionId " +
+            "AND cp.player.id = :playerId " +
+            "AND cp.status <> 'WITHDRAWN'",
+    )
+    fun findActiveByCompetitionIdAndPlayerId(
+        competitionId: Long,
+        playerId: Long,
+    ): CompetitionPlayer?
 }

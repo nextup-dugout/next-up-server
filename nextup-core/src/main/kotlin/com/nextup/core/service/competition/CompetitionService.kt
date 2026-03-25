@@ -1,20 +1,24 @@
 package com.nextup.core.service.competition
 
 import com.nextup.common.exception.CompetitionNotFoundException
+import com.nextup.common.exception.CrossRegistrationException
 import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.common.exception.LeagueNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.competition.Competition
+import com.nextup.core.domain.competition.CompetitionPlayer
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.game.GameStatus
+import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.team.Team
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import org.springframework.stereotype.Service
@@ -35,6 +39,7 @@ class CompetitionService(
     private val gameRepository: GameRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
     private val bracketEntryRepository: BracketEntryRepositoryPort,
+    private val playerRepository: PlayerRepositoryPort,
 ) {
     /**
      * 대회를 생성합니다.
@@ -208,6 +213,89 @@ class CompetitionService(
                 CompetitionPlayerStatus.ACTIVE,
             )
         return activePlayers.groupBy { it.team }.mapValues { it.value.size }
+    }
+
+    /**
+     * 대회에 선수를 등록합니다.
+     *
+     * 크로스 등록 방지: 동일 대회에 이미 다른 팀으로 등록된 선수는 등록할 수 없습니다.
+     *
+     * @param competitionId 대회 ID
+     * @param teamId 등록할 팀 ID
+     * @param playerId 등록할 선수 ID
+     * @return 등록된 CompetitionPlayer
+     * @throws CrossRegistrationException 동일 대회 타팀 등록 시
+     */
+    @Transactional
+    fun registerPlayer(
+        competitionId: Long,
+        teamId: Long,
+        playerId: Long,
+    ): CompetitionPlayer {
+        val competition = getById(competitionId)
+        val team =
+            teamRepository.findByIdOrNull(teamId)
+                ?: throw TeamNotFoundException(teamId)
+        val player =
+            playerRepository.findByIdOrNull(playerId)
+                ?: throw com.nextup.common.exception.PlayerNotFoundException(playerId)
+
+        validateNoCrossRegistration(competitionId, playerId, teamId)
+
+        val competitionPlayer = CompetitionPlayer.register(competition, team, player)
+        return competitionPlayerRepository.save(competitionPlayer)
+    }
+
+    /**
+     * 대회에 여러 선수를 일괄 등록합니다.
+     *
+     * 크로스 등록 방지: 동일 대회에 이미 다른 팀으로 등록된 선수는 등록할 수 없습니다.
+     *
+     * @param competition 대회
+     * @param team 등록할 팀
+     * @param players 등록할 선수 목록
+     * @return 등록된 CompetitionPlayer 목록
+     * @throws CrossRegistrationException 동일 대회 타팀 등록 시
+     */
+    @Transactional
+    fun registerPlayers(
+        competition: Competition,
+        team: Team,
+        players: List<Player>,
+    ): List<CompetitionPlayer> {
+        players.forEach { player ->
+            validateNoCrossRegistration(competition.id, player.id, team.id)
+        }
+
+        val competitionPlayers =
+            players.map { player ->
+                CompetitionPlayer.register(competition, team, player)
+            }
+        return competitionPlayerRepository.saveAll(competitionPlayers)
+    }
+
+    /**
+     * 크로스 등록 검증: 동일 대회에 다른 팀으로 이미 활성 등록된 선수인지 확인합니다.
+     *
+     * @throws CrossRegistrationException 동일 대회 타팀 등록이 존재할 경우
+     */
+    fun validateNoCrossRegistration(
+        competitionId: Long,
+        playerId: Long,
+        teamId: Long,
+    ) {
+        val existing =
+            competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(
+                competitionId,
+                playerId,
+            )
+        if (existing != null && existing.team.id != teamId) {
+            throw CrossRegistrationException(
+                competitionId = competitionId,
+                playerId = playerId,
+                existingTeamId = existing.team.id,
+            )
+        }
     }
 
     /**

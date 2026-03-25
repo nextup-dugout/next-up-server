@@ -7,290 +7,145 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 
-@DisplayName("PlateAppearanceResult")
+@DisplayName("PlateAppearanceResult enum 테스트")
 class PlateAppearanceResultTest {
+    @ParameterizedTest
+    @EnumSource(
+        PlateAppearanceResult::class,
+        names = [
+            "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "STRIKEOUT", "GROUND_OUT",
+            "FLY_OUT", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY",
+        ],
+    )
+    @DisplayName("타수에 포함되는 결과는 isAtBat이 true이다")
+    fun atBatResults(result: PlateAppearanceResult) {
+        assertThat(result.isAtBat).isTrue()
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        PlateAppearanceResult::class,
+        names = [
+            "WALK", "INTENTIONAL_WALK", "HIT_BY_PITCH",
+            "SACRIFICE_BUNT", "SACRIFICE_FLY", "INTERFERENCE",
+        ],
+    )
+    @DisplayName("비타수 결과는 isAtBat이 false이다")
+    fun nonAtBatResults(result: PlateAppearanceResult) {
+        assertThat(result.isAtBat).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        PlateAppearanceResult::class,
+        names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN"],
+    )
+    @DisplayName("안타 결과는 isHit이 true이다")
+    fun hitResults(result: PlateAppearanceResult) {
+        assertThat(result.isHit).isTrue()
+    }
+
     @Nested
-    @DisplayName("isAtBat 속성")
-    inner class IsAtBatTest {
+    @DisplayName("TRIPLE_PLAY과 BATTER/RUNNER_INTERFERENCE는 삭제됨")
+    inner class RemovedValues {
+        @Test
+        @DisplayName("PlateAppearanceResult에 TRIPLE_PLAY이 없다")
+        fun noTriplePlay() {
+            val names = PlateAppearanceResult.entries.map { it.name }
+            assertThat(names).doesNotContain("TRIPLE_PLAY")
+        }
+
+        @Test
+        @DisplayName("PlateAppearanceResult에 BATTER_INTERFERENCE가 없다")
+        fun noBatterInterference() {
+            val names = PlateAppearanceResult.entries.map { it.name }
+            assertThat(names).doesNotContain("BATTER_INTERFERENCE")
+        }
+
+        @Test
+        @DisplayName("PlateAppearanceResult에 RUNNER_INTERFERENCE가 없다")
+        fun noRunnerInterference() {
+            val names = PlateAppearanceResult.entries.map { it.name }
+            assertThat(names).doesNotContain("RUNNER_INTERFERENCE")
+        }
+
+        @Test
+        @DisplayName("INTERFERENCE는 유지된다")
+        fun interferenceKept() {
+            val names = PlateAppearanceResult.entries.map { it.name }
+            assertThat(names).contains("INTERFERENCE")
+        }
+    }
+
+    @Nested
+    @DisplayName("INFIELD_FLY와 낫아웃 유지 확인")
+    inner class RetainedValues {
+        @Test
+        @DisplayName("INFIELD_FLY가 유지된다")
+        fun infieldFlyKept() {
+            assertThat(PlateAppearanceResult.INFIELD_FLY.isAtBat).isTrue()
+            assertThat(PlateAppearanceResult.INFIELD_FLY.isHit).isFalse()
+        }
+
+        @Test
+        @DisplayName("STRIKEOUT_DROPPED_THIRD가 유지된다")
+        fun droppedThirdKept() {
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isAtBat).isTrue()
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isDroppedThirdStrike).isTrue()
+            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("출루 판정")
+    inner class OnBase {
+        @Test
+        @DisplayName("INTERFERENCE는 출루에 성공한다")
+        fun interferenceIsOnBase() {
+            assertThat(PlateAppearanceResult.INTERFERENCE.isOnBase).isTrue()
+        }
+
         @ParameterizedTest
         @EnumSource(
-            value = PlateAppearanceResult::class,
+            PlateAppearanceResult::class,
             names = [
-                "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "STRIKEOUT", "GROUND_OUT",
-                "FLY_OUT", "LINE_OUT", "FIELDERS_CHOICE", "ERROR", "DOUBLE_PLAY", "TRIPLE_PLAY",
+                "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "INFIELD_FLY",
+                "LINE_OUT", "DOUBLE_PLAY",
+                "SACRIFICE_BUNT", "SACRIFICE_FLY",
             ],
         )
-        fun `타수에 포함되는 결과를 반환한다`(result: PlateAppearanceResult) {
-            assertThat(result.isAtBat).isTrue()
-        }
-
-        @ParameterizedTest
-        @EnumSource(
-            value = PlateAppearanceResult::class,
-            names = ["WALK", "INTENTIONAL_WALK", "HIT_BY_PITCH", "SACRIFICE_BUNT", "SACRIFICE_FLY", "INTERFERENCE"],
-        )
-        fun `타수에 포함되지 않는 결과를 반환한다`(result: PlateAppearanceResult) {
-            assertThat(result.isAtBat).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("isHit 속성")
-    inner class IsHitTest {
-        @ParameterizedTest
-        @EnumSource(
-            value = PlateAppearanceResult::class,
-            names = ["SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN"],
-        )
-        fun `안타 결과를 반환한다`(result: PlateAppearanceResult) {
-            assertThat(result.isHit).isTrue()
-        }
-
-        @ParameterizedTest
-        @EnumSource(
-            value = PlateAppearanceResult::class,
-            names = ["STRIKEOUT", "GROUND_OUT", "FLY_OUT", "WALK", "SACRIFICE_BUNT"],
-        )
-        fun `안타가 아닌 결과를 반환한다`(result: PlateAppearanceResult) {
-            assertThat(result.isHit).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("totalBases 속성")
-    inner class TotalBasesTest {
-        @Test
-        fun `단타는 1루타를 반환한다`() {
-            assertThat(PlateAppearanceResult.SINGLE.totalBases).isEqualTo(1)
-        }
-
-        @Test
-        fun `2루타는 2루타를 반환한다`() {
-            assertThat(PlateAppearanceResult.DOUBLE.totalBases).isEqualTo(2)
-        }
-
-        @Test
-        fun `3루타는 3루타를 반환한다`() {
-            assertThat(PlateAppearanceResult.TRIPLE.totalBases).isEqualTo(3)
-        }
-
-        @Test
-        fun `홈런은 4루타를 반환한다`() {
-            assertThat(PlateAppearanceResult.HOME_RUN.totalBases).isEqualTo(4)
-        }
-
-        @Test
-        fun `안타가 아닌 결과는 0을 반환한다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT.totalBases).isEqualTo(0)
-            assertThat(PlateAppearanceResult.WALK.totalBases).isEqualTo(0)
-        }
-    }
-
-    @Nested
-    @DisplayName("장타 속성")
-    inner class ExtraBaseHitTest {
-        @Test
-        fun `2루타는 장타이다`() {
-            assertThat(PlateAppearanceResult.DOUBLE.isExtraBaseHit).isTrue()
-        }
-
-        @Test
-        fun `3루타는 장타이다`() {
-            assertThat(PlateAppearanceResult.TRIPLE.isExtraBaseHit).isTrue()
-        }
-
-        @Test
-        fun `홈런은 장타이다`() {
-            assertThat(PlateAppearanceResult.HOME_RUN.isExtraBaseHit).isTrue()
-        }
-
-        @Test
-        fun `단타는 장타가 아니다`() {
-            assertThat(PlateAppearanceResult.SINGLE.isExtraBaseHit).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("출루 속성")
-    inner class IsOnBaseTest {
-        @ParameterizedTest
-        @EnumSource(
-            value = PlateAppearanceResult::class,
-            names = [
-                "SINGLE", "DOUBLE", "TRIPLE", "HOME_RUN", "WALK", "INTENTIONAL_WALK",
-                "HIT_BY_PITCH", "FIELDERS_CHOICE", "ERROR", "INTERFERENCE",
-            ],
-        )
-        fun `출루에 성공한 결과를 반환한다`(result: PlateAppearanceResult) {
-            assertThat(result.isOnBase).isTrue()
-        }
-
-        @ParameterizedTest
-        @EnumSource(
-            value = PlateAppearanceResult::class,
-            names = [
-                "STRIKEOUT", "GROUND_OUT", "FLY_OUT", "LINE_OUT",
-                "SACRIFICE_BUNT", "SACRIFICE_FLY", "DOUBLE_PLAY", "TRIPLE_PLAY",
-            ],
-        )
-        fun `출루에 실패한 결과를 반환한다`(result: PlateAppearanceResult) {
+        @DisplayName("아웃 결과는 출루하지 않는다")
+        fun outResultsNotOnBase(result: PlateAppearanceResult) {
             assertThat(result.isOnBase).isFalse()
         }
     }
 
     @Nested
-    @DisplayName("볼넷 관련 속성")
-    inner class WalkTest {
+    @DisplayName("루타 수")
+    inner class TotalBases {
         @Test
-        fun `볼넷은 isWalk가 true이다`() {
-            assertThat(PlateAppearanceResult.WALK.isWalk).isTrue()
+        fun `SINGLE은 1루타`() {
+            assertThat(PlateAppearanceResult.SINGLE.totalBases).isEqualTo(1)
         }
 
         @Test
-        fun `고의사구도 isWalk가 true이다`() {
-            assertThat(PlateAppearanceResult.INTENTIONAL_WALK.isWalk).isTrue()
+        fun `DOUBLE은 2루타`() {
+            assertThat(PlateAppearanceResult.DOUBLE.totalBases).isEqualTo(2)
         }
 
         @Test
-        fun `다른 결과는 isWalk가 false이다`() {
-            assertThat(PlateAppearanceResult.HIT_BY_PITCH.isWalk).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("희생타 속성")
-    inner class SacrificeTest {
-        @Test
-        fun `희생번트는 희생타이다`() {
-            assertThat(PlateAppearanceResult.SACRIFICE_BUNT.isSacrifice).isTrue()
+        fun `TRIPLE은 3루타`() {
+            assertThat(PlateAppearanceResult.TRIPLE.totalBases).isEqualTo(3)
         }
 
         @Test
-        fun `희생플라이는 희생타이다`() {
-            assertThat(PlateAppearanceResult.SACRIFICE_FLY.isSacrifice).isTrue()
+        fun `HOME_RUN은 4루타`() {
+            assertThat(PlateAppearanceResult.HOME_RUN.totalBases).isEqualTo(4)
         }
 
         @Test
-        fun `일반 플라이아웃은 희생타가 아니다`() {
-            assertThat(PlateAppearanceResult.FLY_OUT.isSacrifice).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("STRIKEOUT_DROPPED_THIRD 및 신규 방해 타입 분기 커버리지")
-    inner class DroppedThirdAndInterferenceBranchTest {
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 타수에 포함된다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isAtBat).isTrue()
-        }
-
-        @Test
-        fun `INFIELD_FLY는 타수에 포함된다`() {
-            assertThat(PlateAppearanceResult.INFIELD_FLY.isAtBat).isTrue()
-        }
-
-        @Test
-        fun `BATTER_INTERFERENCE는 타수에 포함되지 않는다`() {
-            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isAtBat).isFalse()
-        }
-
-        @Test
-        fun `RUNNER_INTERFERENCE는 타수에 포함되지 않는다`() {
-            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isAtBat).isFalse()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 출루에 성공한다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isOnBase).isTrue()
-        }
-
-        @Test
-        fun `BATTER_INTERFERENCE는 출루에 성공한다`() {
-            assertThat(PlateAppearanceResult.BATTER_INTERFERENCE.isOnBase).isTrue()
-        }
-
-        @Test
-        fun `RUNNER_INTERFERENCE는 출루에 실패한다`() {
-            assertThat(PlateAppearanceResult.RUNNER_INTERFERENCE.isOnBase).isFalse()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 삼진이다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 낫아웃 삼진이다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isDroppedThirdStrike).isTrue()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 안타가 아니다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isHit).isFalse()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD의 루타는 0이다`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.totalBases).isEqualTo(0)
-        }
-
-        @Test
-        fun `INFIELD_FLY는 안타가 아니다`() {
-            assertThat(PlateAppearanceResult.INFIELD_FLY.isHit).isFalse()
-        }
-
-        @Test
-        fun `INFIELD_FLY는 출루에 실패한다`() {
-            assertThat(PlateAppearanceResult.INFIELD_FLY.isOnBase).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("partial branch 커버리지 - isStrikeout 양쪽 OR 조건 독립 검증")
-    inner class IsStrikeoutPartialBranchTest {
-
-        @Test
-        fun `STRIKEOUT은 isStrikeout가 true이다 (첫 번째 OR 조건)`() {
-            // this == STRIKEOUT → true (|| short-circuit, 두 번째 조건 미평가)
-            assertThat(PlateAppearanceResult.STRIKEOUT.isStrikeout).isTrue()
-        }
-
-        @Test
-        fun `STRIKEOUT_DROPPED_THIRD는 isStrikeout가 true이다 (두 번째 OR 조건)`() {
-            // this == STRIKEOUT → false, this == STRIKEOUT_DROPPED_THIRD → true
-            assertThat(PlateAppearanceResult.STRIKEOUT_DROPPED_THIRD.isStrikeout).isTrue()
-        }
-
-        @Test
-        fun `GROUND_OUT은 isStrikeout가 false이다 (양쪽 OR 조건 모두 false)`() {
-            // this == STRIKEOUT → false, this == STRIKEOUT_DROPPED_THIRD → false
-            assertThat(PlateAppearanceResult.GROUND_OUT.isStrikeout).isFalse()
-        }
-    }
-
-    @Nested
-    @DisplayName("partial branch 커버리지 - isOnBase 복합 조건 독립 검증")
-    inner class IsOnBasePartialBranchTest {
-
-        @Test
-        fun `안타(SINGLE)는 isHit=true로 isOnBase가 true이다 (|| 첫 번째 조건)`() {
-            // isHit == true → || short-circuit → true
-            assertThat(PlateAppearanceResult.SINGLE.isHit).isTrue()
-            assertThat(PlateAppearanceResult.SINGLE.isOnBase).isTrue()
-        }
-
-        @Test
-        fun `WALK은 isHit=false이지만 리스트에 포함되어 isOnBase가 true이다 (|| 두 번째 조건)`() {
-            // isHit == false, this in listOf(...) == true
-            assertThat(PlateAppearanceResult.WALK.isHit).isFalse()
-            assertThat(PlateAppearanceResult.WALK.isOnBase).isTrue()
-        }
-
-        @Test
-        fun `STRIKEOUT은 isHit=false이고 리스트에도 없어서 isOnBase가 false이다 (|| 양쪽 false)`() {
-            assertThat(PlateAppearanceResult.STRIKEOUT.isHit).isFalse()
-            assertThat(PlateAppearanceResult.STRIKEOUT.isOnBase).isFalse()
+        fun `WALK은 0루타`() {
+            assertThat(PlateAppearanceResult.WALK.totalBases).isEqualTo(0)
         }
     }
 }

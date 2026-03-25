@@ -1,9 +1,8 @@
 package com.nextup.backoffice.controller.stadium
 
-import com.nextup.backoffice.dto.stadium.AcceptBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.BookingTransferResponse
-import com.nextup.backoffice.dto.stadium.CancelBookingTransferRequest
 import com.nextup.backoffice.dto.stadium.CreateBookingTransferRequest
+import com.nextup.backoffice.dto.stadium.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
@@ -11,18 +10,19 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 구장 예약 양도 Controller
+ * 구장 예약 양도 관리자 Controller
  *
- * 긴급 양도 등록, 양수 수락, 양도 취소, 양도 가능 목록 조회 기능을 제공합니다.
+ * 관리자가 예약 양도를 등록/수락/거절/조회할 수 있는 API를 제공합니다.
  */
 @PreAuthorize("hasRole('ADMIN')")
 @RestController
@@ -42,68 +42,77 @@ class BookingTransferController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<ApiResponse<BookingTransferResponse>> {
         val transfer =
-            bookingTransferService.createTransfer(
+            bookingTransferService.requestTransfer(
                 bookingId = bookingId,
-                teamId = request.sellerTeamId,
-                price = request.transferPrice,
+                fromTeamId = request.fromTeamId,
+                toTeamId = request.toTeamId,
                 message = request.message,
-                expiresAt =
-                    request.expiresAt
-                        ?: java.time.Instant.now()
-                            .plusSeconds(BookingTransferService.DEFAULT_EXPIRY_SECONDS),
                 userId = userId,
             )
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(BookingTransferResponse.from(transfer)))
-    }
-
-    /**
-     * 양도 가능한 예약 목록을 조회합니다.
-     *
-     * GET /api/backoffice/transfers/available
-     */
-    @GetMapping("/transfers/available")
-    fun getAvailableTransfers(): ApiResponse<List<BookingTransferResponse>> {
-        val transfers = bookingTransferService.getAvailableTransfers()
-        return ApiResponse.success(transfers.map { BookingTransferResponse.from(it) })
+            .body(ApiResponse.success(transfer.toResponse()))
     }
 
     /**
      * 예약 양도를 수락합니다.
      *
-     * POST /api/backoffice/transfers/{transferId}/accept
+     * PATCH /api/backoffice/transfers/{transferId}/accept
      */
-    @PostMapping("/transfers/{transferId}/accept")
+    @PatchMapping("/transfers/{transferId}/accept")
     fun acceptTransfer(
         @PathVariable transferId: Long,
-        @RequestBody @Valid request: AcceptBookingTransferRequest,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
             bookingTransferService.acceptTransfer(
                 transferId = transferId,
-                buyerTeamId = request.buyerTeamId,
                 userId = userId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
     }
 
     /**
-     * 예약 양도를 취소합니다.
+     * 예약 양도를 거절합니다.
      *
-     * DELETE /api/backoffice/transfers/{transferId}
+     * PATCH /api/backoffice/transfers/{transferId}/reject
      */
-    @DeleteMapping("/transfers/{transferId}")
-    fun cancelTransfer(
+    @PatchMapping("/transfers/{transferId}/reject")
+    fun rejectTransfer(
         @PathVariable transferId: Long,
-        @RequestBody @Valid request: CancelBookingTransferRequest,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<BookingTransferResponse> {
         val transfer =
-            bookingTransferService.cancelTransfer(
+            bookingTransferService.rejectTransfer(
                 transferId = transferId,
-                teamId = request.teamId,
+                userId = userId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
+    }
+
+    /**
+     * 특정 팀의 보낸 양도 목록을 조회합니다.
+     *
+     * GET /api/backoffice/transfers/sent?teamId={teamId}
+     */
+    @GetMapping("/transfers/sent")
+    fun getSentTransfers(
+        @RequestParam teamId: Long,
+    ): ApiResponse<List<BookingTransferResponse>> {
+        val transfers = bookingTransferService.getSentTransfers(teamId)
+        return ApiResponse.success(transfers.map { it.toResponse() })
+    }
+
+    /**
+     * 특정 팀의 받은 양도 목록을 조회합니다.
+     *
+     * GET /api/backoffice/transfers/received?teamId={teamId}
+     */
+    @GetMapping("/transfers/received")
+    fun getReceivedTransfers(
+        @RequestParam teamId: Long,
+    ): ApiResponse<List<BookingTransferResponse>> {
+        val transfers = bookingTransferService.getReceivedTransfers(teamId)
+        return ApiResponse.success(transfers.map { it.toResponse() })
     }
 }

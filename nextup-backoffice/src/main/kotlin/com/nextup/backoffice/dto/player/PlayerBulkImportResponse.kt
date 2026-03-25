@@ -1,6 +1,5 @@
 package com.nextup.backoffice.dto.player
 
-import com.nextup.core.domain.player.Player
 import java.time.LocalDate
 
 /**
@@ -14,22 +13,17 @@ data class PlayerBulkImportResponse(
     val failures: List<PlayerImportFailure>,
 )
 
+/**
+ * 선수 임포트 결과 DTO
+ *
+ * 변환 로직은 PlayerExtensions.kt의 Extension Function을 사용합니다.
+ */
 data class PlayerImportResult(
     val id: Long,
     val name: String,
     val primaryPosition: String,
     val birthDate: LocalDate?,
-) {
-    companion object {
-        fun from(player: Player): PlayerImportResult =
-            PlayerImportResult(
-                id = player.id,
-                name = player.name,
-                primaryPosition = player.primaryPosition.displayName,
-                birthDate = player.birthDate,
-            )
-    }
-}
+)
 
 data class PlayerImportFailure(
     val rowIndex: Int,

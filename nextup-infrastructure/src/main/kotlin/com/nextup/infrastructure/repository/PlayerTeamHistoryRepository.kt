@@ -1,7 +1,6 @@
 package com.nextup.infrastructure.repository
 
 import com.nextup.core.domain.player.PlayerTeamHistory
-import com.nextup.core.domain.player.PlayerTeamStatus
 import com.nextup.core.port.repository.PlayerTeamHistoryRepositoryPort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -93,18 +92,6 @@ interface PlayerTeamHistoryRepository :
         @Param("playerId") playerId: Long,
         @Param("leagueId") leagueId: Long,
     ): Boolean
-
-    @Query(
-        """
-        SELECT h FROM PlayerTeamHistory h
-        WHERE h.player.id = :playerId
-        AND h.status = :status
-    """,
-    )
-    override fun findByPlayerIdAndStatus(
-        @Param("playerId") playerId: Long,
-        @Param("status") status: PlayerTeamStatus,
-    ): List<PlayerTeamHistory>
 
     @Query(
         """

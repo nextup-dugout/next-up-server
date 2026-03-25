@@ -15,7 +15,6 @@ import jakarta.persistence.Index
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 
 /**
@@ -23,6 +22,11 @@ import java.time.Instant
  *
  * 리그 대회에 등록된 선수를 나타냅니다.
  * 라인업 검증 시 부정선수 체크에 사용됩니다.
+ *
+ * 크로스 등록 방지: 동일 대회에서 활성 상태(ACTIVE/SUSPENDED)인 선수는
+ * 다른 팀으로 중복 등록할 수 없습니다.
+ * DB 레벨: partial unique index (uk_competition_players_active_registration)
+ * Service 레벨: CompetitionService.validateNoCrossRegistration()
  */
 @Entity
 @Table(
@@ -33,12 +37,8 @@ import java.time.Instant
         Index(name = "idx_competition_players_player", columnList = "player_id"),
         Index(name = "idx_competition_players_status", columnList = "status"),
     ],
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uk_competition_players_competition_player",
-            columnNames = ["competition_id", "player_id"],
-        ),
-    ],
+    // 크로스 등록 방지는 DB partial unique index로 처리 (V065 마이그레이션)
+    // JPA UniqueConstraint는 partial index를 지원하지 않으므로 제거
 )
 class CompetitionPlayer private constructor(
     @ManyToOne(fetch = FetchType.LAZY)

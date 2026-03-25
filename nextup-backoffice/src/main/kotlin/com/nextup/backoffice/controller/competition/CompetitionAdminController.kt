@@ -5,12 +5,12 @@ import com.nextup.backoffice.dto.competition.CreateCompetitionRequest
 import com.nextup.backoffice.dto.competition.PrepareNextSeasonRequest
 import com.nextup.backoffice.dto.competition.UpdateCompetitionRequest
 import com.nextup.backoffice.dto.competition.WithdrawTeamRequest
+import com.nextup.backoffice.dto.competition.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.competition.SeasonTransitionService
 import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
-import com.nextup.core.service.competition.dto.SeasonArchiveResult
 import com.nextup.core.service.competition.dto.SeasonSummaryDto
 import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import jakarta.validation.Valid
@@ -54,7 +54,7 @@ class CompetitionAdminController(
                 competitionService.getAll()
             }
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) },
+            competitions.map { it.toAdminResponse() },
         )
     }
 
@@ -66,7 +66,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.getByIdWithLeague(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -78,7 +78,7 @@ class CompetitionAdminController(
     ): ApiResponse<List<CompetitionAdminResponse>> {
         val competitions = competitionService.getByLeagueId(leagueId)
         return ApiResponse.success(
-            competitions.map { CompetitionAdminResponse.from(it) },
+            competitions.map { it.toAdminResponse() },
         )
     }
 
@@ -102,7 +102,7 @@ class CompetitionAdminController(
                 description = request.description,
                 maxTeams = request.maxTeams,
             )
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -119,7 +119,7 @@ class CompetitionAdminController(
                 description = request.description,
                 endDate = request.endDate,
             )
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -130,7 +130,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.start(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -142,7 +142,7 @@ class CompetitionAdminController(
         @RequestBody(required = false) endDate: LocalDate?,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.complete(id, endDate ?: LocalDate.now())
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -153,7 +153,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.cancel(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -164,7 +164,7 @@ class CompetitionAdminController(
         @PathVariable id: Long,
     ): ApiResponse<CompetitionAdminResponse> {
         val competition = competitionService.postpone(id)
-        return ApiResponse.success(CompetitionAdminResponse.from(competition))
+        return ApiResponse.success(competition.toAdminResponse())
     }
 
     /**
@@ -215,34 +215,6 @@ class CompetitionAdminController(
                 description = request.description,
                 maxTeams = request.maxTeams,
             )
-        return ApiResponse.success(result)
-    }
-
-    /**
-     * 완료된 대회의 시즌 통계를 확정(아카이브)합니다.
-     *
-     * 해당 대회 연도의 모든 시즌 통계를 frozen 상태로 전환하여
-     * 기록 정정을 불가능하게 합니다.
-     */
-    @PostMapping("/{id}/archive")
-    fun archiveSeason(
-        @PathVariable id: Long,
-    ): ApiResponse<SeasonArchiveResult> {
-        val result = seasonTransitionService.archiveSeason(id)
-        return ApiResponse.success(result)
-    }
-
-    /**
-     * 시즌 통계 확정(아카이브)을 해제합니다.
-     *
-     * 공식 항의 등 특수한 경우 관리자가 아카이브를 해제하여
-     * 기록 정정이 가능하도록 합니다.
-     */
-    @PostMapping("/{id}/unarchive")
-    fun unarchiveSeason(
-        @PathVariable id: Long,
-    ): ApiResponse<SeasonArchiveResult> {
-        val result = seasonTransitionService.unarchiveSeason(id)
         return ApiResponse.success(result)
     }
 }

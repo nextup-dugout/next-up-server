@@ -8,6 +8,7 @@ import com.nextup.core.service.recruitment.dto.ApplyRecruitmentRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -28,14 +29,14 @@ class RecruitmentApplicationController(
     @ResponseStatus(HttpStatus.CREATED)
     fun apply(
         @PathVariable recruitmentId: Long,
-        @RequestParam applicantId: Long,
+        @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: ApplyRecruitmentApiRequest,
     ): ApiResponse<RecruitmentApplicationResponse> {
         val application =
             applicationService.apply(
                 ApplyRecruitmentRequest(
                     recruitmentId = recruitmentId,
-                    applicantId = applicantId,
+                    applicantId = userId,
                     message = request.message,
                     preferredPositions = request.preferredPositions,
                 ),
@@ -48,9 +49,9 @@ class RecruitmentApplicationController(
      */
     @GetMapping("/me/applications")
     fun getMyApplications(
-        @RequestParam applicantId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<RecruitmentApplicationResponse>> {
-        val applications = applicationService.getApplicationsByApplicant(applicantId)
+        val applications = applicationService.getApplicationsByApplicant(userId)
         return ApiResponse.success(applications.map { RecruitmentApplicationResponse.from(it) })
     }
 
@@ -61,9 +62,9 @@ class RecruitmentApplicationController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun withdrawApplication(
         @PathVariable applicationId: Long,
-        @RequestParam applicantId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<Unit> {
-        applicationService.withdrawApplication(applicationId, applicantId)
+        applicationService.withdrawApplication(applicationId, userId)
         return ApiResponse.success(Unit)
     }
 
@@ -85,9 +86,9 @@ class RecruitmentApplicationController(
     fun acceptApplication(
         @PathVariable recruitmentId: Long,
         @PathVariable applicationId: Long,
-        @RequestParam processorId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<RecruitmentApplicationResponse> {
-        val application = applicationService.acceptApplication(applicationId, processorId)
+        val application = applicationService.acceptApplication(applicationId, userId)
         return ApiResponse.success(RecruitmentApplicationResponse.from(application))
     }
 
@@ -98,9 +99,9 @@ class RecruitmentApplicationController(
     fun rejectApplication(
         @PathVariable recruitmentId: Long,
         @PathVariable applicationId: Long,
-        @RequestParam processorId: Long,
+        @AuthenticationPrincipal userId: Long,
     ): ApiResponse<RecruitmentApplicationResponse> {
-        val application = applicationService.rejectApplication(applicationId, processorId)
+        val application = applicationService.rejectApplication(applicationId, userId)
         return ApiResponse.success(RecruitmentApplicationResponse.from(application))
     }
 }

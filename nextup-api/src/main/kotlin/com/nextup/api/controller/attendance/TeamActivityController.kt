@@ -1,99 +1,52 @@
 package com.nextup.api.controller.attendance
 
-import com.nextup.api.dto.attendance.ActivityScoreResponse
-import com.nextup.api.dto.attendance.UpdateActivityScoreRequest
+import com.nextup.api.dto.attendance.GameParticipationRateResponse
 import com.nextup.api.dto.attendance.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.attendance.ActivityService
-import jakarta.validation.Valid
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
- * 팀 활동 점수 관리 컨트롤러
+ * 팀 활동 점수 조회 컨트롤러 (자동 집계)
  *
- * 팀원의 활동 점수(경기 참여율, 연습 참석률, 기여도)를 관리합니다.
+ * game_players 기반 경기참여율을 자동으로 집계하여 반환합니다.
+ * 기존 수동 PUT 엔드포인트는 삭제되었습니다.
  */
 @PreAuthorize("isAuthenticated()")
 @RestController
-@RequestMapping("/api/v1/teams/{teamId}/members")
+@RequestMapping("/api/v1/teams/{teamId}/activity")
 class TeamActivityController(
     private val activityService: ActivityService,
 ) {
     /**
-     * 팀원의 활동 점수를 조회합니다.
+     * 팀의 모든 멤버별 경기참여율을 조회합니다.
      */
-    @GetMapping("/{memberId}/activity")
-    fun getActivity(
+    @GetMapping
+    fun listParticipationRates(
         @PathVariable teamId: Long,
-        @PathVariable memberId: Long,
-    ): ApiResponse<ActivityScoreResponse> {
-        val activityScore = activityService.getActivityScore(teamId, memberId)
-        return ApiResponse.success(activityScore.toResponse())
+    ): ApiResponse<List<GameParticipationRateResponse>> {
+        val rates = activityService.listGameParticipationRates(teamId)
+        return ApiResponse.success(rates.map { it.toResponse() })
     }
 
     /**
-     * 팀의 모든 활동 점수를 조회합니다.
+     * 특정 선수의 경기참여율을 조회합니다.
      */
-    @GetMapping("/activity")
-    fun listActivities(
+    @GetMapping("/players/{playerId}")
+    fun getPlayerParticipationRate(
         @PathVariable teamId: Long,
-    ): ApiResponse<List<ActivityScoreResponse>> {
-        val activityScores = activityService.listActivityScores(teamId)
-        return ApiResponse.success(activityScores.map { it.toResponse() })
-    }
-
-    /**
-     * 경기 참여율을 업데이트합니다.
-     */
-    @PutMapping("/{memberId}/activity/game-participation")
-    fun updateGameParticipation(
-        @PathVariable teamId: Long,
-        @PathVariable memberId: Long,
-        @RequestBody @Valid request: UpdateActivityScoreRequest,
-    ): ApiResponse<ActivityScoreResponse> {
-        val activityScore =
-            activityService.updateGameParticipationRate(
-                teamId = teamId,
-                memberId = memberId,
-                rate = request.score,
-            )
-        return ApiResponse.success(activityScore.toResponse())
-    }
-
-    /**
-     * 연습 참석률을 업데이트합니다.
-     */
-    @PutMapping("/{memberId}/activity/practice-attendance")
-    fun updatePracticeAttendance(
-        @PathVariable teamId: Long,
-        @PathVariable memberId: Long,
-        @RequestBody @Valid request: UpdateActivityScoreRequest,
-    ): ApiResponse<ActivityScoreResponse> {
-        val activityScore =
-            activityService.updatePracticeAttendanceRate(
-                teamId = teamId,
-                memberId = memberId,
-                rate = request.score,
-            )
-        return ApiResponse.success(activityScore.toResponse())
-    }
-
-    /**
-     * 기여도 점수를 업데이트합니다.
-     */
-    @PutMapping("/{memberId}/activity/contribution")
-    fun updateContribution(
-        @PathVariable teamId: Long,
-        @PathVariable memberId: Long,
-        @RequestBody @Valid request: UpdateActivityScoreRequest,
-    ): ApiResponse<ActivityScoreResponse> {
-        val activityScore =
-            activityService.updateContributionScore(
-                teamId = teamId,
-                memberId = memberId,
-                score = request.score,
-            )
-        return ApiResponse.success(activityScore.toResponse())
+        @PathVariable playerId: Long,
+    ): ApiResponse<GameParticipationRateResponse> {
+        val rate = activityService.getGameParticipationRate(teamId, playerId)
+        return ApiResponse.success(
+            GameParticipationRateResponse(
+                playerId = playerId,
+                playerName = "",
+                gamesPlayed = 0,
+                totalTeamGames = 0,
+                participationRate = rate,
+            ),
+        )
     }
 }
