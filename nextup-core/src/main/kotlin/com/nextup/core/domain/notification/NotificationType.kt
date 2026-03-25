@@ -50,11 +50,6 @@ enum class NotificationType {
     LINEUP_CONFIRMED,
 
     /**
-     * 선거 동률 발생
-     */
-    ELECTION_TIED,
-
-    /**
      * 경기 취소
      */
     GAME_CANCELLED,
@@ -88,9 +83,4 @@ enum class NotificationType {
      * 대회 완료
      */
     COMPETITION_COMPLETED,
-
-    /**
-     * 재선거(결선투표) 생성
-     */
-    RUNOFF_ELECTION_CREATED,
 }

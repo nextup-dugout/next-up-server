@@ -3,7 +3,6 @@ package com.nextup.infrastructure.listener
 import com.nextup.core.domain.attendance.PollStatus
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
-import com.nextup.core.domain.election.ElectionStatus
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.TeamDisbandedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -18,7 +17,6 @@ import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
-import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
@@ -48,7 +46,6 @@ class TeamMemberEventListener(
     private val bracketEntryRepository: BracketEntryRepositoryPort,
     private val stadiumBookingRepository: StadiumBookingRepositoryPort,
     private val attendancePollRepository: AttendancePollRepositoryPort,
-    private val electionRepository: ElectionRepositoryPort,
     private val teamJoinRequestRepository: TeamJoinRequestRepositoryPort,
     private val activityScoreRepository: ActivityScoreRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
@@ -91,7 +88,6 @@ class TeamMemberEventListener(
      * - 진행중 대회에서 팀 탈퇴: CompetitionPlayer WITHDRAWN + 경기 몰수승 + 대진표 부전승 처리
      * - CONFIRMED 상태의 StadiumBooking → CANCELLED
      * - OPEN 상태의 AttendancePoll → CLOSED
-     * - PENDING/IN_PROGRESS 상태의 Election → CANCELLED
      * - PENDING 상태의 TeamJoinRequest → 일괄 REJECTED
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -102,7 +98,6 @@ class TeamMemberEventListener(
         withdrawFromCompetitions(event.teamId)
         cancelStadiumBookings(event.teamId)
         closeAttendancePolls(event.teamId)
-        cancelElections(event.teamId)
         rejectPendingJoinRequests(event.teamId)
         cleanupActivityScoresByTeam(event.teamId)
     }
@@ -318,20 +313,6 @@ class TeamMemberEventListener(
             attendancePollRepository.save(poll)
             logger.info("출석 투표 마감 - pollId={}", poll.id)
         }
-    }
-
-    /**
-     * 팀의 PENDING/IN_PROGRESS 상태 선거를 취소합니다.
-     */
-    private fun cancelElections(teamId: Long) {
-        val elections = electionRepository.findAllByTeamId(teamId)
-        elections
-            .filter { it.status == ElectionStatus.SCHEDULED || it.status == ElectionStatus.IN_PROGRESS }
-            .forEach { election ->
-                election.cancel()
-                electionRepository.save(election)
-                logger.info("선거 취소 - electionId={}", election.id)
-            }
     }
 
     /**
