@@ -139,7 +139,7 @@ class BookingControllerTest {
             slot.book()
             val booking = createBooking(1L, slot, 100L, 200L)
             booking.cancel()
-            every { stadiumService.cancelBooking(1L) } returns booking
+            every { stadiumService.cancelBooking(1L, 1L) } returns booking
 
             // when & then
             mockMvc
@@ -160,7 +160,7 @@ class BookingControllerTest {
             val slot = createSlot(1L, stadium)
             val booking = createBooking(1L, slot, 100L, 200L)
             booking.complete()
-            every { stadiumService.completeBooking(1L) } returns booking
+            every { stadiumService.completeBooking(1L, 1L) } returns booking
 
             // when & then
             mockMvc

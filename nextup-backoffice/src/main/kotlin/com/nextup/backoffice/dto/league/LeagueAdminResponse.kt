@@ -1,12 +1,12 @@
 package com.nextup.backoffice.dto.league
 
-import com.nextup.core.domain.league.League
 import java.time.Instant
 
 /**
  * 리그 관리자 응답 DTO
  *
  * backoffice 모듈에 독립적으로 존재
+ * 변환 로직은 LeagueExtensions.kt의 Extension Function을 사용합니다.
  */
 data class LeagueAdminResponse(
     val id: Long,
@@ -21,22 +21,4 @@ data class LeagueAdminResponse(
     val isActive: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
-) {
-    companion object {
-        fun from(league: League): LeagueAdminResponse =
-            LeagueAdminResponse(
-                id = league.id,
-                associationId = league.association.id,
-                associationName = league.association.name,
-                name = league.name,
-                abbreviation = league.abbreviation,
-                foundedYear = league.foundedYear,
-                divisionLevel = league.divisionLevel,
-                description = league.description,
-                logoUrl = league.logoUrl,
-                isActive = league.isActive,
-                createdAt = league.createdAt,
-                updatedAt = league.updatedAt,
-            )
-    }
-}
+)

@@ -19,7 +19,6 @@ import com.nextup.core.domain.user.User
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
@@ -44,7 +43,6 @@ class LineupServiceTest {
     private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var userRepository: UserRepositoryPort
     private lateinit var attendanceVoteRepository: com.nextup.core.port.repository.AttendanceVoteRepositoryPort
-    private lateinit var mercenaryParticipationRepository: MercenaryParticipationRepositoryPort
     private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var lineupService: LineupService
 
@@ -62,7 +60,6 @@ class LineupServiceTest {
         playerRepository = mockk()
         userRepository = mockk()
         attendanceVoteRepository = mockk()
-        mercenaryParticipationRepository = mockk()
         eventPublisher = mockk(relaxed = true)
 
         lineupService =
@@ -74,7 +71,6 @@ class LineupServiceTest {
                 playerRepository = playerRepository,
                 userRepository = userRepository,
                 attendanceVoteRepository = attendanceVoteRepository,
-                mercenaryParticipationRepository = mercenaryParticipationRepository,
                 eventPublisher = eventPublisher,
             )
 
@@ -387,7 +383,7 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
+
             // Only one team submitted — no exchange yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
@@ -433,7 +429,6 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
 
             // when & then
             assertThrows<NoCatcherInLineupException> {
@@ -454,7 +449,6 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
 
             // when & then - player 9 is not attending
             assertThrows<NonAttendingPlayerInLineupException> {
@@ -475,7 +469,7 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
+
             // Only one team submitted — no exchange yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(submission)
 
@@ -714,7 +708,7 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns awayAttendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
+
             // Both submissions present — exchange pending should trigger
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns
                 listOf(homeSubmission, awaySubmission)
@@ -744,7 +738,7 @@ class LineupServiceTest {
                     com.nextup.core.domain.game.AttendanceStatus.ATTENDING,
                 )
             } returns attendingVotes
-            every { mercenaryParticipationRepository.findByGameId(any()) } returns emptyList()
+
             // Only one submission in the game — opponent hasn't submitted yet
             every { lineupSubmissionRepository.findAllByGameId(any()) } returns listOf(homeSubmission)
 

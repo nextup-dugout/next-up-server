@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.association
 import com.nextup.backoffice.dto.association.AssociationAdminResponse
 import com.nextup.backoffice.dto.association.CreateAssociationRequest
 import com.nextup.backoffice.dto.association.UpdateAssociationRequest
+import com.nextup.backoffice.dto.association.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.association.AssociationService
 import jakarta.validation.Valid
@@ -34,7 +35,7 @@ class AssociationAdminController(
     fun getAllAssociations(): ApiResponse<List<AssociationAdminResponse>> {
         val associations = associationService.getAll()
         return ApiResponse.success(
-            associations.map { AssociationAdminResponse.from(it) },
+            associations.map { it.toAdminResponse() },
         )
     }
 
@@ -46,7 +47,7 @@ class AssociationAdminController(
         @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.getById(id)
-        return ApiResponse.success(AssociationAdminResponse.from(association))
+        return ApiResponse.success(association.toAdminResponse())
     }
 
     /**
@@ -66,7 +67,7 @@ class AssociationAdminController(
                 logoUrl = request.logoUrl,
                 websiteUrl = request.websiteUrl,
             )
-        return ApiResponse.success(AssociationAdminResponse.from(association))
+        return ApiResponse.success(association.toAdminResponse())
     }
 
     /**
@@ -84,7 +85,7 @@ class AssociationAdminController(
                 logoUrl = request.logoUrl,
                 websiteUrl = request.websiteUrl,
             )
-        return ApiResponse.success(AssociationAdminResponse.from(association))
+        return ApiResponse.success(association.toAdminResponse())
     }
 
     /**
@@ -95,7 +96,7 @@ class AssociationAdminController(
         @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.deactivate(id)
-        return ApiResponse.success(AssociationAdminResponse.from(association))
+        return ApiResponse.success(association.toAdminResponse())
     }
 
     /**
@@ -106,6 +107,6 @@ class AssociationAdminController(
         @PathVariable id: Long,
     ): ApiResponse<AssociationAdminResponse> {
         val association = associationService.activate(id)
-        return ApiResponse.success(AssociationAdminResponse.from(association))
+        return ApiResponse.success(association.toAdminResponse())
     }
 }

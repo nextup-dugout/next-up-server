@@ -23,6 +23,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -47,10 +50,15 @@ class TeamAttendancePollControllerTest {
     fun setUp() {
         attendanceService = mockk()
         controller = TeamAttendancePollController(attendanceService)
+
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(1L, null, emptyList())
+
         mockMvc =
             MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(GlobalExceptionHandler())
+                .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
                 .build()
 
         objectMapper =
@@ -151,11 +159,11 @@ class TeamAttendancePollControllerTest {
         @Test
         fun `투표에 응답할 수 있다`() {
             // given
-            val request = SubmitVoteRequest(playerId = 1L, voteType = VoteType.ATTEND)
+            val request = SubmitVoteRequest(voteType = VoteType.ATTEND)
             val vote =
                 AttendanceVote.create(poll = poll, player = player, voteType = VoteType.ATTEND)
             every {
-                attendanceService.submitVote(1L, 1L, VoteType.ATTEND, null, null)
+                attendanceService.submitVoteByUserId(1L, 1L, 1L, VoteType.ATTEND, null, null)
             } returns vote
 
             // when & then

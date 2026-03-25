@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.appeal
 import com.nextup.backoffice.dto.appeal.AppealAdminResponse
 import com.nextup.backoffice.dto.appeal.ApproveAppealAdminRequest
 import com.nextup.backoffice.dto.appeal.RejectAppealAdminRequest
+import com.nextup.backoffice.dto.appeal.toAdminResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.appeal.AppealStatus
 import com.nextup.core.service.appeal.AppealService
@@ -36,7 +37,7 @@ class AppealAdminController(
             }
 
         return ApiResponse.success(
-            appeals.map { AppealAdminResponse.from(it) },
+            appeals.map { it.toAdminResponse() },
         )
     }
 
@@ -48,7 +49,7 @@ class AppealAdminController(
         @PathVariable id: Long,
     ): ApiResponse<AppealAdminResponse> {
         val appeal = appealService.getById(id)
-        return ApiResponse.success(AppealAdminResponse.from(appeal))
+        return ApiResponse.success(appeal.toAdminResponse())
     }
 
     /**
@@ -66,7 +67,7 @@ class AppealAdminController(
                 comment = request.comment,
             )
 
-        return ApiResponse.success(AppealAdminResponse.from(appeal))
+        return ApiResponse.success(appeal.toAdminResponse())
     }
 
     /**
@@ -84,6 +85,6 @@ class AppealAdminController(
                 comment = request.comment,
             )
 
-        return ApiResponse.success(AppealAdminResponse.from(appeal))
+        return ApiResponse.success(appeal.toAdminResponse())
     }
 }
