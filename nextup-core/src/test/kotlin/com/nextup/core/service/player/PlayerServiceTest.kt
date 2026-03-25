@@ -212,6 +212,68 @@ class PlayerServiceTest {
     }
 
     @Nested
+    @DisplayName("createUnaffiliatedPlayer")
+    inner class CreateUnaffiliatedPlayer {
+        @Test
+        fun `무소속 선수 프로필을 생성한다`() {
+            // given
+            val user = createUserWithoutPlayer(userId = 1L)
+            every { userRepository.findByIdOrNull(1L) } returns user
+            every { playerRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result =
+                playerService.createUnaffiliatedPlayer(
+                    userId = 1L,
+                    name = "홍길동",
+                    primaryPosition = Position.CENTER_FIELD,
+                    throwingHand = ThrowingHand.RIGHT,
+                    battingHand = BattingHand.LEFT,
+                )
+
+            // then
+            assertThat(result.name).isEqualTo("홍길동")
+            assertThat(result.primaryPosition).isEqualTo(Position.CENTER_FIELD)
+            assertThat(result.throwingHand).isEqualTo(ThrowingHand.RIGHT)
+            assertThat(result.battingHand).isEqualTo(BattingHand.LEFT)
+            assertThat(user.player).isNotNull
+        }
+
+        @Test
+        fun `사용자를 찾을 수 없으면 예외가 발생한다`() {
+            // given
+            every { userRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                playerService.createUnaffiliatedPlayer(
+                    userId = 999L,
+                    name = "홍길동",
+                    primaryPosition = Position.CENTER_FIELD,
+                )
+            }.isInstanceOf(UserNotFoundException::class.java)
+        }
+
+        @Test
+        fun `이미 연결된 선수가 있으면 예외가 발생한다`() {
+            // given
+            val player = createPlayer()
+            val user = createUserWithPlayer(userId = 1L, player = player)
+            every { userRepository.findByIdOrNull(1L) } returns user
+
+            // when & then
+            assertThatThrownBy {
+                playerService.createUnaffiliatedPlayer(
+                    userId = 1L,
+                    name = "홍길동",
+                    primaryPosition = Position.CENTER_FIELD,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("이미 연결된 선수 프로필")
+        }
+    }
+
+    @Nested
     @DisplayName("updatePlayerProfile")
     inner class UpdatePlayerProfile {
         @Test

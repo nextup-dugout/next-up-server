@@ -11,6 +11,7 @@ import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.eventgame.TeamAssignment
 import com.nextup.core.service.eventgame.CreateEventGameCommand
 import com.nextup.core.service.eventgame.EventGameService
+import com.nextup.core.service.player.PlayerService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/event-games")
 class EventGameController(
     private val eventGameService: EventGameService,
+    private val playerService: PlayerService,
 ) {
     /**
      * 이벤트 게임을 생성합니다.
@@ -109,7 +111,7 @@ class EventGameController(
         val participant =
             eventGameService.joinEventGame(
                 eventGameId = id,
-                playerId = userId,
+                userId = userId,
                 message = request.message,
             )
         return ApiResponse.success(EventGameParticipantResponse.from(participant))
@@ -259,7 +261,8 @@ class EventGameController(
     fun getMyHistory(
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<List<EventGameParticipantResponse>> {
-        val participations = eventGameService.getPlayerHistory(userId)
+        val player = playerService.getLinkedPlayer(userId)
+        val participations = eventGameService.getPlayerHistory(player.id)
         return ApiResponse.success(participations.map { EventGameParticipantResponse.from(it) })
     }
 }

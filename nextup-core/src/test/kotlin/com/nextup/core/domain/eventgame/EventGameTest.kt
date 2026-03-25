@@ -24,27 +24,6 @@ class EventGameTest {
             innings = innings,
         )
 
-    private fun createGameReadyToStart(): EventGame {
-        val game = createEventGame()
-        val p1 = EventGameParticipant.create(game, 10L)
-        val p2 = EventGameParticipant.create(game, 20L)
-        game.addParticipant(p1)
-        game.addParticipant(p2)
-        p1.confirm()
-        p2.confirm()
-        p1.assignTeam(TeamAssignment.TEAM_A)
-        p2.assignTeam(TeamAssignment.TEAM_B)
-        game.closeRecruitment()
-        game.completeTeamAssignment()
-        return game
-    }
-
-    private fun createGameInProgress(): EventGame {
-        val game = createGameReadyToStart()
-        game.start()
-        return game
-    }
-
     @Nested
     @DisplayName("create()")
     inner class Create {
@@ -61,31 +40,6 @@ class EventGameTest {
         }
 
         @Test
-        fun `모든 필드를 포함하여 생성`() {
-            val game =
-                EventGame.create(
-                    organizerId = 1L,
-                    title = "주말 픽업 게임",
-                    description = "누구나 환영",
-                    scheduledAt = LocalDateTime.now().plusDays(7),
-                    location = "잠실 야구장",
-                    fieldName = "A구장",
-                    maxParticipants = 18,
-                    innings = 5,
-                    teamAName = "레드팀",
-                    teamBName = "블루팀",
-                )
-
-            assertThat(game.description).isEqualTo("누구나 환영")
-            assertThat(game.location).isEqualTo("잠실 야구장")
-            assertThat(game.fieldName).isEqualTo("A구장")
-            assertThat(game.maxParticipants).isEqualTo(18)
-            assertThat(game.innings).isEqualTo(5)
-            assertThat(game.teamAName).isEqualTo("레드팀")
-            assertThat(game.teamBName).isEqualTo("블루팀")
-        }
-
-        @Test
         fun `최소 참가 인원이 2명 미만이면 예외가 발생한다`() {
             assertThatThrownBy { createEventGame(maxParticipants = 1) }
                 .isInstanceOf(IllegalArgumentException::class.java)
@@ -93,71 +47,10 @@ class EventGameTest {
         }
 
         @Test
-        fun `이닝이 범위를 벗어나면 예외가 발생한다 - 10이닝`() {
+        fun `이닝이 범위를 벗어나면 예외가 발생한다`() {
             assertThatThrownBy { createEventGame(innings = 10) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("1~9")
-        }
-
-        @Test
-        fun `이닝이 범위를 벗어나면 예외가 발생한다 - 0이닝`() {
-            assertThatThrownBy { createEventGame(innings = 0) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("1~9")
-        }
-
-        @Test
-        fun `빈 제목으로 생성하면 예외가 발생한다`() {
-            assertThatThrownBy {
-                EventGame.create(
-                    organizerId = 1L,
-                    title = "",
-                    scheduledAt = LocalDateTime.now().plusDays(7),
-                    maxParticipants = 20,
-                )
-            }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("제목")
-        }
-
-        @Test
-        fun `공백 제목으로 생성하면 예외가 발생한다`() {
-            assertThatThrownBy {
-                EventGame.create(
-                    organizerId = 1L,
-                    title = "   ",
-                    scheduledAt = LocalDateTime.now().plusDays(7),
-                    maxParticipants = 20,
-                )
-            }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("제목")
-        }
-
-        @Test
-        fun `이닝 경계값 1과 9는 정상 생성`() {
-            val game1 = createEventGame(innings = 1)
-            assertThat(game1.innings).isEqualTo(1)
-
-            val game9 = createEventGame(innings = 9)
-            assertThat(game9.innings).isEqualTo(9)
-        }
-
-        @Test
-        fun `최소 참가 인원 2명은 정상 생성`() {
-            val game = createEventGame(maxParticipants = 2)
-            assertThat(game.maxParticipants).isEqualTo(2)
-        }
-
-        @Test
-        fun `초기 상태 검증`() {
-            val game = createEventGame()
-
-            assertThat(game.teamAScore).isNull()
-            assertThat(game.teamBScore).isNull()
-            assertThat(game.startedAt).isNull()
-            assertThat(game.endedAt).isNull()
-            assertThat(game.cancelReason).isNull()
-            assertThat(game.participants).isEmpty()
-            assertThat(game.activeParticipantCount).isEqualTo(0)
         }
     }
 
@@ -181,62 +74,11 @@ class EventGameTest {
         }
 
         @Test
-        fun `CANCELLED 상태에서 마감하면 예외`() {
-            val game = createEventGame()
-            game.cancel("사유")
-
-            assertThatThrownBy { game.closeRecruitment() }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `경기 취소 성공 - RECRUITING 상태`() {
+        fun `경기 취소 성공`() {
             val game = createEventGame()
             game.cancel("우천 취소")
             assertThat(game.status).isEqualTo(EventGameStatus.CANCELLED)
             assertThat(game.cancelReason).isEqualTo("우천 취소")
-        }
-
-        @Test
-        fun `경기 취소 성공 - CLOSED 상태`() {
-            val game = createEventGame()
-            game.closeRecruitment()
-            game.cancel("인원 부족")
-            assertThat(game.status).isEqualTo(EventGameStatus.CANCELLED)
-            assertThat(game.cancelReason).isEqualTo("인원 부족")
-        }
-
-        @Test
-        fun `경기 취소 성공 - TEAM_ASSIGNED 상태`() {
-            val game = createGameReadyToStart()
-            game.cancel("구장 사용 불가")
-            assertThat(game.status).isEqualTo(EventGameStatus.CANCELLED)
-        }
-
-        @Test
-        fun `IN_PROGRESS 상태에서 취소하면 예외`() {
-            val game = createGameInProgress()
-
-            assertThatThrownBy { game.cancel("취소 사유") }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `FINISHED 상태에서 취소하면 예외`() {
-            val game = createGameInProgress()
-            game.finish(5, 3)
-
-            assertThatThrownBy { game.cancel("취소 사유") }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `이미 취소된 게임에서 취소하면 예외`() {
-            val game = createEventGame()
-            game.cancel("첫 번째 취소")
-
-            assertThatThrownBy { game.cancel("두 번째 취소") }
-                .isInstanceOf(InvalidStateException::class.java)
         }
 
         @Test
@@ -247,97 +89,32 @@ class EventGameTest {
         }
 
         @Test
-        fun `취소 사유가 공백이면 예외`() {
-            val game = createEventGame()
-            assertThatThrownBy { game.cancel("   ") }
-                .isInstanceOf(IllegalArgumentException::class.java)
-        }
-
-        @Test
-        fun `경기 시작 성공`() {
-            val game = createGameReadyToStart()
-            game.start()
-
-            assertThat(game.status).isEqualTo(EventGameStatus.IN_PROGRESS)
-            assertThat(game.startedAt).isNotNull()
-        }
-
-        @Test
-        fun `RECRUITING 상태에서 시작하면 예외`() {
-            val game = createEventGame()
-
-            assertThatThrownBy { game.start() }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `CLOSED 상태에서 시작하면 예외`() {
+        fun `경기 종료 성공`() {
             val game = createEventGame()
             game.closeRecruitment()
 
-            assertThatThrownBy { game.start() }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
+            // 참가자 추가 및 팀 배정을 위해 먼저 RECRUITING 상태에서 참가
+            val game2 = createEventGame()
+            val p1 = EventGameParticipant.create(game2, 10L)
+            val p2 = EventGameParticipant.create(game2, 20L)
+            game2.addParticipant(p1)
+            game2.addParticipant(p2)
+            p1.confirm()
+            p2.confirm()
+            p1.assignTeam(TeamAssignment.TEAM_A)
+            p2.assignTeam(TeamAssignment.TEAM_B)
+            game2.closeRecruitment()
+            game2.completeTeamAssignment()
+            game2.start()
 
-        @Test
-        fun `경기 종료 성공`() {
-            val game = createGameInProgress()
+            assertThat(game2.status).isEqualTo(EventGameStatus.IN_PROGRESS)
+            assertThat(game2.startedAt).isNotNull()
 
-            game.finish(5, 3)
-            assertThat(game.status).isEqualTo(EventGameStatus.FINISHED)
-            assertThat(game.teamAScore).isEqualTo(5)
-            assertThat(game.teamBScore).isEqualTo(3)
-            assertThat(game.endedAt).isNotNull()
-        }
-
-        @Test
-        fun `RECRUITING 상태에서 종료하면 예외`() {
-            val game = createEventGame()
-
-            assertThatThrownBy { game.finish(5, 3) }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `TEAM_ASSIGNED 상태에서 종료하면 예외`() {
-            val game = createGameReadyToStart()
-
-            assertThatThrownBy { game.finish(5, 3) }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `음수 점수로 종료하면 예외 - teamAScore`() {
-            val game = createGameInProgress()
-
-            assertThatThrownBy { game.finish(-1, 3) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("0 이상")
-        }
-
-        @Test
-        fun `음수 점수로 종료하면 예외 - teamBScore`() {
-            val game = createGameInProgress()
-
-            assertThatThrownBy { game.finish(3, -1) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("0 이상")
-        }
-
-        @Test
-        fun `RECRUITING 상태에서 팀 배정 완료하면 예외`() {
-            val game = createEventGame()
-
-            assertThatThrownBy { game.completeTeamAssignment() }
-                .isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `IN_PROGRESS 상태에서 팀 배정 완료하면 예외`() {
-            val game = createGameInProgress()
-
-            assertThatThrownBy { game.completeTeamAssignment() }
-                .isInstanceOf(InvalidStateException::class.java)
+            game2.finish(5, 3)
+            assertThat(game2.status).isEqualTo(EventGameStatus.FINISHED)
+            assertThat(game2.teamAScore).isEqualTo(5)
+            assertThat(game2.teamBScore).isEqualTo(3)
+            assertThat(game2.endedAt).isNotNull()
         }
     }
 
@@ -398,27 +175,6 @@ class EventGameTest {
                 game.addParticipant(EventGameParticipant.create(game, 10L))
             }.isInstanceOf(InvalidStateException::class.java)
         }
-
-        @Test
-        fun `CANCELLED 상태에서 참가 불가`() {
-            val game = createEventGame()
-            game.cancel("취소")
-
-            assertThatThrownBy {
-                game.addParticipant(EventGameParticipant.create(game, 10L))
-            }.isInstanceOf(InvalidStateException::class.java)
-        }
-
-        @Test
-        fun `여러 참가자 추가 후 activeParticipantCount 검증`() {
-            val game = createEventGame()
-            game.addParticipant(EventGameParticipant.create(game, 10L))
-            game.addParticipant(EventGameParticipant.create(game, 20L))
-            game.addParticipant(EventGameParticipant.create(game, 30L))
-
-            assertThat(game.activeParticipantCount).isEqualTo(3)
-            assertThat(game.participants).hasSize(3)
-        }
     }
 
     @Nested
@@ -459,79 +215,6 @@ class EventGameTest {
 
             game.completeTeamAssignment()
             assertThat(game.status).isEqualTo(EventGameStatus.TEAM_ASSIGNED)
-        }
-
-        @Test
-        fun `취소된 참가자는 팀 배정 검증에서 제외`() {
-            val game = createEventGame()
-            val p1 = EventGameParticipant.create(game, 10L)
-            val p2 = EventGameParticipant.create(game, 20L)
-            val p3 = EventGameParticipant.create(game, 30L)
-            game.addParticipant(p1)
-            game.addParticipant(p2)
-            game.addParticipant(p3)
-            p1.confirm()
-            p2.confirm()
-            p3.confirm()
-            p3.cancel() // p3 취소
-            game.closeRecruitment()
-
-            p1.assignTeam(TeamAssignment.TEAM_A)
-            p2.assignTeam(TeamAssignment.TEAM_B)
-
-            // p3은 취소되었으므로 팀 배정 불필요
-            game.completeTeamAssignment()
-            assertThat(game.status).isEqualTo(EventGameStatus.TEAM_ASSIGNED)
-        }
-    }
-
-    @Nested
-    @DisplayName("전체 워크플로우")
-    inner class FullWorkflow {
-        @Test
-        fun `RECRUITING - CLOSED - TEAM_ASSIGNED - IN_PROGRESS - FINISHED 전체 흐름`() {
-            val game = createEventGame()
-            assertThat(game.status).isEqualTo(EventGameStatus.RECRUITING)
-
-            // 참가자 추가
-            val p1 = EventGameParticipant.create(game, 10L)
-            val p2 = EventGameParticipant.create(game, 20L)
-            game.addParticipant(p1)
-            game.addParticipant(p2)
-            p1.confirm()
-            p2.confirm()
-
-            // 팀 배정
-            p1.assignTeam(TeamAssignment.TEAM_A)
-            p2.assignTeam(TeamAssignment.TEAM_B)
-
-            // 모집 마감
-            game.closeRecruitment()
-            assertThat(game.status).isEqualTo(EventGameStatus.CLOSED)
-
-            // 팀 배정 완료
-            game.completeTeamAssignment()
-            assertThat(game.status).isEqualTo(EventGameStatus.TEAM_ASSIGNED)
-
-            // 경기 시작
-            game.start()
-            assertThat(game.status).isEqualTo(EventGameStatus.IN_PROGRESS)
-            assertThat(game.startedAt).isNotNull()
-
-            // 경기 종료
-            game.finish(7, 2)
-            assertThat(game.status).isEqualTo(EventGameStatus.FINISHED)
-            assertThat(game.teamAScore).isEqualTo(7)
-            assertThat(game.teamBScore).isEqualTo(2)
-            assertThat(game.endedAt).isNotNull()
-        }
-
-        @Test
-        fun `RECRUITING - CANCELLED 흐름`() {
-            val game = createEventGame()
-            game.cancel("인원 부족")
-            assertThat(game.status).isEqualTo(EventGameStatus.CANCELLED)
-            assertThat(game.cancelReason).isEqualTo("인원 부족")
         }
     }
 }

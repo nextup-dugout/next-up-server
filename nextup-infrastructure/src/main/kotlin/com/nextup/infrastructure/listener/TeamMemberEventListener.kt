@@ -12,7 +12,6 @@ import com.nextup.core.domain.game.HomeAway
 import com.nextup.core.domain.game.LineupSubmissionStatus
 import com.nextup.core.domain.stadium.BookingStatus
 import com.nextup.core.domain.team.JoinRequestStatus
-import com.nextup.core.port.attendance.ActivityScoreRepositoryPort
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
@@ -47,7 +46,6 @@ class TeamMemberEventListener(
     private val stadiumBookingRepository: StadiumBookingRepositoryPort,
     private val attendancePollRepository: AttendancePollRepositoryPort,
     private val teamJoinRequestRepository: TeamJoinRequestRepositoryPort,
-    private val activityScoreRepository: ActivityScoreRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(TeamMemberEventListener::class.java)
@@ -64,7 +62,6 @@ class TeamMemberEventListener(
         logger.info("팀원 탈퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
         withdrawCompetitionPlayersByPlayerId(event.playerId)
-        cleanupActivityScore(event.memberId)
     }
 
     /**
@@ -79,7 +76,6 @@ class TeamMemberEventListener(
         logger.info("팀원 강퇴 처리 - teamId={}, playerId={}, memberId={}", event.teamId, event.playerId, event.memberId)
         removePlayerFromActiveLineups(event.teamId, event.playerId)
         withdrawCompetitionPlayersByPlayerId(event.playerId)
-        cleanupActivityScore(event.memberId)
     }
 
     /**
@@ -99,7 +95,6 @@ class TeamMemberEventListener(
         cancelStadiumBookings(event.teamId)
         closeAttendancePolls(event.teamId)
         rejectPendingJoinRequests(event.teamId)
-        cleanupActivityScoresByTeam(event.teamId)
     }
 
     // -------------------------------------------------------------------------
@@ -328,23 +323,5 @@ class TeamMemberEventListener(
             teamJoinRequestRepository.save(request)
             logger.info("가입 신청 거절 - requestId={}", request.id)
         }
-    }
-
-    /**
-     * 팀원의 활동 점수를 삭제합니다.
-     * 팀원 탈퇴/강퇴 시 orphan 방지를 위해 호출됩니다.
-     */
-    private fun cleanupActivityScore(memberId: Long) {
-        activityScoreRepository.deleteByMemberId(memberId)
-        logger.info("활동 점수 삭제 완료 - memberId={}", memberId)
-    }
-
-    /**
-     * 팀의 모든 활동 점수를 삭제합니다.
-     * 팀 해산 시 orphan 방지를 위해 호출됩니다.
-     */
-    private fun cleanupActivityScoresByTeam(teamId: Long) {
-        activityScoreRepository.deleteByTeamId(teamId)
-        logger.info("팀 활동 점수 전체 삭제 완료 - teamId={}", teamId)
     }
 }

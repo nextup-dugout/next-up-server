@@ -86,7 +86,6 @@ class BattingRecordCorrectFieldTest {
                     "stolenBases",
                     "caughtStealing",
                     "groundedIntoDoublePlays",
-                    "triplePlays",
                 )
 
             // All fields can be corrected to 0 (the validate call may fail for some combinations

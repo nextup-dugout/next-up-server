@@ -136,13 +136,11 @@ class PlayerStatsService(
     ): SeasonBattingStats {
         val player = findPlayer(playerId)
 
-        // 시즌 통계 조회 또는 생성
-        val seasonStats =
-            seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)
-                ?: SeasonBattingStats.create(player, year)
-
-        // 기존 통계 초기화 (새로 계산하기 위해)
-        seasonStats.reset()
+        // 기존 시즌 통계가 있으면 삭제 후 새로 생성 (재계산)
+        seasonBattingStatsRepository.findByPlayerIdAndYear(playerId, year)?.let {
+            seasonBattingStatsRepository.delete(it)
+        }
+        val seasonStats = SeasonBattingStats.create(player, year)
 
         // 해당 시즌의 모든 타격 기록 조회
         val battingRecords = battingRecordRepository.findAllByPlayerIdAndYear(playerId, year)
@@ -171,13 +169,11 @@ class PlayerStatsService(
     ): SeasonPitchingStats {
         val player = findPlayer(playerId)
 
-        // 시즌 통계 조회 또는 생성
-        val seasonStats =
-            seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)
-                ?: SeasonPitchingStats.create(player, year)
-
-        // 기존 통계 초기화 (새로 계산하기 위해)
-        seasonStats.reset()
+        // 기존 시즌 통계가 있으면 삭제 후 새로 생성 (재계산)
+        seasonPitchingStatsRepository.findByPlayerIdAndYear(playerId, year)?.let {
+            seasonPitchingStatsRepository.delete(it)
+        }
+        val seasonStats = SeasonPitchingStats.create(player, year)
 
         // 해당 시즌의 모든 투수 기록 조회
         val pitchingRecords = pitchingRecordRepository.findAllByPlayerIdAndYear(playerId, year)

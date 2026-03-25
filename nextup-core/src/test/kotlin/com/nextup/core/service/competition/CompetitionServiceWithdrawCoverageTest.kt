@@ -17,6 +17,7 @@ import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -35,6 +36,7 @@ class CompetitionServiceWithdrawCoverageTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var bracketEntryRepository: BracketEntryRepositoryPort
+    private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var competitionService: CompetitionService
 
     private lateinit var association: Association
@@ -51,6 +53,7 @@ class CompetitionServiceWithdrawCoverageTest {
         gameRepository = mockk()
         teamRepository = mockk()
         bracketEntryRepository = mockk()
+        playerRepository = mockk()
         competitionService =
             CompetitionService(
                 competitionRepository,
@@ -59,6 +62,7 @@ class CompetitionServiceWithdrawCoverageTest {
                 gameRepository,
                 teamRepository,
                 bracketEntryRepository,
+                playerRepository,
             )
 
         association = Association(name = "서울시야구협회", region = "서울")
