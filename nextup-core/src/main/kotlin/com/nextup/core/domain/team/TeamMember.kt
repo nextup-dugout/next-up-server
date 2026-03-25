@@ -75,14 +75,6 @@ class TeamMember private constructor(
                 role.canVoteInPoll()
 
     /**
-     * 선거 참여 가능한지 확인합니다 (ACTIVE, SUSPENDED 모두 가능, GUEST 제외).
-     */
-    val canParticipateInElection: Boolean
-        get() =
-            status in listOf(TeamMemberStatus.ACTIVE, TeamMemberStatus.SUSPENDED) &&
-                role.canParticipateInElection()
-
-    /**
      * 라인업에 포함 가능한지 확인합니다 (ACTIVE이면 GUEST 포함 가능).
      */
     val canBeInLineup: Boolean
@@ -195,14 +187,11 @@ class TeamMember private constructor(
      * 일반 강퇴([kick])와 달리 역할 제한이 없으며, 요청자 권한 검증도 수행하지 않습니다.
      *
      * @param reason 강퇴 사유
-     * @return 강퇴된 멤버가 OWNER였는지 여부 (선거 트리거 판단용)
      */
-    fun forceKick(reason: String? = null): Boolean {
-        val wasOwner = this.role == TeamMemberRole.OWNER
+    fun forceKick(reason: String? = null) {
         this.status = TeamMemberStatus.KICKED
         this.leftAt = LocalDateTime.now()
         this.memo = reason
-        return wasOwner
     }
 
     /**
