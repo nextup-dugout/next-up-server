@@ -3,6 +3,7 @@ package com.nextup.backoffice.controller.admin
 import com.nextup.backoffice.dto.admin.AssignAdminRequest
 import com.nextup.backoffice.dto.admin.ChangeRoleRequest
 import com.nextup.backoffice.dto.admin.OrganizationAdminResponse
+import com.nextup.backoffice.dto.admin.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.domain.admin.OrganizationType
 import com.nextup.core.service.admin.OrganizationAdminService
@@ -53,7 +54,7 @@ class OrganizationAdminController(
             targetId = id,
             details = "{\"userId\":${request.userId},\"role\":\"${request.role}\"}",
         )
-        return ApiResponse.success(OrganizationAdminResponse.from(orgAdmin))
+        return ApiResponse.success(orgAdmin.toResponse())
     }
 
     @DeleteMapping("/{type}/{id}/admins/{userId}")
@@ -90,7 +91,7 @@ class OrganizationAdminController(
                 organizationType = organizationType,
                 organizationId = id,
             )
-        return ApiResponse.success(admins.map { OrganizationAdminResponse.from(it) })
+        return ApiResponse.success(admins.map { it.toResponse() })
     }
 
     @GetMapping("/by-user/{userId}")
@@ -98,7 +99,7 @@ class OrganizationAdminController(
         @PathVariable userId: Long,
     ): ApiResponse<List<OrganizationAdminResponse>> {
         val admins = organizationAdminService.getOrganizationsByUser(userId)
-        return ApiResponse.success(admins.map { OrganizationAdminResponse.from(it) })
+        return ApiResponse.success(admins.map { it.toResponse() })
     }
 
     @PutMapping("/{type}/{id}/admins/{userId}/role")
@@ -124,6 +125,6 @@ class OrganizationAdminController(
             targetId = id,
             details = "{\"userId\":$userId,\"newRole\":\"${request.role}\"}",
         )
-        return ApiResponse.success(OrganizationAdminResponse.from(orgAdmin))
+        return ApiResponse.success(orgAdmin.toResponse())
     }
 }

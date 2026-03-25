@@ -1,6 +1,5 @@
 package com.nextup.backoffice.dto.team
 
-import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.domain.team.TeamMemberStatus
 import jakarta.validation.constraints.NotNull
@@ -8,6 +7,8 @@ import java.time.LocalDateTime
 
 /**
  * 팀 멤버 관리자용 응답 DTO
+ *
+ * 변환 로직은 TeamExtensions.kt의 Extension Function을 사용합니다.
  */
 data class TeamMemberAdminResponse(
     val memberId: Long,
@@ -24,27 +25,7 @@ data class TeamMemberAdminResponse(
     val joinedAt: LocalDateTime,
     val leftAt: LocalDateTime?,
     val memo: String?,
-) {
-    companion object {
-        fun from(member: TeamMember): TeamMemberAdminResponse =
-            TeamMemberAdminResponse(
-                memberId = member.id,
-                teamId = member.team.id,
-                teamName = member.team.name,
-                userId = member.user.id,
-                userNickname = member.user.nickname,
-                userEmail = member.user.email,
-                playerId = member.player.id,
-                playerName = member.player.name,
-                role = member.role,
-                uniformNumber = member.uniformNumber,
-                status = member.status,
-                joinedAt = member.joinedAt,
-                leftAt = member.leftAt,
-                memo = member.memo,
-            )
-    }
-}
+)
 
 /**
  * 멤버 상태 변경 요청 DTO

@@ -40,10 +40,10 @@ data class PollResponse(
 
 /**
  * 투표 제출 요청 DTO
+ *
+ * playerId는 서버에서 @AuthenticationPrincipal userId + teamId로 도출합니다 (IDOR 방지).
  */
 data class SubmitVoteRequest(
-    @field:NotNull(message = "선수 ID는 필수입니다")
-    val playerId: Long,
     @field:NotNull(message = "투표 유형은 필수입니다")
     val voteType: VoteType,
     val absenceReason: AbsenceReason? = null,
