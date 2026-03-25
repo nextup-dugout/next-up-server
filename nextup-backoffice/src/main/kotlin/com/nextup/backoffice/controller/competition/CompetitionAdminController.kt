@@ -11,7 +11,6 @@ import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.service.competition.CompetitionService
 import com.nextup.core.service.competition.SeasonTransitionService
 import com.nextup.core.service.competition.dto.NextSeasonPreparationResult
-import com.nextup.core.service.competition.dto.SeasonArchiveResult
 import com.nextup.core.service.competition.dto.SeasonSummaryDto
 import com.nextup.core.service.competition.dto.TeamWithdrawalResult
 import jakarta.validation.Valid
@@ -216,34 +215,6 @@ class CompetitionAdminController(
                 description = request.description,
                 maxTeams = request.maxTeams,
             )
-        return ApiResponse.success(result)
-    }
-
-    /**
-     * 완료된 대회의 시즌 통계를 확정(아카이브)합니다.
-     *
-     * 해당 대회 연도의 모든 시즌 통계를 frozen 상태로 전환하여
-     * 기록 정정을 불가능하게 합니다.
-     */
-    @PostMapping("/{id}/archive")
-    fun archiveSeason(
-        @PathVariable id: Long,
-    ): ApiResponse<SeasonArchiveResult> {
-        val result = seasonTransitionService.archiveSeason(id)
-        return ApiResponse.success(result)
-    }
-
-    /**
-     * 시즌 통계 확정(아카이브)을 해제합니다.
-     *
-     * 공식 항의 등 특수한 경우 관리자가 아카이브를 해제하여
-     * 기록 정정이 가능하도록 합니다.
-     */
-    @PostMapping("/{id}/unarchive")
-    fun unarchiveSeason(
-        @PathVariable id: Long,
-    ): ApiResponse<SeasonArchiveResult> {
-        val result = seasonTransitionService.unarchiveSeason(id)
         return ApiResponse.success(result)
     }
 }

@@ -1,23 +1,13 @@
 package com.nextup.common.exception
 
 /**
- * 징계를 찾을 수 없을 때 발생하는 예외
+ * 선수 제재를 찾을 수 없을 때 발생하는 예외
  */
-class DisciplineNotFoundException(
-    disciplineId: Long,
+class PlayerBanNotFoundException(
+    banId: Long,
 ) : NotFoundException(
-        "DISCIPLINE_NOT_FOUND",
-        "Discipline not found: $disciplineId",
-    )
-
-/**
- * 징계 상태가 유효하지 않을 때 발생하는 예외
- */
-class InvalidDisciplineStateException(
-    message: String,
-) : InvalidStateException(
-        "INVALID_DISCIPLINE_STATE",
-        message,
+        "PLAYER_BAN_NOT_FOUND",
+        "Player ban not found: $banId",
     )
 
 /**
