@@ -95,7 +95,13 @@ class FieldingStatsEventListener(
             return
         }
 
-        logger.info("수비 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})", gameId, year, competitionType, fieldingRecords.size)
+        logger.info(
+            "수비 스탯 집계 시작 (gameId={}, year={}, competitionType={}, records={})",
+            gameId,
+            year,
+            competitionType,
+            fieldingRecords.size,
+        )
 
         val fieldingRecordsByPlayer = fieldingRecords.groupBy { it.gamePlayer.player.id }
 
