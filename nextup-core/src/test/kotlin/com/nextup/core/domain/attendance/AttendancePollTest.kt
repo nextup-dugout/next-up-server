@@ -192,4 +192,88 @@ class AttendancePollTest {
             poll.updateTitle("")
         }
     }
+
+    @Test
+    fun `카테고리를 지정하여 투표를 생성할 수 있다`() {
+        // given
+        val eventDate = LocalDateTime.now().plusDays(7)
+        val deadline = LocalDateTime.now().plusDays(5)
+
+        // when
+        val poll =
+            AttendancePoll.create(
+                team = team,
+                title = "연습 출석 조사",
+                eventDate = eventDate,
+                deadline = deadline,
+                category = EventCategory.PRACTICE,
+            )
+
+        // then
+        assertThat(poll.category).isEqualTo(EventCategory.PRACTICE)
+        assertThat(poll.gameId).isNull()
+        assertThat(poll.isGamePoll()).isFalse()
+    }
+
+    @Test
+    fun `경기용 투표를 생성할 수 있다`() {
+        // given
+        val eventDate = LocalDateTime.now().plusDays(7)
+        val deadline = LocalDateTime.now().plusDays(6)
+        val gameId = 100L
+
+        // when
+        val poll =
+            AttendancePoll.createForGame(
+                team = team,
+                gameId = gameId,
+                eventDate = eventDate,
+                deadline = deadline,
+            )
+
+        // then
+        assertThat(poll.category).isEqualTo(EventCategory.GAME)
+        assertThat(poll.gameId).isEqualTo(gameId)
+        assertThat(poll.isGamePoll()).isTrue()
+        assertThat(poll.title).isEqualTo("경기 출석 조사")
+        assertThat(poll.isOpen()).isTrue()
+    }
+
+    @Test
+    fun `GAME 카테고리에 gameId가 없으면 예외가 발생한다`() {
+        // given
+        val eventDate = LocalDateTime.now().plusDays(7)
+        val deadline = LocalDateTime.now().plusDays(5)
+
+        // when & then
+        assertThrows<IllegalArgumentException> {
+            AttendancePoll.create(
+                team = team,
+                title = "경기 투표",
+                eventDate = eventDate,
+                deadline = deadline,
+                category = EventCategory.GAME,
+                gameId = null,
+            )
+        }
+    }
+
+    @Test
+    fun `기본 카테고리는 OTHER이다`() {
+        // given
+        val eventDate = LocalDateTime.now().plusDays(7)
+        val deadline = LocalDateTime.now().plusDays(5)
+
+        // when
+        val poll =
+            AttendancePoll.create(
+                team = team,
+                title = "일반 투표",
+                eventDate = eventDate,
+                deadline = deadline,
+            )
+
+        // then
+        assertThat(poll.category).isEqualTo(EventCategory.OTHER)
+    }
 }

@@ -1,23 +1,25 @@
 package com.nextup.api.controller.game
 
 import com.nextup.api.dto.attendance.*
-import com.nextup.api.mapper.attendance.toMemberVoteResponse
-import com.nextup.api.mapper.attendance.toResponse
+import com.nextup.api.mapper.attendance.toGameVoteResponse
+import com.nextup.api.mapper.attendance.toSummaryResponse
 import com.nextup.common.dto.ApiResponse
-import com.nextup.core.service.game.GameParticipationService
+import com.nextup.core.service.attendance.AttendanceService
 import jakarta.validation.Valid
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
- * 출석 투표 API 컨트롤러
+ * 경기 출석 투표 API 컨트롤러
+ *
+ * 경기별 출석 투표를 관리합니다. AttendancePoll 통합 모델을 사용합니다.
  */
 @PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/games/{gameId}/attendance")
 class AttendanceController(
-    private val attendanceService: GameParticipationService,
+    private val attendanceService: AttendanceService,
 ) {
     /**
      * 출석 투표를 합니다.
@@ -28,19 +30,16 @@ class AttendanceController(
         @RequestBody @Valid request: AttendanceVoteRequest,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceVoteResponse> {
-        // 현재 사용자의 멤버 ID 조회
-        val member = attendanceService.findMemberInGame(gameId, userId)
-
         val vote =
-            attendanceService.vote(
+            attendanceService.voteForGame(
                 gameId = gameId,
-                memberId = member.id,
-                status = request.status,
+                userId = userId,
+                voteType = request.voteType,
                 absenceReason = request.absenceReason,
                 reasonDetail = request.reasonDetail,
             )
 
-        return ApiResponse.success(vote.toResponse())
+        return ApiResponse.success(vote.toGameVoteResponse(gameId))
     }
 
     /**
@@ -65,19 +64,15 @@ class AttendanceController(
         @PathVariable gameId: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceVotesResponse> {
-        // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        attendanceService.verifyGameTeamMember(gameId, userId)
-
-        val gameDate = attendanceService.getGameScheduledAt(gameId)
-        val votes = attendanceService.getVotesByGameId(gameId)
-        val summary = attendanceService.getVoteSummary(gameId)
+        val votes = attendanceService.getGameVotes(gameId, userId)
+        val summary = attendanceService.getGameVoteSummary(gameId, userId)
 
         val response =
             AttendanceVotesResponse(
                 gameId = gameId,
-                gameDate = gameDate,
-                votes = votes.toMemberVoteResponse(),
-                summary = summary.toResponse(),
+                pollId = summary.pollId,
+                votes = votes.toGameVoteResponse(gameId),
+                summary = summary.toSummaryResponse(),
             )
 
         return ApiResponse.success(response)
@@ -92,11 +87,8 @@ class AttendanceController(
         @PathVariable gameId: Long,
         @AuthenticationPrincipal userId: Long,
     ): ApiResponse<AttendanceSummaryResponse> {
-        // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        attendanceService.verifyGameTeamMember(gameId, userId)
-
-        val summary = attendanceService.getVoteSummary(gameId)
-        return ApiResponse.success(summary.toResponse())
+        val summary = attendanceService.getGameVoteSummary(gameId, userId)
+        return ApiResponse.success(summary.toSummaryResponse())
     }
 
     /**
@@ -107,18 +99,13 @@ class AttendanceController(
     fun getNonVoters(
         @PathVariable gameId: Long,
         @AuthenticationPrincipal userId: Long,
-    ): ApiResponse<List<MemberSummary>> {
-        // 인가 검증: 경기 참가 팀의 멤버인지 확인
-        attendanceService.verifyGameTeamMember(gameId, userId)
-
-        val nonVoters = attendanceService.getNonVoters(gameId)
+    ): ApiResponse<List<NonVoterResponse>> {
+        val nonVoters = attendanceService.getGameNonVoters(gameId, userId)
         val response =
             nonVoters.map {
-                MemberSummary(
-                    memberId = it.id,
-                    nickname = it.user.nickname,
-                    uniformNumber = it.uniformNumber,
-                    position = it.player.primaryPosition.abbreviation,
+                NonVoterResponse(
+                    playerId = it.player.id,
+                    playerName = it.player.name,
                 )
             }
         return ApiResponse.success(response)
