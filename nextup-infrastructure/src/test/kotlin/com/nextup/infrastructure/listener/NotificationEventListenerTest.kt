@@ -1,9 +1,7 @@
 package com.nextup.infrastructure.listener
 
 import com.nextup.core.domain.association.Association
-import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
-import com.nextup.core.domain.event.ElectionTiedEvent
 import com.nextup.core.domain.event.GameCancelledEvent
 import com.nextup.core.domain.event.GamePostponedEvent
 import com.nextup.core.domain.event.GameRescheduledEvent
@@ -580,77 +578,6 @@ class NotificationEventListenerTest {
             assertThat(requestSlot.captured.userId).isEqualTo(10L)
             assertThat(requestSlot.captured.type).isEqualTo(NotificationType.TEAM_MEMBER_KICKED)
             assertThat(requestSlot.captured.body).contains("타이거즈")
-        }
-    }
-
-    @Nested
-    @DisplayName("handleElectionTied")
-    inner class HandleElectionTied {
-        @Test
-        fun `should send ELECTION_TIED notification to team admins`() {
-            // given
-            val event =
-                ElectionTiedEvent(
-                    teamId = 1L,
-                    electionId = 42L,
-                    electionType = ElectionType.OWNER_ELECTION,
-                    tiedCandidateCount = 3,
-                    tiedVoteCount = 5L,
-                )
-
-            val ownerUser = User.createLocalUser("owner@example.com", "pw", "팀장")
-            setFieldId(ownerUser, User::class.java, 50L)
-            val ownerPlayer = Player(name = "팀장", primaryPosition = Position.STARTING_PITCHER)
-            ownerUser.player = ownerPlayer
-            val ownerMember = TeamMember.create(team, ownerUser, ownerPlayer, 1, TeamMemberRole.OWNER)
-
-            val managerUser = User.createLocalUser("manager@example.com", "pw", "매니저")
-            setFieldId(managerUser, User::class.java, 51L)
-            val managerPlayer = Player(name = "매니저", primaryPosition = Position.CATCHER)
-            managerUser.player = managerPlayer
-            val managerMember = TeamMember.create(team, managerUser, managerPlayer, 2, TeamMemberRole.MANAGER)
-
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(ownerMember, managerMember, member)
-            val requestsSlot = slot<List<SendNotificationRequest>>()
-            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
-
-            // when
-            listener.handleElectionTied(event)
-
-            // then
-            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
-            assertThat(requestsSlot.captured).hasSize(2)
-            assertThat(requestsSlot.captured.map { it.userId }).containsExactlyInAnyOrder(50L, 51L)
-            assertThat(requestsSlot.captured.all { it.type == NotificationType.ELECTION_TIED }).isTrue()
-            assertThat(requestsSlot.captured[0].body).contains("42").contains("3").contains("5")
-        }
-
-        @Test
-        fun `should not send notification to regular members`() {
-            // given
-            val event =
-                ElectionTiedEvent(
-                    teamId = 1L,
-                    electionId = 42L,
-                    electionType = ElectionType.OWNER_ELECTION,
-                    tiedCandidateCount = 2,
-                    tiedVoteCount = 3L,
-                )
-
-            every {
-                teamMemberRepository.findByTeamIdAndStatus(1L, TeamMemberStatus.ACTIVE)
-            } returns listOf(member)
-            val requestsSlot = slot<List<SendNotificationRequest>>()
-            every { notificationService.sendBatchNotifications(capture(requestsSlot)) } returns emptyList()
-
-            // when
-            listener.handleElectionTied(event)
-
-            // then
-            verify(exactly = 1) { notificationService.sendBatchNotifications(any()) }
-            assertThat(requestsSlot.captured).isEmpty()
         }
     }
 

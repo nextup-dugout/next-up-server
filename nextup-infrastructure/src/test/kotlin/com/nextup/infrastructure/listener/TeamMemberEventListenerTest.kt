@@ -9,9 +9,6 @@ import com.nextup.core.domain.competition.CompetitionPlayer
 import com.nextup.core.domain.competition.CompetitionPlayerStatus
 import com.nextup.core.domain.competition.CompetitionStatus
 import com.nextup.core.domain.competition.CompetitionType
-import com.nextup.core.domain.election.Election
-import com.nextup.core.domain.election.ElectionStatus
-import com.nextup.core.domain.election.ElectionType
 import com.nextup.core.domain.event.GameResultConfirmedEvent
 import com.nextup.core.domain.event.TeamDisbandedEvent
 import com.nextup.core.domain.event.TeamMemberKickedEvent
@@ -37,7 +34,6 @@ import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.repository.BracketEntryRepositoryPort
 import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
-import com.nextup.core.port.repository.ElectionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
@@ -53,7 +49,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -67,7 +62,6 @@ class TeamMemberEventListenerTest {
     private val bracketEntryRepository = mockk<BracketEntryRepositoryPort>()
     private val stadiumBookingRepository = mockk<StadiumBookingRepositoryPort>()
     private val attendancePollRepository = mockk<AttendancePollRepositoryPort>()
-    private val electionRepository = mockk<ElectionRepositoryPort>()
     private val teamJoinRequestRepository = mockk<TeamJoinRequestRepositoryPort>()
     private val activityScoreRepository = mockk<ActivityScoreRepositoryPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
@@ -82,7 +76,6 @@ class TeamMemberEventListenerTest {
             bracketEntryRepository = bracketEntryRepository,
             stadiumBookingRepository = stadiumBookingRepository,
             attendancePollRepository = attendancePollRepository,
-            electionRepository = electionRepository,
             teamJoinRequestRepository = teamJoinRequestRepository,
             activityScoreRepository = activityScoreRepository,
             eventPublisher = eventPublisher,
@@ -575,7 +568,7 @@ class TeamMemberEventListenerTest {
             } returns emptyList()
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
         }
@@ -604,7 +597,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -636,7 +629,7 @@ class TeamMemberEventListenerTest {
             justRun { booking.cancel() }
             every { stadiumBookingRepository.save(booking) } returns booking
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -666,7 +659,7 @@ class TeamMemberEventListenerTest {
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns listOf(poll)
             justRun { poll.close() }
             every { attendancePollRepository.save(poll) } returns poll
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -676,63 +669,6 @@ class TeamMemberEventListenerTest {
             // then
             verify(exactly = 1) { poll.close() }
             verify(exactly = 1) { attendancePollRepository.save(poll) }
-        }
-
-        @Test
-        @DisplayName("팀 해산 시 SCHEDULED/IN_PROGRESS 선거를 취소한다")
-        fun `should cancel scheduled and in-progress elections on team disband`() {
-            // given
-            val event = TeamDisbandedEvent(teamId = 1L)
-
-            val scheduledElection =
-                Election.create(
-                    teamId = 1L,
-                    title = "예정 선거",
-                    electionType = ElectionType.OWNER_ELECTION,
-                    startAt = Instant.now().plusSeconds(3600),
-                    endAt = Instant.now().plusSeconds(7200),
-                )
-            val inProgressElection =
-                Election.createEmergency(
-                    teamId = 1L,
-                    triggeredByMemberId = 100L,
-                    title = "긴급 선거",
-                    startAt = Instant.now().minusSeconds(3600),
-                    endAt = Instant.now().plusSeconds(3600),
-                )
-            val completedElection =
-                Election.create(
-                    teamId = 1L,
-                    title = "완료된 선거",
-                    electionType = ElectionType.CAPTAIN_ELECTION,
-                    startAt = Instant.now().minusSeconds(7200),
-                    endAt = Instant.now().minusSeconds(3600),
-                ).also {
-                    it.start()
-                    it.complete()
-                }
-
-            every {
-                competitionPlayerRepository.findActiveCompetitionIdsByTeamId(1L)
-            } returns emptySet()
-            every {
-                competitionPlayerRepository.findByTeamIdAndStatus(1L, CompetitionPlayerStatus.ACTIVE)
-            } returns emptyList()
-            every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
-            every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns
-                listOf(scheduledElection, inProgressElection, completedElection)
-            every { electionRepository.save(any()) } returnsArgument 0
-            every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
-            justRun { activityScoreRepository.deleteByTeamId(1L) }
-
-            // when
-            listener.handleTeamDisbanded(event)
-
-            // then
-            verify(exactly = 2) { electionRepository.save(any()) }
-            assert(scheduledElection.status == ElectionStatus.CANCELLED)
-            assert(inProgressElection.status == ElectionStatus.CANCELLED)
         }
 
         @Test
@@ -756,7 +692,7 @@ class TeamMemberEventListenerTest {
             } returns emptyList()
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns listOf(pendingRequest, approvedRequest)
             justRun { pendingRequest.cancel() }
             every { teamJoinRequestRepository.save(pendingRequest) } returns pendingRequest
@@ -785,7 +721,7 @@ class TeamMemberEventListenerTest {
             verify(exactly = 0) { competitionPlayerRepository.save(any()) }
             verify(exactly = 0) { stadiumBookingRepository.save(any()) }
             verify(exactly = 0) { attendancePollRepository.save(any()) }
-            verify(exactly = 0) { electionRepository.save(any()) }
+
             verify(exactly = 0) { teamJoinRequestRepository.save(any()) }
             verify(exactly = 0) { gameRepository.save(any()) }
             verify(exactly = 0) { bracketEntryRepository.save(any()) }
@@ -874,7 +810,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -932,7 +868,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -962,7 +898,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1056,7 +992,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1094,7 +1030,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1154,7 +1090,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1212,7 +1148,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1270,7 +1206,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1322,7 +1258,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1350,7 +1286,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1413,7 +1349,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
@@ -1474,7 +1410,7 @@ class TeamMemberEventListenerTest {
 
             every { stadiumBookingRepository.findByTeamIdAndStatus(1L, BookingStatus.CONFIRMED) } returns emptyList()
             every { attendancePollRepository.findByTeamId(1L, PollStatus.OPEN) } returns emptyList()
-            every { electionRepository.findAllByTeamId(1L) } returns emptyList()
+
             every { teamJoinRequestRepository.findByTeamId(1L) } returns emptyList()
             justRun { activityScoreRepository.deleteByTeamId(1L) }
 
