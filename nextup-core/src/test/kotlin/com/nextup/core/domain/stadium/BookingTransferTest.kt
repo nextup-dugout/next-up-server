@@ -36,6 +36,7 @@ class BookingTransferTest {
             assertThat(transfer.toTeamId).isEqualTo(20L)
             assertThat(transfer.message).isEqualTo("양도합니다")
             assertThat(transfer.status).isEqualTo(TransferStatus.PENDING)
+            assertThat(transfer.version).isEqualTo(0L)
         }
 
         @Test
