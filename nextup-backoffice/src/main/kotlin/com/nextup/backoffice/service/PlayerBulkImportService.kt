@@ -4,6 +4,7 @@ import com.nextup.backoffice.dto.player.PlayerBulkImportResponse
 import com.nextup.backoffice.dto.player.PlayerImportFailure
 import com.nextup.backoffice.dto.player.PlayerImportItem
 import com.nextup.backoffice.dto.player.PlayerImportResult
+import com.nextup.backoffice.dto.player.toImportResult
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -37,7 +38,7 @@ class PlayerBulkImportService(
                 validateItem(item, index)
                 val player = item.toEntity()
                 val saved = playerRepository.save(player)
-                importedPlayers.add(PlayerImportResult.from(saved))
+                importedPlayers.add(saved.toImportResult())
                 logger.info("선수 임포트 성공 - row={}, name={}, id={}", index, saved.name, saved.id)
             }.onFailure { e ->
                 logger.warn("선수 임포트 실패 - row={}, name={}, reason={}", index, item.name, e.message)
