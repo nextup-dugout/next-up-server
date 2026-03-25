@@ -1,8 +1,10 @@
 package com.nextup.core.service.competition
 
 import com.nextup.common.exception.CompetitionNotFoundException
+import com.nextup.common.exception.CrossRegistrationException
 import com.nextup.common.exception.InvalidCompetitionStateException
 import com.nextup.common.exception.LeagueNotFoundException
+import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.association.Association
 import com.nextup.core.domain.competition.Competition
@@ -21,6 +23,7 @@ import com.nextup.core.port.repository.CompetitionPlayerRepositoryPort
 import com.nextup.core.port.repository.CompetitionRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LeagueRepositoryPort
+import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import io.mockk.every
 import io.mockk.mockk
@@ -41,6 +44,7 @@ class CompetitionServiceTest {
     private lateinit var gameRepository: GameRepositoryPort
     private lateinit var teamRepository: TeamRepositoryPort
     private lateinit var bracketEntryRepository: BracketEntryRepositoryPort
+    private lateinit var playerRepository: PlayerRepositoryPort
     private lateinit var competitionService: CompetitionService
 
     @BeforeEach
@@ -51,6 +55,7 @@ class CompetitionServiceTest {
         gameRepository = mockk()
         teamRepository = mockk()
         bracketEntryRepository = mockk()
+        playerRepository = mockk()
         competitionService =
             CompetitionService(
                 competitionRepository,
@@ -59,6 +64,7 @@ class CompetitionServiceTest {
                 gameRepository,
                 teamRepository,
                 bracketEntryRepository,
+                playerRepository,
             )
     }
 
@@ -174,6 +180,186 @@ class CompetitionServiceTest {
             // when & then
             assertThatThrownBy {
                 competitionService.getById(id)
+            }.isInstanceOf(CompetitionNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getByIdWithLeague")
+    inner class GetByIdWithLeague {
+        @Test
+        fun `should return competition with league when found`() {
+            // given
+            val id = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(id, league, "2025 춘계대회", 2025, 1)
+            every { competitionRepository.findByIdWithLeague(id) } returns competition
+
+            // when
+            val result = competitionService.getByIdWithLeague(id)
+
+            // then
+            assertThat(result.id).isEqualTo(id)
+            assertThat(result.league).isEqualTo(league)
+        }
+
+        @Test
+        fun `should throw exception when not found`() {
+            // given
+            val id = 999L
+            every { competitionRepository.findByIdWithLeague(id) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.getByIdWithLeague(id)
+            }.isInstanceOf(CompetitionNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getAll")
+    inner class GetAll {
+        @Test
+        fun `should return all competitions`() {
+            // given
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competitions =
+                listOf(
+                    createCompetition(1L, league, "2025 춘계대회", 2025, 1),
+                    createCompetition(2L, league, "2025 하계대회", 2025, 2),
+                )
+            every { competitionRepository.findAll() } returns competitions
+
+            // when
+            val result = competitionService.getAll()
+
+            // then
+            assertThat(result).hasSize(2)
+        }
+
+        @Test
+        fun `should return empty list when no competitions exist`() {
+            // given
+            every { competitionRepository.findAll() } returns emptyList()
+
+            // when
+            val result = competitionService.getAll()
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("getByStatus")
+    inner class GetByStatus {
+        @Test
+        fun `should return competitions by status`() {
+            // given
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competitions =
+                listOf(
+                    createCompetition(1L, league, "2025 춘계대회", 2025, 1),
+                    createCompetition(2L, league, "2025 하계대회", 2025, 2),
+                )
+            every { competitionRepository.findByStatus(CompetitionStatus.SCHEDULED) } returns competitions
+
+            // when
+            val result = competitionService.getByStatus(CompetitionStatus.SCHEDULED)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result.all { it.status == CompetitionStatus.SCHEDULED }).isTrue()
+        }
+
+        @Test
+        fun `should return empty list when no competitions match status`() {
+            // given
+            every { competitionRepository.findByStatus(CompetitionStatus.COMPLETED) } returns emptyList()
+
+            // when
+            val result = competitionService.getByStatus(CompetitionStatus.COMPLETED)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("getCompetitionTeams")
+    inner class GetCompetitionTeams {
+        @Test
+        fun `should return teams with player counts`() {
+            // given
+            val competitionId = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team1 = createTeam(10L, "한강 타이거즈", league)
+            val team2 = createTeam(20L, "잠실 이글스", league)
+            val player1 = createPlayer(100L, "홍길동")
+            val player2 = createPlayer(101L, "김철수")
+            val player3 = createPlayer(102L, "이영희")
+
+            val activePlayers =
+                listOf(
+                    CompetitionPlayer.register(competition, team1, player1),
+                    CompetitionPlayer.register(competition, team1, player2),
+                    CompetitionPlayer.register(competition, team2, player3),
+                )
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndStatus(
+                    competitionId,
+                    CompetitionPlayerStatus.ACTIVE,
+                )
+            } returns activePlayers
+
+            // when
+            val result = competitionService.getCompetitionTeams(competitionId)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result[team1]).isEqualTo(2)
+            assertThat(result[team2]).isEqualTo(1)
+        }
+
+        @Test
+        fun `should return empty map when no active players`() {
+            // given
+            val competitionId = 1L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every {
+                competitionPlayerRepository.findByCompetitionIdAndStatus(
+                    competitionId,
+                    CompetitionPlayerStatus.ACTIVE,
+                )
+            } returns emptyList()
+
+            // when
+            val result = competitionService.getCompetitionTeams(competitionId)
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `should throw exception when competition not found`() {
+            // given
+            val competitionId = 999L
+            every { competitionRepository.findByIdOrNull(competitionId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.getCompetitionTeams(competitionId)
             }.isInstanceOf(CompetitionNotFoundException::class.java)
         }
     }
@@ -689,6 +875,349 @@ class CompetitionServiceTest {
             assertThat(result.forfeitedGameCount).isEqualTo(0)
             assertThat(finishedGame.status).isEqualTo(GameStatus.FINISHED)
             verify(exactly = 0) { gameRepository.save(any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("registerPlayer")
+    inner class RegisterPlayer {
+        @Test
+        fun `should register player to competition successfully`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val playerId = 100L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every { playerRepository.findByIdOrNull(playerId) } returns player
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns null
+            every { competitionPlayerRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayer(competitionId, teamId, playerId)
+
+            // then
+            assertThat(result.competition).isEqualTo(competition)
+            assertThat(result.team).isEqualTo(team)
+            assertThat(result.player).isEqualTo(player)
+            assertThat(result.status).isEqualTo(CompetitionPlayerStatus.ACTIVE)
+            verify { competitionPlayerRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw CrossRegistrationException when player already registered with another team`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val otherTeamId = 20L
+            val playerId = 100L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val otherTeam = createTeam(otherTeamId, "잠실 이글스", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            val existingRegistration = CompetitionPlayer.register(competition, otherTeam, player)
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every { playerRepository.findByIdOrNull(playerId) } returns player
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns existingRegistration
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.registerPlayer(competitionId, teamId, playerId)
+            }.isInstanceOf(CrossRegistrationException::class.java)
+                .hasMessageContaining("선수(ID: $playerId)")
+                .hasMessageContaining("다른 팀(ID: $otherTeamId)")
+        }
+
+        @Test
+        fun `should allow registration when player was previously withdrawn from another team`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val playerId = 100L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            // WITHDRAWN 상태이므로 findActive에서 null 반환
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every { playerRepository.findByIdOrNull(playerId) } returns player
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns null
+            every { competitionPlayerRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayer(competitionId, teamId, playerId)
+
+            // then
+            assertThat(result.team).isEqualTo(team)
+            assertThat(result.player).isEqualTo(player)
+            assertThat(result.status).isEqualTo(CompetitionPlayerStatus.ACTIVE)
+        }
+
+        @Test
+        fun `should allow re-registration with same team`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val playerId = 100L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            // 같은 팀으로 이미 등록되어 있는 경우 — 같은 팀이면 허용
+            val existingRegistration = CompetitionPlayer.register(competition, team, player)
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every { playerRepository.findByIdOrNull(playerId) } returns player
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns existingRegistration
+            every { competitionPlayerRepository.save(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayer(competitionId, teamId, playerId)
+
+            // then
+            assertThat(result.team).isEqualTo(team)
+        }
+
+        @Test
+        fun `should throw TeamNotFoundException when team does not exist`() {
+            // given
+            val competitionId = 1L
+            val teamId = 999L
+            val playerId = 100L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.registerPlayer(competitionId, teamId, playerId)
+            }.isInstanceOf(TeamNotFoundException::class.java)
+        }
+
+        @Test
+        fun `should throw PlayerNotFoundException when player does not exist`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val playerId = 999L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+
+            every { competitionRepository.findByIdOrNull(competitionId) } returns competition
+            every { teamRepository.findByIdOrNull(teamId) } returns team
+            every { playerRepository.findByIdOrNull(playerId) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.registerPlayer(competitionId, teamId, playerId)
+            }.isInstanceOf(PlayerNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("registerPlayers")
+    inner class RegisterPlayers {
+        @Test
+        fun `should register multiple players to competition successfully`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player1 = createPlayer(100L, "홍길동")
+            val player2 = createPlayer(101L, "김철수")
+            val players = listOf(player1, player2)
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, 100L)
+            } returns null
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, 101L)
+            } returns null
+            every { competitionPlayerRepository.saveAll(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayers(competition, team, players)
+
+            // then
+            assertThat(result).hasSize(2)
+            assertThat(result.all { it.competition == competition }).isTrue()
+            assertThat(result.all { it.team == team }).isTrue()
+            assertThat(result.all { it.status == CompetitionPlayerStatus.ACTIVE }).isTrue()
+            verify { competitionPlayerRepository.saveAll(any()) }
+        }
+
+        @Test
+        fun `should throw CrossRegistrationException when any player is already registered with another team`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val otherTeamId = 20L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val otherTeam = createTeam(otherTeamId, "잠실 이글스", league)
+            val player1 = createPlayer(100L, "홍길동")
+            val player2 = createPlayer(101L, "김철수")
+            val players = listOf(player1, player2)
+
+            val existingRegistration = CompetitionPlayer.register(competition, otherTeam, player1)
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, 100L)
+            } returns existingRegistration
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.registerPlayers(competition, team, players)
+            }.isInstanceOf(CrossRegistrationException::class.java)
+        }
+
+        @Test
+        fun `should register empty list of players`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+
+            every { competitionPlayerRepository.saveAll(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayers(competition, team, emptyList())
+
+            // then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `should allow batch registration when players already registered with same team`() {
+            // given
+            val competitionId = 1L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player1 = createPlayer(100L, "홍길동")
+            val players = listOf(player1)
+
+            // 같은 팀으로 이미 등록 — 허용
+            val existingRegistration = CompetitionPlayer.register(competition, team, player1)
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, 100L)
+            } returns existingRegistration
+            every { competitionPlayerRepository.saveAll(any()) } answers { firstArg() }
+
+            // when
+            val result = competitionService.registerPlayers(competition, team, players)
+
+            // then
+            assertThat(result).hasSize(1)
+            assertThat(result[0].team).isEqualTo(team)
+        }
+    }
+
+    @Nested
+    @DisplayName("validateNoCrossRegistration")
+    inner class ValidateNoCrossRegistration {
+        @Test
+        fun `should pass when no existing registration`() {
+            // given
+            val competitionId = 1L
+            val playerId = 100L
+            val teamId = 10L
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns null
+
+            // when & then (should not throw)
+            competitionService.validateNoCrossRegistration(competitionId, playerId, teamId)
+        }
+
+        @Test
+        fun `should pass when existing registration is with same team`() {
+            // given
+            val competitionId = 1L
+            val playerId = 100L
+            val teamId = 10L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val team = createTeam(teamId, "한강 타이거즈", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            val existingRegistration = CompetitionPlayer.register(competition, team, player)
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns existingRegistration
+
+            // when & then (should not throw)
+            competitionService.validateNoCrossRegistration(competitionId, playerId, teamId)
+        }
+
+        @Test
+        fun `should throw CrossRegistrationException when existing registration is with different team`() {
+            // given
+            val competitionId = 1L
+            val playerId = 100L
+            val teamId = 10L
+            val otherTeamId = 20L
+            val association = createAssociation(1L, "서울시야구협회")
+            val league = createLeague(1L, "1부 리그", association)
+            val competition = createCompetition(competitionId, league, "2025 춘계대회", 2025, 1)
+            val otherTeam = createTeam(otherTeamId, "잠실 이글스", league)
+            val player = createPlayer(playerId, "홍길동")
+
+            val existingRegistration = CompetitionPlayer.register(competition, otherTeam, player)
+
+            every {
+                competitionPlayerRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
+            } returns existingRegistration
+
+            // when & then
+            assertThatThrownBy {
+                competitionService.validateNoCrossRegistration(competitionId, playerId, teamId)
+            }.isInstanceOf(CrossRegistrationException::class.java)
+                .hasMessageContaining("다른 팀(ID: $otherTeamId)")
         }
     }
 

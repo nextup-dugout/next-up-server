@@ -1,61 +1,39 @@
 package com.nextup.api.mapper.attendance
 
 import com.nextup.api.dto.attendance.*
-import com.nextup.core.domain.game.GameParticipation
-import com.nextup.core.service.game.dto.AttendanceSummaryDto
+import com.nextup.core.domain.attendance.AttendanceVote
+import com.nextup.core.service.attendance.GameVoteSummary
 
 /**
- * GameParticipation를 AttendanceVoteResponse로 변환합니다.
+ * AttendanceVote를 게임 투표 응답 DTO로 변환합니다.
  */
-fun GameParticipation.toResponse(): AttendanceVoteResponse =
+fun AttendanceVote.toGameVoteResponse(gameId: Long): AttendanceVoteResponse =
     AttendanceVoteResponse(
         voteId = this.id,
-        gameId = this.game.id,
-        memberId = this.member.id,
-        status = this.status,
+        gameId = gameId,
+        playerId = this.player.id,
+        playerName = this.player.name,
+        voteType = this.voteType,
         absenceReason = this.absenceReason,
         reasonDetail = this.reasonDetail,
-        respondedAt = this.respondedAt,
     )
 
 /**
- * AttendanceSummaryDto를 AttendanceSummaryResponse로 변환합니다.
+ * List<AttendanceVote>를 게임 투표 응답 DTO 리스트로 변환합니다.
  */
-fun AttendanceSummaryDto.toResponse(): AttendanceSummaryResponse =
+fun List<AttendanceVote>.toGameVoteResponse(gameId: Long): List<AttendanceVoteResponse> =
+    this.map { it.toGameVoteResponse(gameId) }
+
+/**
+ * GameVoteSummary를 AttendanceSummaryResponse로 변환합니다.
+ */
+fun GameVoteSummary.toSummaryResponse(): AttendanceSummaryResponse =
     AttendanceSummaryResponse(
+        pollId = this.pollId,
         gameId = this.gameId,
-        totalMembers = this.totalMembers,
+        totalVotes = this.totalVotes,
         attending = this.attending,
         absent = this.absent,
         undecided = this.undecided,
         responseRate = this.responseRate,
     )
-
-/**
- * GameParticipation를 MemberVoteResponse로 변환합니다.
- */
-fun GameParticipation.toMemberVoteResponse(): MemberVoteResponse =
-    MemberVoteResponse(
-        voteId = this.id,
-        member =
-            MemberSummary(
-                memberId = this.member.id,
-                nickname = this.member.user.nickname,
-                uniformNumber = this.member.uniformNumber,
-                position = this.member.player.primaryPosition.abbreviation,
-            ),
-        status = this.status,
-        absenceReason = this.absenceReason,
-        reasonDetail = this.reasonDetail,
-        respondedAt = this.respondedAt,
-    )
-
-/**
- * List<GameParticipation>를 List<AttendanceVoteResponse>로 변환합니다.
- */
-fun List<GameParticipation>.toResponse(): List<AttendanceVoteResponse> = this.map { it.toResponse() }
-
-/**
- * List<GameParticipation>를 List<MemberVoteResponse>로 변환합니다.
- */
-fun List<GameParticipation>.toMemberVoteResponse(): List<MemberVoteResponse> = this.map { it.toMemberVoteResponse() }

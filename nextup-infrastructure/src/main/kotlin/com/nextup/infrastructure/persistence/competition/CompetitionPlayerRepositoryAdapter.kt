@@ -58,4 +58,9 @@ class CompetitionPlayerRepositoryAdapter(
         playerId: Long,
         statuses: List<CompetitionPlayerStatus>,
     ): List<CompetitionPlayer> = jpaRepository.findByPlayerIdAndStatusIn(playerId, statuses)
+
+    override fun findActiveByCompetitionIdAndPlayerId(
+        competitionId: Long,
+        playerId: Long,
+    ): CompetitionPlayer? = jpaRepository.findActiveByCompetitionIdAndPlayerId(competitionId, playerId)
 }

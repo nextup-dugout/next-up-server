@@ -91,6 +91,44 @@ class PlayerService(
     }
 
     /**
+     * 무소속 선수 프로필을 생성합니다.
+     *
+     * 팀에 소속되지 않은 사용자가 이벤트 게임 등에 참가하기 위해
+     * 선수 프로필을 생성합니다. User에 Player를 연결합니다.
+     *
+     * @param userId 인증된 사용자 ID
+     * @param name 선수 이름
+     * @param primaryPosition 주 포지션
+     * @param throwingHand 투구 손 (선택)
+     * @param battingHand 타격 손 (선택)
+     * @return 생성된 선수
+     */
+    @Transactional
+    fun createUnaffiliatedPlayer(
+        userId: Long,
+        name: String,
+        primaryPosition: Position,
+        throwingHand: ThrowingHand? = null,
+        battingHand: BattingHand? = null,
+    ): Player {
+        val user =
+            userRepository.findByIdOrNull(userId)
+                ?: throw UserNotFoundException(userId)
+        require(user.player == null) { "이미 연결된 선수 프로필이 있습니다." }
+
+        val player =
+            Player(
+                name = name,
+                primaryPosition = primaryPosition,
+                throwingHand = throwingHand,
+                battingHand = battingHand,
+            )
+        val savedPlayer = playerRepository.save(player)
+        user.linkPlayer(savedPlayer)
+        return savedPlayer
+    }
+
+    /**
      * 인증된 사용자의 선수 프로필을 수정합니다.
      *
      * @param userId 인증된 사용자 ID
