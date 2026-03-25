@@ -19,6 +19,8 @@ import com.nextup.scorer.dto.game.ForfeitRequestDto
 import com.nextup.scorer.dto.game.GameEndRequestDto
 import com.nextup.scorer.dto.game.GameResponse
 import com.nextup.scorer.dto.game.PlateAppearanceRequestDto
+import com.nextup.scorer.dto.game.PlayerExitRequestDto
+import com.nextup.scorer.dto.game.PlayerExitResponse
 import com.nextup.scorer.dto.game.PositionChangeRequestDto
 import com.nextup.scorer.dto.game.PositionChangeResponse
 import com.nextup.scorer.dto.game.PositionSwapRequestDto
@@ -445,5 +447,31 @@ class GameScorerController(
         val events =
             gamePositionChangeService.swapPositions(gameId, request.toDomain(), scorerId)
         return ApiResponse.success(events.toPositionSwapResponse())
+    }
+
+    /**
+     * 교체 없이 선수를 퇴장시킵니다 (부상/개인 사유 등).
+     *
+     * 교체 선수가 없는 상황에서 선수가 경기에서 빠져야 할 때 사용합니다.
+     * 퇴장 후 인원 부족이 감지되면 응답에 포함하여 기록원에게 몰수패 판단을 요청합니다.
+     *
+     * @see GameSubstitutionService.removePlayerWithoutSubstitution
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/{gameId}/player-exits")
+    @ResponseStatus(HttpStatus.OK)
+    fun removePlayerWithoutSubstitution(
+        @PathVariable gameId: Long,
+        @AuthenticationPrincipal scorerId: Long,
+        @RequestBody @Valid request: PlayerExitRequestDto,
+    ): ApiResponse<PlayerExitResponse> {
+        val result =
+            gameSubstitutionService.removePlayerWithoutSubstitution(
+                gameId = gameId,
+                gamePlayerId = request.gamePlayerId,
+                inning = request.inning,
+                scorerId = scorerId,
+            )
+        return ApiResponse.success(PlayerExitResponse.from(result))
     }
 }
