@@ -16,7 +16,6 @@ import com.nextup.core.port.repository.BattingRecordRepositoryPort
 import com.nextup.core.port.repository.GameEventRepositoryPort
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.GameSubstitutionService
 import com.nextup.core.service.game.dto.SubstitutionRequest
@@ -39,7 +38,6 @@ class GameSubstitutionServiceImpl(
     private val gameEventRepository: GameEventRepositoryPort,
     private val battingRecordRepository: BattingRecordRepositoryPort,
     private val pitchingRecordRepository: PitchingRecordRepositoryPort,
-    private val mercenaryParticipationRepository: MercenaryParticipationRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : GameSubstitutionService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -82,34 +80,6 @@ class GameSubstitutionServiceImpl(
         if (game.gameState.wasDhReleased && request.newPosition == Position.DESIGNATED_HITTER) {
             throw InvalidGameStateException(
                 "DH가 이미 해제되었으므로 재지정할 수 없습니다.",
-            )
-        }
-
-        // L-3: 용병 쿼터 검증 — 교체 들어오는 선수가 용병인 경우 쿼터 확인
-        val maxMercenaryCount = game.competition.gameRules.maxMercenaryCount
-        if (maxMercenaryCount != null) {
-            val mercenaryParticipations =
-                mercenaryParticipationRepository.findByGameId(gameId)
-            val mercenaryPlayerIds =
-                mercenaryParticipations
-                    .filter { it.teamId == outgoingPlayer.gameTeam.team.id }
-                    .map { it.playerId }
-                    .toSet()
-
-            val allTeamPlayers =
-                gamePlayerRepository.findAllByGameId(gameId)
-                    .filter { it.gameTeam.id == outgoingPlayer.gameTeam.id }
-            val currentMercenaryCount =
-                allTeamPlayers.count { it.player.id in mercenaryPlayerIds }
-
-            val isIncomingMercenary = incomingPlayer.player.id in mercenaryPlayerIds
-            val isOutgoingMercenary = outgoingPlayer.player.id in mercenaryPlayerIds
-
-            LineupValidator.validateMercenaryQuotaForSubstitution(
-                currentMercenaryCount = currentMercenaryCount,
-                isIncomingPlayerMercenary = isIncomingMercenary,
-                isOutgoingPlayerMercenary = isOutgoingMercenary,
-                maxMercenaryCount = maxMercenaryCount,
             )
         }
 

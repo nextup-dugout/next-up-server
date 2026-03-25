@@ -2,6 +2,7 @@ package com.nextup.infrastructure.service.game
 
 import com.nextup.common.exception.GameNotFoundException
 import com.nextup.common.exception.InvalidGameStateException
+import com.nextup.core.domain.event.GameEndedEvent
 import com.nextup.core.domain.event.GamePostponedEvent
 import com.nextup.core.domain.event.GameRescheduledEvent
 import com.nextup.core.domain.event.GameResultConfirmedEvent
@@ -15,6 +16,7 @@ import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.GameTeamRepositoryPort
 import com.nextup.core.port.repository.PitchingRecordRepositoryPort
 import com.nextup.core.service.game.PitchingDecisionService
+import com.nextup.core.service.game.dto.GameEndReason
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -547,6 +549,104 @@ class GameLifecycleServiceImplTest {
             assertThat(eventSlot.captured.awayTeamId).isEqualTo(20L)
             assertThat(eventSlot.captured.homeScore).isEqualTo(7)
             assertThat(eventSlot.captured.awayScore).isEqualTo(2)
+        }
+    }
+
+    @Nested
+    @DisplayName("endGame - TIME_LIMIT (전용 API 안내)")
+    inner class EndGameTimeLimitTest {
+        @Test
+        @DisplayName("TIME_LIMIT 사유로 endGame을 호출하면 전용 API 사용 안내 예외가 발생한다")
+        fun endGameWithTimeLimitThrowsException() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, status = GameStatus.IN_PROGRESS)
+            val gameTeams =
+                listOf(
+                    createGameTeam(gameId, teamId = 10L, homeAway = HomeAway.HOME),
+                    createGameTeam(gameId, teamId = 20L, homeAway = HomeAway.AWAY),
+                )
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+            every { gameTeamRepository.findAllByGameId(gameId) } returns gameTeams
+
+            // when & then
+            assertThatThrownBy { service.endGame(gameId, GameEndReason.TIME_LIMIT, scorerId) }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("전용 API")
+        }
+    }
+
+    @Nested
+    @DisplayName("activateTimeLimit - 시간 제한 플래그 활성화")
+    inner class ActivateTimeLimitTest {
+        @Test
+        @DisplayName("진행 중인 경기에서 시간 제한 플래그를 활성화할 수 있다")
+        fun activateTimeLimitSuccess() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, status = GameStatus.IN_PROGRESS)
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+            every { gameRepository.save(game) } returns game
+
+            // when
+            val result = service.activateTimeLimit(gameId, scorerId)
+
+            // then
+            assertThat(result).isEqualTo(game)
+            verify(exactly = 1) { game.activateTimeLimit() }
+            verify(exactly = 1) { gameRepository.save(game) }
+        }
+
+        @Test
+        @DisplayName("진행 중이 아닌 경기는 시간 제한을 활성화할 수 없다")
+        fun cannotActivateTimeLimitForFinishedGame() {
+            // given
+            val gameId = 1L
+            val scorerId = 100L
+            val game = createGame(gameId, status = GameStatus.FINISHED)
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+
+            // when & then
+            assertThatThrownBy { service.activateTimeLimit(gameId, scorerId) }
+                .isInstanceOf(InvalidGameStateException::class.java)
+                .hasMessageContaining("진행 중인 경기만 시간 제한을 활성화할 수 있습니다")
+        }
+    }
+
+    @Nested
+    @DisplayName("advanceHalfInning - 시간 제한 자동 종료")
+    inner class AdvanceHalfInningTimeLimitTest {
+        @Test
+        @DisplayName("시간 제한 도달로 이닝 전환 시 경기가 자동 종료된다")
+        fun advanceHalfInningTimeLimitEndsGame() {
+            // given
+            val gameId = 1L
+            val scorerId = 999L
+            val game = createGame(gameId, status = GameStatus.IN_PROGRESS)
+            val homeTeam = createGameTeam(gameId, teamId = 10L, homeAway = HomeAway.HOME)
+            val awayTeam = createGameTeam(gameId, teamId = 20L, homeAway = HomeAway.AWAY)
+            val gameTeams = listOf(homeTeam, awayTeam)
+
+            every { gameRepository.findByIdOrNull(gameId) } returns game
+            every { gameTeamRepository.findAllByGameId(gameId) } returns gameTeams
+            every { game.nextHalfInning(gameTeams = gameTeams) } returns TiebreakerResult.TIME_LIMIT_GAME_ENDED
+            every { gameRepository.save(game) } returns game
+            every { pitchingRecordRepository.findAllByGameId(gameId) } returns emptyList()
+            every { homeTeam.totalScore } returns 3
+            every { awayTeam.totalScore } returns 1
+
+            // when
+            service.advanceHalfInning(gameId, scorerId)
+
+            // then
+            verify(exactly = 1) { gameRepository.save(game) }
+            verify { eventPublisher.publishEvent(any<GameEndedEvent>()) }
+            verify { eventPublisher.publishEvent(any<GameResultConfirmedEvent>()) }
         }
     }
 

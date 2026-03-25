@@ -13,7 +13,6 @@ import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
 import com.nextup.core.port.repository.LineupEntryRepositoryPort
 import com.nextup.core.port.repository.LineupSubmissionRepositoryPort
-import com.nextup.core.port.repository.MercenaryParticipationRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.port.repository.UserRepositoryPort
@@ -37,7 +36,6 @@ class LineupService(
     private val userRepository: UserRepositoryPort,
     private val attendancePollRepository: AttendancePollRepositoryPort,
     private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
-    private val mercenaryParticipationRepository: MercenaryParticipationRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     // ========== 라인업 제출 관리 ==========
@@ -220,17 +218,9 @@ class LineupService(
         // 참석(ATTENDING) 선수 ID 목록 조회
         val attendingPlayerIds = getAttendingPlayerIds(submission.game.id, submission.team.id)
 
-        // L-3: 용병 쿼터 검증을 위한 데이터 조회
-        val mercenaryPlayerIds =
-            getMercenaryPlayerIds(submission.game.id, submission.team.id)
-        val maxMercenaryCount =
-            submission.game.competition.gameRules.maxMercenaryCount
-
-        // 필수 포지션 + 중복 선수 + DH 규칙 + 참석자만 등록 + 용병 쿼터 검증은 submit() 내부에서 수행
+        // 필수 포지션 + 중복 선수 + DH 규칙 + 참석자만 등록 검증은 submit() 내부에서 수행
         submission.submit(
             attendingPlayerIds = attendingPlayerIds,
-            mercenaryPlayerIds = mercenaryPlayerIds,
-            maxMercenaryCount = maxMercenaryCount,
         )
         lineupSubmissionRepository.save(submission)
 
@@ -386,21 +376,6 @@ class LineupService(
 
         return opponentSubmission
     }
-
-    /**
-     * 경기에서 해당 팀의 용병 선수 ID 목록을 조회합니다.
-     *
-     * L-3: MercenaryParticipation에서 해당 경기/팀의 용병 참가 기록을 조회하여
-     * 용병 선수 ID 목록을 반환합니다.
-     */
-    private fun getMercenaryPlayerIds(
-        gameId: Long,
-        teamId: Long,
-    ): Set<Long> =
-        mercenaryParticipationRepository.findByGameId(gameId)
-            .filter { it.teamId == teamId }
-            .map { it.playerId }
-            .toSet()
 
     /**
      * 경기의 특정 팀에서 참석(ATTEND) 상태인 선수 ID 목록을 조회합니다.

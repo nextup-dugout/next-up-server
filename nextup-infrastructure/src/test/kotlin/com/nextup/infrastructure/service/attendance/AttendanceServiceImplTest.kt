@@ -20,6 +20,7 @@ import com.nextup.core.domain.player.Player
 import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.Team
 import com.nextup.core.domain.team.TeamMember
+import com.nextup.core.domain.team.TeamMemberRole
 import com.nextup.core.domain.user.User
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
@@ -853,5 +854,100 @@ class AttendanceServiceImplTest {
         every { vote.isAttending() } returns (voteType == VoteType.ATTEND)
         every { vote.isAbsent() } returns (voteType == VoteType.ABSENT)
         return vote
+    }
+
+    @Nested
+    @DisplayName("submitVoteByUserId")
+    inner class SubmitVoteByUserId {
+        @Test
+        fun `userId로부터 playerId를 도출하여 출석 투표에 응답할 수 있다`() {
+            // given
+            val user = mockk<User>(relaxed = true)
+            every { user.id } returns 100L
+            val member =
+                TeamMember.create(
+                    team = team,
+                    user = user,
+                    player = player,
+                    uniformNumber = 1,
+                    role = TeamMemberRole.MEMBER,
+                )
+
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 100L) } returns member
+            every { attendancePollRepository.findById(1L) } returns poll
+            every { playerRepository.findByIdOrNull(any()) } returns player
+            every { attendanceVoteRepository.findByPollIdAndPlayerId(1L, any()) } returns null
+            every { attendanceVoteRepository.save(any()) } returnsArgument 0
+
+            // when
+            val result =
+                attendanceService.submitVoteByUserId(
+                    pollId = 1L,
+                    teamId = 1L,
+                    userId = 100L,
+                    voteType = VoteType.ATTEND,
+                )
+
+            // then
+            assertThat(result.voteType).isEqualTo(VoteType.ATTEND)
+            verify { teamMemberRepository.findByTeamIdAndUserId(1L, 100L) }
+            verify { attendanceVoteRepository.save(any()) }
+        }
+
+        @Test
+        fun `팀 멤버가 아닌 사용자가 투표하면 ForbiddenException 발생`() {
+            // given
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) } returns null
+
+            // when & then
+            val exception =
+                assertThrows<ForbiddenException> {
+                    attendanceService.submitVoteByUserId(
+                        pollId = 1L,
+                        teamId = 1L,
+                        userId = 999L,
+                        voteType = VoteType.ATTEND,
+                    )
+                }
+
+            assertThat(exception.message).contains("해당 팀의 멤버가 아닙니다")
+            verify { teamMemberRepository.findByTeamIdAndUserId(1L, 999L) }
+        }
+
+        @Test
+        fun `불참 사유와 함께 userId로 출석 투표에 응답할 수 있다`() {
+            // given
+            val user = mockk<User>(relaxed = true)
+            every { user.id } returns 100L
+            val member =
+                TeamMember.create(
+                    team = team,
+                    user = user,
+                    player = player,
+                    uniformNumber = 1,
+                    role = TeamMemberRole.MEMBER,
+                )
+
+            every { teamMemberRepository.findByTeamIdAndUserId(1L, 100L) } returns member
+            every { attendancePollRepository.findById(1L) } returns poll
+            every { playerRepository.findByIdOrNull(any()) } returns player
+            every { attendanceVoteRepository.findByPollIdAndPlayerId(1L, any()) } returns null
+            every { attendanceVoteRepository.save(any()) } returnsArgument 0
+
+            // when
+            val result =
+                attendanceService.submitVoteByUserId(
+                    pollId = 1L,
+                    teamId = 1L,
+                    userId = 100L,
+                    voteType = VoteType.ABSENT,
+                    absenceReason = com.nextup.core.domain.attendance.AbsenceReason.OTHER,
+                    reasonDetail = "야근",
+                )
+
+            // then
+            assertThat(result.voteType).isEqualTo(VoteType.ABSENT)
+            verify { teamMemberRepository.findByTeamIdAndUserId(1L, 100L) }
+        }
     }
 }

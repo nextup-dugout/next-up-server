@@ -127,6 +127,31 @@ class AttendanceServiceImpl(
         return attendanceVoteRepository.save(vote)
     }
 
+    @Transactional
+    override fun submitVoteByUserId(
+        pollId: Long,
+        teamId: Long,
+        userId: Long,
+        voteType: VoteType,
+        absenceReason: AbsenceReason?,
+        reasonDetail: String?,
+    ): AttendanceVote {
+        val member =
+            teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                ?: throw ForbiddenException(
+                    "ATTENDANCE_VOTE_ACCESS_DENIED",
+                    "해당 팀의 멤버가 아닙니다. teamId=$teamId",
+                )
+
+        return submitVote(
+            pollId = pollId,
+            playerId = member.player.id,
+            voteType = voteType,
+            absenceReason = absenceReason,
+            reasonDetail = reasonDetail,
+        )
+    }
+
     override fun getPoll(pollId: Long): AttendancePoll =
         attendancePollRepository.findById(pollId)
             ?: throw AttendancePollNotFoundException(pollId)

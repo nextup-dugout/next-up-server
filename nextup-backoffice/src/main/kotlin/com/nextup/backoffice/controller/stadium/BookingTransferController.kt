@@ -2,6 +2,7 @@ package com.nextup.backoffice.controller.stadium
 
 import com.nextup.backoffice.dto.stadium.BookingTransferResponse
 import com.nextup.backoffice.dto.stadium.CreateBookingTransferRequest
+import com.nextup.backoffice.dto.stadium.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.service.stadium.BookingTransferService
 import jakarta.validation.Valid
@@ -50,7 +51,7 @@ class BookingTransferController(
             )
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(BookingTransferResponse.from(transfer)))
+            .body(ApiResponse.success(transfer.toResponse()))
     }
 
     /**
@@ -68,7 +69,7 @@ class BookingTransferController(
                 transferId = transferId,
                 userId = userId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
     }
 
     /**
@@ -86,7 +87,7 @@ class BookingTransferController(
                 transferId = transferId,
                 userId = userId,
             )
-        return ApiResponse.success(BookingTransferResponse.from(transfer))
+        return ApiResponse.success(transfer.toResponse())
     }
 
     /**
@@ -99,7 +100,7 @@ class BookingTransferController(
         @RequestParam teamId: Long,
     ): ApiResponse<List<BookingTransferResponse>> {
         val transfers = bookingTransferService.getSentTransfers(teamId)
-        return ApiResponse.success(transfers.map { BookingTransferResponse.from(it) })
+        return ApiResponse.success(transfers.map { it.toResponse() })
     }
 
     /**
@@ -112,6 +113,6 @@ class BookingTransferController(
         @RequestParam teamId: Long,
     ): ApiResponse<List<BookingTransferResponse>> {
         val transfers = bookingTransferService.getReceivedTransfers(teamId)
-        return ApiResponse.success(transfers.map { BookingTransferResponse.from(it) })
+        return ApiResponse.success(transfers.map { it.toResponse() })
     }
 }

@@ -1,6 +1,7 @@
 package com.nextup.backoffice.controller.audit
 
 import com.nextup.backoffice.dto.audit.AuditLogResponse
+import com.nextup.backoffice.dto.audit.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.common.PageResult
 import com.nextup.core.service.audit.AuditLogQueryService
@@ -46,11 +47,11 @@ class AuditLogAdminController(
                 toDate = toDate,
                 pageCommand = pageable.toPageCommand(),
             )
-        return ApiResponse.success(page.map { AuditLogResponse.from(it) })
+        return ApiResponse.success(page.map { it.toResponse() })
     }
 
     @GetMapping("/{id}")
     fun getAuditLog(
         @PathVariable id: Long,
-    ): ApiResponse<AuditLogResponse> = ApiResponse.success(AuditLogResponse.from(auditLogQueryService.findById(id)))
+    ): ApiResponse<AuditLogResponse> = ApiResponse.success(auditLogQueryService.findById(id).toResponse())
 }
