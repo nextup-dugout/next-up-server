@@ -8,6 +8,7 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.time.format.DateTimeFormatter
 
@@ -71,18 +72,21 @@ class TeamAttendancePollController(
 
     /**
      * 출석 투표에 응답합니다.
+     * playerId는 @AuthenticationPrincipal userId + teamId로 서버에서 도출합니다 (IDOR 방지).
      */
     @PutMapping("/{pollId}/vote")
     @PreAuthorize("@teamSecurity.isMember(#teamId, authentication.principal)")
     fun submitVote(
         @PathVariable teamId: Long,
         @PathVariable pollId: Long,
+        @AuthenticationPrincipal userId: Long,
         @RequestBody @Valid request: SubmitVoteRequest,
     ): ApiResponse<VoteResponse> {
         val vote =
-            attendanceService.submitVote(
+            attendanceService.submitVoteByUserId(
                 pollId = pollId,
-                playerId = request.playerId,
+                teamId = teamId,
+                userId = userId,
                 voteType = request.voteType,
                 absenceReason = request.absenceReason,
                 reasonDetail = request.reasonDetail,

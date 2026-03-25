@@ -1,6 +1,7 @@
 package com.nextup.backoffice.controller.player
 
 import com.nextup.backoffice.dto.player.ImportResultResponse
+import com.nextup.backoffice.dto.player.toResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.common.exception.InvalidInputException
 import com.nextup.core.service.player.PlayerBulkImportService
@@ -55,7 +56,7 @@ class PlayerBulkImportAdminController(
 
         val rows = parseCsvFile(file)
         val result = playerBulkImportService.importPlayers(rows)
-        return ApiResponse.success(ImportResultResponse.from(result))
+        return ApiResponse.success(result.toResponse())
     }
 
     private fun parseCsvFile(file: MultipartFile): List<PlayerImportRow> {

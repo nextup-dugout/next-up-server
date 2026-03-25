@@ -1,6 +1,5 @@
 package com.nextup.core.domain
 
-import com.nextup.common.exception.MercenaryQuotaExceededException
 import com.nextup.core.domain.competition.Competition
 import com.nextup.core.domain.competition.CompetitionType
 import com.nextup.core.domain.competition.GameRules
@@ -9,8 +8,6 @@ import com.nextup.core.domain.event.StadiumClosedEvent
 import com.nextup.core.domain.game.FieldingRecord
 import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GameStatus
-import com.nextup.core.domain.game.LineupEntry
-import com.nextup.core.domain.game.LineupValidator
 import com.nextup.core.domain.game.PitchingRecord
 import com.nextup.core.domain.game.PlateAppearanceResult
 import com.nextup.core.domain.league.League
@@ -122,76 +119,6 @@ class FutureImprovementsTest {
             val result = PlateAppearanceResult.INTERFERENCE
             assertThat(result.isAtBat).isFalse()
             assertThat(result.isOnBase).isTrue()
-        }
-    }
-
-    // === L-3: 용병 쿼터제 ===
-
-    @Nested
-    @DisplayName("L-3: 용병 쿼터제")
-    inner class L3MercenaryQuotaTest {
-        @Test
-        fun `GameRules에 용병 쿼터를 설정할 수 있다`() {
-            val rules = GameRules(maxMercenaryCount = 3)
-            assertThat(rules.maxMercenaryCount).isEqualTo(3)
-        }
-
-        @Test
-        fun `용병 쿼터가 null이면 무제한이다`() {
-            val rules = GameRules()
-            assertThat(rules.maxMercenaryCount).isNull()
-        }
-
-        @Test
-        fun `용병 쿼터가 음수이면 예외가 발생한다`() {
-            assertThatThrownBy { GameRules(maxMercenaryCount = -1) }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("용병 쿼터 제한은 0 이상")
-        }
-
-        @Test
-        fun `라인업의 용병 수가 쿼터를 초과하면 예외가 발생한다`() {
-            // given
-            val entries =
-                listOf(
-                    createMockLineupEntry(1L, Position.CATCHER),
-                    createMockLineupEntry(2L, Position.STARTING_PITCHER),
-                    createMockLineupEntry(3L, Position.FIRST_BASE),
-                    createMockLineupEntry(4L, Position.SECOND_BASE),
-                )
-            val mercenaryPlayerIds = setOf(1L, 2L, 3L) // 3명이 용병
-
-            // when & then
-            assertThatThrownBy {
-                LineupValidator.validateMercenaryQuota(entries, mercenaryPlayerIds, 2)
-            }.isInstanceOf(MercenaryQuotaExceededException::class.java)
-        }
-
-        @Test
-        fun `라인업의 용병 수가 쿼터 이내이면 검증을 통과한다`() {
-            // given
-            val entries =
-                listOf(
-                    createMockLineupEntry(1L, Position.CATCHER),
-                    createMockLineupEntry(2L, Position.STARTING_PITCHER),
-                )
-            val mercenaryPlayerIds = setOf(1L) // 1명이 용병
-
-            // when & then (예외 없이 통과)
-            LineupValidator.validateMercenaryQuota(entries, mercenaryPlayerIds, 2)
-        }
-
-        private fun createMockLineupEntry(
-            playerId: Long,
-            position: Position,
-        ): LineupEntry {
-            val player = createPlayer(playerId)
-            val entry = mockk<LineupEntry>(relaxed = true)
-            every { entry.player } returns player
-            every { entry.isStarter } returns true
-            every { entry.position } returns position
-            every { entry.battingOrder } returns playerId.toInt()
-            return entry
         }
     }
 

@@ -279,7 +279,7 @@ class MatchRequestControllerTest {
     @Test
     fun `should accept match response successfully`() {
         // given
-        every { matchingService.acceptResponse(1L, 1L) } returns mockMatchRequest
+        every { matchingService.acceptResponse(1L, 1L, 1L) } returns mockMatchRequest
 
         // when & then
         mockMvc
@@ -288,14 +288,14 @@ class MatchRequestControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.id").value(1))
 
-        verify(exactly = 1) { matchingService.acceptResponse(1L, 1L) }
+        verify(exactly = 1) { matchingService.acceptResponse(1L, 1L, 1L) }
     }
 
     @Test
     fun `should cancel match request successfully`() {
         // given
         every { mockMatchRequest.status } returns MatchRequestStatus.CANCELLED
-        every { matchingService.cancelRequest(1L) } returns mockMatchRequest
+        every { matchingService.cancelRequest(1L, 1L) } returns mockMatchRequest
 
         // when & then
         mockMvc
@@ -305,13 +305,13 @@ class MatchRequestControllerTest {
             .andExpect(jsonPath("$.data.id").value(1))
             .andExpect(jsonPath("$.data.status").value("CANCELLED"))
 
-        verify(exactly = 1) { matchingService.cancelRequest(1L) }
+        verify(exactly = 1) { matchingService.cancelRequest(1L, 1L) }
     }
 
     @Test
     fun `should fail to cancel when request not found`() {
         // given
-        every { matchingService.cancelRequest(999L) } throws MatchRequestNotFoundException(999L)
+        every { matchingService.cancelRequest(999L, 1L) } throws MatchRequestNotFoundException(999L)
 
         // when & then
         mockMvc

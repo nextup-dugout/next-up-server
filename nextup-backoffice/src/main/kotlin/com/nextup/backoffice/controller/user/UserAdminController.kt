@@ -5,6 +5,8 @@ import com.nextup.backoffice.dto.user.RoleChangeRequest
 import com.nextup.backoffice.dto.user.UpdateUserRequest
 import com.nextup.backoffice.dto.user.UserAdminResponse
 import com.nextup.backoffice.dto.user.UserListResponse
+import com.nextup.backoffice.dto.user.toAdminResponse
+import com.nextup.backoffice.dto.user.toListResponse
 import com.nextup.common.dto.ApiResponse
 import com.nextup.core.common.PageResult
 import com.nextup.core.domain.user.Role
@@ -49,7 +51,7 @@ class UserAdminController(
             } else {
                 userService.getAll(pageable.toPageCommand())
             }
-        return ApiResponse.success(users.map { UserListResponse.from(it) })
+        return ApiResponse.success(users.map { it.toListResponse() })
     }
 
     @GetMapping("/search")
@@ -57,7 +59,7 @@ class UserAdminController(
         @RequestParam keyword: String,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ApiResponse<PageResult<UserListResponse>> =
-        ApiResponse.success(userService.search(keyword, pageable.toPageCommand()).map { UserListResponse.from(it) })
+        ApiResponse.success(userService.search(keyword, pageable.toPageCommand()).map { it.toListResponse() })
 
     @GetMapping("/by-role/{role}")
     fun getUsersByRole(
@@ -66,14 +68,14 @@ class UserAdminController(
     ): ApiResponse<PageResult<UserListResponse>> =
         ApiResponse.success(
             userService.getAllByRole(Role.valueOf(role.uppercase()), pageable.toPageCommand()).map {
-                UserListResponse.from(it)
+                it.toListResponse()
             },
         )
 
     @GetMapping("/{id}")
     fun getUser(
         @PathVariable id: Long,
-    ): ApiResponse<UserAdminResponse> = ApiResponse.success(UserAdminResponse.from(userService.getById(id)))
+    ): ApiResponse<UserAdminResponse> = ApiResponse.success(userService.getById(id).toAdminResponse())
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -98,7 +100,7 @@ class UserAdminController(
             targetId = user.id,
             details = "{\"email\":\"${request.email}\"}",
         )
-        return ApiResponse.success(UserAdminResponse.from(userService.getById(user.id)))
+        return ApiResponse.success(userService.getById(user.id).toAdminResponse())
     }
 
     @PutMapping("/{id}")
@@ -130,7 +132,7 @@ class UserAdminController(
             targetId = id,
             details = "{\"nickname\":\"${request.nickname}\"}",
         )
-        return ApiResponse.success(UserAdminResponse.from(userService.getById(id)))
+        return ApiResponse.success(userService.getById(id).toAdminResponse())
     }
 
     @PostMapping("/{id}/roles")
@@ -147,7 +149,7 @@ class UserAdminController(
             targetId = id,
             details = "{\"role\":\"${request.role}\"}",
         )
-        return ApiResponse.success(UserAdminResponse.from(user))
+        return ApiResponse.success(user.toAdminResponse())
     }
 
     @DeleteMapping("/{id}/roles/{role}")
@@ -164,7 +166,7 @@ class UserAdminController(
             targetId = id,
             details = "{\"role\":\"$role\"}",
         )
-        return ApiResponse.success(UserAdminResponse.from(user))
+        return ApiResponse.success(user.toAdminResponse())
     }
 
     @DeleteMapping("/{id}")
@@ -174,7 +176,7 @@ class UserAdminController(
     ): ApiResponse<UserAdminResponse> {
         val user = userService.deactivate(id)
         auditService.log(adminUserId = admin.id, action = "DEACTIVATE_USER", targetEntity = "User", targetId = id)
-        return ApiResponse.success(UserAdminResponse.from(user))
+        return ApiResponse.success(user.toAdminResponse())
     }
 
     @PostMapping("/{id}/activate")
@@ -184,6 +186,6 @@ class UserAdminController(
     ): ApiResponse<UserAdminResponse> {
         val user = userService.activate(id)
         auditService.log(adminUserId = admin.id, action = "ACTIVATE_USER", targetEntity = "User", targetId = id)
-        return ApiResponse.success(UserAdminResponse.from(user))
+        return ApiResponse.success(user.toAdminResponse())
     }
 }

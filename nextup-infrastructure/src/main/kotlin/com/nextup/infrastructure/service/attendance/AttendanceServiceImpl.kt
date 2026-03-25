@@ -2,6 +2,7 @@ package com.nextup.infrastructure.service.attendance
 
 import com.nextup.common.exception.AttendancePollClosedException
 import com.nextup.common.exception.AttendancePollNotFoundException
+import com.nextup.common.exception.ForbiddenException
 import com.nextup.common.exception.PlayerNotFoundException
 import com.nextup.common.exception.TeamNotFoundException
 import com.nextup.core.domain.attendance.AbsenceReason
@@ -13,6 +14,7 @@ import com.nextup.core.domain.event.AttendanceVoteCreatedEvent
 import com.nextup.core.port.attendance.AttendancePollRepositoryPort
 import com.nextup.core.port.attendance.AttendanceVoteRepositoryPort
 import com.nextup.core.port.repository.PlayerRepositoryPort
+import com.nextup.core.port.repository.TeamMemberRepositoryPort
 import com.nextup.core.port.repository.TeamRepositoryPort
 import com.nextup.core.service.attendance.AttendanceService
 import org.springframework.context.ApplicationEventPublisher
@@ -30,6 +32,7 @@ class AttendanceServiceImpl(
     private val attendancePollRepository: AttendancePollRepositoryPort,
     private val attendanceVoteRepository: AttendanceVoteRepositoryPort,
     private val teamRepository: TeamRepositoryPort,
+    private val teamMemberRepository: TeamMemberRepositoryPort,
     private val playerRepository: PlayerRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) : AttendanceService {
@@ -106,6 +109,31 @@ class AttendanceServiceImpl(
             )
 
         return attendanceVoteRepository.save(vote)
+    }
+
+    @Transactional
+    override fun submitVoteByUserId(
+        pollId: Long,
+        teamId: Long,
+        userId: Long,
+        voteType: VoteType,
+        absenceReason: AbsenceReason?,
+        reasonDetail: String?,
+    ): AttendanceVote {
+        val member =
+            teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                ?: throw ForbiddenException(
+                    "ATTENDANCE_VOTE_ACCESS_DENIED",
+                    "해당 팀의 멤버가 아닙니다. teamId=$teamId",
+                )
+
+        return submitVote(
+            pollId = pollId,
+            playerId = member.player.id,
+            voteType = voteType,
+            absenceReason = absenceReason,
+            reasonDetail = reasonDetail,
+        )
     }
 
     override fun getPoll(pollId: Long): AttendancePoll =
