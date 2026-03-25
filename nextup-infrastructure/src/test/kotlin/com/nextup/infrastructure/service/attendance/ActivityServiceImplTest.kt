@@ -7,7 +7,6 @@ import com.nextup.core.domain.game.Game
 import com.nextup.core.domain.game.GamePlayer
 import com.nextup.core.domain.game.GameTeam
 import com.nextup.core.domain.player.Player
-import com.nextup.core.domain.player.Position
 import com.nextup.core.domain.team.TeamMember
 import com.nextup.core.port.repository.GamePlayerRepositoryPort
 import com.nextup.core.port.repository.GameRepositoryPort
@@ -91,13 +90,14 @@ class ActivityServiceImplTest {
                 status = null,
                 pageCommand = any<PageCommand>(),
             )
-        } returns PageResult(
-            content = games,
-            page = 0,
-            size = 10000,
-            totalElements = games.size.toLong(),
-            totalPages = 1,
-        )
+        } returns
+            PageResult(
+                content = games,
+                page = 0,
+                size = 10000,
+                totalElements = games.size.toLong(),
+                totalPages = 1,
+            )
     }
 
     @Nested
@@ -132,11 +132,12 @@ class ActivityServiceImplTest {
             // given
             every { teamRepository.existsById(1L) } returns true
             mockTeamGames(1L, listOf(1L, 2L, 3L))
-            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns listOf(
-                createMockGamePlayer(10L, 1L),
-                createMockGamePlayer(10L, 2L),
-                createMockGamePlayer(10L, 3L),
-            )
+            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns
+                listOf(
+                    createMockGamePlayer(10L, 1L),
+                    createMockGamePlayer(10L, 2L),
+                    createMockGamePlayer(10L, 3L),
+                )
 
             // when
             val result = activityService.getGameParticipationRate(1L, 10L)
@@ -150,10 +151,11 @@ class ActivityServiceImplTest {
             // given
             every { teamRepository.existsById(1L) } returns true
             mockTeamGames(1L, listOf(1L, 2L, 3L))
-            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns listOf(
-                createMockGamePlayer(10L, 1L),
-                createMockGamePlayer(10L, 3L),
-            )
+            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns
+                listOf(
+                    createMockGamePlayer(10L, 1L),
+                    createMockGamePlayer(10L, 3L),
+                )
 
             // when
             val result = activityService.getGameParticipationRate(1L, 10L)
@@ -182,10 +184,11 @@ class ActivityServiceImplTest {
             every { teamRepository.existsById(1L) } returns true
             mockTeamGames(1L, listOf(1L, 2L))
             // 선수는 게임 ID 100, 200에만 참여 (다른 팀의 경기)
-            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns listOf(
-                createMockGamePlayer(10L, 100L),
-                createMockGamePlayer(10L, 200L),
-            )
+            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns
+                listOf(
+                    createMockGamePlayer(10L, 100L),
+                    createMockGamePlayer(10L, 200L),
+                )
 
             // when
             val result = activityService.getGameParticipationRate(1L, 10L)
@@ -233,15 +236,17 @@ class ActivityServiceImplTest {
             every { teamMemberRepository.findByTeamId(1L) } returns listOf(member1, member2)
 
             // 홍길동: 4경기 중 3경기 참여 (75%)
-            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns listOf(
-                createMockGamePlayer(10L, 1L),
-                createMockGamePlayer(10L, 2L),
-                createMockGamePlayer(10L, 4L),
-            )
+            every { gamePlayerRepositoryPort.findAllByPlayerId(10L) } returns
+                listOf(
+                    createMockGamePlayer(10L, 1L),
+                    createMockGamePlayer(10L, 2L),
+                    createMockGamePlayer(10L, 4L),
+                )
             // 김철수: 4경기 중 1경기 참여 (25%)
-            every { gamePlayerRepositoryPort.findAllByPlayerId(20L) } returns listOf(
-                createMockGamePlayer(20L, 3L),
-            )
+            every { gamePlayerRepositoryPort.findAllByPlayerId(20L) } returns
+                listOf(
+                    createMockGamePlayer(20L, 3L),
+                )
 
             // when
             val result = activityService.listGameParticipationRates(1L)
