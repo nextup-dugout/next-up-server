@@ -178,6 +178,130 @@ class EventGameTest {
     }
 
     @Nested
+    @DisplayName("상태 전이 실패 케이스")
+    inner class StatusTransitionFailure {
+        @Test
+        fun `종료된 게임은 취소할 수 없다`() {
+            val game = createEventGame()
+            val p1 = EventGameParticipant.create(game, 10L)
+            val p2 = EventGameParticipant.create(game, 20L)
+            game.addParticipant(p1)
+            game.addParticipant(p2)
+            p1.confirm()
+            p2.confirm()
+            p1.assignTeam(TeamAssignment.TEAM_A)
+            p2.assignTeam(TeamAssignment.TEAM_B)
+            game.closeRecruitment()
+            game.completeTeamAssignment()
+            game.start()
+            game.finish(5, 3)
+
+            assertThatThrownBy { game.cancel("취소") }
+                .isInstanceOf(InvalidStateException::class.java)
+        }
+
+        @Test
+        fun `모집 중인 상태에서 시작할 수 없다`() {
+            val game = createEventGame()
+
+            assertThatThrownBy { game.start() }
+                .isInstanceOf(InvalidStateException::class.java)
+        }
+
+        @Test
+        fun `모집 중인 상태에서 종료할 수 없다`() {
+            val game = createEventGame()
+
+            assertThatThrownBy { game.finish(1, 0) }
+                .isInstanceOf(InvalidStateException::class.java)
+        }
+
+        @Test
+        fun `음수 점수로 종료할 수 없다`() {
+            val game = createEventGame()
+            val p1 = EventGameParticipant.create(game, 10L)
+            val p2 = EventGameParticipant.create(game, 20L)
+            game.addParticipant(p1)
+            game.addParticipant(p2)
+            p1.confirm()
+            p2.confirm()
+            p1.assignTeam(TeamAssignment.TEAM_A)
+            p2.assignTeam(TeamAssignment.TEAM_B)
+            game.closeRecruitment()
+            game.completeTeamAssignment()
+            game.start()
+
+            assertThatThrownBy { game.finish(-1, 0) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `제목이 비어있으면 생성 실패`() {
+            assertThatThrownBy {
+                EventGame.create(
+                    organizerId = 1L,
+                    title = "  ",
+                    scheduledAt = LocalDateTime.now().plusDays(7),
+                    maxParticipants = 20,
+                )
+            }.isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `모집 마감이 아닌 상태에서 팀 배정 완료 불가`() {
+            val game = createEventGame()
+
+            assertThatThrownBy { game.completeTeamAssignment() }
+                .isInstanceOf(InvalidStateException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("EventGameStatus")
+    inner class EventGameStatusTest {
+        @Test
+        fun `FINISHED 상태는 isCompleted true`() {
+            assertThat(EventGameStatus.FINISHED.isCompleted()).isTrue()
+        }
+
+        @Test
+        fun `CANCELLED 상태는 isCompleted true`() {
+            assertThat(EventGameStatus.CANCELLED.isCompleted()).isTrue()
+        }
+
+        @Test
+        fun `RECRUITING 상태는 isCompleted false`() {
+            assertThat(EventGameStatus.RECRUITING.isCompleted()).isFalse()
+        }
+
+        @Test
+        fun `IN_PROGRESS 상태는 isCompleted false`() {
+            assertThat(EventGameStatus.IN_PROGRESS.isCompleted()).isFalse()
+        }
+
+        @Test
+        fun `canJoin은 RECRUITING에서만 true`() {
+            assertThat(EventGameStatus.RECRUITING.canJoin()).isTrue()
+            assertThat(EventGameStatus.CLOSED.canJoin()).isFalse()
+        }
+
+        @Test
+        fun `canFinish는 IN_PROGRESS에서만 true`() {
+            assertThat(EventGameStatus.IN_PROGRESS.canFinish()).isTrue()
+            assertThat(EventGameStatus.TEAM_ASSIGNED.canFinish()).isFalse()
+        }
+
+        @Test
+        fun `canCancel은 RECRUITING, CLOSED, TEAM_ASSIGNED에서 true`() {
+            assertThat(EventGameStatus.RECRUITING.canCancel()).isTrue()
+            assertThat(EventGameStatus.CLOSED.canCancel()).isTrue()
+            assertThat(EventGameStatus.TEAM_ASSIGNED.canCancel()).isTrue()
+            assertThat(EventGameStatus.IN_PROGRESS.canCancel()).isFalse()
+            assertThat(EventGameStatus.FINISHED.canCancel()).isFalse()
+        }
+    }
+
+    @Nested
     @DisplayName("팀 배정")
     inner class TeamAssignmentTest {
         @Test
