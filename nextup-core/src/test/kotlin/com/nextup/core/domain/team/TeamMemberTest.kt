@@ -167,31 +167,29 @@ class TeamMemberTest {
     @DisplayName("L-10: 강제 강퇴")
     inner class ForceKick {
         @Test
-        fun `일반 멤버를 강제 강퇴하면 wasOwner가 false이다`() {
+        fun `일반 멤버를 강제 강퇴할 수 있다`() {
             // when
-            val wasOwner = member.forceKick("관리자 강퇴")
+            member.forceKick("관리자 강퇴")
 
             // then
-            assertThat(wasOwner).isFalse()
             assertThat(member.status).isEqualTo(TeamMemberStatus.KICKED)
             assertThat(member.leftAt).isNotNull()
             assertThat(member.memo).isEqualTo("관리자 강퇴")
         }
 
         @Test
-        fun `OWNER를 강제 강퇴하면 wasOwner가 true이다`() {
+        fun `OWNER를 강제 강퇴할 수 있다`() {
             // when
-            val wasOwner = owner.forceKick("관리자에 의한 OWNER 강퇴")
+            owner.forceKick("관리자에 의한 OWNER 강퇴")
 
             // then
-            assertThat(wasOwner).isTrue()
             assertThat(owner.status).isEqualTo(TeamMemberStatus.KICKED)
             assertThat(owner.leftAt).isNotNull()
             assertThat(owner.memo).isEqualTo("관리자에 의한 OWNER 강퇴")
         }
 
         @Test
-        fun `MANAGER를 강제 강퇴하면 wasOwner가 false이다`() {
+        fun `MANAGER를 강제 강퇴할 수 있다`() {
             // given
             val managerUser = User.createLocalUser("manager@example.com", "password", "매니저")
             val managerPlayer = Player(name = "매니저", primaryPosition = Position.CATCHER)
@@ -199,20 +197,18 @@ class TeamMemberTest {
             setTeamMemberId(manager, 3L)
 
             // when
-            val wasOwner = manager.forceKick("관리자 강퇴")
+            manager.forceKick("관리자 강퇴")
 
             // then
-            assertThat(wasOwner).isFalse()
             assertThat(manager.status).isEqualTo(TeamMemberStatus.KICKED)
         }
 
         @Test
         fun `사유 없이 강제 강퇴할 수 있다`() {
             // when
-            val wasOwner = member.forceKick()
+            member.forceKick()
 
             // then
-            assertThat(wasOwner).isFalse()
             assertThat(member.status).isEqualTo(TeamMemberStatus.KICKED)
             assertThat(member.memo).isNull()
         }
@@ -408,12 +404,6 @@ class TeamMemberTest {
         }
 
         @Test
-        fun `should check if member can participate in election`() {
-            assertThat(member.canParticipateInElection).isTrue()
-            assertThat(owner.canParticipateInElection).isTrue()
-        }
-
-        @Test
         fun `should check if member can be in lineup`() {
             assertThat(member.canBeInLineup).isTrue()
             assertThat(owner.canBeInLineup).isTrue()
@@ -454,11 +444,6 @@ class TeamMemberTest {
         @Test
         fun `GUEST should not be able to vote`() {
             assertThat(guest.canVote).isFalse()
-        }
-
-        @Test
-        fun `GUEST should not be able to participate in election`() {
-            assertThat(guest.canParticipateInElection).isFalse()
         }
 
         @Test

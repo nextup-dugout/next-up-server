@@ -1071,6 +1071,67 @@ class TeamMembershipServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("forceKickMember")
+    inner class ForceKickMember {
+        @Test
+        fun `should force kick member and publish event`() {
+            // given
+            val memberToKick =
+                TeamMember.create(team, user, player, 20, TeamMemberRole.MEMBER)
+            setTeamMemberId(memberToKick, 200L)
+
+            every { teamMemberRepository.findByIdOrNull(200L) } returns memberToKick
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+
+            val eventSlot = slot<TeamMemberKickedEvent>()
+            every { eventPublisher.publishEvent(capture(eventSlot)) } returns Unit
+
+            // when
+            service.forceKickMember(200L, "관리자 강퇴", false)
+
+            // then
+            assertThat(memberToKick.status).isEqualTo(TeamMemberStatus.KICKED)
+            verify { teamMemberRepository.save(memberToKick) }
+            verify(exactly = 0) { teamBlacklistRepository.save(any()) }
+            verify(exactly = 1) { eventPublisher.publishEvent(any<TeamMemberKickedEvent>()) }
+            assertThat(eventSlot.captured.teamId).isEqualTo(1L)
+            assertThat(eventSlot.captured.playerId).isEqualTo(3L)
+            assertThat(eventSlot.captured.memberId).isEqualTo(200L)
+        }
+
+        @Test
+        fun `should force kick member with blacklist`() {
+            // given
+            val memberToKick =
+                TeamMember.create(team, user, player, 20, TeamMemberRole.MEMBER)
+            setTeamMemberId(memberToKick, 200L)
+
+            every { teamMemberRepository.findByIdOrNull(200L) } returns memberToKick
+            every { teamMemberRepository.save(any()) } answers { firstArg() }
+            every { teamBlacklistRepository.save(any()) } answers { firstArg() }
+
+            // when
+            service.forceKickMember(200L, "관리자 강퇴", true)
+
+            // then
+            assertThat(memberToKick.status).isEqualTo(TeamMemberStatus.KICKED)
+            verify { teamMemberRepository.save(memberToKick) }
+            verify { teamBlacklistRepository.save(any()) }
+        }
+
+        @Test
+        fun `should throw when member not found on force kick`() {
+            // given
+            every { teamMemberRepository.findByIdOrNull(999L) } returns null
+
+            // when & then
+            assertThatThrownBy {
+                service.forceKickMember(999L, "관리자 강퇴", false)
+            }.isInstanceOf(TeamMemberNotFoundException::class.java)
+        }
+    }
+
     private fun setTeamId(
         team: Team,
         id: Long,

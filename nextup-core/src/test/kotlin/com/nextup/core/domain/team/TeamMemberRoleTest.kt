@@ -53,14 +53,6 @@ class TeamMemberRoleTest {
             assertThat(TeamMemberRole.MANAGER.canVoteInPoll()).isTrue()
             assertThat(TeamMemberRole.OWNER.canVoteInPoll()).isTrue()
         }
-
-        @Test
-        fun `should GUEST not be able to participate in election`() {
-            assertThat(TeamMemberRole.GUEST.canParticipateInElection()).isFalse()
-            assertThat(TeamMemberRole.MEMBER.canParticipateInElection()).isTrue()
-            assertThat(TeamMemberRole.MANAGER.canParticipateInElection()).isTrue()
-            assertThat(TeamMemberRole.OWNER.canParticipateInElection()).isTrue()
-        }
     }
 
     @Nested

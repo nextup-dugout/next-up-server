@@ -290,7 +290,6 @@ interface TeamMembershipService {
      * L-10: 관리자에 의한 강제 강퇴입니다.
      *
      * OWNER를 포함한 모든 역할의 멤버를 강제로 강퇴할 수 있습니다.
-     * OWNER가 강퇴되면 OwnerKickedEvent를 발행하여 자동 선거를 트리거합니다.
      *
      * @param memberId 강퇴 대상 멤버 ID
      * @param reason 강퇴 사유
