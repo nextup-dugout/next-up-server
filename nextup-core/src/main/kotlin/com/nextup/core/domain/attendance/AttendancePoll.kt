@@ -48,7 +48,7 @@ class AttendancePoll private constructor(
 ) : BaseTimeEntity() {
     @Version
     var version: Long = 0
-        protected set
+        internal set
 
     /**
      * 투표가 진행 중인지 확인합니다.

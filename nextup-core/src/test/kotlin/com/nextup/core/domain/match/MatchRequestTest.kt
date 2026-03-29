@@ -41,6 +41,8 @@ class MatchRequestTest {
         assertThat(matchRequest.skillLevel).isEqualTo(SkillLevel.INTERMEDIATE)
         assertThat(matchRequest.status).isEqualTo(MatchRequestStatus.OPEN)
         assertThat(matchRequest.version).isEqualTo(0L)
+        matchRequest.version = 1L
+        assertThat(matchRequest.version).isEqualTo(1L)
     }
 
     @Test

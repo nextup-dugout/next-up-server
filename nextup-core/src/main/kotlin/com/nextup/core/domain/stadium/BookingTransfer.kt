@@ -47,7 +47,7 @@ class BookingTransfer private constructor(
 ) : BaseTimeEntity() {
     @Version
     var version: Long = 0
-        protected set
+        internal set
 
     companion object {
         fun create(

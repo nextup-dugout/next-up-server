@@ -46,7 +46,7 @@ class MatchRequest private constructor(
 ) : BaseTimeEntity() {
     @Version
     var version: Long = 0
-        protected set
+        internal set
 
     /**
      * 매칭 요청을 취소합니다.

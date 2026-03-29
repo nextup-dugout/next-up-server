@@ -49,7 +49,7 @@ class LineupSubmission private constructor(
 ) : BaseTimeEntity() {
     @Version
     var version: Long = 0
-        protected set
+        internal set
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
