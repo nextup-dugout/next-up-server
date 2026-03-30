@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 
 /**
  * 구장 예약 양도 엔티티
@@ -44,6 +45,10 @@ class BookingTransfer private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        internal set
+
     companion object {
         fun create(
             bookingId: Long,

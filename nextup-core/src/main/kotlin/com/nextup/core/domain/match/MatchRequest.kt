@@ -44,6 +44,10 @@ class MatchRequest private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        internal set
+
     /**
      * 매칭 요청을 취소합니다.
      */

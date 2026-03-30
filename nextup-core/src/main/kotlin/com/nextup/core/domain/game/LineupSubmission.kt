@@ -47,6 +47,10 @@ class LineupSubmission private constructor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 ) : BaseTimeEntity() {
+    @Version
+    var version: Long = 0
+        internal set
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: LineupSubmissionStatus = LineupSubmissionStatus.DRAFT

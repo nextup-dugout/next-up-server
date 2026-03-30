@@ -52,6 +52,9 @@ class AttendancePollTest {
         assertThat(poll.deadline).isEqualTo(deadline)
         assertThat(poll.status).isEqualTo(PollStatus.OPEN)
         assertThat(poll.isOpen()).isTrue()
+        assertThat(poll.version).isEqualTo(0L)
+        poll.version = 1L
+        assertThat(poll.version).isEqualTo(1L)
     }
 
     @Test

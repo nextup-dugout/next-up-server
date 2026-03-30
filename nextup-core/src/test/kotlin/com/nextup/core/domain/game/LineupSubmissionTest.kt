@@ -30,6 +30,9 @@ class LineupSubmissionTest {
         assertThat(submission.submittedAt).isNull()
         assertThat(submission.confirmedAt).isNull()
         assertThat(submission.rejectionReason).isNull()
+        assertThat(submission.version).isEqualTo(0L)
+        submission.version = 1L
+        assertThat(submission.version).isEqualTo(1L)
     }
 
     @Test

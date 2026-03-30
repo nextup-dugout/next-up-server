@@ -40,6 +40,9 @@ class MatchRequestTest {
         assertThat(matchRequest.message).isEqualTo("연습 경기 희망합니다")
         assertThat(matchRequest.skillLevel).isEqualTo(SkillLevel.INTERMEDIATE)
         assertThat(matchRequest.status).isEqualTo(MatchRequestStatus.OPEN)
+        assertThat(matchRequest.version).isEqualTo(0L)
+        matchRequest.version = 1L
+        assertThat(matchRequest.version).isEqualTo(1L)
     }
 
     @Test

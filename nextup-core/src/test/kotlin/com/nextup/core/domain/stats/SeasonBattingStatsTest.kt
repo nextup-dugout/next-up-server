@@ -40,6 +40,7 @@ class SeasonBattingStatsTest {
             assertThat(stats.gamesPlayed).isZero
             assertThat(stats.hits).isZero
             assertThat(stats.atBats).isZero
+            assertThat(stats.version).isEqualTo(0L)
         }
 
         @Test
